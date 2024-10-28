@@ -5,3 +5,4 @@ from .modules.intermodal_builder import get_intermodal_graph
 from .modules.matrix_builder import get_adj_matrix_gdf_to_gdf
 from .modules.pt_walk_joiner import join_pt_walk_graph
 from .modules.public_transport_builder import get_all_public_transport_graph, get_single_public_transport_graph
+from .modules.graph_transformer import graph_to_gdf
