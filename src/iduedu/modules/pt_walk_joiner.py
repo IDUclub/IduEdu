@@ -104,7 +104,6 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                 line1 = substring(edge, 0, dist)
                 line2 = substring(edge, dist, edge.length)
                 # Убираем старую эджу и добавляем новые, в серединке нода - наша платформа для соединения
-                # walk.remove_edge(u, v, k)
                 edges_to_del.append((u, v, k))
                 walk.add_node(row["index"][0], x=projected_point.x, y=projected_point.y)
                 walk.add_edge(
@@ -175,5 +174,19 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                 )
     walk.remove_edges_from(edges_to_del)
     intermodal = nx.compose(nx.MultiDiGraph(transport), nx.MultiDiGraph(walk))
-    logger.info("Done composing!")
+    island_count = nx.number_weakly_connected_components(intermodal)
+    if island_count > 1:
+        logger.warning(
+            f"Weakly connected components detected. {island_count} graph islands were removed. "
+            f"These are probably pt routes that are not connected to walking routes. "
+            f"You may try adjusting the max_dist parameter, but this can lead to incorrect data."
+        )
+    intermodal.remove_nodes_from([node for node, data in intermodal.nodes(data=True) if "x" not in data.keys()])
+    components = sorted(nx.strongly_connected_components(intermodal), key=len)
+    components = list(components)[:-1]
+    intermodal.remove_nodes_from([node for comp in components for node in comp])
+    mapping = {old_label: new_label for new_label, old_label in enumerate(intermodal.nodes())}
+    intermodal = nx.relabel_nodes(intermodal, mapping)
+    intermodal.graph["type"] = "intermodal"
+    logger.debug("Done composing!")
     return intermodal

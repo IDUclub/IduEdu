@@ -18,6 +18,7 @@ def get_intermodal_graph(
     polygon: Polygon | MultiPolygon | None = None,
     clip_by_bounds: bool = False,
     keep_routes_geom: bool = True,
+    max_dist: float = 30,
 ) -> nx.Graph:
     """
     Generate an intermodal transport graph that combines public transport and pedestrian networks,
@@ -35,6 +36,8 @@ def get_intermodal_graph(
     clip_by_bounds : bool, optional
         If True, clips the public transport network to the bounds of the provided polygon. Defaults to False.
     keep_routes_geom : bool, optional
+    max_dist : float, optional
+        Maximum distance (in meters) to search for connections between platforms and pedestrian edges. Defaults to 30.
 
     Returns
     -------
@@ -68,6 +71,7 @@ def get_intermodal_graph(
     with concurrent.futures.ThreadPoolExecutor() as executor:
         walk_graph_future = executor.submit(get_walk_graph, polygon=boundary)
         logger.debug("Started downloading and parsing walk graph...")
+
         pt_graph_future = executor.submit(
             get_all_public_transport_graph,
             polygon=boundary,
@@ -75,12 +79,16 @@ def get_intermodal_graph(
             keep_geometry=keep_routes_geom,
         )
         logger.debug("Started downloading and parsing public trasport graph...")
+
         pt_g = pt_graph_future.result()
         logger.debug("Public trasport graph done!")
+
         walk_g = walk_graph_future.result()
         logger.debug("Walk graph done!")
+
     if len(pt_g.nodes()) == 0:
         logger.warning("Public trasport graph is empty! Returning only walk graph.")
         return walk_g
-    intermodal = join_pt_walk_graph(pt_g, walk_g)
+
+    intermodal = join_pt_walk_graph(pt_g, walk_g, max_dist=max_dist)
     return intermodal

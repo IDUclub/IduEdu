@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "iduedu"
-version = "0.1.0"
+version = "0.2.0"
 license = "BSD-3-Clause"
 description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap."
-authors = ["Danila <63115678+DDonnyy@users.noreply.github.com>"]
+authors = ["DDonnyy <63115678+DDonnyy@users.noreply.github.com>"]
 readme = "README.md"
 
 packages = [{ include = "iduedu", from = "src" }]
@@ -13,14 +13,13 @@ python = ">=3.10,<3.13"
 osmnx = "^1.9.4"
 tqdm = "^4.66.2"
 osm2geojson = "^0.2.4"
-pydantic = "^2.6.1"
-networkit = "^11.0"
 numpy = "^1.23.5"
 pandas = "^2.2.0"
 geopandas = "^0.14.4"
 networkx = "^3.3"
 loguru = "^0.7.2"
 scipy = "^1.13.1"
+numba = "^0.60.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.2.0"
@@ -49,7 +48,8 @@ disable = [
     "too-many-locals",
     "too-many-branches",
     "too-many-statements",
-    "too-many-arguments"
+    "too-many-arguments",
+    "cyclic-import"
 ]
 
 [tool.isort]
@@ -60,3 +60,4 @@ use_parentheses = true
 ensure_newline_before_comments = true
 line_length = 120
 split_on_trailing_comma = true
+skip = ["__init__.py"]

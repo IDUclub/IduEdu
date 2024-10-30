@@ -30,6 +30,7 @@ class Config:
     set_enable_tqdm(enable: bool)
         Enables or disables progress bars in the application.
     """
+
     def __init__(
         self,
         overpass_url="http://lz4.overpass-api.de/api/interpreter",
@@ -56,3 +57,4 @@ class Config:
 
 
 config = Config()
+config.change_logger_lvl("INFO")

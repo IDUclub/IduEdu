@@ -5,7 +5,7 @@ import pandas as pd
 import requests
 from shapely import MultiPolygon, Polygon, unary_union
 
-from iduedu._config import config
+from iduedu import config
 
 logger = config.logger
 
@@ -19,7 +19,12 @@ class RequestError(RuntimeError):
         self.response_content = response_content
 
     def __str__(self):
-        return f"{super().__str__()} (status: {self.status_code}, reason: {self.reason})"
+        if self.status_code == 400:
+            return (
+                f"{super().__str__()} (status: {self.status_code}, reason: {self.reason}). "
+                f"Make sure provided polygon is in CRS 4326."
+            )
+        return f"{super().__str__()} (status: {self.status_code}, reason: {self.reason})."
 
 
 def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:

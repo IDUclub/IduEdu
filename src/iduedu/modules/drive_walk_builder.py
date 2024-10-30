@@ -70,9 +70,8 @@ def get_max_speed(highway_types) -> float:
                     logger.debug(f"{ht} not found in HighwayType enum, skipping.")
             if max_speeds:
                 return max(max_speeds)
-            else:
-                logger.debug("No valid highway types provided, returning 40 km/h.")
-                return 40 * 1000 / 60
+            logger.debug("No valid highway types provided, returning 40 km/h.")
+            return 40 * 1000 / 60
         return HighwayType[highway_types.upper()].max_speed
     except KeyError:
         return 40 * 1000 / 60
@@ -89,7 +88,7 @@ def get_drive_graph_by_poly(
         polygon = unary_union(polygon)
         if isinstance(polygon, MultiPolygon):
             polygon = polygon.convex_hull
-
+    logger.info("Downloading drive graph from OSM, it may take a while for large territory ...")
     graph = ox.graph_from_polygon(
         polygon,
         network_type="drive",
@@ -123,7 +122,8 @@ def get_drive_graph_by_poly(
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
     graph.graph["crs"] = local_crs
-    logger.debug('Done!')
+    graph.graph["type"] = "drive"
+    logger.debug("Done!")
     return graph
 
 
@@ -211,7 +211,7 @@ def get_walk_graph(
 
     polygon = get_boundary(osm_id, territory_name, polygon)
 
-    logger.debug("Downloading walk graph from OSM ...")
+    logger.info("Downloading walk graph from OSM, it may take a while for large territory ...")
     graph = ox.graph_from_polygon(polygon, network_type="walk", truncate_by_edge=False, simplify=True)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
@@ -221,7 +221,7 @@ def get_walk_graph(
     nodes = nodes[["x", "y"]]
     edges.reset_index(inplace=True)
     edges.to_crs(local_crs, inplace=True)
-    tqdm.pandas(desc="Calculating the weights of the graph ...", disable=not config.enable_tqdm_bar)
+    tqdm.pandas(desc="Calculating the weights of the walk graph", disable=not config.enable_tqdm_bar)
     edges[["length_meter", "time_min"]] = edges.progress_apply(
         lambda row: (round(row.geometry.length, 3), round(row.geometry.length / walk_speed, 3)),
         axis=1,
@@ -243,5 +243,6 @@ def get_walk_graph(
     graph = ox.graph_from_gdfs(nodes, edges)
     graph.graph["crs"] = local_crs
     graph.graph["walk_speed"] = walk_speed
-    logger.debug('Done!')
+    graph.graph["type"] = "walk"
+    logger.debug("Done!")
     return graph

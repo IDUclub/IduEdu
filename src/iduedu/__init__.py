@@ -6,6 +6,7 @@ IduEdu is a Python package for the creation and manipulation of complex city net
 
 Homepage https://github.com/DDonnyy/IduEdu.
 """
+
 from ._config import config
 from ._api import *
 from ._version import VERSION as __version__
