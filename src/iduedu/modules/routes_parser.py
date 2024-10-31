@@ -185,7 +185,6 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
                 {
                     "u": (loc_id, u),
                     "v": (loc_id, v),
-                    "geometry": geometry,
                     "route": name,
                     "type": "boarding",
                 }
@@ -255,8 +254,8 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
 
         node_id += 1
         add_node("platform", platform.x, platform.y)
-        add_edge(node_id - 1, node_id, geometry=None)
-        add_edge(node_id, node_id - 1, geometry=None)
+        add_edge(node_id - 1, node_id)
+        add_edge(node_id, node_id - 1)
         node_id += 1
         return dist, last_projected_stop_id, node_id
 

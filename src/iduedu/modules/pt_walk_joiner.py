@@ -104,7 +104,6 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                 line1 = substring(edge, 0, dist)
                 line2 = substring(edge, dist, edge.length)
                 # Убираем старую эджу и добавляем новые, в серединке нода - наша платформа для соединения
-                # walk.remove_edge(u, v, k)
                 edges_to_del.append((u, v, k))
                 walk.add_node(row["index"][0], x=projected_point.x, y=projected_point.y)
                 walk.add_edge(
@@ -186,6 +185,8 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     components = sorted(nx.strongly_connected_components(intermodal), key=len)
     components = list(components)[:-1]
     intermodal.remove_nodes_from([node for comp in components for node in comp])
+    mapping = {old_label: new_label for new_label, old_label in enumerate(intermodal.nodes())}
+    intermodal = nx.relabel_nodes(intermodal, mapping)
     intermodal.graph["type"] = "intermodal"
     logger.debug("Done composing!")
     return intermodal
