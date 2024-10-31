@@ -1,7 +1,7 @@
+import geopandas as gpd
 import networkx as nx
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 from loguru import logger
 from shapely import LineString
 from shapely.geometry.point import Point
@@ -15,10 +15,11 @@ def _edges_to_gdf(G: nx.MultiDiGraph, crs: int) -> gpd.GeoDataFrame:
     e_ind_source, e_ind_target, e_data = zip(*G.edges(data=True))
     index_matrix = np.array([e_ind_source, e_ind_target]).transpose()
     final_index = [tuple(i) for i in index_matrix]
-    lines = (LineString(d['geometry']) for d in e_data)
+    lines = (LineString(d["geometry"]) if not isinstance(d, float) else None for d in e_data)
     gdf_edges = gpd.GeoDataFrame(e_data, index=final_index, crs=32636, geometry=list(lines))
 
     return gdf_edges
+
 
 def _nodes_to_gdf(G: nx.MultiDiGraph, crs: int) -> gpd.GeoDataFrame:
     """
@@ -33,10 +34,10 @@ def _nodes_to_gdf(G: nx.MultiDiGraph, crs: int) -> gpd.GeoDataFrame:
 
 
 def graph_to_gdf(
-        G: nx.MultiDiGraph,
-        crs: int | None = None,
-        edges: bool = True,
-        nodes: bool = True,
+    G: nx.MultiDiGraph,
+    crs: int | None = None,
+    edges: bool = True,
+    nodes: bool = True,
 ) -> gpd.GeoDataFrame | None:
     """
     Converts nx graph to gpd.GeoDataFrame as edges.
@@ -59,7 +60,7 @@ def graph_to_gdf(
     """
     if crs is None:
         try:
-            crs = G.graph['crs']
+            crs = G.graph["crs"]
         except:
             raise ValueError("Graph does not have crs attribute and no crs was provided")
     if not edges and not nodes:
@@ -71,9 +72,9 @@ def graph_to_gdf(
             return nodes_gdf
         elif not nodes and edges:
             edges_gdf = _edges_to_gdf(G, crs)
-            return  edges_gdf
+            return edges_gdf
         else:
             nodes_gdf = _nodes_to_gdf(G, crs)
             edges_gdf = _edges_to_gdf(G, crs)
             full_gdf = pd.concat([nodes_gdf, edges_gdf])
-            return  full_gdf
+            return full_gdf

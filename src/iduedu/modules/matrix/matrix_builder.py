@@ -152,7 +152,7 @@ def get_adj_matrix_gdf_to_gdf(
     if max_workers is not None:
         nb.set_num_threads(max_workers)
 
-    """ Warm-up """
+    # *** Warm-up ***
     dijkstra_numba_parallel(
         numba_matrix=csr_matrix,
         sources=np.array(closest_nodes_to[:1], dtype=np.int32),
@@ -182,13 +182,13 @@ def get_adj_matrix_gdf_to_gdf(
 
 
 def _get_sparse_row(nx_graph, weight):
-    sparseRowScipy = nx.to_scipy_sparse_array(nx_graph, weight=weight)
-    sparseRowScipy.data = np.round(sparseRowScipy.data * 100).astype(np.uint32)
-    return sparseRowScipy
+    sparse_row_scipy = nx.to_scipy_sparse_array(nx_graph, weight=weight)
+    sparse_row_scipy.data = np.round(sparse_row_scipy.data * 100).astype(np.uint32)
+    return sparse_row_scipy
 
 
-def _get_numba_matrix_attr(sparseRowScipy):
-    values = sparseRowScipy.data.astype(np.uint32)
-    col_index = sparseRowScipy.indices.astype(np.uint32)
-    row_index = sparseRowScipy.indptr.astype(np.uint32)
+def _get_numba_matrix_attr(sparse_row_scipy):
+    values = sparse_row_scipy.data.astype(np.uint32)
+    col_index = sparse_row_scipy.indices.astype(np.uint32)
+    row_index = sparse_row_scipy.indptr.astype(np.uint32)
     return values, col_index, row_index
