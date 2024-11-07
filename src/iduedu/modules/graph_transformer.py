@@ -15,8 +15,8 @@ def _edges_to_gdf(G: nx.MultiDiGraph, crs: int) -> gpd.GeoDataFrame:
     e_ind_source, e_ind_target, e_data = zip(*G.edges(data=True))
     index_matrix = np.array([e_ind_source, e_ind_target]).transpose()
     final_index = [tuple(i) for i in index_matrix]
-    lines = (LineString(d["geometry"]) if not isinstance(d, float) else None for d in e_data)
-    gdf_edges = gpd.GeoDataFrame(e_data, index=final_index, crs=32636, geometry=list(lines))
+    lines = [LineString(d["geometry"]) if not isinstance(d["geometry"], float) else None for d in e_data]
+    gdf_edges = gpd.GeoDataFrame(e_data, index=final_index, crs=crs, geometry=list(lines))
 
     return gdf_edges
 

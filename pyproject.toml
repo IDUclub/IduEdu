@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iduedu"
-version = "0.2.0"
+version = "0.2.1"
 license = "BSD-3-Clause"
 description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap."
 authors = ["DDonnyy <63115678+DDonnyy@users.noreply.github.com>"]
@@ -10,15 +10,15 @@ packages = [{ include = "iduedu", from = "src" }]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
-osmnx = "^1.9.4"
-tqdm = "^4.66.2"
+osmnx = "^2.0.0rc2"
+tqdm = "^4.67.0"
 osm2geojson = "^0.2.4"
-numpy = "^1.23.5"
+numpy = "^2.0.0"
 pandas = "^2.2.0"
-geopandas = "^0.14.4"
-networkx = "^3.3"
+geopandas = "^1.0.1"
+networkx = "^3.4.2"
 loguru = "^0.7.2"
-scipy = "^1.13.1"
+scipy = "^1.14.1"
 numba = "^0.60.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -26,7 +26,6 @@ black = "^24.2.0"
 pylint = "^3.0.3"
 isort = "^5.13.2"
 jupyter = "^1.0.0"
-ortools = "^9.9.3963"
 
 [build-system]
 requires = ["poetry-core"]

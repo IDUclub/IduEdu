@@ -218,7 +218,7 @@ def get_walk_graph(
     nodes, edges = ox.graph_to_gdfs(graph)
     nodes.to_crs(local_crs, inplace=True)
     nodes[["x", "y"]] = nodes.apply(lambda row: (row.geometry.x, row.geometry.y), axis=1, result_type="expand")
-    nodes = nodes[["x", "y"]]
+    nodes = nodes[["x", "y", "geometry"]]
     edges.reset_index(inplace=True)
     edges.to_crs(local_crs, inplace=True)
     tqdm.pandas(desc="Calculating the weights of the walk graph", disable=not config.enable_tqdm_bar)
