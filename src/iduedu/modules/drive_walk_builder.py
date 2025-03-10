@@ -121,6 +121,8 @@ def get_drive_graph_by_poly(
 
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
+    mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
+    graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs
     graph.graph["type"] = "drive"
     logger.debug("Done!")
@@ -241,6 +243,8 @@ def get_walk_graph(
     ]
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
+    mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
+    graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs
     graph.graph["walk_speed"] = walk_speed
     graph.graph["type"] = "walk"

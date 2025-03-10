@@ -7,6 +7,7 @@ import numba as nb
 import numpy as np
 import pandas as pd
 from pyproj import CRS
+from pyproj.exceptions import CRSError
 from scipy.spatial import KDTree
 
 from iduedu import config
@@ -55,9 +56,10 @@ def dijkstra_numba_parallel(numba_matrix: UI32CSRMatrix, sources: np.array, targ
 
 
 def get_closest_nodes(gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph):
-    assert gdf_from.crs == CRS.from_epsg(
-        to_nx_graph.graph["crs"]
-    ), f'CRS mismatch , gdf_from.crs = {gdf_from.crs.to_epsg()}, graph["crs"] = {to_nx_graph.graph["crs"]}'
+    # TODO add CRS object to graph.crs
+    # assert gdf_from.crs == CRS.from_epsg(
+    #     to_nx_graph.graph["crs"]
+    # ), f'CRS mismatch , gdf_from.crs = {gdf_from.crs.to_epsg()}, graph["crs"] = {to_nx_graph.graph["crs"]}'
     mapping = dict((u, id) for (id, u) in zip(to_nx_graph.nodes(), range(to_nx_graph.number_of_nodes())))
     points = gdf_from.representative_point()
     coordinates = [(data["x"], data["y"]) for node, data in to_nx_graph.nodes(data=True)]
@@ -115,15 +117,18 @@ def get_adj_matrix_gdf_to_gdf(
 
     Examples
     --------
-    >>> adj_matrix = get_adj_matrix_gdf_to_gdf(origins_gdf, destinations_gdf, graph, weight='time', dtype=np.float32)
+    >>> adj_matrix = get_adj_matrix_gdf_to_gdf(origins_gdf, destinations_gdf, graph, weight='time_min', dtype=np.float32)
     """
-    graph_crs = CRS.from_epsg(nx_graph.graph["crs"])
+    try:
+        graph_crs = CRS.from_epsg(nx_graph.graph["crs"])
+    except CRSError:
+        graph_crs = nx_graph.graph["crs"]
 
     if gdf_from.crs != graph_crs:
-        gdf_from = gdf_from.to_crs(32636)
+        gdf_from = gdf_from.to_crs(graph_crs)
 
     if gdf_to.crs != graph_crs:
-        gdf_to = gdf_to.to_crs(32636)
+        gdf_to = gdf_to.to_crs(graph_crs)
 
     dif = len(gdf_from) - len(gdf_to)
     transposed = False
