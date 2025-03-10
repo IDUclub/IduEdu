@@ -33,9 +33,9 @@ def _nodes_to_gdf(graph: nx.Graph, crs: int) -> gpd.GeoDataFrame:
 
 
 def graph_to_gdf(
-        graph: nx.MultiDiGraph,
-        edges: bool = True,
-        nodes: bool = True,
+    graph: nx.MultiDiGraph,
+    edges: bool = True,
+    nodes: bool = True,
 ) -> gpd.GeoDataFrame | None:
     """
     Converts nx graph to gpd.GeoDataFrame as edges.
@@ -61,15 +61,14 @@ def graph_to_gdf(
     if not edges and not nodes:
         logger.debug("Neither edges or nodes were selected, graph_to_gdf returning None")
         return None
+    if nodes and not edges:
+        nodes_gdf = _nodes_to_gdf(graph, crs)
+        return nodes_gdf
+    elif not nodes and edges:
+        edges_gdf = _edges_to_gdf(graph, crs)
+        return edges_gdf
     else:
-        if nodes and not edges:
-            nodes_gdf = _nodes_to_gdf(graph, crs)
-            return nodes_gdf
-        elif not nodes and edges:
-            edges_gdf = _edges_to_gdf(graph, crs)
-            return edges_gdf
-        else:
-            nodes_gdf = _nodes_to_gdf(graph, crs)
-            edges_gdf = _edges_to_gdf(graph, crs)
-            full_gdf = pd.concat([nodes_gdf, edges_gdf])
-            return full_gdf
+        nodes_gdf = _nodes_to_gdf(graph, crs)
+        edges_gdf = _edges_to_gdf(graph, crs)
+        full_gdf = pd.concat([nodes_gdf, edges_gdf])
+        return full_gdf

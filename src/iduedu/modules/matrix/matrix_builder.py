@@ -55,18 +55,55 @@ def dijkstra_numba_parallel(numba_matrix: UI32CSRMatrix, sources: np.array, targ
     return distance_matrix
 
 
-def get_closest_nodes(gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph):
-    # TODO add CRS object to graph.crs
-    # assert gdf_from.crs == CRS.from_epsg(
-    #     to_nx_graph.graph["crs"]
-    # ), f'CRS mismatch , gdf_from.crs = {gdf_from.crs.to_epsg()}, graph["crs"] = {to_nx_graph.graph["crs"]}'
-    mapping = dict((u, id) for (id, u) in zip(to_nx_graph.nodes(), range(to_nx_graph.number_of_nodes())))
-    points = gdf_from.representative_point()
-    coordinates = [(data["x"], data["y"]) for node, data in to_nx_graph.nodes(data=True)]
+def get_closest_nodes(gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph, return_dist=False) -> list | pd.Series:
+    """
+    Find the closest nodes in a NetworkX graph for each geometry in a GeoDataFrame.
+
+    For each geometry in the input GeoDataFrame, this function identifies the nearest node in the provided graph
+    based on Euclidean distance. The CRS of the GeoDataFrame is automatically aligned with the graph's CRS
+    if they differ.
+
+    Parameters
+    ----------
+    gdf_from : gpd.GeoDataFrame
+        A GeoDataFrame containing the points for which the closest graph nodes are to be found.
+    to_nx_graph : nx.Graph
+        A NetworkX graph with geographic data, where each node has 'x' and 'y' attributes representing
+        its coordinates in the graph's CRS.
+    return_dist : bool, optional
+        If True, returns the distances to the closest nodes along with the node IDs. Defaults to False.
+
+    Returns
+    -------
+    list | pd.Series
+        - If `return_dist=False` (default), returns a list of the closest node IDs for each point in `gdf_from`.
+        - If `return_dist=True`, returns a pandas Series where the index is the closest node ID and the values
+          are the corresponding distances.
+
+    Examples
+    --------
+    >>> closest_nodes = get_closest_nodes(points_gdf, graph)
+    >>> closest_nodes_with_dist = get_closest_nodes(points_gdf, graph, return_dist=True)
+    """
+    try:
+        graph_crs = CRS.from_epsg(to_nx_graph.graph["crs"])
+    except CRSError:
+        graph_crs = to_nx_graph.graph["crs"]
+
+    if gdf_from.crs != graph_crs:
+        gdf_from = gdf_from.to_crs(graph_crs)
+
+    nodes_with_data = list(to_nx_graph.nodes(data=True))
+    coordinates = [(data["x"], data["y"]) for node, data in nodes_with_data]
     tree = KDTree(coordinates)
-    target_coord = [(p.x, p.y) for p in points]
-    _, indices = tree.query(target_coord)
-    return [mapping.get(x) for x in indices]
+    target_coord = [(p.x, p.y) for p in gdf_from.representative_point()]
+    distances, indices = tree.query(target_coord)
+    nearest_nodes = [nodes_with_data[idx][0] for idx in indices]
+
+    if return_dist:
+        return pd.Series(distances, index=nearest_nodes)
+
+    return nearest_nodes
 
 
 def get_adj_matrix_gdf_to_gdf(
@@ -100,8 +137,6 @@ def get_adj_matrix_gdf_to_gdf(
     max_workers : int, optional
         The maximum number of threads to use during computation. By default, uses all available CPU cores (os.cpu_count()).
 
-        ----
-
     Returns
     -------
     pd.DataFrame
@@ -130,26 +165,26 @@ def get_adj_matrix_gdf_to_gdf(
     if gdf_to.crs != graph_crs:
         gdf_to = gdf_to.to_crs(graph_crs)
 
-    dif = len(gdf_from) - len(gdf_to)
-    transposed = False
-
     logger.debug("Preparing graph sparse matrix")
 
-    if dif < 0:  # straight
-        closest_nodes_from = get_closest_nodes(gdf_from, nx_graph)
-        closest_nodes_to = get_closest_nodes(gdf_to, nx_graph)
-        sparse_row_scipy = _get_sparse_row(nx_graph, weight)
+    transposed = False
 
-    elif dif > 0:  # reversed
-        transposed = True
-        closest_nodes_from = get_closest_nodes(gdf_to, nx_graph)
-        closest_nodes_to = get_closest_nodes(gdf_from, nx_graph)
-        sparse_row_scipy = _get_sparse_row(nx_graph, weight).transpose().tocsc().tocsr()
-
-    else:  # square
+    if gdf_from.equals(gdf_to):
         closest_nodes_from = get_closest_nodes(gdf_from, nx_graph)
         closest_nodes_to = closest_nodes_from
         sparse_row_scipy = _get_sparse_row(nx_graph, weight)
+    else:
+        dif = len(gdf_from) - len(gdf_to)
+        if dif <= 0:  # straight
+            closest_nodes_from = get_closest_nodes(gdf_from, nx_graph)
+            closest_nodes_to = get_closest_nodes(gdf_to, nx_graph)
+            sparse_row_scipy = _get_sparse_row(nx_graph, weight)
+
+        else:  # reversed
+            transposed = True
+            closest_nodes_from = get_closest_nodes(gdf_to, nx_graph)
+            closest_nodes_to = get_closest_nodes(gdf_from, nx_graph)
+            sparse_row_scipy = _get_sparse_row(nx_graph, weight).transpose().tocsc().tocsr()
 
     csr_matrix = UI32CSRMatrix(*_get_numba_matrix_attr(sparse_row_scipy))
     del sparse_row_scipy

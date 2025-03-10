@@ -111,7 +111,7 @@ def parse_overpass_route_response(loc: dict, crs: CRS) -> pd.Series:
         transport_name = None
 
     route = pd.DataFrame(loc["members"])
-
+    route = route.dropna(subset=["lat", "lon", "geometry"], how="all")
     if "geometry" not in route.columns:
         route["geometry"] = np.NAN
 
@@ -300,7 +300,7 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
                 platform,
                 offset_point(path.interpolate(path.length), 1, 7),
             ]
-    platforms = [Point(coords) for coords in platforms if not Point(coords).is_empty]
+    platforms = [Point(coords) for coords in platforms]
     if len(platforms) >= len(stops):
         for platform in platforms:
             if not last_dist:

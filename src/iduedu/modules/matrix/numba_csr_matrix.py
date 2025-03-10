@@ -19,7 +19,7 @@ def __build_csr_cls(nb_type):
     spec_csr_matrix = OrderedDict(spec_csr_matrix)
 
     @nb.experimental.jitclass(spec_csr_matrix)
-    class CSRMatrix(object):
+    class CSRMatrix:
         """
         a minimal CSR matrix implementation
         get_nnz and get_row should only be used on rows for which a value is present

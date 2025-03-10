@@ -169,7 +169,7 @@ def get_single_public_transport_graph(
     to_return.graph["type"] = public_transport_type
 
     if clip_by_bounds:
-        polygon = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).unary_union
+        polygon = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
         return clip_nx_graph(to_return, polygon)
 
     logger.debug("Done!")
@@ -276,7 +276,7 @@ def get_all_public_transport_graph(
     to_return.graph["type"] = "public_trasport"
 
     if clip_by_bounds:
-        polygon = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).unary_union
+        polygon = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
         to_return = clip_nx_graph(to_return, polygon)
 
     logger.debug("Done!")
