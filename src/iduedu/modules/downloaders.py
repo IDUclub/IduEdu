@@ -1,9 +1,8 @@
-import geopandas as gpd
-import osm2geojson
 import osmnx as ox
 import pandas as pd
 import requests
-from shapely import MultiPolygon, Polygon, unary_union
+from shapely import LineString, MultiPolygon, Polygon, unary_union
+from shapely.ops import polygonize
 
 from iduedu import config
 
@@ -11,6 +10,10 @@ logger = config.logger
 
 
 class RequestError(RuntimeError):
+    """
+    Basic error for eny requests problems
+    """
+
     def __init__(self, message, status_code=None, reason=None, response_text=None, response_content=None):
         super().__init__(message)
         self.status_code = status_code
@@ -29,20 +32,34 @@ class RequestError(RuntimeError):
 
 def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
     overpass_query = f"""
-            [out:json];
-                    (
-                        relation({osm_id});
-                    );
-            out geom;
-            """
+                [out:json];
+                        (
+                            relation({osm_id});
+                        );
+                out geom;
+                """
     logger.debug(f"Downloading territory bounds with osm_id <{osm_id}> ...")
     result = requests.get(config.overpass_url, params={"data": overpass_query}, timeout=config.timeout)
     if result.status_code == 200:
         json_result = result.json()
-        boundary = osm2geojson.json2geojson(json_result)
-        boundary = gpd.GeoDataFrame.from_features(boundary["features"]).set_crs(4326)
-        poly = unary_union(boundary.geometry)
-        return poly
+        geoms = []
+        for element in json_result["elements"]:
+            geometries_inners = []
+            geometries_outers = []
+            for member in element["members"]:
+                if "geometry" in member:
+                    if member["role"] == "outer":
+                        geometries_outers.append(
+                            LineString([(coords["lon"], coords["lat"]) for coords in member["geometry"]])
+                        )
+                    if member["role"] == "inner":
+                        geometries_inners.append(
+                            LineString([(coords["lon"], coords["lat"]) for coords in member["geometry"]])
+                        )
+            outer_poly = unary_union(list(polygonize(geometries_outers)))
+            inner_poly = unary_union(list(polygonize(geometries_inners)))
+            geoms.append(outer_poly.difference(inner_poly))
+        return unary_union(geoms)
     raise RequestError(
         message=f"Request failed with status code {result.status_code}, reason: {result.reason}",
         status_code=result.status_code,
