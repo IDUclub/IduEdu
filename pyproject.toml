@@ -54,7 +54,9 @@ disable = [
     "too-many-statements",
     "too-many-arguments",
     "cyclic-import",
-    "line-too-long"
+    "line-too-long",
+    "too-many-return-statements",
+    "too-many-positional-arguments"
 ]
 
 [tool.isort]

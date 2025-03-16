@@ -1,7 +1,7 @@
 import osmnx as ox
 import pandas as pd
 import requests
-from shapely import MultiPolygon, Polygon, unary_union,LineString
+from shapely import LineString, MultiPolygon, Polygon, unary_union
 from shapely.ops import polygonize
 
 from iduedu import config
@@ -10,6 +10,9 @@ logger = config.logger
 
 
 class RequestError(RuntimeError):
+    """
+    Basic error for eny requests problems
+    """
     def __init__(self, message, status_code=None, reason=None, response_text=None, response_content=None):
         super().__init__(message)
         self.status_code = status_code
