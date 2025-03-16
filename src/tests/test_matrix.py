@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name
+
 import os
 import random
 
@@ -6,8 +8,8 @@ import numpy as np
 import pytest
 
 from iduedu import (
-    get_intermodal_graph,
     get_adj_matrix_gdf_to_gdf,
+    get_intermodal_graph,
 )
 
 

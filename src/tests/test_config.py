@@ -1,5 +1,8 @@
+# pylint: disable=redefined-outer-name
+
 import pytest
 from loguru import logger
+
 from iduedu._config import Config
 
 

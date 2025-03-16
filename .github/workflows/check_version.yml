@@ -28,7 +28,7 @@ jobs:
       - name: Extract version from pyproject.toml
         id: pyproject-version
         run: |
-          PYPROJECT_VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['poetry']['version']")
+          PYPROJECT_VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['poetry']['version'])")
           echo "Version in pyproject.toml: $PYPROJECT_VERSION"
           echo "pyproject_version=$PYPROJECT_VERSION" >> $GITHUB_OUTPUT
 

@@ -1,4 +1,4 @@
-CODE := src/iduedu
+CODE := src
 
 build-and-publish: clean build publish
 

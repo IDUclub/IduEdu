@@ -13,6 +13,7 @@ class RequestError(RuntimeError):
     """
     Basic error for eny requests problems
     """
+
     def __init__(self, message, status_code=None, reason=None, response_text=None, response_content=None):
         super().__init__(message)
         self.status_code = status_code

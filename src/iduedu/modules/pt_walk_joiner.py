@@ -76,7 +76,7 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     except KeyError:
         logger.warning(
             "There is no walk_speed in graph, set to the default speed - 83.33 m/min"
-        )  # TODO посчитать примерную скорость по length timemin для любой эджи
+        )  #  посчитать примерную скорость по length timemin для любой эджи
         speed = 83.33
 
     edges_to_del = []
