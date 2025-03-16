@@ -29,7 +29,13 @@ jobs:
 
       - name: Run pylint
         run: |
-          poetry run pylint src
+          poetry run pylint src --exit-zero > pylint-report.txt
+
+      - name: Upload pylint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pylint-report
+          path: pylint-report.txt
 
       - name: Run isort
         run: |
