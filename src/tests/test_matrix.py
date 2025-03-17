@@ -7,10 +7,7 @@ import geopandas as gpd
 import numpy as np
 import pytest
 
-from iduedu import (
-    get_adj_matrix_gdf_to_gdf,
-    get_intermodal_graph,
-)
+from iduedu import get_adj_matrix_gdf_to_gdf, get_intermodal_graph, get_closest_nodes
 
 
 @pytest.fixture(scope="module")
@@ -74,7 +71,6 @@ def test_get_many_to_less_adj_matrix(sample_data, intermodal_graph):
 
 
 def test_get_less_to_many_adj_matrix(sample_data, intermodal_graph):
-
     random_indices = random.sample(list(sample_data.index), k=len(sample_data) // 2)
     smaller_data = sample_data.loc[random_indices]
 
@@ -87,3 +83,11 @@ def test_get_less_to_many_adj_matrix(sample_data, intermodal_graph):
 
     assert np.array_equal(matrix.index, smaller_data.index)
     assert np.array_equal(matrix.columns, sample_data.index)
+
+
+def test_get_nearest_graph_node(sample_data, intermodal_graph):
+    closest_nodes = get_closest_nodes(sample_data, intermodal_graph)
+    assert len(closest_nodes) == len(sample_data)
+    closest_nodes_w_dist = get_closest_nodes(sample_data, intermodal_graph, return_dist=True)
+    assert len(closest_nodes_w_dist) == len(sample_data)
+    assert np.array_equal(closest_nodes_w_dist.index, closest_nodes)
