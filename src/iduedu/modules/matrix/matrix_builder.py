@@ -1,11 +1,12 @@
 from heapq import heappop, heappush
-from typing import Literal
+from typing import Any, Iterable, List, Literal, Tuple
 
 import geopandas as gpd
 import networkx as nx
 import numba as nb
 import numpy as np
 import pandas as pd
+from numpy.core.multiarray import ndarray
 from pyproj import CRS
 from pyproj.exceptions import CRSError
 from scipy.spatial import KDTree
@@ -28,7 +29,9 @@ logger = config.logger
     cache=True,
     parallel=True,
 )
-def dijkstra_numba_parallel(numba_matrix: UI32CSRMatrix, sources: np.array, targets: np.array, cutoff: np.int32):
+def dijkstra_numba_parallel(
+    numba_matrix: UI32CSRMatrix, sources: np.array, targets: np.array, cutoff: np.int32
+):  # pragma: no cover
     distance_matrix = np.full((len(sources), len(targets)), -1, dtype=np.int32)
 
     for i in nb.prange(len(sources)):
@@ -55,7 +58,9 @@ def dijkstra_numba_parallel(numba_matrix: UI32CSRMatrix, sources: np.array, targ
     return distance_matrix
 
 
-def get_closest_nodes(gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph) -> tuple[list, list]:
+def get_closest_nodes(
+    gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph
+) -> tuple[list[Any], float | ndarray | Iterable | int]:
     """
     Find the closest nodes in a NetworkX graph for each geometry in a GeoDataFrame.
 
@@ -106,6 +111,7 @@ def get_adj_matrix_gdf_to_gdf(
     nx_graph: nx.Graph,
     weight: Literal["length_meter", "time_min"] = "length_meter",
     dtype: np.dtype = np.float16,
+    add_dist_tofrom_node=True,
     threshold: int = None,
     max_workers: int = None,
 ) -> pd.DataFrame:
@@ -211,7 +217,18 @@ def get_adj_matrix_gdf_to_gdf(
         adj_matrix = adj_matrix.transpose()
 
     adj_matrix = pd.DataFrame(adj_matrix / 100, columns=gdf_to.index, index=gdf_from.index, dtype=dtype)
-
+    if add_dist_tofrom_node:
+        if weight == "time_min":
+            speed = 5 * 1000 / 60
+            dist_to = dist_to / speed
+            dist_from = dist_from / speed
+        dist_from_matrix = np.array(dist_from)[:, np.newaxis]
+        dist_to_matrix = np.array(dist_to)[np.newaxis, :]
+        mask = adj_matrix > 0
+        additional_matrix = (dist_from_matrix + dist_to_matrix).astype(dtype)
+        if transposed:
+            additional_matrix = additional_matrix.transpose()
+        adj_matrix[mask] += additional_matrix
     return adj_matrix.where(adj_matrix >= 0, np.inf)
 
 

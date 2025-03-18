@@ -182,6 +182,7 @@ def get_all_public_transport_graph(
     polygon: Polygon | MultiPolygon | None = None,
     clip_by_bounds: bool = False,
     keep_geometry: bool = True,
+    transport_types: list[PublicTrasport] = None,
 ) -> nx.Graph:
     """
     Generate a public transport network graph that includes all types of transport within a specified territory.
@@ -199,6 +200,9 @@ def get_all_public_transport_graph(
         If True, clips the resulting graph to the bounds of the provided polygon. Defaults to False.
     keep_geometry : bool, optional
         If True, retains the original geometry of the transport routes. Defaults to True.
+    transport_types: list[PublicTransport], optional
+        By default `[PublicTrasport.TRAM, PublicTrasport.BUS, PublicTrasport.TROLLEYBUS, PublicTrasport.SUBWAY]`,
+        can be any combination of PublicTransport Enums.
 
     Returns
     -------
@@ -226,9 +230,16 @@ def get_all_public_transport_graph(
     The CRS for the graph is estimated based on the bounds of the provided/downloaded polygon, stored in G.graph['crs'].
     """
 
+    if transport_types is None:
+        transport_types = [PublicTrasport.TRAM, PublicTrasport.BUS, PublicTrasport.TROLLEYBUS, PublicTrasport.SUBWAY]
+    else:
+        for transport_type in transport_types:
+            if not isinstance(transport_type, PublicTrasport):
+                raise ValueError(f"transport_type {transport_type} is not a valid transport type.")
+
     polygon = get_boundary(osm_id, territory_name, polygon)
 
-    transports = [transport.value for transport in PublicTrasport]
+    transports = [transport.value for transport in transport_types]
     args_list = [(polygon, transport) for transport in transports]
 
     if not config.enable_tqdm_bar:

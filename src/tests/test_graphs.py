@@ -11,7 +11,6 @@ from iduedu import (
     graph_to_gdf,
     join_pt_walk_graph,
 )
-
 from src.tests.test_downloaders import bounds
 
 config.change_logger_lvl("DEBUG")
@@ -47,6 +46,12 @@ def test_get_single_public_transport_graph(bounds):
     assert len(g_subway.edges) > 0
 
 
+def test_get_single_pt_graph_where_not_exist(bounds):
+    g_train = get_single_public_transport_graph(public_transport_type="train", polygon=bounds)
+    assert len(g_train.nodes) == 0
+    assert len(g_train.edges) == 0
+
+
 def test_get_all_public_transport_graph(bounds):
     g_public_t = get_all_public_transport_graph(polygon=bounds, clip_by_bounds=True, keep_geometry=False)
     assert g_public_t is not None
@@ -72,3 +77,10 @@ def test_graph_to_gdf(bounds, intermodal_graph):
     graph_gdf = graph_to_gdf(intermodal_graph)
     assert graph_gdf is not None
     assert not graph_gdf.empty
+
+
+def test_graph_to_gdf_restore_geom(bounds, intermodal_graph):
+    graph_gdf = graph_to_gdf(intermodal_graph, restore_edge_geom=True)
+    assert graph_gdf is not None
+    assert not graph_gdf.empty
+    assert graph_gdf["geometry"].is_empty.any() == False
