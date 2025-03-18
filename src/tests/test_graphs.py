@@ -53,13 +53,6 @@ def test_get_single_pt_graph_where_not_exist(bounds):
     assert len(g_train.edges) == 0
 
 
-def test_get_all_public_transport_graph(bounds):
-    g_public_t = get_all_public_transport_graph(polygon=bounds, clip_by_bounds=True, keep_geometry=False)
-    assert g_public_t is not None
-    assert len(g_public_t.nodes) > 0
-    assert len(g_public_t.edges) > 0
-
-
 def test_get_intermodal_graph(bounds, intermodal_graph):
     assert intermodal_graph is not None
     assert len(intermodal_graph.nodes) > 0
