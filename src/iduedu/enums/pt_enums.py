@@ -10,6 +10,7 @@ class PublicTrasport(Enum):
     BUS = "bus"
     TRAM = "tram"
     TROLLEYBUS = "trolleybus"
+    TRAIN = "train"
 
     @property
     def avg_speed(self) -> float:
@@ -21,5 +22,6 @@ class PublicTrasport(Enum):
             PublicTrasport.BUS: 20,
             PublicTrasport.TRAM: 20,
             PublicTrasport.TROLLEYBUS: 18,
+            PublicTrasport.TRAIN: 60,
         }
         return speeds[self] * 1000 / 60

@@ -1,6 +1,5 @@
 import geopandas as gpd
 import networkx as nx
-import numpy as np
 import pandas as pd
 from loguru import logger
 from shapely import LineString
@@ -11,13 +10,12 @@ def _edges_to_gdf(graph: nx.Graph, crs) -> gpd.GeoDataFrame:
     """
     Converts nx graph to gpd.GeoDataFrame as edges.
     """
-    e_ind_source, e_ind_target, e_data = zip(*graph.edges(data=True))
-    index_matrix = np.array([e_ind_source, e_ind_target]).transpose()
-    final_index = [tuple(i) for i in index_matrix]
-    lines = (LineString(d["geometry"]) if not isinstance(d["geometry"], float) else None for d in e_data)
-    gdf_edges = gpd.GeoDataFrame(e_data, index=final_index, crs=crs, geometry=list(lines))
-
-    return gdf_edges
+    graph_df = pd.DataFrame(list(graph.edges(data=True)), columns=["u", "v", "data"])
+    edge_data_expanded = pd.json_normalize(graph_df["data"])
+    graph_df = pd.concat([graph_df.drop(columns=["data"]), edge_data_expanded], axis=1)
+    graph_df = gpd.GeoDataFrame(graph_df, geometry="geometry", crs=crs).set_index(["u", "v"])
+    graph_df["geometry"] = graph_df["geometry"].fillna(LineString())
+    return graph_df
 
 
 def _nodes_to_gdf(graph: nx.Graph, crs: int) -> gpd.GeoDataFrame:
@@ -32,10 +30,21 @@ def _nodes_to_gdf(graph: nx.Graph, crs: int) -> gpd.GeoDataFrame:
     return gdf_nodes
 
 
+def _restore_edges_geom(nodes_gdf, edges_gdf) -> gpd.GeoDataFrame:
+    edges_wout_geom = edges_gdf[edges_gdf["geometry"].is_empty].reset_index()
+    edges_wout_geom["geometry"] = [
+        LineString((s, e))
+        for s, e in zip(
+            nodes_gdf.loc[edges_wout_geom["u"], "geometry"], nodes_gdf.loc[edges_wout_geom["v"], "geometry"]
+        )
+    ]
+    edges_wout_geom.set_index(["u", "v"], inplace=True)
+    edges_gdf.update(edges_wout_geom)
+    return edges_gdf
+
+
 def graph_to_gdf(
-    graph: nx.MultiDiGraph,
-    edges: bool = True,
-    nodes: bool = True,
+    graph: nx.MultiDiGraph, edges: bool = True, nodes: bool = True, restore_edge_geom=False
 ) -> gpd.GeoDataFrame | None:
     """
     Converts nx graph to gpd.GeoDataFrame as edges.
@@ -48,7 +57,8 @@ def graph_to_gdf(
         Keep edges in GoeDataFrame.
     nodes: bool, default to True
         Keep nodes in GoeDataFrame.
-
+    restore_edge_geom: bool, default to False
+        if True, will try to restore edge geometry from nodes.
     Returns
     -------
     gpd.GeoDataFrame
@@ -66,9 +76,14 @@ def graph_to_gdf(
         return nodes_gdf
     if not nodes and edges:
         edges_gdf = _edges_to_gdf(graph, crs)
+        if restore_edge_geom:
+            nodes_gdf = _nodes_to_gdf(graph, crs)
+            edges_gdf = _restore_edges_geom(nodes_gdf, edges_gdf)
         return edges_gdf
 
     nodes_gdf = _nodes_to_gdf(graph, crs)
     edges_gdf = _edges_to_gdf(graph, crs)
+    if restore_edge_geom:
+        edges_gdf = _restore_edges_geom(nodes_gdf, edges_gdf)
     full_gdf = pd.concat([nodes_gdf, edges_gdf])
     return full_gdf

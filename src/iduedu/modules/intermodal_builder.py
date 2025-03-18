@@ -1,9 +1,11 @@
 import concurrent.futures
+import time
 
 import networkx as nx
 from shapely import MultiPolygon, Polygon
 
 from iduedu import config
+from iduedu.enums.pt_enums import PublicTrasport
 from iduedu.modules.downloaders import get_boundary
 from iduedu.modules.drive_walk_builder import get_walk_graph
 from iduedu.modules.pt_walk_joiner import join_pt_walk_graph
@@ -19,6 +21,7 @@ def get_intermodal_graph(
     clip_by_bounds: bool = False,
     keep_routes_geom: bool = True,
     max_dist: float = 30,
+    transport_types: list[PublicTrasport] = None,
 ) -> nx.Graph:
     """
     Generate an intermodal transport graph that combines public transport and pedestrian networks,
@@ -38,7 +41,9 @@ def get_intermodal_graph(
     keep_routes_geom : bool, optional
     max_dist : float, optional
         Maximum distance (in meters) to search for connections between platforms and pedestrian edges. Defaults to 30.
-
+    transport_types: list[PublicTransport], optional
+        By default `[PublicTrasport.TRAM, PublicTrasport.BUS, PublicTrasport.TROLLEYBUS, PublicTrasport.SUBWAY]`,
+        can be any combination of PublicTransport Enums.
     Returns
     -------
     nx.Graph
@@ -72,11 +77,14 @@ def get_intermodal_graph(
         walk_graph_future = executor.submit(get_walk_graph, polygon=boundary)
         logger.debug("Started downloading and parsing walk graph...")
 
+        # Sleep to not get 429 to many requests
+        time.sleep(0.5)
         pt_graph_future = executor.submit(
             get_all_public_transport_graph,
             polygon=boundary,
             clip_by_bounds=clip_by_bounds,
             keep_geometry=keep_routes_geom,
+            transport_types=transport_types,
         )
         logger.debug("Started downloading and parsing public trasport graph...")
 

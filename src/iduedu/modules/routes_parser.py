@@ -109,11 +109,16 @@ def parse_overpass_route_response(loc: dict, crs: CRS) -> pd.Series:
         transport_name = loc["tags"]["name"]
     else:
         transport_name = None
-
     route = pd.DataFrame(loc["members"])
-    route = route.dropna(subset=["lat", "lon", "geometry"], how="all")
+
     if "geometry" not in route.columns:
-        route["geometry"] = np.NAN
+        route["geometry"] = np.nan
+    if "lat" not in route.columns:
+        route["lat"] = np.nan
+    if "lon" not in route.columns:
+        route["lon"] = np.nan
+
+    route = route.dropna(subset=["lat", "lon", "geometry"], how="all")
 
     platforms = process_roles(route, PLATFORM_ROLES)
     stops = process_roles(route, STOPS_ROLES)
@@ -249,6 +254,8 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
         add_node("stop", projected_stop.x, projected_stop.y, transport=True)
         if last_dist is not None:
             cur_path = substring(path, last_dist, dist)
+            if isinstance(cur_path, Point):
+                cur_path = LineString((cur_path, cur_path))
             add_edge(last_projected_stop_id, node_id, geometry=cur_path, transport=True)
         last_projected_stop_id = node_id
 
