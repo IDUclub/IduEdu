@@ -12,11 +12,6 @@ from iduedu.modules.downloaders import RequestError, get_routes_by_poly
 config.change_logger_lvl("DEBUG")
 
 
-@pytest.fixture(scope="session")
-def bounds():
-    return get_boundary(osm_id=1114252)  # OSM ID for https://www.openstreetmap.org/relation/1114252
-
-
 def test_get_boundary_by_osm_id(bounds):
     assert bounds is not None
 

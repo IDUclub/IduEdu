@@ -1,30 +1,14 @@
 # pylint: disable=redefined-outer-name, unused-import
-import pytest
 
 from iduedu import (
     config,
-    get_all_public_transport_graph,
     get_drive_graph,
-    get_intermodal_graph,
     get_single_public_transport_graph,
-    get_walk_graph,
     graph_to_gdf,
     join_pt_walk_graph,
 )
 
-from .test_downloaders import bounds
-
 config.change_logger_lvl("DEBUG")
-
-
-@pytest.fixture(scope="module")
-def walk_graph(bounds):
-    return get_walk_graph(polygon=bounds)
-
-
-@pytest.fixture(scope="module")
-def intermodal_graph(bounds):
-    return get_intermodal_graph(polygon=bounds)
 
 
 def test_get_drive_graph(bounds):

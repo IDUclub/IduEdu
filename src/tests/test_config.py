@@ -6,7 +6,7 @@ from loguru import logger
 from iduedu._config import Config
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def config_instance():
     return Config()
 
