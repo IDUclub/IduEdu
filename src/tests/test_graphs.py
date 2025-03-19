@@ -1,9 +1,13 @@
 # pylint: disable=redefined-outer-name, unused-import
+import time
+
+import pytest
 
 from iduedu import (
     config,
     get_drive_graph,
     get_single_public_transport_graph,
+    get_walk_graph,
     graph_to_gdf,
     join_pt_walk_graph,
 )
@@ -11,7 +15,22 @@ from iduedu import (
 config.change_logger_lvl("DEBUG")
 
 
+@pytest.fixture(scope="module")
+def walk_graph(bounds):
+    time.sleep(0.5)
+    print("\n Downloading walk graph for bounds \n")
+    return get_walk_graph(polygon=bounds)
+
+
+@pytest.fixture(scope="module")
+def subway_graph(bounds):
+    time.sleep(0.5)
+    print("\n Downloading subway graph for bounds \n")
+    return get_single_public_transport_graph(public_transport_type="subway", polygon=bounds)
+
+
 def test_get_drive_graph(bounds):
+    time.sleep(0.5)
     g_drive = get_drive_graph(polygon=bounds, additional_edgedata=["highway", "maxspeed", "reg", "ref", "name"])
     assert g_drive is not None
     assert len(g_drive.nodes) > 0
@@ -24,17 +43,18 @@ def test_get_walk_graph(walk_graph):
     assert len(walk_graph.edges) > 0
 
 
-def test_get_single_public_transport_graph(bounds):
-    g_subway = get_single_public_transport_graph(public_transport_type="subway", polygon=bounds)
-    assert g_subway is not None
-    assert len(g_subway.nodes) > 0
-    assert len(g_subway.edges) > 0
+def test_get_single_public_transport_graph(bounds, subway_graph):
+    time.sleep(0.5)
+    assert subway_graph is not None
+    assert len(subway_graph.nodes) > 0
+    assert len(subway_graph.edges) > 0
 
 
 def test_get_single_pt_graph_where_not_exist(bounds):
-    g_train = get_single_public_transport_graph(public_transport_type="train", polygon=bounds)
-    assert len(g_train.nodes) == 0
-    assert len(g_train.edges) == 0
+    time.sleep(0.5)
+    train_graph = get_single_public_transport_graph(public_transport_type="train", polygon=bounds)
+    assert len(train_graph.nodes) == 0
+    assert len(train_graph.edges) == 0
 
 
 def test_get_intermodal_graph(bounds, intermodal_graph):
@@ -43,9 +63,8 @@ def test_get_intermodal_graph(bounds, intermodal_graph):
     assert len(intermodal_graph.edges) > 0
 
 
-def test_join_pt_walk_graph(bounds, walk_graph):
-    subway = get_single_public_transport_graph(public_transport_type="subway", polygon=bounds)
-    walk_and_subway = join_pt_walk_graph(subway, walk_graph)
+def test_join_pt_walk_graph(bounds, walk_graph, subway_graph):
+    walk_and_subway = join_pt_walk_graph(subway_graph, walk_graph)
     assert walk_and_subway is not None
     assert len(walk_and_subway.nodes) > 0
     assert len(walk_and_subway.edges) > 0
