@@ -1,6 +1,6 @@
 import pytest
 
-from iduedu import get_boundary, get_walk_graph, get_intermodal_graph
+from iduedu import get_boundary, get_intermodal_graph, get_walk_graph
 
 
 @pytest.fixture(scope="session")
