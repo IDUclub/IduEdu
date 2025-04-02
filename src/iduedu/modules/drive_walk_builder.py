@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from iduedu import config
 from iduedu.enums.drive_enums import HighwayType
 from iduedu.modules.downloaders import get_boundary
-from iduedu.utils.utils import estimate_crs_for_bounds
+from iduedu.utils.utils import estimate_crs_for_bounds, remove_weakly_connected_nodes
 
 logger = config.logger
 
@@ -121,6 +121,7 @@ def get_drive_graph_by_poly(
 
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
+    graph = remove_weakly_connected_nodes(graph)
     mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
     graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs
@@ -243,6 +244,7 @@ def get_walk_graph(
     ]
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
+    graph = remove_weakly_connected_nodes(graph)
     mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
     graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs

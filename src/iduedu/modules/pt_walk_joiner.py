@@ -5,6 +5,7 @@ from shapely import LineString, Point
 from shapely.ops import substring
 
 from iduedu import config
+from iduedu.utils.utils import remove_weakly_connected_nodes
 
 logger = config.logger
 
@@ -174,17 +175,8 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                 )
     walk.remove_edges_from(edges_to_del)
     intermodal = nx.compose(nx.MultiDiGraph(transport), nx.MultiDiGraph(walk))
-    island_count = nx.number_weakly_connected_components(intermodal)
-    if island_count > 1:
-        logger.warning(
-            f"Weakly connected components detected. {island_count} graph islands were removed. "
-            f"These are probably pt routes that are not connected to walking routes. "
-            f"You may try adjusting the max_dist parameter, but this can lead to incorrect data."
-        )
+    intermodal = remove_weakly_connected_nodes(intermodal)
     intermodal.remove_nodes_from([node for node, data in intermodal.nodes(data=True) if "x" not in data.keys()])
-    components = sorted(nx.strongly_connected_components(intermodal), key=len)
-    components = list(components)[:-1]
-    intermodal.remove_nodes_from([node for comp in components for node in comp])
     mapping = {old_label: new_label for new_label, old_label in enumerate(intermodal.nodes())}
     intermodal = nx.relabel_nodes(intermodal, mapping)
     intermodal.graph["type"] = "intermodal"

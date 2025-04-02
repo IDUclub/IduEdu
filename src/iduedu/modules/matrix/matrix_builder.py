@@ -13,6 +13,7 @@ from scipy.spatial import KDTree
 
 from iduedu import config
 from iduedu.modules.matrix.numba_csr_matrix import UI32CSRMatrix
+from iduedu.utils.utils import remove_weakly_connected_nodes
 
 logger = config.logger
 
@@ -155,18 +156,19 @@ def get_adj_matrix_gdf_to_gdf(
     >>> adj_matrix = get_adj_matrix_gdf_to_gdf(origins_gdf, destinations_gdf, graph, weight='time_min', dtype=np.float32)
     """
     try:
-        graph_crs = CRS.from_epsg(nx_graph.graph["crs"])
-    except CRSError:
-        graph_crs = nx_graph.graph["crs"]
+        local_crs = nx_graph.graph["crs"]
+    except KeyError as exc:
+        raise ValueError("Graph does not have crs attribute") from exc
 
-    if gdf_from.crs != graph_crs:
-        gdf_from = gdf_from.to_crs(graph_crs)
+    try:
+        gdf_from = gdf_from.to_crs(nx_graph.graph["crs"])
+        gdf_to = gdf_to.to_crs(nx_graph.graph["crs"])
+    except CRSError as e:
+        raise CRSError(f"Graph crs ({local_crs}) has invalid format.") from e
 
-    if gdf_to.crs != graph_crs:
-        gdf_to = gdf_to.to_crs(graph_crs)
+    nx_graph = remove_weakly_connected_nodes(nx_graph)
 
     logger.debug("Preparing graph sparse matrix")
-
     transposed = False
 
     if gdf_from.equals(gdf_to):
@@ -233,6 +235,11 @@ def get_adj_matrix_gdf_to_gdf(
 
 
 def _get_sparse_row(nx_graph, weight):
+    if nx_graph.is_multigraph():
+        if nx_graph.is_directed():
+            nx_graph = nx.DiGraph(nx_graph)
+        else:
+            nx_graph = nx.Graph(nx_graph)
     sparse_row_scipy = nx.to_scipy_sparse_array(nx_graph, weight=weight)
     sparse_row_scipy.data = np.round(sparse_row_scipy.data * 100).astype(np.uint32)
     return sparse_row_scipy
