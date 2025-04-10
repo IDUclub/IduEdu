@@ -22,8 +22,8 @@ logger = config.logger
 
 def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
     platforms = graph_df[graph_df["type"] == "platform"]
-    platforms = platforms.groupby("point",as_index=False).agg({"node_id": list, "route": list})
-    platforms['type'] = 'platform'
+    platforms = platforms.groupby("point", as_index=False).agg({"node_id": list, "route": list})
+    platforms["type"] = "platform"
 
     stops = graph_df[(graph_df["type"] != "platform") & (graph_df["u"].isna())][["point", "node_id", "route", "type"]]
     stops["node_id"] = stops["node_id"].apply(lambda x: [x])
