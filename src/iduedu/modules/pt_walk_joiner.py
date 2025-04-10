@@ -57,7 +57,7 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     walk = nx.relabel_nodes(walk_g, mapping_g2)
 
     platforms = pd.DataFrame.from_dict(dict(transport.nodes(data=True)), orient="index")
-    platforms = platforms[platforms["desc"] == "platform"]
+    platforms = platforms[platforms["type"] == "platform"]
     platforms["geometry"] = platforms.apply(lambda x: Point(x.x, x.y), axis=1)
     platforms = gpd.GeoDataFrame(platforms, crs=transport.graph["crs"])
     walk_edges = gpd.GeoDataFrame(

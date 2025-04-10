@@ -178,11 +178,9 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
 
     def add_node(desc, x, y, transport=None):
         if not transport:
-            graph_data.append({"node_id": (loc_id, node_id), "point": (x, y), "desc": desc, "route": name})
+            graph_data.append({"node_id": (loc_id, node_id), "point": (x, y), "route": name, "type": desc})
         else:
-            graph_data.append(
-                {"node_id": (loc_id, node_id), "point": (x, y), "desc": desc, "route": name, "type": transport_type}
-            )
+            graph_data.append({"node_id": (loc_id, node_id), "point": (x, y), "route": name, "type": transport_type})
 
     def add_edge(u, v, geometry=None, transport=None):
         if not transport:

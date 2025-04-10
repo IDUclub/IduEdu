@@ -21,13 +21,14 @@ logger = config.logger
 
 
 def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
+    platforms = graph_df[graph_df["type"] == "platform"]
+    platforms = platforms.groupby("point",as_index=False).agg({"node_id": list, "route": list})
+    platforms['type'] = 'platform'
 
-    platforms = graph_df[graph_df["desc"] == "platform"]
-    platforms = platforms.groupby("point").agg({"node_id": list, "route": list, "desc": "first"}).reset_index()
-
-    stops = graph_df[graph_df["desc"] == "stop"][["point", "node_id", "route", "desc"]]
+    stops = graph_df[(graph_df["type"] != "platform") & (graph_df["u"].isna())][["point", "node_id", "route", "type"]]
     stops["node_id"] = stops["node_id"].apply(lambda x: [x])
     stops["route"] = stops["route"].apply(lambda x: [x])
+
     all_nodes = pd.concat([platforms, stops], ignore_index=True).reset_index(drop=True)
     mapping = {}
     for i, row in all_nodes.iterrows():
@@ -44,7 +45,7 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
     graph_df["v"] = graph_df["v"].apply(replace_with_mapping)
     graph_df["node_id"] = graph_df["node_id"].apply(replace_with_mapping)
 
-    edges = graph_df[graph_df["desc"].isna()].copy()
+    edges = graph_df[~graph_df["u"].isna()].copy()
 
     def calc_len_time(row):
         if row.type == "boarding":
@@ -59,8 +60,10 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
     )
     graph = nx.DiGraph()
     for i, node in all_nodes.iterrows():
-        route = ",".join(map(str, set(node["route"])))
-        graph.add_node(i, x=node["point"][0], y=node["point"][1], desc=node["desc"], route=route)
+        route = list(set(node["route"]))
+        if len(route) == 1:
+            route = route[0]
+        graph.add_node(i, x=node["point"][0], y=node["point"][1], type=node["type"], route=route)
     for i, edge in edges.iterrows():
         graph.add_edge(
             edge["u"],
