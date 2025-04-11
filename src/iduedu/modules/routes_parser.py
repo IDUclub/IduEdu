@@ -177,6 +177,8 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
     path = loc.path
 
     def add_node(desc, x, y, transport=None):
+        x = round(x, 5)
+        y = round(y, 5)
         if not transport:
             graph_data.append({"node_id": (loc_id, node_id), "point": (x, y), "route": name, "type": desc})
         else:
@@ -197,7 +199,7 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
                 {
                     "u": (loc_id, u),
                     "v": (loc_id, v),
-                    "geometry": geometry,
+                    "geometry": LineString([(round(x, 5), round(y, 5)) for x, y in geometry.coords]),
                     "route": name,
                     "type": transport_type,
                 }

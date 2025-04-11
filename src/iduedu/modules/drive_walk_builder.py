@@ -105,9 +105,10 @@ def get_drive_graph_by_poly(
     edges["reg"] = edges.apply(lambda row: determine_reg(row["ref"], row["highway"]), axis=1)
 
     nodes.to_crs(local_crs, inplace=True)
+    nodes.geometry = nodes.geometry.set_precision(0.00001)
     nodes[["x", "y"]] = nodes.apply(lambda row: (row.geometry.x, row.geometry.y), axis=1, result_type="expand")
     edges.to_crs(local_crs, inplace=True)
-
+    edges.geometry = edges.geometry.set_precision(0.00001)
     edges["maxspeed"] = edges["highway"].apply(get_max_speed)
 
     edges[["length_meter", "time_min"]] = edges.apply(
@@ -220,10 +221,12 @@ def get_walk_graph(
 
     nodes, edges = ox.graph_to_gdfs(graph)
     nodes.to_crs(local_crs, inplace=True)
+    nodes.geometry = nodes.geometry.set_precision(0.00001)
     nodes[["x", "y"]] = nodes.apply(lambda row: (row.geometry.x, row.geometry.y), axis=1, result_type="expand")
     nodes = nodes[["x", "y", "geometry"]]
     edges.reset_index(inplace=True)
     edges.to_crs(local_crs, inplace=True)
+    edges.geometry = edges.geometry.set_precision(0.00001)
     tqdm.pandas(desc="Calculating the weights of the walk graph", disable=not config.enable_tqdm_bar)
     edges[["length_meter", "time_min"]] = edges.progress_apply(
         lambda row: (round(row.geometry.length, 3), round(row.geometry.length / walk_speed, 3)),
