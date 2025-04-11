@@ -46,6 +46,7 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
     graph_df["node_id"] = graph_df["node_id"].apply(replace_with_mapping)
 
     edges = graph_df[~graph_df["u"].isna()][["route", "type", "u", "v", "geometry"]].copy()
+
     def calc_len_time(row):
         if row.type == "boarding":
             return 0, 0
