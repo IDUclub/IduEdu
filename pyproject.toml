@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iduedu"
-version = "0.5.1"
+version = "0.5.2"
 license = "BSD-3-Clause"
 description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap."
 authors = ["DDonnyy <63115678+DDonnyy@users.noreply.github.com>"]
@@ -20,7 +20,9 @@ loguru = "^0.7.3"
 scipy = "^1.15.2"
 numba = "^0.61.0"
 
+
 [tool.poetry.group.dev.dependencies]
+pyarrow = "^19.0.1"
 black = "^24.10.0"
 pylint = "^3.3.5"
 isort = "^5.13.2"
