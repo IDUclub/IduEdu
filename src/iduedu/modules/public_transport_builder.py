@@ -26,7 +26,7 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
     platforms["type"] = "platform"
 
     stops = graph_df[(graph_df["type"] != "platform") & (graph_df["u"].isna())][["point", "node_id", "route", "type"]]
-    stops["node_id"] = stops["node_id"].apply(lambda x: [x])
+    stops = stops.groupby(["point", "route", "type"], as_index=False).agg({"node_id": list})
     stops["route"] = stops["route"].apply(lambda x: [x])
 
     all_nodes = pd.concat([platforms, stops], ignore_index=True).reset_index(drop=True)
@@ -45,7 +45,7 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
     graph_df["v"] = graph_df["v"].apply(replace_with_mapping)
     graph_df["node_id"] = graph_df["node_id"].apply(replace_with_mapping)
 
-    edges = graph_df[~graph_df["u"].isna()].copy()
+    edges = graph_df[~graph_df["u"].isna()][["route", "type", "u", "v", "geometry", "length_meter", "time_min"]].copy()
 
     def calc_len_time(row):
         if row.type == "boarding":
