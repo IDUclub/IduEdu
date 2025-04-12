@@ -156,9 +156,8 @@ def get_single_public_transport_graph(
         # Если много маршрутов - обрабатываем в параллели
         n_cpus = multiprocessing.cpu_count()
         rows = [(row, local_crs) for _, row in overpass_data.iterrows()]
-        chunksize = max(1, len(rows) // (n_cpus + 4))
         edgenode_for_routes = process_map(
-            _multi_process_row, rows, desc="Parsing routes", chunksize=chunksize, disable=not config.enable_tqdm_bar
+            _multi_process_row, rows, desc="Parsing routes", chunksize=1, disable=not config.enable_tqdm_bar
         )
     else:
         tqdm.pandas(desc="Parsing routes data", disable=not config.enable_tqdm_bar)
@@ -269,13 +268,11 @@ def get_all_public_transport_graph(
     if overpass_data.shape[0] > 100:
         # Если много маршрутов - обрабатываем в параллели
         rows = [(row, local_crs) for _, row in overpass_data.iterrows()]
-        n_cpus = multiprocessing.cpu_count()
-        chunksize = max(1, len(rows) // (n_cpus + 4))
         edgenode_for_routes = process_map(
             _multi_process_row,
             rows,
             desc="Parsing public transport routes",
-            chunksize=chunksize,
+            chunksize=1,
             disable=not config.enable_tqdm_bar,
         )
     else:
