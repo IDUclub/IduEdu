@@ -70,7 +70,9 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     logger.debug("joining nearest")
     projection_join = platforms.reset_index().sjoin_nearest(walk_edges, max_distance=max_dist, distance_col="dist")
     projection_join["project_dist"] = projection_join["edge_geometry"].project(projection_join["geometry"])
-    projection_join["project_point"] = projection_join["edge_geometry"].interpolate(projection_join["project_dist"])
+    projection_join["project_point"] = gpd.GeoSeries(
+        projection_join["edge_geometry"].interpolate(projection_join["project_dist"]), crs=walk.graph["crs"]
+    ).set_precision(1)
     projection_join["route"] = projection_join["route"].apply(lambda x: x if isinstance(x, list) else [x])
 
     logger.debug("searching for duplicated project points")
@@ -147,7 +149,7 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                 edges_to_del.append((u, v, k))
                 if u != v:
                     edges_to_del.append((v, u, k))
-                walk.add_node(platform_id, x=projected_point.x, y=projected_point.y)
+                walk.add_node(platform_id, x=round(projected_point.x, 5), y=round(projected_point.y, 5))
                 walk.add_edge(
                     u,
                     platform_id,
@@ -207,7 +209,7 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                     line = substring(edge, last_dist, dist)
                     if isinstance(line, Point):
                         raise ValueError(f"wtf {line} cannot be linestring")
-                    walk.add_node(cur_index, x=projected_point.x, y=projected_point.y)
+                    walk.add_node(cur_index, x=round(projected_point.x, 5), y=round(projected_point.y, 5))
                     walk.add_edge(
                         last_u,
                         cur_index,

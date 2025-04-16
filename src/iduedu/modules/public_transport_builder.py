@@ -21,15 +21,17 @@ logger = config.logger
 
 
 def _graph_data_to_nx(graph_df, keep_geometry: bool = True) -> nx.DiGraph:
-    platforms = graph_df[graph_df["type"] == "platform"]
-    platforms = platforms.groupby("point", as_index=False).agg({"node_id": list, "route": list})
+    platforms = graph_df[graph_df["type"] == "platform"].copy()
+    platforms["point_group"] = platforms["point"].apply(lambda x: (round(x[0]), round(x[1])))
+    platforms = platforms.groupby("point_group", as_index=False).agg({"point": "first", "node_id": list, "route": list})
     platforms["type"] = "platform"
 
     stops = graph_df[(graph_df["type"] != "platform") & (graph_df["u"].isna())][["point", "node_id", "route", "type"]]
-    stops = stops.groupby(["point", "route", "type"], as_index=False).agg({"node_id": list})
+    stops["point_group"] = stops["point"].apply(lambda x: (round(x[0]), round(x[1])))
+    stops = stops.groupby(["point_group", "route", "type"], as_index=False).agg({"point": "first", "node_id": list})
     stops["route"] = stops["route"].apply(lambda x: [x])
 
-    all_nodes = pd.concat([platforms, stops], ignore_index=True).reset_index(drop=True)
+    all_nodes = pd.concat([platforms, stops], ignore_index=True).drop(columns="point_group").reset_index(drop=True)
     mapping = {}
     for i, row in all_nodes.iterrows():
         index = row.name

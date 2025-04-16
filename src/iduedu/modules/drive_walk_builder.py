@@ -78,7 +78,10 @@ def get_max_speed(highway_types) -> float:
 
 
 def get_drive_graph_by_poly(
-    polygon: Polygon | MultiPolygon, additional_edgedata=None, road_filter: str = None
+    polygon: Polygon | MultiPolygon,
+    additional_edgedata=None,
+    road_filter: str = None,
+    **osmnx_kwargs,
 ) -> nx.MultiDiGraph:
     if additional_edgedata is None:
         additional_edgedata = []
@@ -90,10 +93,7 @@ def get_drive_graph_by_poly(
             polygon = polygon.convex_hull
     logger.info("Downloading drive graph from OSM, it may take a while for large territory ...")
     graph = ox.graph_from_polygon(
-        polygon,
-        network_type="drive",
-        custom_filter=road_filter,
-        truncate_by_edge=False,
+        polygon, network_type="drive", custom_filter=road_filter, truncate_by_edge=False, **osmnx_kwargs
     )
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
@@ -136,6 +136,7 @@ def get_drive_graph(
     territory_name: str | None = None,
     polygon: Polygon | MultiPolygon | None = None,
     additional_edgedata=None,
+    **osmnx_kwargs,
 ):
     """
     Generate a road network graph for driving within the specified territory or polygon.
@@ -152,7 +153,9 @@ def get_drive_graph(
     additional_edgedata : list[str], optional
         List of additional edge data attributes to include in the graph. Possible values include
         ['highway', 'maxspeed', 'reg', 'ref', 'name'] or any other, that exist in OSM. Defaults to None.
-
+    **osmnx_kwargs
+        Additional keyword arguments to pass to osmnx.graph.graph_from_polygon().
+        See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
     Returns
     -------
     networkx.Graph
@@ -162,7 +165,7 @@ def get_drive_graph(
     --------
     >>> drive_graph = get_drive_graph(osm_id=1114252)
     >>> drive_graph = get_drive_graph(territory_name="Санкт-Петербург", additional_edgedata=['highway', 'maxspeed'])
-    >>> drive_graph = get_drive_graph(polygon=some_polygon, additional_edgedata=['name', 'ref'])
+    >>> drive_graph = get_drive_graph(polygon=some_polygon, additional_edgedata=['name', 'ref'],simplify=False)
 
     Notes
     -----
@@ -172,7 +175,7 @@ def get_drive_graph(
 
     polygon = get_boundary(osm_id, territory_name, polygon)
 
-    return get_drive_graph_by_poly(polygon, additional_edgedata=additional_edgedata)
+    return get_drive_graph_by_poly(polygon, additional_edgedata=additional_edgedata, **osmnx_kwargs)
 
 
 def get_walk_graph(
@@ -180,6 +183,7 @@ def get_walk_graph(
     territory_name: str | None = None,
     polygon: Polygon | MultiPolygon | None = None,
     walk_speed: float = 5 * 1000 / 60,
+    **osmnx_kwargs,
 ):
     """
     Generate a pedestrian road network graph within the specified territory or polygon.
@@ -196,6 +200,9 @@ def get_walk_graph(
         A custom polygon or MultiPolygon to define the area for the pedestrian network. Must be in CRS 4326.
     walk_speed : float, optional
         Walking speed in meters per minute. Defaults to 5 km/h (approximately 83.33 meters per minute).
+    **osmnx_kwargs
+        Additional keyword arguments to pass to osmnx.graph.graph_from_polygon().
+        See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
 
     Returns
     -------
@@ -206,7 +213,7 @@ def get_walk_graph(
     --------
     >>> walk_graph = get_walk_graph(osm_id=1114252)
     >>> walk_graph = get_walk_graph(territory_name="Санкт-Петербург", walk_speed=5)
-    >>> walk_graph = get_walk_graph(polygon=some_polygon)
+    >>> walk_graph = get_walk_graph(polygon=some_polygon,simplify=False)
 
     Notes
     -----
@@ -216,7 +223,7 @@ def get_walk_graph(
     polygon = get_boundary(osm_id, territory_name, polygon)
 
     logger.info("Downloading walk graph from OSM, it may take a while for large territory ...")
-    graph = ox.graph_from_polygon(polygon, network_type="walk", truncate_by_edge=False, simplify=True)
+    graph = ox.graph_from_polygon(polygon, network_type="walk", truncate_by_edge=False, simplify=True, **osmnx_kwargs)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     nodes, edges = ox.graph_to_gdfs(graph)

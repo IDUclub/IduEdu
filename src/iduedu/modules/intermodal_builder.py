@@ -22,6 +22,7 @@ def get_intermodal_graph(
     keep_routes_geom: bool = True,
     max_dist: float = 30,
     transport_types: list[PublicTrasport] = None,
+    **osmnx_kwargs,
 ) -> nx.Graph:
     """
     Generate an intermodal transport graph that combines public transport and pedestrian networks,
@@ -44,6 +45,9 @@ def get_intermodal_graph(
     transport_types: list[PublicTransport], optional
         By default `[PublicTrasport.TRAM, PublicTrasport.BUS, PublicTrasport.TROLLEYBUS, PublicTrasport.SUBWAY]`,
         can be any combination of PublicTransport Enums.
+    **osmnx_kwargs
+        Additional keyword arguments to pass to osmnx.graph.graph_from_polygon() while getting walk graph.
+        See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
     Returns
     -------
     nx.Graph
@@ -74,7 +78,7 @@ def get_intermodal_graph(
 
     boundary = get_boundary(osm_id, territory_name, polygon)
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        walk_graph_future = executor.submit(get_walk_graph, polygon=boundary)
+        walk_graph_future = executor.submit(get_walk_graph, polygon=boundary, **osmnx_kwargs)
         logger.debug("Started downloading and parsing walk graph...")
 
         # Sleep to not get 429 to many requests
@@ -85,6 +89,7 @@ def get_intermodal_graph(
             clip_by_bounds=clip_by_bounds,
             keep_geometry=keep_routes_geom,
             transport_types=transport_types,
+            **{},
         )
         logger.debug("Started downloading and parsing public trasport graph...")
 
