@@ -10,7 +10,9 @@ from iduedu.utils.utils import remove_weakly_connected_nodes
 logger = config.logger
 
 
-def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=20) -> nx.Graph:
+def join_pt_walk_graph(
+    public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=20, clean_weakly_connected: bool = True
+) -> nx.Graph:
     """
     Combine a public transport network graph with a pedestrian network graph, creating an intermodal transport graph.
     Platforms in the public transport network are connected to nearby pedestrian network edges based on the specified
@@ -121,7 +123,7 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     except KeyError:
         logger.warning(
             "There is no walk_speed in graph, set to the default speed - 83.33 m/min"
-        )  #  посчитать примерную скорость по length timemin для любой эджи
+        )  # посчитать примерную скорость по length timemin для любой эджи
         speed = 83.33
 
     edges_to_del = []
@@ -254,7 +256,8 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     walk.remove_edges_from(edges_to_del)
     logger.debug("Composing graphs")
     intermodal = nx.compose(nx.MultiDiGraph(transport), nx.MultiDiGraph(walk))
-    intermodal = remove_weakly_connected_nodes(intermodal)
+    if clean_weakly_connected:
+        intermodal = remove_weakly_connected_nodes(intermodal)
     intermodal.remove_nodes_from([node for node, data in intermodal.nodes(data=True) if "x" not in data.keys()])
     mapping = {old_label: new_label for new_label, old_label in enumerate(intermodal.nodes())}
     logger.debug("Relabeling")

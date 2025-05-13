@@ -22,6 +22,7 @@ def get_intermodal_graph(
     keep_routes_geom: bool = True,
     max_dist: float = 30,
     transport_types: list[PublicTrasport] = None,
+    clean_weakly_connected=True,
     **osmnx_kwargs,
 ) -> nx.Graph:
     """
@@ -45,6 +46,8 @@ def get_intermodal_graph(
     transport_types: list[PublicTransport], optional
         By default `[PublicTrasport.TRAM, PublicTrasport.BUS, PublicTrasport.TROLLEYBUS, PublicTrasport.SUBWAY]`,
         can be any combination of PublicTransport Enums.
+    clean_weakly_connected: bool, optional
+
     **osmnx_kwargs
         Additional keyword arguments to pass to osmnx.graph.graph_from_polygon() while getting walk graph.
         See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
@@ -103,5 +106,5 @@ def get_intermodal_graph(
         logger.warning("Public trasport graph is empty! Returning only walk graph.")
         return walk_g
 
-    intermodal = join_pt_walk_graph(pt_g, walk_g, max_dist=max_dist)
+    intermodal = join_pt_walk_graph(pt_g, walk_g, max_dist=max_dist, clean_weakly_connected=clean_weakly_connected)
     return intermodal
