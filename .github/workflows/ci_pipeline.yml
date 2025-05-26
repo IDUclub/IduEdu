@@ -105,9 +105,6 @@ jobs:
       - name: Install dependencies
         run: poetry install
 
-      - name: Install pyarrow for reading example data
-        run: poetry add pyarrow
-
       - name: Run tests with coverage
         run: |
           poetry run pytest src/tests --cov=iduedu --cov-report=xml
