@@ -36,17 +36,17 @@ class HighwayType(Enum):
         reg_status = {
             HighwayType.MOTORWAY: RegistrationStatus.FEDERAL,
             HighwayType.TRUNK: RegistrationStatus.FEDERAL,
-            HighwayType.PRIMARY: RegistrationStatus.REGIONAL,
-            HighwayType.SECONDARY: RegistrationStatus.REGIONAL,
-            HighwayType.TERTIARY: RegistrationStatus.LOCAL,
-            HighwayType.UNCLASSIFIED: RegistrationStatus.LOCAL,
-            HighwayType.RESIDENTIAL: RegistrationStatus.LOCAL,
             HighwayType.MOTORWAY_LINK: RegistrationStatus.FEDERAL,
             HighwayType.TRUNK_LINK: RegistrationStatus.FEDERAL,
+            HighwayType.PRIMARY: RegistrationStatus.REGIONAL,
+            HighwayType.SECONDARY: RegistrationStatus.REGIONAL,
             HighwayType.PRIMARY_LINK: RegistrationStatus.REGIONAL,
             HighwayType.SECONDARY_LINK: RegistrationStatus.REGIONAL,
             HighwayType.TERTIARY_LINK: RegistrationStatus.LOCAL,
             HighwayType.LIVING_STREET: RegistrationStatus.LOCAL,
+            HighwayType.TERTIARY: RegistrationStatus.LOCAL,
+            HighwayType.UNCLASSIFIED: RegistrationStatus.LOCAL,
+            HighwayType.RESIDENTIAL: RegistrationStatus.LOCAL,
         }
         return reg_status[self].value
 
