@@ -135,29 +135,42 @@ def parse_overpass_route_response(loc: dict, crs: CRS) -> pd.Series:
             if not connected_ways[cur_way]:
                 connected_ways[cur_way] += coords
                 continue
-
             if coords[0] == coords[-1]:
                 # Круговое движение зацикленное зачастую в осм, можно отработать, но сходу не придумал
                 continue
             if connected_ways[cur_way][-1] == coords[0]:
                 connected_ways[cur_way] += coords[1:]
+
             elif connected_ways[cur_way][-1] == coords[-1]:
                 connected_ways[cur_way] += coords[::-1][1:]
+
             elif connected_ways[cur_way][0] == coords[0]:
                 connected_ways[cur_way] = coords[1:][::-1] + connected_ways[cur_way]
+
             elif connected_ways[cur_way][0] == coords[-1]:
                 connected_ways[cur_way] = coords + connected_ways[cur_way][1:]
+
             # Случай если нету соединяющей точки между линиями маршрута
             else:
                 connected_ways += [coords]
                 cur_way += 1
         # Соединяем линии по ближайшим точкам этих линий
+        temp = connected_ways.copy()
         if len(connected_ways) > 1:
+            # удаляем все круговые движения
             to_del = [i for i, data in enumerate(connected_ways) if data[0] == data[-1]]
+            # Если кол-во удалений == кол-во путей, надо оставить хотя бы самый большой
+            if len(to_del) == len(connected_ways):
+                # Найдём индекс самого длинного пути среди замкнутых
+                longest_index = max(to_del, key=lambda i: len(connected_ways[i]))
+                # Удалим все, кроме самого длинного
+                to_del.remove(longest_index)
             connected_ways = [i for j, i in enumerate(connected_ways) if j not in to_del]
         if len(connected_ways) > 1:
             connected_ways = _link_unconnected(connected_ways)
         else:
+            if connected_ways == []:
+                raise Exception("No connected ways")
             connected_ways = connected_ways[0]
 
     else:

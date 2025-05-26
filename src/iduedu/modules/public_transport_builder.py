@@ -279,10 +279,17 @@ def get_all_public_transport_graph(
         )
     else:
         tqdm.pandas(desc="Parsing public transport routes", disable=not config.enable_tqdm_bar)
-        edgenode_for_routes = overpass_data.progress_apply(
-            lambda x: parse_overpass_to_edgenode(x, local_crs), axis=1
-        ).tolist()
+        edgenode_for_routes = [
+            data
+            for data in overpass_data.progress_apply(
+                lambda x: parse_overpass_to_edgenode(x, local_crs), axis=1
+            ).tolist()
+            if data is not None
+        ]
 
+    if len(edgenode_for_routes) == 0:
+        logger.warning("No routes were parsed for public transport.")
+        return nx.DiGraph()
     graph_df = pd.concat(edgenode_for_routes, ignore_index=True)
     to_return = _graph_data_to_nx(graph_df, keep_geometry=keep_geometry)
     to_return.graph["crs"] = local_crs

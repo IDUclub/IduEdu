@@ -10,77 +10,47 @@ from tqdm.auto import tqdm
 from iduedu import config
 from iduedu.enums.drive_enums import HighwayType
 from iduedu.modules.downloaders import get_boundary
-from iduedu.utils.utils import estimate_crs_for_bounds, remove_weakly_connected_nodes
+from iduedu.utils.utils import estimate_crs_for_bounds, keep_largest_strongly_connected_component
 
 logger = config.logger
 
 BASE_FILTER = "['highway'~'" + "|".join([h.value for h in HighwayType]) + "']"
 
 
-def highway_type_to_reg(highway_type) -> int:
+def get_highway_properties(highway) -> tuple[int, float]:
     """
-    Determine the reg_status based on highway type.
+    Determine the reg_status and speed based on highway type.
+    :return (reg_status, max_speed).
     """
-    try:
-        if isinstance(highway_type, list):
-            reg_values = [HighwayType[ht.upper()].reg_status for ht in highway_type]
-            return min(reg_values)
-        return HighwayType[highway_type.upper()].reg_status
-    except KeyError:
-        return 3
+    default_speed = 40 * 1000 / 60  # default: LOCAL, 40 км/ч
 
+    if not highway:
+        return 3, default_speed
 
-def determine_reg(name_roads, highway_type=None) -> int:
-    """
-    Determine the reg_status based on road_name.
-    """
+    highway_list = highway if isinstance(highway, list) else [highway]
 
-    if isinstance(name_roads, list):
-        for item in name_roads:
-            if re.match(r"^[МАР]", str(item)):
-                return 1
-            if re.match(r"^\d.*[A-Za-zА-Яа-я]", str(item)):
-                return 2
-        return 3
-    if pd.isna(name_roads):
-        # Выставление значения по типу дороги, если значение NaN
-        if highway_type:
-            return highway_type_to_reg(highway_type)
-        return 3
-    if re.match(r"^[МАР]", str(name_roads)):
-        return 1
-    if re.match(r"^\d.*[A-Za-zА-Яа-я]", str(name_roads)):
-        return 2
-    return 3
+    reg_values = []
+    speed_values = []
 
+    for ht in highway_list:
+        try:
+            enum_value = HighwayType[ht.upper()]
+            reg_values.append(enum_value.reg_status)
+            speed_values.append(enum_value.max_speed)
+        except KeyError:
+            continue
 
-def get_max_speed(highway_types) -> float:
-    """
-    Determine the speed based on road_name.
-    """
-    # Проверяем, является ли highway_types списком.
-    try:
-        if isinstance(highway_types, list):
-            max_speeds = []
-            for ht in highway_types:
-                try:
-                    highway_enum = HighwayType[ht.upper()]
-                    max_speeds.append(highway_enum.max_speed)
-                except KeyError:
-                    logger.debug(f"{ht} not found in HighwayType enum, skipping.")
-            if max_speeds:
-                return max(max_speeds)
-            logger.debug("No valid highway types provided, returning 40 km/h.")
-            return 40 * 1000 / 60
-        return HighwayType[highway_types.upper()].max_speed
-    except KeyError:
-        return 40 * 1000 / 60
+    if not reg_values or not speed_values:
+        return 3, default_speed
+
+    return min(reg_values), max(speed_values)
 
 
 def get_drive_graph_by_poly(
     polygon: Polygon | MultiPolygon,
     additional_edgedata=None,
     road_filter: str = None,
+    retain_all: bool = False,
     **osmnx_kwargs,
 ) -> nx.MultiDiGraph:
     if additional_edgedata is None:
@@ -92,24 +62,21 @@ def get_drive_graph_by_poly(
         if isinstance(polygon, MultiPolygon):
             polygon = polygon.convex_hull
     logger.info("Downloading drive graph from OSM, it may take a while for large territory ...")
-    graph = ox.graph_from_polygon(
-        polygon, network_type="drive", custom_filter=road_filter, truncate_by_edge=False, **osmnx_kwargs
-    )
+    osmnx_kwargs["retain_all"] = retain_all
+    graph = ox.graph_from_polygon(polygon, network_type="drive", custom_filter=road_filter, **osmnx_kwargs)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     nodes, edges = ox.graph_to_gdfs(graph)
     edges: gpd.GeoDataFrame
     edges.reset_index(inplace=True)
-    if "ref" not in edges.columns:
-        edges["ref"] = pd.NA
-    edges["reg"] = edges.apply(lambda row: determine_reg(row["ref"], row["highway"]), axis=1)
+
+    edges[["reg", "maxspeed"]] = edges["highway"].apply(lambda h: pd.Series(get_highway_properties(h)))
 
     nodes.to_crs(local_crs, inplace=True)
     nodes.geometry = nodes.geometry.set_precision(0.00001)
     nodes[["x", "y"]] = nodes.apply(lambda row: (row.geometry.x, row.geometry.y), axis=1, result_type="expand")
     edges.to_crs(local_crs, inplace=True)
     edges.geometry = edges.geometry.set_precision(0.00001)
-    edges["maxspeed"] = edges["highway"].apply(get_max_speed)
 
     edges[["length_meter", "time_min"]] = edges.apply(
         lambda row: (round(row.geometry.length, 3), round(row.geometry.length / row.maxspeed, 3)),
@@ -122,7 +89,8 @@ def get_drive_graph_by_poly(
 
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
-    graph = remove_weakly_connected_nodes(graph)
+    if not retain_all:
+        graph = keep_largest_strongly_connected_component(graph)
     mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
     graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs
@@ -136,6 +104,7 @@ def get_drive_graph(
     territory_name: str | None = None,
     polygon: Polygon | MultiPolygon | None = None,
     additional_edgedata=None,
+    retain_all: bool = False,
     **osmnx_kwargs,
 ):
     """
@@ -153,6 +122,9 @@ def get_drive_graph(
     additional_edgedata : list[str], optional
         List of additional edge data attributes to include in the graph. Possible values include
         ['highway', 'maxspeed', 'reg', 'ref', 'name'] or any other, that exist in OSM. Defaults to None.
+    retain_all: bool, optional
+        If True, return the entire graph even if it is not connected.
+        If False, retain only the largest weakly connected component.
     **osmnx_kwargs
         Additional keyword arguments to pass to osmnx.graph.graph_from_polygon().
         See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
@@ -175,7 +147,9 @@ def get_drive_graph(
 
     polygon = get_boundary(osm_id, territory_name, polygon)
 
-    return get_drive_graph_by_poly(polygon, additional_edgedata=additional_edgedata, **osmnx_kwargs)
+    return get_drive_graph_by_poly(
+        polygon, additional_edgedata=additional_edgedata, retain_all=retain_all, **osmnx_kwargs
+    )
 
 
 def get_walk_graph(
@@ -183,6 +157,7 @@ def get_walk_graph(
     territory_name: str | None = None,
     polygon: Polygon | MultiPolygon | None = None,
     walk_speed: float = 5 * 1000 / 60,
+    retain_all: bool = False,
     **osmnx_kwargs,
 ):
     """
@@ -200,6 +175,9 @@ def get_walk_graph(
         A custom polygon or MultiPolygon to define the area for the pedestrian network. Must be in CRS 4326.
     walk_speed : float, optional
         Walking speed in meters per minute. Defaults to 5 km/h (approximately 83.33 meters per minute).
+    retain_all: bool, optional
+        If True, return the entire graph even if it is not connected.
+        If False, retain only the largest weakly connected component.
     **osmnx_kwargs
         Additional keyword arguments to pass to osmnx.graph.graph_from_polygon().
         See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
@@ -223,7 +201,11 @@ def get_walk_graph(
     polygon = get_boundary(osm_id, territory_name, polygon)
 
     logger.info("Downloading walk graph from OSM, it may take a while for large territory ...")
-    graph = ox.graph_from_polygon(polygon, network_type="walk", truncate_by_edge=False, simplify=True, **osmnx_kwargs)
+    osmnx_kwargs["retain_all"] = retain_all
+    if "simplify" not in osmnx_kwargs:
+        osmnx_kwargs["simplify"] = True
+    print(osmnx_kwargs)
+    graph = ox.graph_from_polygon(polygon, network_type="walk", **osmnx_kwargs)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     nodes, edges = ox.graph_to_gdfs(graph)
@@ -254,7 +236,8 @@ def get_walk_graph(
     ]
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
-    graph = remove_weakly_connected_nodes(graph)
+    if not retain_all:
+        graph = keep_largest_strongly_connected_component(graph)
     mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
     graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs

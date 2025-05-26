@@ -5,12 +5,17 @@ from shapely import LineString, Point
 from shapely.ops import substring
 
 from iduedu import config
-from iduedu.utils.utils import remove_weakly_connected_nodes
+from iduedu.utils.utils import keep_largest_strongly_connected_component
 
 logger = config.logger
 
 
-def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=20) -> nx.Graph:
+def join_pt_walk_graph(
+    public_transport_g: nx.Graph,
+    walk_g: nx.Graph,
+    max_dist=20,
+    retain_all: bool = False,
+) -> nx.Graph:
     """
     Combine a public transport network graph with a pedestrian network graph, creating an intermodal transport graph.
     Platforms in the public transport network are connected to nearby pedestrian network edges based on the specified
@@ -24,6 +29,9 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
         The pedestrian network graph. It must have the same CRS as the public transport graph.
     max_dist : float, optional
         Maximum distance (in meters) to search for connections between platforms and pedestrian edges. Defaults to 20.
+    retain_all: bool, optional
+        If True, return the entire graph even if it is not connected.
+        If False, retain only the largest weakly connected component.
 
     Returns
     -------
@@ -78,16 +86,18 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     logger.debug("searching for duplicated project points")
     projection_join = projection_join.groupby(by="project_point", as_index=False).agg(
         {
-            "index": tuple,
+            "index": lambda x: list(dict.fromkeys(item for item in x)),
             "index_right": "first",
             "geometry": "first",
             "u": "first",
             "v": "first",
             "k": "first",
             "project_dist": "first",
-            "route": lambda x: [item for sublist in x for item in sublist],
+            "route": lambda x: list(dict.fromkeys(item for sublist in x for item in sublist)),
         }
     )
+
+    #
     for ind, row in projection_join.iterrows():
         if len(row["index"]) == 1:
             projection_join.loc[ind, "index"] = row["index"][0]
@@ -121,12 +131,14 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     except KeyError:
         logger.warning(
             "There is no walk_speed in graph, set to the default speed - 83.33 m/min"
-        )  #  посчитать примерную скорость по length timemin для любой эджи
+        )  # посчитать примерную скорость по length timemin для любой эджи
         speed = 83.33
 
     edges_to_del = []
 
-    for _, row in points_grouped_by_edge.iterrows():
+    # for name, row in points_grouped_by_edge.iterrows():
+    for i in range(len(points_grouped_by_edge)):
+        row = points_grouped_by_edge.iloc[i]
         u, v, k = row[["u", "v", "k"]]
         edge: LineString = walk.get_edge_data(u, v, k)["geometry"]
         # Если платформа одна единственная на эдж
@@ -138,10 +150,14 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                 # Если платформа проецируется на начало эджа
                 mapping = {u: platform_id}
                 nx.relabel_nodes(walk, mapping, copy=False)
+                points_grouped_by_edge.loc[points_grouped_by_edge["u"] == u, "u"] = platform_id
+                points_grouped_by_edge.loc[points_grouped_by_edge["v"] == u, "v"] = platform_id
             elif dist == edge.length:
                 # Если на конец
                 mapping = {v: platform_id}
                 nx.relabel_nodes(walk, mapping, copy=False)
+                points_grouped_by_edge.loc[points_grouped_by_edge["u"] == v, "u"] = platform_id
+                points_grouped_by_edge.loc[points_grouped_by_edge["v"] == v, "v"] = platform_id
             else:
                 line1 = substring(edge, 0, dist)
                 line2 = substring(edge, dist, edge.length)
@@ -199,11 +215,15 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
                     mapping = {u: cur_index}
                     u_to_del = cur_index
                     nx.relabel_nodes(walk, mapping, copy=False)
+                    points_grouped_by_edge.loc[points_grouped_by_edge["u"] == u, "u"] = cur_index
+                    points_grouped_by_edge.loc[points_grouped_by_edge["v"] == u, "v"] = cur_index
                 elif dist == edge.length:
                     # Если на конец
                     mapping = {v: cur_index}
                     v_to_del = cur_index
                     nx.relabel_nodes(walk, mapping, copy=False)
+                    points_grouped_by_edge.loc[points_grouped_by_edge["u"] == v, "u"] = cur_index
+                    points_grouped_by_edge.loc[points_grouped_by_edge["v"] == v, "v"] = cur_index
                 else:
                     # По очереди добавляем ноды/линии
                     line = substring(edge, last_dist, dist)
@@ -254,7 +274,8 @@ def join_pt_walk_graph(public_transport_g: nx.Graph, walk_g: nx.Graph, max_dist=
     walk.remove_edges_from(edges_to_del)
     logger.debug("Composing graphs")
     intermodal = nx.compose(nx.MultiDiGraph(transport), nx.MultiDiGraph(walk))
-    intermodal = remove_weakly_connected_nodes(intermodal)
+    if not retain_all:
+        intermodal = keep_largest_strongly_connected_component(intermodal)
     intermodal.remove_nodes_from([node for node, data in intermodal.nodes(data=True) if "x" not in data.keys()])
     mapping = {old_label: new_label for new_label, old_label in enumerate(intermodal.nodes())}
     logger.debug("Relabeling")

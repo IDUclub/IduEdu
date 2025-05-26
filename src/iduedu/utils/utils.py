@@ -19,15 +19,15 @@ def clip_nx_graph(graph: nx.Graph, polygon: Polygon) -> nx.Graph:
     return clipped
 
 
-def remove_weakly_connected_nodes(graph: nx.DiGraph) -> nx.DiGraph:
+def keep_largest_strongly_connected_component(graph: nx.DiGraph) -> nx.DiGraph:
     graph = graph.copy()
 
     weakly_connected_components = list(nx.weakly_connected_components(graph))
     if len(weakly_connected_components) > 1:
         logger.warning(
-            f"Found {len(weakly_connected_components)} disconnected subgraphs in the network. "
-            f"These are isolated groups of nodes with no connections between them. "
-            f"Size of components: {[len(c) for c in weakly_connected_components]}"
+            f"Graph contains {len(weakly_connected_components)} weakly connected components. "
+            f"This means the graph has disconnected groups if edge directions are ignored. "
+            f"Component sizes:: {[len(c) for c in weakly_connected_components]}"
         )
 
     all_scc = sorted(nx.strongly_connected_components(graph), key=len)
@@ -35,9 +35,9 @@ def remove_weakly_connected_nodes(graph: nx.DiGraph) -> nx.DiGraph:
 
     if nodes_to_del:
         logger.warning(
-            f"Removing {len(nodes_to_del)} nodes that form {len(all_scc) - 1} trap components. "
-            f"These are groups where you can enter but can't exit (or vice versa). "
-            f"Keeping the largest strongly connected component ({len(all_scc[-1])} nodes)."
+            f"Removing {len(nodes_to_del)} nodes from {len(all_scc) - 1} smaller strongly connected components. "
+            f"These are subgraphs where nodes are internally reachable but isolated from the rest. "
+            f"Retaining only the largest strongly connected component ({len(all_scc[-1])} nodes)."
         )
         graph.remove_nodes_from(nodes_to_del)
 
