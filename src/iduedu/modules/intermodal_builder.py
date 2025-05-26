@@ -22,7 +22,7 @@ def get_intermodal_graph(
     keep_routes_geom: bool = True,
     max_dist: float = 30,
     transport_types: list[PublicTrasport] = None,
-    clean_weakly_connected=True,
+    retain_all: bool =False,
     **osmnx_kwargs,
 ) -> nx.Graph:
     """
@@ -46,8 +46,9 @@ def get_intermodal_graph(
     transport_types: list[PublicTransport], optional
         By default `[PublicTrasport.TRAM, PublicTrasport.BUS, PublicTrasport.TROLLEYBUS, PublicTrasport.SUBWAY]`,
         can be any combination of PublicTransport Enums.
-    clean_weakly_connected: bool, optional
-
+    retain_all: bool, optional
+        If True, return the entire graph even if it is not connected.
+        If False, retain only the largest weakly connected component.
     **osmnx_kwargs
         Additional keyword arguments to pass to osmnx.graph.graph_from_polygon() while getting walk graph.
         See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
@@ -78,10 +79,9 @@ def get_intermodal_graph(
     If the public transport graph is empty, only the pedestrian graph is returned.
     The CRS for the graph is estimated based on the bounds of the provided/downloaded polygon, stored in G.graph['crs'].
     """
-
     boundary = get_boundary(osm_id, territory_name, polygon)
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        walk_graph_future = executor.submit(get_walk_graph, polygon=boundary, **osmnx_kwargs)
+        walk_graph_future = executor.submit(get_walk_graph, polygon=boundary,retain_all=retain_all, **osmnx_kwargs)
         logger.debug("Started downloading and parsing walk graph...")
 
         # Sleep to not get 429 to many requests
@@ -106,5 +106,5 @@ def get_intermodal_graph(
         logger.warning("Public trasport graph is empty! Returning only walk graph.")
         return walk_g
 
-    intermodal = join_pt_walk_graph(pt_g, walk_g, max_dist=max_dist, clean_weakly_connected=clean_weakly_connected)
+    intermodal = join_pt_walk_graph(pt_g, walk_g, max_dist=max_dist, retain_all=retain_all)
     return intermodal

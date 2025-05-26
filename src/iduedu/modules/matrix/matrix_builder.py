@@ -13,7 +13,7 @@ from scipy.spatial import KDTree
 
 from iduedu import config
 from iduedu.modules.matrix.numba_csr_matrix import UI32CSRMatrix
-from iduedu.utils.utils import remove_weakly_connected_nodes
+from iduedu.utils.utils import keep_largest_strongly_connected_component
 
 logger = config.logger
 
@@ -166,7 +166,7 @@ def get_adj_matrix_gdf_to_gdf(
     except CRSError as e:
         raise CRSError(f"Graph crs ({local_crs}) has invalid format.") from e
 
-    nx_graph = remove_weakly_connected_nodes(nx_graph)
+    nx_graph = keep_largest_strongly_connected_component(nx_graph)
 
     logger.debug("Preparing graph sparse matrix")
     transposed = False

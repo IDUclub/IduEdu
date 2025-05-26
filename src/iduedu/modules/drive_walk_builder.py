@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from iduedu import config
 from iduedu.enums.drive_enums import HighwayType
 from iduedu.modules.downloaders import get_boundary
-from iduedu.utils.utils import estimate_crs_for_bounds, remove_weakly_connected_nodes
+from iduedu.utils.utils import estimate_crs_for_bounds, keep_largest_strongly_connected_component
 
 logger = config.logger
 
@@ -81,6 +81,7 @@ def get_drive_graph_by_poly(
     polygon: Polygon | MultiPolygon,
     additional_edgedata=None,
     road_filter: str = None,
+    retain_all: bool =False,
     **osmnx_kwargs,
 ) -> nx.MultiDiGraph:
     if additional_edgedata is None:
@@ -92,9 +93,8 @@ def get_drive_graph_by_poly(
         if isinstance(polygon, MultiPolygon):
             polygon = polygon.convex_hull
     logger.info("Downloading drive graph from OSM, it may take a while for large territory ...")
-    graph = ox.graph_from_polygon(
-        polygon, network_type="drive", custom_filter=road_filter, truncate_by_edge=False, **osmnx_kwargs
-    )
+    osmnx_kwargs["retain_all"] = retain_all
+    graph = ox.graph_from_polygon(polygon, network_type="drive", custom_filter=road_filter, **osmnx_kwargs)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     nodes, edges = ox.graph_to_gdfs(graph)
@@ -122,7 +122,8 @@ def get_drive_graph_by_poly(
 
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
-    graph = remove_weakly_connected_nodes(graph)
+    if not retain_all:
+        graph = keep_largest_strongly_connected_component(graph)
     mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
     graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs
@@ -136,6 +137,7 @@ def get_drive_graph(
     territory_name: str | None = None,
     polygon: Polygon | MultiPolygon | None = None,
     additional_edgedata=None,
+    retain_all: bool =False,
     **osmnx_kwargs,
 ):
     """
@@ -153,6 +155,9 @@ def get_drive_graph(
     additional_edgedata : list[str], optional
         List of additional edge data attributes to include in the graph. Possible values include
         ['highway', 'maxspeed', 'reg', 'ref', 'name'] or any other, that exist in OSM. Defaults to None.
+    retain_all: bool, optional
+        If True, return the entire graph even if it is not connected.
+        If False, retain only the largest weakly connected component.
     **osmnx_kwargs
         Additional keyword arguments to pass to osmnx.graph.graph_from_polygon().
         See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
@@ -175,7 +180,9 @@ def get_drive_graph(
 
     polygon = get_boundary(osm_id, territory_name, polygon)
 
-    return get_drive_graph_by_poly(polygon, additional_edgedata=additional_edgedata, **osmnx_kwargs)
+    return get_drive_graph_by_poly(
+        polygon, additional_edgedata=additional_edgedata, retain_all=retain_all, **osmnx_kwargs
+    )
 
 
 def get_walk_graph(
@@ -183,6 +190,7 @@ def get_walk_graph(
     territory_name: str | None = None,
     polygon: Polygon | MultiPolygon | None = None,
     walk_speed: float = 5 * 1000 / 60,
+    retain_all: bool =False,
     **osmnx_kwargs,
 ):
     """
@@ -200,6 +208,9 @@ def get_walk_graph(
         A custom polygon or MultiPolygon to define the area for the pedestrian network. Must be in CRS 4326.
     walk_speed : float, optional
         Walking speed in meters per minute. Defaults to 5 km/h (approximately 83.33 meters per minute).
+    retain_all: bool, optional
+        If True, return the entire graph even if it is not connected.
+        If False, retain only the largest weakly connected component.
     **osmnx_kwargs
         Additional keyword arguments to pass to osmnx.graph.graph_from_polygon().
         See https://osmnx.readthedocs.io/en/stable/user-reference.html#osmnx.graph.graph_from_polygon
@@ -223,7 +234,11 @@ def get_walk_graph(
     polygon = get_boundary(osm_id, territory_name, polygon)
 
     logger.info("Downloading walk graph from OSM, it may take a while for large territory ...")
-    graph = ox.graph_from_polygon(polygon, network_type="walk", truncate_by_edge=False, simplify=True, **osmnx_kwargs)
+    osmnx_kwargs["retain_all"] = retain_all
+    if 'simplify' not in osmnx_kwargs:
+        osmnx_kwargs['simplify'] = True
+    print(osmnx_kwargs)
+    graph = ox.graph_from_polygon(polygon, network_type="walk", **osmnx_kwargs)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     nodes, edges = ox.graph_to_gdfs(graph)
@@ -254,7 +269,8 @@ def get_walk_graph(
     ]
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
-    graph = remove_weakly_connected_nodes(graph)
+    if not retain_all:
+        graph = keep_largest_strongly_connected_component(graph)
     mapping = {old_label: new_label for new_label, old_label in enumerate(graph.nodes())}
     graph = nx.relabel_nodes(graph, mapping)
     graph.graph["crs"] = local_crs
