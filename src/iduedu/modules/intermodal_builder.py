@@ -22,7 +22,7 @@ def get_intermodal_graph(
     keep_routes_geom: bool = True,
     max_dist: float = 30,
     transport_types: list[PublicTrasport] = None,
-    retain_all: bool =False,
+    retain_all: bool = False,
     **osmnx_kwargs,
 ) -> nx.Graph:
     """
@@ -81,7 +81,7 @@ def get_intermodal_graph(
     """
     boundary = get_boundary(osm_id, territory_name, polygon)
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        walk_graph_future = executor.submit(get_walk_graph, polygon=boundary,retain_all=retain_all, **osmnx_kwargs)
+        walk_graph_future = executor.submit(get_walk_graph, polygon=boundary, retain_all=retain_all, **osmnx_kwargs)
         logger.debug("Started downloading and parsing walk graph...")
 
         # Sleep to not get 429 to many requests
