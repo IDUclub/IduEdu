@@ -31,7 +31,7 @@ def subway_graph(bounds):
 
 def test_get_drive_graph(bounds):
     time.sleep(0.5)
-    g_drive = get_drive_graph(polygon=bounds, additional_edgedata=["highway", "maxspeed", "reg","ref", "name"])
+    g_drive = get_drive_graph(polygon=bounds, additional_edgedata=["highway", "maxspeed", "reg", "ref", "name"])
     assert g_drive is not None
     assert len(g_drive.nodes) > 0
     assert len(g_drive.edges) > 0
