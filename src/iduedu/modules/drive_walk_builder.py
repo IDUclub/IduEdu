@@ -83,9 +83,12 @@ def get_drive_graph_by_poly(
         axis=1,
         result_type="expand",
     )
-    edgesdata = ["u", "v", "key", "length_meter", "time_min", "geometry"] + additional_edgedata
-
-    edges = edges[edgesdata]
+    if additional_edgedata != "save_all":
+        for column in additional_edgedata:
+            if column not in edges.columns:
+                edges[column] = None
+        edgesdata = ["u", "v", "key", "length_meter", "time_min", "geometry"] + additional_edgedata
+        edges = edges[edgesdata]
 
     edges.set_index(["u", "v", "key"], inplace=True)
     graph = ox.graph_from_gdfs(nodes, edges)
@@ -204,7 +207,6 @@ def get_walk_graph(
     osmnx_kwargs["retain_all"] = retain_all
     if "simplify" not in osmnx_kwargs:
         osmnx_kwargs["simplify"] = True
-    print(osmnx_kwargs)
     graph = ox.graph_from_polygon(polygon, network_type="walk", **osmnx_kwargs)
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
