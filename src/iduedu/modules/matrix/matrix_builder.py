@@ -6,6 +6,7 @@ import networkx as nx
 import numba as nb
 import numpy as np
 import pandas as pd
+from networkx import attr_matrix
 from numpy.core.multiarray import ndarray
 from pyproj import CRS
 from pyproj.exceptions import CRSError
@@ -120,40 +121,36 @@ def get_adj_matrix_gdf_to_gdf(
     Compute an adjacency matrix representing the shortest path distances between two sets of points (GeoDataFrames)
     based on a provided graph. Distances are calculated using the specified edge weight attribute.
 
-    Parameters
-    ----------
-    gdf_from : gpd.GeoDataFrame
-        The GeoDataFrame containing the origin points for the distance matrix calculation.
-    gdf_to : gpd.GeoDataFrame
-        The GeoDataFrame containing the destination points for the distance matrix calculation.
-    nx_graph : nx.Graph
-        A NetworkX graph with geographic data where each edge has the specified `weight` attribute (e.g., 'length_meter').
-    weight : {"length_meter", "time_min"}, optional
-        The edge attribute to use for calculating the shortest paths. Defaults to 'length_meter'.
-    dtype : np.dtype, optional
-        The data type for the adjacency matrix. Defaults to np.float16, which can be changed to avoid precision loss.
-    threshold : int, optional
-        The maximum path distance to consider when calculating distances. Paths longer than this value are ignored.
-        Default is None, which sets the threshold to the maximum integer value (essentially no threshold).
-    max_workers : int, optional
-        The maximum number of threads to use during computation. By default, uses all available CPU cores (os.cpu_count()).
+    Parameters:
+        gdf_from (gpd.GeoDataFrame):
+            The GeoDataFrame containing the origin points for the distance matrix calculation.
+        gdf_to (gpd.GeoDataFrame):
+            The GeoDataFrame containing the destination points for the distance matrix calculation.
+        nx_graph (nx.Graph):
+            A NetworkX graph with geographic data where each edge has the specified `weight` attribute (e.g., 'length_meter').
+        weight (Literal["length_meter", "time_min"]):
+            The edge attribute to use for calculating the shortest paths. Defaults to 'length_meter'.
+        dtype (np.dtype):
+            The data type for the adjacency matrix. Defaults to np.float16, which can be changed to avoid precision loss.
+        add_dist_tofrom_node (bool):
+            Whether to add or not distance(or time) in matrix from features to their closest nodes. Defaults to True.
+        threshold (int, optional):
+            The maximum path distance to consider when calculating distances. Paths longer than this value are ignored.
+            Default is None, which sets the threshold to the maximum integer value (essentially no threshold).
+        max_workers (int, optional):
+            The maximum number of threads to use during computation. By default, uses all available CPU cores (os.cpu_count()).
 
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame representing the adjacency matrix where rows correspond to `gdf_from` and columns to `gdf_to`.
-        Each value in the matrix represents the shortest path distance between the corresponding points,
-        based on the provided graph. If no path exists or the path is beyond the threshold, the entry is set to np.inf.
+    Returns:
+        (pd.DataFrame):
+            A DataFrame representing the adjacency matrix where rows correspond to `gdf_from` and columns to `gdf_to`.
+            Each value in the matrix represents the shortest path distance between the corresponding points,
+            based on the provided graph. If no path exists or the path is beyond the threshold, the entry is set to np.inf.
 
-    Notes
-    -----
-    - The function computes the closest graph nodes for both `gdf_from` and `gft_to` before calculating the matrix.
-    - If `gdf_from` and `gft_to` are equal, the distance matrix will be square.
-    - Ensure that all edges in the graph have the specified `weight` attribute; otherwise, the calculation may fail.
+    Notes:
+        - The function computes the closest graph nodes for both `gdf_from` and `gft_to` before calculating the matrix.
+        - If `gdf_from` and `gft_to` are equal, the distance matrix will be square.
+        - Ensure that all edges in the graph have the specified `weight` attribute; otherwise, the calculation may fail.
 
-    Examples
-    --------
-    >>> adj_matrix = get_adj_matrix_gdf_to_gdf(origins_gdf, destinations_gdf, graph, weight='time_min', dtype=np.float32)
     """
     try:
         local_crs = nx_graph.graph["crs"]
@@ -207,7 +204,7 @@ def get_adj_matrix_gdf_to_gdf(
     else:
         threshold = threshold * 100
 
-    logger.debug("Starting the gdf-to-gdf matrix calculation")
+    logger.debug(f"Starting the gdf-to-gdf matrix calculation, threshold {threshold}")
 
     adj_matrix = dijkstra_numba_parallel(
         numba_matrix=csr_matrix,
@@ -215,10 +212,23 @@ def get_adj_matrix_gdf_to_gdf(
         targets=np.array(closest_nodes_to, dtype=np.int32),
         cutoff=np.int32(threshold),
     )
+    logger.debug("Dijkstra matrix calculation finished")
     if transposed:
         adj_matrix = adj_matrix.transpose()
+    max_val = adj_matrix.max().max()
 
-    adj_matrix = pd.DataFrame(adj_matrix / 100, columns=gdf_to.index, index=gdf_from.index, dtype=dtype)
+    if max_val <= np.iinfo(np.int8).max:
+        optimal_dtype = np.int8
+    elif max_val <= np.iinfo(np.int16).max:
+        optimal_dtype = np.int16
+    elif max_val <= np.iinfo(np.int32).max:
+        optimal_dtype = np.int32
+    else:
+        optimal_dtype = np.int64
+
+    adj_matrix = pd.DataFrame(adj_matrix, columns=gdf_to.index, index=gdf_from.index, dtype=optimal_dtype)
+    adj_matrix = (adj_matrix / 100).astype(dtype)
+
     if add_dist_tofrom_node:
         if weight == "time_min":
             speed = 5 * 1000 / 60

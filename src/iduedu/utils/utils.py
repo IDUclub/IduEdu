@@ -19,7 +19,7 @@ def clip_nx_graph(graph: nx.Graph, polygon: Polygon) -> nx.Graph:
     return clipped
 
 
-def keep_largest_strongly_connected_component(graph: nx.DiGraph) -> nx.DiGraph:
+def keep_largest_strongly_connected_component(graph: nx.DiGraph, relabel_nodes: bool = True) -> nx.DiGraph:
     graph = graph.copy()
 
     weakly_connected_components = list(nx.weakly_connected_components(graph))
@@ -40,6 +40,9 @@ def keep_largest_strongly_connected_component(graph: nx.DiGraph) -> nx.DiGraph:
             f"Retaining only the largest strongly connected component ({len(all_scc[-1])} nodes)."
         )
         graph.remove_nodes_from(nodes_to_del)
+
+        if relabel_nodes:
+            graph = nx.convert_node_labels_to_integers(graph)
 
     return graph
 
