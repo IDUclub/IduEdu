@@ -52,23 +52,8 @@ jobs:
           name: docs-html
           path: docs/_build/html
 
-  deploy-docs:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: build-docs
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download built docs
-        uses: actions/download-artifact@v4
-        with:
-          name: docs-html
-          path: docs/_build/html
-
       - name: Deploy to gh-pages
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
