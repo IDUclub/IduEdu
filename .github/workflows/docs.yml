@@ -20,7 +20,7 @@ jobs:
   build-docs:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     concurrency:
       group: docs-${{ github.ref }}
       cancel-in-progress: true
