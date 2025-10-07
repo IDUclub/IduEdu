@@ -1,2 +1,2 @@
 from .pt_enums import PublicTrasport
-from .drive_enums import HighwayType
+from .highway_enums import HighwayType

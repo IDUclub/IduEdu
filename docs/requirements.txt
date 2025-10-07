@@ -1,0 +1,7 @@
+sphinx>=8
+furo>=2025.9.25
+myst-parser>=3
+myst-nb>=1.1
+sphinx-autodoc-typehints>=3.2
+sphinx-copybutton>=0.5
+sphinx-design>=0.6

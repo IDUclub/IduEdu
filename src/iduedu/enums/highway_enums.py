@@ -7,9 +7,9 @@ class RegistrationStatus(Enum):
     Enum for registration status of the road.
     """
 
-    FEDERAL = 1
-    REGIONAL = 2
-    LOCAL = 3
+    FEDERAL = "federal"
+    REGIONAL = "regional"
+    LOCAL = "local"
 
 
 class HighwayType(Enum):
@@ -32,7 +32,7 @@ class HighwayType(Enum):
     LIVING_STREET = "living_street"
 
     @property
-    def reg_status(self) -> Literal[1, 2, 3]:
+    def reg_status(self) -> Literal["federal", "regional", "local"]:
         reg_status = {
             HighwayType.MOTORWAY: RegistrationStatus.FEDERAL,
             HighwayType.TRUNK: RegistrationStatus.FEDERAL,

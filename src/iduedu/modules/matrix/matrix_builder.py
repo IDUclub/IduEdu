@@ -1,20 +1,19 @@
 from heapq import heappop, heappush
-from typing import Any, Iterable, List, Literal, Tuple
+from typing import Any, Iterable, Literal
 
 import geopandas as gpd
 import networkx as nx
 import numba as nb
 import numpy as np
 import pandas as pd
-from networkx import attr_matrix
 from numpy.core.multiarray import ndarray
 from pyproj import CRS
 from pyproj.exceptions import CRSError
 from scipy.spatial import KDTree
 
 from iduedu import config
+from iduedu.modules.graph_transformers import keep_largest_strongly_connected_component
 from iduedu.modules.matrix.numba_csr_matrix import UI32CSRMatrix
-from iduedu.utils.utils import keep_largest_strongly_connected_component
 
 logger = config.logger
 
@@ -34,6 +33,24 @@ logger = config.logger
 def dijkstra_numba_parallel(
     numba_matrix: UI32CSRMatrix, sources: np.array, targets: np.array, cutoff: np.int32
 ):  # pragma: no cover
+    """
+    Parallel multi-source Dijkstra on a CSR matrix (Numba-accelerated).
+
+    Runs Dijkstra from each `source` over a directed graph encoded as a uint32-weight CSR
+    (`UI32CSRMatrix`). Distances are accumulated as **int32** in the same units as the matrix
+    edge weights (this implementation expects weights pre-scaled by ×100; see helpers below).
+    For each source, distances to `targets` are returned; unreachable entries are `-1`.
+
+    Parameters:
+        numba_matrix (UI32CSRMatrix): Directed graph in CSR form with non-negative integer weights.
+            Attributes used: `.tot_rows`, `.get_row(i)` (weights), `.get_nnz(i)` (neighbor indices).
+        sources (np.ndarray[int32]): Node indices to start from.
+        targets (np.ndarray[int32]): Node indices to read distances for.
+        cutoff (np.int32): Maximum distance; paths exceeding this are ignored.
+
+    Returns:
+        (np.ndarray[int32]): Matrix of shape (len(sources), len(targets)); `-1` marks “no path”.
+    """
     distance_matrix = np.full((len(sources), len(targets)), -1, dtype=np.int32)
 
     for i in nb.prange(len(sources)):
@@ -64,30 +81,20 @@ def get_closest_nodes(
     gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph
 ) -> tuple[list[Any], float | ndarray | Iterable | int]:
     """
-    Find the closest nodes in a NetworkX graph for each geometry in a GeoDataFrame.
+    Find the nearest graph node for each geometry in a GeoDataFrame.
 
-    For each geometry in the input GeoDataFrame, this function identifies the nearest node in the provided graph
-    based on Euclidean distance. The CRS of the GeoDataFrame is automatically aligned with the graph's CRS
-    if they differ.
+    Reprojects `gdf_from` to the graph CRS if needed, then builds a KD-tree over node
+    coordinates (`x`, `y`) and queries nearest nodes for point representatives of the
+    input geometries (handles points/lines/polygons via `representative_point()`).
 
-    Parameters
-    ----------
-    gdf_from : gpd.GeoDataFrame
-        A GeoDataFrame containing the points for which the closest graph nodes are to be found.
-    to_nx_graph : nx.Graph
-        A NetworkX graph with geographic data, where each node has 'x' and 'y' attributes representing
-        its coordinates in the graph's CRS.
+    Parameters:
+        gdf_from (gpd.GeoDataFrame): Input geometries to snap (any geometry type).
+        to_nx_graph (nx.Graph): Graph with node attributes `x`, `y` and `graph["crs"]` set.
 
-    Returns
-    -------
-    tuple[list, list]
-         returns a tuple with two lists where the first is the closest node ID and the second
-          are the corresponding distances.
-
-    Examples
-    --------
-    >>> closest_nodes = get_closest_nodes(points_gdf, graph)
-    >>> closest_nodes_with_dist = get_closest_nodes(points_gdf, graph, return_dist=True)
+    Returns:
+        (list, np.ndarray): Tuple of:
+            - `nearest_nodes`: list of node IDs (in the graph index space),
+            - `distances`: NumPy array of Euclidean distances in the graph CRS units.
     """
     try:
         graph_crs = CRS.from_epsg(to_nx_graph.graph["crs"])
@@ -118,39 +125,41 @@ def get_adj_matrix_gdf_to_gdf(
     max_workers: int = None,
 ) -> pd.DataFrame:
     """
-    Compute an adjacency matrix representing the shortest path distances between two sets of points (GeoDataFrames)
-    based on a provided graph. Distances are calculated using the specified edge weight attribute.
+    Compute a shortest-path matrix between two GeoDataFrames over a weighted NetworkX graph.
+
+    Each origin (row of `gdf_from`) and destination (column of `gdf_to`) is snapped to its nearest
+    graph node (KD-tree), then distances are computed with a batched, Numba-parallel Dijkstra on
+    the graph’s CSR matrix. Result units follow `weight`:
+    - `"length_meter"` → meters,
+    - `"time_min"` → minutes.
 
     Parameters:
-        gdf_from (gpd.GeoDataFrame):
-            The GeoDataFrame containing the origin points for the distance matrix calculation.
-        gdf_to (gpd.GeoDataFrame):
-            The GeoDataFrame containing the destination points for the distance matrix calculation.
-        nx_graph (nx.Graph):
-            A NetworkX graph with geographic data where each edge has the specified `weight` attribute (e.g., 'length_meter').
-        weight (Literal["length_meter", "time_min"]):
-            The edge attribute to use for calculating the shortest paths. Defaults to 'length_meter'.
-        dtype (np.dtype):
-            The data type for the adjacency matrix. Defaults to np.float16, which can be changed to avoid precision loss.
-        add_dist_tofrom_node (bool):
-            Whether to add or not distance(or time) in matrix from features to their closest nodes. Defaults to True.
-        threshold (int, optional):
-            The maximum path distance to consider when calculating distances. Paths longer than this value are ignored.
-            Default is None, which sets the threshold to the maximum integer value (essentially no threshold).
-        max_workers (int, optional):
-            The maximum number of threads to use during computation. By default, uses all available CPU cores (os.cpu_count()).
+        gdf_from (gpd.GeoDataFrame): Origin geometries (any types; snapped via representative points).
+        gdf_to (gpd.GeoDataFrame): Destination geometries.
+        nx_graph (nx.Graph): Graph with `graph["crs"]` and per-edge `weight` attribute present.
+        weight ({"length_meter", "time_min"}): Edge attribute to minimize.
+        dtype (np.dtype): Output matrix dtype (default `np.float16` to save memory).
+        add_dist_tofrom_node (bool): If True, adds straight-line distances from origin geometry → its snap node
+            and from snap node → destination geometry:
+            - if `weight="length_meter"`: meters are added,
+            - if `weight="time_min"`: meters converted to minutes assuming 5 km/h (~83.33 m/min).
+        threshold (int | None): Optional max path threshold in `weight` units; longer paths are treated as missing.
+            Internally quantized by ×100 for integer CSR; `None` ⇒ no cutoff.
+        max_workers (int | None): If set, limits Numba thread count (`nb.set_num_threads(max_workers)`).
 
     Returns:
-        (pd.DataFrame):
-            A DataFrame representing the adjacency matrix where rows correspond to `gdf_from` and columns to `gdf_to`.
-            Each value in the matrix represents the shortest path distance between the corresponding points,
-            based on the provided graph. If no path exists or the path is beyond the threshold, the entry is set to np.inf.
+        (pd.DataFrame): Matrix with index = `gdf_from.index`, columns = `gdf_to.index`.
+            Values are shortest-path distances; unreachable pairs are `np.inf`.
+
+    Raises:
+        ValueError: If the graph lacks `graph["crs"]`.
+        CRSError: If the graph CRS is invalid or reprojection fails.
 
     Notes:
-        - The function computes the closest graph nodes for both `gdf_from` and `gft_to` before calculating the matrix.
-        - If `gdf_from` and `gft_to` are equal, the distance matrix will be square.
-        - Ensure that all edges in the graph have the specified `weight` attribute; otherwise, the calculation may fail.
-
+        - The graph is first pruned to its largest strongly connected component to avoid spurious `∞`.
+        - For performance, if `len(gdf_from) > len(gdf_to)`, the computation is performed transposed and flipped back.
+        - Internally, edge weights are converted to **uint32** by multiplying by 100; results are divided by 100
+          before returning.
     """
     try:
         local_crs = nx_graph.graph["crs"]
@@ -204,7 +213,7 @@ def get_adj_matrix_gdf_to_gdf(
     else:
         threshold = threshold * 100
 
-    logger.debug(f"Starting the gdf-to-gdf matrix calculation, threshold {threshold}")
+    logger.debug("Starting the gdf-to-gdf matrix calculation")
 
     adj_matrix = dijkstra_numba_parallel(
         numba_matrix=csr_matrix,
@@ -212,23 +221,10 @@ def get_adj_matrix_gdf_to_gdf(
         targets=np.array(closest_nodes_to, dtype=np.int32),
         cutoff=np.int32(threshold),
     )
-    logger.debug("Dijkstra matrix calculation finished")
     if transposed:
         adj_matrix = adj_matrix.transpose()
-    max_val = adj_matrix.max().max()
 
-    if max_val <= np.iinfo(np.int8).max:
-        optimal_dtype = np.int8
-    elif max_val <= np.iinfo(np.int16).max:
-        optimal_dtype = np.int16
-    elif max_val <= np.iinfo(np.int32).max:
-        optimal_dtype = np.int32
-    else:
-        optimal_dtype = np.int64
-
-    adj_matrix = pd.DataFrame(adj_matrix, columns=gdf_to.index, index=gdf_from.index, dtype=optimal_dtype)
-    adj_matrix = (adj_matrix / 100).astype(dtype)
-
+    adj_matrix = pd.DataFrame(adj_matrix / 100, columns=gdf_to.index, index=gdf_from.index, dtype=dtype)
     if add_dist_tofrom_node:
         if weight == "time_min":
             speed = 5 * 1000 / 60
@@ -245,6 +241,25 @@ def get_adj_matrix_gdf_to_gdf(
 
 
 def _get_sparse_row(nx_graph, weight):
+    """
+    Convert a (possibly multi-)graph to a SciPy CSR matrix of edge weights (uint32, ×100 scaling).
+
+    If the graph is a Multi(Graph|DiGraph), it is first coerced to a simple Graph/DiGraph
+    (parallel edges are **collapsed and their attributes lost**, keeping one arbitrary edge).
+    Then `nx.to_scipy_sparse_array(..., weight=weight)` produces a CSR array; its data are
+    multiplied by 100 and cast to `uint32` for integer-only NumPy/Numba arithmetic.
+
+    Parameters:
+        nx_graph (nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph): Input network.
+        weight (str): Name of the edge attribute to use as weight (must be numeric and non-negative).
+
+    Returns:
+        (scipy.sparse.csr_array): CSR matrix with `uint32` data scaled by ×100.
+
+    Warnings:
+        Collapsing a multigraph to a simple graph discards multi-edge multiplicity and may change
+        effective weights if parallel edges existed.
+    """
     if nx_graph.is_multigraph():
         if nx_graph.is_directed():
             nx_graph = nx.DiGraph(nx_graph)

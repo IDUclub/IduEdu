@@ -5,15 +5,9 @@
 [![CI](https://github.com/DDonnyy/IduEdu/actions/workflows/ci_pipeline.yml/badge.svg)](https://github.com/DDonnyy/IduEdu/actions/workflows/ci_pipeline.yml)
 [![Coverage](https://codecov.io/gh/DDonnyy/IduEdu/graph/badge.svg?token=VN8CBP8ZW3)](https://codecov.io/gh/DDonnyy/IduEdu)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/MIT)
-### IduEdu is an open-source Python library for the creation and manipulation of complex city networks from OpenStreetMap.
+[![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/)
 
-## Features and how to use
-
-1. **[Graphs from OSM/Polygon/Name](./examples/get_any_graph.ipynb)** - Functions for building a graph of roads,
-   pedestrians and public transport based on OpenStreetMap (OSM), as well as creating an intermodal (public transport +
-   pedestrians) graph.
-2. **[Adjacency matrix](./examples/calc_adj_matrix.ipynb)** - Calculate adjacency matrix based on the provided graph and
-   edge weight type (_time_min_ or _length_meter_). 
+## IduEdu is an open-source Python library for the creation and manipulation of complex city networks from OpenStreetMap.
 
 ## Installation
 
@@ -21,16 +15,6 @@
 
 ```
 pip install IduEdu
-```
-
-### Configuration changes
-
-```python
-from iduedu import config
-config.set_timeout(10)  # Timeout for overpass queries
-config.change_logger_lvl('INFO')  # To mute all debug msgs
-config.set_enable_tqdm(False)  # To mute all tqdm's progress bars
-config.set_overpass_url('http://your.overpass-api.de/interpreter/URL')
 ```
 
 ## Acknowledgments

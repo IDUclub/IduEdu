@@ -1,11 +1,17 @@
+import concurrent.futures
+from typing import Any
+
 import geopandas as gpd
 import networkx as nx
 import pandas as pd
-from shapely import LineString, Point
+from shapely import LineString, MultiPolygon, Point, Polygon
 from shapely.ops import substring
 
 from iduedu import config
-from iduedu.utils.utils import keep_largest_strongly_connected_component
+from iduedu.modules.drive_walk_builders import get_walk_graph
+from iduedu.modules.graph_transformers import keep_largest_strongly_connected_component
+from iduedu.modules.overpass_downloaders import get_4326_boundary
+from iduedu.modules.public_transport_builders import get_all_public_transport_graph
 
 logger = config.logger
 
@@ -14,48 +20,50 @@ def join_pt_walk_graph(
     public_transport_g: nx.Graph,
     walk_g: nx.Graph,
     max_dist=20,
-    retain_all: bool = False,
+    keep_largest_subgraph: bool = True,
 ) -> nx.Graph:
     """
-    Combine a public transport network graph with a pedestrian network graph, creating an intermodal transport graph.
-    Platforms in the public transport network are connected to nearby pedestrian network edges based on the specified
-    maximum distance.
+    Join a public-transport graph with a pedestrian graph into a single intermodal network.
 
-    Parameters
-    ----------
-    public_transport_g : nx.Graph
-        The public transport network graph, which should contain platform nodes with geometry and CRS information.
-    walk_g : nx.Graph
-        The pedestrian network graph. It must have the same CRS as the public transport graph.
-    max_dist : float, optional
-        Maximum distance (in meters) to search for connections between platforms and pedestrian edges. Defaults to 20.
-    retain_all: bool, optional
-        If True, return the entire graph even if it is not connected.
-        If False, retain only the largest weakly connected component.
+    The function relabels node ids to avoid collisions, finds PT platforms (including subway
+    entries/exits), projects them onto the nearest walking edges within `max_dist`, and connects
+    the two networks. When multiple platforms project to the same point on a walk edge, PT nodes
+    are merged. For each platform–edge match, the walking edge is split at the projection point
+    (or its endpoint is replaced by the platform node), and new directed walk edges are created
+    with length/time attributes. Finally, both graphs are composed and (optionally) pruned to
+    the largest strongly connected component.
 
-    Returns
-    -------
-    nx.Graph
-        A combined intermodal graph where public transport platforms are connected to nearby pedestrian routes.
+    Parameters:
+        public_transport_g (nx.Graph): PT graph with node attributes `x`, `y`, `type`, `route`
+            and a graph CRS in `graph["crs"]`. Platform-like nodes are those with
+            `type in {"platform","subway_entry_exit","subway_entry","subway_exit"}`.
+        walk_g (nx.Graph): Pedestrian graph in the **same** CRS with edge `geometry` and graph
+            attribute `graph["walk_speed"]` (meters/min). If `walk_speed` is missing, a default
+            of 83.33 m/min is used.
+        max_dist (float): Max search radius in meters to snap platforms to walk edges.
+        keep_largest_subgraph (bool): If True, keep only the largest strongly connected component.
 
-    Raises
-    ------
-    AssertionError
-        If the CRS of the public transport graph and pedestrian graph do not match.
+    Returns:
+        (nx.Graph): Intermodal `MultiDiGraph`:
+            - nodes: union of PT and Walk nodes (platforms become vertices of the walk network);
+            - edges: original PT + split/updated Walk edges with `geometry`, `length_meter`,
+              `time_min`, `type="walk"` (for inserted walking segments).
 
-    Examples
-    --------
-    >>> intermodal_graph = join_pt_walk_graph(public_transport_g, walk_g, max_dist=50)
+            Graph attrs: `graph["type"]="intermodal"`; CRS is inherited from inputs.
 
-    Notes
-    -----
-    The function relabels nodes in both graphs to ensure unique node IDs before composing them.
-    It connects public transport platforms to the closest edges in the pedestrian network by projecting platforms
-    onto edges.
-    Walking speed is taken from the pedestrian graph, and default speed is set to 83.33 m/min if not available.
+    Notes:
+        - Node ids of PT and Walk parts are relabeled to disjoint ranges before composition,
+          then relabeled densely (0..N-1) in the final graph.
+        - Platforms projecting exactly to a walk edge endpoint trigger in-place node relabeling
+          of that endpoint to the platform id (no edge splitting needed).
+        - Duplicate projection points along the same walk edge are detected; PT platforms are merged
+          and their incident PT edges are rewired onto the chosen representative.
     """
 
-    assert public_transport_g.graph["crs"] == walk_g.graph["crs"], "CRS mismatching."
+    if public_transport_g.graph["crs"] != walk_g.graph["crs"]:
+        raise AttributeError(
+            f"CRS mismatching, public_transport_graph crs {public_transport_g.graph['crs']}, walk_graph crs {walk_g.graph['crs']}"
+        )
     logger.info("Composing intermodal graph...")
 
     num_nodes_g1 = len(public_transport_g.nodes)
@@ -65,7 +73,7 @@ def join_pt_walk_graph(
     walk: nx.MultiDiGraph = nx.relabel_nodes(walk_g, mapping_g2)
 
     platforms = pd.DataFrame.from_dict(dict(transport.nodes(data=True)), orient="index")
-    platforms = platforms[platforms["type"] == "platform"]
+    platforms = platforms[platforms["type"].isin(["platform", "subway_entry_exit", "subway_entry", "subway_exit"])]
     platforms["geometry"] = gpd.points_from_xy(platforms["x"], platforms["y"])
     platforms = gpd.GeoDataFrame(platforms, crs=transport.graph["crs"])
 
@@ -97,7 +105,6 @@ def join_pt_walk_graph(
         }
     )
 
-    #
     for ind, row in projection_join.iterrows():
         if len(row["index"]) == 1:
             projection_join.loc[ind, "index"] = row["index"][0]
@@ -274,7 +281,7 @@ def join_pt_walk_graph(
     walk.remove_edges_from(edges_to_del)
     logger.debug("Composing graphs")
     intermodal = nx.compose(nx.MultiDiGraph(transport), nx.MultiDiGraph(walk))
-    if not retain_all:
+    if keep_largest_subgraph:
         intermodal = keep_largest_strongly_connected_component(intermodal)
     intermodal.remove_nodes_from([node for node, data in intermodal.nodes(data=True) if "x" not in data.keys()])
     mapping = {old_label: new_label for new_label, old_label in enumerate(intermodal.nodes())}
@@ -282,4 +289,87 @@ def join_pt_walk_graph(
     nx.relabel_nodes(intermodal, mapping, copy=False)
     intermodal.graph["type"] = "intermodal"
     logger.debug("Done composing!")
+    return intermodal
+
+
+def get_intermodal_graph(
+    *,
+    osm_id: int | None = None,
+    territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None = None,
+    clip_by_territory: bool = False,
+    keep_edge_geometry: bool = True,
+    osm_edge_tags: list[str] | None = None,
+    max_dist: float = 30,
+    keep_largest_subgraph: bool = True,
+    walk_kwargs: dict[str, Any] | None = None,
+    pt_kwargs: dict[str, Any] | None = None,
+) -> nx.Graph:
+    """
+    Build an intermodal (PT+walking) graph for a territory by downloading, parsing, and joining both networks.
+
+    The function resolves a boundary polygon (by `osm_id` or `territory`), runs **in parallel**:
+    1) pedestrian network construction (`get_walk_graph`),
+    2) public-transport network construction for selected modes (`get_all_public_transport_graph`),
+    then connects PT platforms to nearby walk edges via `join_pt_walk_graph` using a snapping radius `max_dist`.
+    Edge lengths (m) and times (min) come from the underlying builders and from the walk-edge splits.
+
+    Parameters:
+        osm_id (int | None): OSM relation/area id for the territory; provide this or `territory`.
+        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Boundary geometry in EPSG:4326.
+        clip_by_territory (bool): If True, both PT and Walk graphs are clipped to the boundary.
+        keep_edge_geometry (bool): If True, keep `shapely` geometries on edges for both sub-graphs.
+        osm_edge_tags (list[str] | None): Subset of OSM tags to retain (forwarded to both builders).
+        max_dist (float): Max distance in meters to connect PT platforms to walk edges.
+        keep_largest_subgraph (bool): If True, keep only the largest strongly connected component after joining.
+        walk_kwargs (dict[str, Any] | None): Extra keyword args for `get_walk_graph` (e.g., `walk_speed`,
+            `simplify`, `osm_edge_tags`, `keep_largest_subgraph`, …). Defaults are sensible.
+        pt_kwargs (dict[str, Any] | None): Extra keyword args for `get_all_public_transport_graph`
+            (e.g., `transport_types`, `osm_edge_tags`, `keep_edge_geometry`, …).
+
+    Returns:
+        (nx.Graph): Intermodal `MultiDiGraph` combining public transport and pedestrian networks, with:
+            - node attrs: `x`, `y` (local CRS), plus PT metadata for platform/station nodes where present;
+            - edge attrs: `type` (e.g., "walk", PT edge types), `length_meter`, `time_min`, optional `geometry`,
+              and selected OSM tags.
+
+          Graph CRS equals the builders’ local projected CRS.
+
+    Notes:
+        - `keep_edge_geometry`, `clip_by_territory`, and `osm_edge_tags` are propagated to both builders unless
+          overridden in `walk_kwargs`/`pt_kwargs`.
+        - If the PT graph is empty for the area, the function returns the walking graph alone (with a warning).
+        - Joining requires both sub-graphs to share the same CRS; builders derive a **local projected CRS**
+          from the boundary’s extent, so lengths/times are in meters/minutes.
+    """
+    boundary = get_4326_boundary(osm_id=osm_id, territory=territory)
+
+    walk_kwargs = dict(walk_kwargs or {})
+    pt_kwargs = dict(pt_kwargs or {})
+
+    for d in (walk_kwargs, pt_kwargs):
+        d.setdefault("keep_edge_geometry", keep_edge_geometry)
+        if osm_edge_tags is not None:
+            d.setdefault("osm_edge_tags", osm_edge_tags)
+        d.setdefault("clip_by_territory", clip_by_territory)
+
+    walk_kwargs.setdefault("keep_largest_subgraph", keep_largest_subgraph)
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        walk_future = executor.submit(get_walk_graph, territory=boundary, **walk_kwargs)
+        logger.debug("Started downloading and parsing walk graph...")
+
+        pt_future = executor.submit(get_all_public_transport_graph, territory=boundary, **pt_kwargs)
+        logger.debug("Started downloading and parsing public transport graph...")
+
+        pt_g = pt_future.result()
+        logger.debug("Public transport graph done!")
+
+        walk_g = walk_future.result()
+        logger.debug("Walk graph done!")
+
+    if len(pt_g.nodes()) == 0:
+        logger.warning("Public transport graph is empty! Returning only walk graph.")
+        return walk_g
+
+    intermodal = join_pt_walk_graph(pt_g, walk_g, max_dist=max_dist, keep_largest_subgraph=keep_largest_subgraph)
     return intermodal
