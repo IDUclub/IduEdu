@@ -1,0 +1,6 @@
+﻿iduedu.join\_pt\_walk\_graph
+============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: join_pt_walk_graph

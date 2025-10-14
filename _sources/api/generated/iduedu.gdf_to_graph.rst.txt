@@ -1,0 +1,6 @@
+﻿iduedu.gdf\_to\_graph
+=====================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: gdf_to_graph

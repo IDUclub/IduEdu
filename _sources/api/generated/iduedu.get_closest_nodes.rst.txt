@@ -1,0 +1,6 @@
+﻿iduedu.get\_closest\_nodes
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_closest_nodes
