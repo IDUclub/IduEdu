@@ -24,7 +24,7 @@ class Config:
         # --- Networking / retries ---
         self.timeout: int = int(os.getenv("OVERPASS_TIMEOUT", "120"))
         self.overpass_min_interval: float = float(os.getenv("OVERPASS_MIN_INTERVAL", "2"))
-        self.overpass_max_retries: int = int(os.getenv("OVERPASS_MAX_RETRIES", "3"))
+        self.overpass_max_retries: int = int(os.getenv("OVERPASS_MAX_RETRIES", "5"))
         self.overpass_retry_statuses: tuple[int, ...] = (429, 502, 503, 504)
         self.overpass_backoff_base: float = float(os.getenv("OVERPASS_BACKOFF_BASE", "0.5"))
 

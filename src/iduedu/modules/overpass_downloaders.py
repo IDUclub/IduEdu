@@ -50,9 +50,16 @@ def _overpass_http(
     method: Literal["GET", "POST"], url: str, *, params=None, data=None, timeout=None
 ) -> requests.Response:
     OVERPASS_RL.wait()
+
+    headers = {"User-Agent": config.user_agent}
+    proxies = config.proxies
+    verify = config.verify_ssl
+    req_timeout = timeout or config.timeout
+
     if method == "GET":
-        return requests.get(url, params=params, timeout=timeout or config.timeout)
-    return requests.post(url, data=data, timeout=timeout or config.timeout)
+        return requests.get(url, params=params, timeout=req_timeout, headers=headers, proxies=proxies, verify=verify)
+    else:
+        return requests.post(url, data=data, timeout=req_timeout, headers=headers, proxies=proxies, verify=verify)
 
 
 class RequestError(RuntimeError):
@@ -119,9 +126,16 @@ def _overpass_request(
     data: dict | None = None,
     timeout: float | None = None,
     *,
-    max_retries: int = 4,
-    backoff_base: float = 1.8,
+    max_retries: int | None = None,
+    backoff_base: float | None = None,
 ) -> requests.Response:
+
+    if max_retries is None:
+        max_retries = config.overpass_max_retries
+    if backoff_base is None:
+        backoff_base = config.overpass_backoff_base
+
+    retryable_statuses = set(config.overpass_retry_statuses)
 
     last_err_text = None
     for attempt in range(max_retries + 1):
@@ -175,7 +189,7 @@ def _overpass_request(
             if attempt < max_retries:
                 continue
 
-        if resp.status_code in (502, 503, 504):
+        if resp.status_code in retryable_statuses:
             if attempt < max_retries:
                 wait_s = min(60, backoff_base**attempt)
                 logger.warning(f"HTTP {resp.status_code}: retrying in {wait_s}s (attempt {attempt + 1}/{max_retries})")

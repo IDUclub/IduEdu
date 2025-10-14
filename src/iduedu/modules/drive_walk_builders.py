@@ -355,7 +355,7 @@ def get_walk_graph(
 
     if clip_by_territory:
         clip_poly_gdf = gpd.GeoDataFrame(geometry=[polygon4326], crs=4326).to_crs(local_crs)
-        edges = edges.clip(clip_poly_gdf, keep_geom_type=True)
+        edges = edges.clip(clip_poly_gdf, keep_geom_type=True).explode(ignore_index=True)
 
     two_way = edges.copy()
     two_way.geometry = two_way.geometry.reverse()
