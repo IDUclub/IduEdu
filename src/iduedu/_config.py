@@ -26,7 +26,7 @@ class Config:
         self.overpass_min_interval: float = float(os.getenv("OVERPASS_MIN_INTERVAL", "2"))
         self.overpass_max_retries: int = int(os.getenv("OVERPASS_MAX_RETRIES", "5"))
         self.overpass_retry_statuses: tuple[int, ...] = (429, 502, 503, 504)
-        self.overpass_backoff_base: float = float(os.getenv("OVERPASS_BACKOFF_BASE", "0.5"))
+        self.overpass_backoff_base: float = float(os.getenv("OVERPASS_BACKOFF_BASE", "2"))
 
         # --- UX ---
         self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}

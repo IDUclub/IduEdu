@@ -155,7 +155,7 @@ def _overpass_request(
             last_err_text = str(e)
             if attempt < max_retries:
                 sleep_s = min(60, backoff_base**attempt)
-                logger.warning(f"Network error, retrying in {sleep_s} (attempt {attempt + 1}/{max_retries})")
+                logger.warning(f"Network exception {e}, retrying in {sleep_s} (attempt {attempt + 1}/{max_retries})")
                 time.sleep(sleep_s)
                 continue
             raise RequestError(f"Request error: {e}") from e

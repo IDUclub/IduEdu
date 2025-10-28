@@ -34,7 +34,7 @@ def test_defaults_no_env_and_tty(monkeypatch):
     assert cfg.overpass_min_interval == 2.0
     assert cfg.overpass_max_retries == 5
     assert cfg.overpass_retry_statuses == (429, 502, 503, 504)
-    assert cfg.overpass_backoff_base == 0.5
+    assert cfg.overpass_backoff_base == 2
     assert cfg.enable_tqdm_bar is True
     assert cfg.verify_ssl is True
     assert cfg.proxies is None
