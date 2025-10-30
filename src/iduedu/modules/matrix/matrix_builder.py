@@ -173,7 +173,7 @@ def get_adj_matrix_gdf_to_gdf(
         raise CRSError(f"Graph crs ({local_crs}) has invalid format.") from e
 
     nx_graph = keep_largest_strongly_connected_component(nx_graph)
-
+    nx_graph = nx.convert_node_labels_to_integers(nx_graph)
     logger.debug("Preparing graph sparse matrix")
     transposed = False
 
