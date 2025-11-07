@@ -1,0 +1,6 @@
+﻿iduedu.get\_all\_public\_transport\_graph
+=========================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_all_public_transport_graph
