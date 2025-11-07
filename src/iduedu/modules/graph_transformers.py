@@ -310,7 +310,7 @@ def gdf_to_graph(
         graph.add_edge(row.u, row.v, **edge_attrs)
 
     graph.graph["crs"] = lines.crs
-    graph.graph["speed m/min"] = speed
+    graph.graph["speed_m_min"] = speed
     return nx.DiGraph(graph)
 
 

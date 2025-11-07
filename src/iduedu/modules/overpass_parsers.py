@@ -410,6 +410,11 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
         stop_dist = path.project(stop)
 
         projected_stop = path.interpolate(stop_dist)
+
+        # Платформы лежат нереалистично далеко от спроецированных остановок, ошибка в данных осм
+        if projected_stop.distance(platform) > 100:
+            continue
+
         add_node(projected_stop.x, projected_stop.y, ref_id=s_ref)
 
         if last_dist is not None:

@@ -96,8 +96,28 @@ config.set_rate_limit(min_interval=1.0, max_retries=3, backoff_base=0.5)
 config.set_enable_tqdm(True)
 config.configure_logging(level="INFO")
 ```
+### Historical snapshots
+
+You can fix queries to a specific OSM snapshot using the Overpass `date` parameter.
+This allows retrieving map data as it existed at a given moment in time.
+```python
+# Specific day
+config.set_overpass_date(date="2020-01-01")
+
+# Or build from components
+config.set_overpass_date(year=2020)            # → 2020-01-01T00:00:00Z
+config.set_overpass_date(year=2020, month=5)   # → 2020-05-01T00:00:00Z
+```
+To reset and use the latest data again:
+```python
+config.set_overpass_date()  # or config.set_overpass_date(None)
+```
+
+>When a historical date is set, complex subway stop-area relations are skipped automatically
+> (as Overpass may not support those at arbitrary timestamps). A warning is logged in such cases.
 
 > IduEdu respects Overpass API etiquette. Please keep sensible rate limits.
+
 
 ---
 

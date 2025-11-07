@@ -87,7 +87,9 @@ def _build_edges_from_overpass(polygon: Polygon, way_filter: str, simplify: bool
         Attributes on merged edges are inferred from the nearest original segment around the midpoint,
         which may drop or aggregate original per-segment variability.
     """
+    logger.info("Downloading walk/drive network via Overpass ...")
     data = get_network_by_filters(polygon, way_filter)
+    logger.info("Downloading walk/drive network via Overpass done!")
     ways = data[data["type"] == "way"].copy()
 
     # Собираем координаты каждой линии (lon, lat)
@@ -194,7 +196,6 @@ def get_drive_graph(
     if network_type == "custom" and road_filter is None:
         raise ValueError("For road_type='custom' you must provide custom_filter")
 
-    logger.info("Downloading drive network via Overpass ...")
     edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, simplify=simplify)
 
     if osm_edge_tags is None:
@@ -339,7 +340,6 @@ def get_walk_graph(
     if network_type == "custom" and road_filter is None:
         raise ValueError("For road_type='custom' you must provide custom_filter")
 
-    logger.info("Downloading walk network via Overpass ...")
     edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, simplify=simplify)
 
     if osm_edge_tags is None:

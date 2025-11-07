@@ -18,12 +18,16 @@ def _clean_env(monkeypatch):
         "OVERPASS_MIN_INTERVAL",
         "OVERPASS_MAX_RETRIES",
         "OVERPASS_BACKOFF_BASE",
+        "OVERPASS_DATE",
         "ENABLE_TQDM",
         "LOG_LEVEL",
         "CI",
     ]:
         monkeypatch.delenv(k, raising=False)
     yield
+
+
+# ---------- basic config behaviour ----------
 
 
 def test_defaults_no_env_and_tty(monkeypatch):
@@ -38,6 +42,7 @@ def test_defaults_no_env_and_tty(monkeypatch):
     assert cfg.enable_tqdm_bar is True
     assert cfg.verify_ssl is True
     assert cfg.proxies is None
+    assert cfg.overpass_date is None
     # tag sets are frozenset and contain expected keys
     assert isinstance(cfg.drive_useful_edges_attr, frozenset)
     assert "highway" in cfg.drive_useful_edges_attr
@@ -55,6 +60,7 @@ def test_from_env_reads_values(monkeypatch):
     monkeypatch.setenv("OVERPASS_BACKOFF_BASE", "0.25")
     monkeypatch.setenv("ENABLE_TQDM", "0")
     monkeypatch.setenv("OVERPASS_USER_AGENT", "test-agent/1.0")
+    monkeypatch.setenv("OVERPASS_DATE", "2020-01-01")
 
     cfg = Config()  # __init__ reads env
     assert cfg.overpass_url == "https://example.org/interpreter"
@@ -64,6 +70,16 @@ def test_from_env_reads_values(monkeypatch):
     assert cfg.overpass_backoff_base == 0.25
     assert cfg.enable_tqdm_bar is False
     assert cfg.user_agent == "test-agent/1.0"
+    # OVERPASS_DATE is normalized
+    assert cfg.overpass_date == "2020-01-01T00:00:00Z"
+
+
+def test_from_env_invalid_overpass_date(monkeypatch, caplog):
+    monkeypatch.setenv("OVERPASS_DATE", "not-a-date")
+
+    cfg = Config()
+    # invalid env date should not crash config and should leave overpass_date as None
+    assert cfg.overpass_date is None
 
 
 def test_set_overpass_url_valid_and_invalid():
@@ -120,17 +136,109 @@ def test_set_rate_limit_updates_and_validation():
         cfg.set_rate_limit(backoff_base=0)
 
 
+# ---------- overpass date / header ----------
+
+
+def test_overpass_date_default_and_header_without_date():
+    cfg = Config()
+    assert cfg.overpass_date is None
+
+    header = cfg.build_overpass_header()
+    assert header.startswith("[out:json][timeout:120]")
+    assert "[date:" not in header
+
+
+def test_set_overpass_date_string_short_and_full():
+    cfg = Config()
+
+    # YYYY-MM-DD → YYYY-MM-DDT00:00:00Z
+    cfg.set_overpass_date(date="2020-01-01")
+    assert cfg.overpass_date == "2020-01-01T00:00:00Z"
+    header = cfg.build_overpass_header(timeout=10)
+    assert '[date:"2020-01-01T00:00:00Z"]' in header
+
+    # full datetime with Z stays as normalized ISO
+    cfg.set_overpass_date(date="2020-01-01T12:34:56Z")
+    assert cfg.overpass_date == "2020-01-01T12:34:56Z"
+    header = cfg.build_overpass_header(timeout=5)
+    assert '[date:"2020-01-01T12:34:56Z"]' in header
+
+
+def test_set_overpass_date_components_year_month_day():
+    cfg = Config()
+
+    cfg.set_overpass_date(year=2020)
+    assert cfg.overpass_date == "2020-01-01T00:00:00Z"
+
+    cfg.set_overpass_date(year=2020, month=5)
+    assert cfg.overpass_date == "2020-05-01T00:00:00Z"
+
+    cfg.set_overpass_date(year=2020, month=5, day=10)
+    assert cfg.overpass_date == "2020-05-10T00:00:00Z"
+
+
+def test_set_overpass_date_reset():
+    cfg = Config()
+    cfg.set_overpass_date(year=2020)
+    assert cfg.overpass_date is not None
+
+    cfg.set_overpass_date()  # reset
+    assert cfg.overpass_date is None
+
+    cfg.set_overpass_date(None)  # explicit reset
+    assert cfg.overpass_date is None
+
+
+def test_set_overpass_date_invalid_combinations_and_values():
+    cfg = Config()
+
+    # both date and components
+    with pytest.raises(ValueError):
+        cfg.set_overpass_date(date="2020-01-01", year=2020)
+
+    # invalid short date
+    with pytest.raises(ValueError):
+        cfg.set_overpass_date(date="2020-13-01")
+
+    # invalid full datetime
+    with pytest.raises(ValueError):
+        cfg.set_overpass_date(date="2020-01-01T99:00:00Z")
+
+    # missing year when using components
+    with pytest.raises(ValueError):
+        cfg.set_overpass_date(month=1, day=1)
+
+    # invalid calendar date
+    with pytest.raises(ValueError):
+        cfg.set_overpass_date(year=2020, month=2, day=30)
+
+
+def test_build_overpass_header_custom_timeout_and_date_override():
+    cfg = Config()
+    cfg.set_timeout(60)
+    cfg.set_overpass_date(date="2020-01-01")
+
+    header = cfg.overpass_header
+    assert header == '[out:json][timeout:60][date:"2020-01-01T00:00:00Z"];'
+
+    header2 = cfg.build_overpass_header(timeout=10, date="2021-02-03T00:00:00Z")
+    assert header2 == '[out:json][timeout:10][date:"2021-02-03T00:00:00Z"];'
+
+
 def test_to_dict_roundtrip_structure():
     cfg = Config()
     cfg.set_overpass_url("https://mirror.test/api/interpreter")
     cfg.set_timeout(15)
     cfg.set_enable_tqdm(False)
     cfg.set_drive_useful_edges_attr(["hwy"])
+    cfg.set_overpass_date(date="2020-01-01")
+
     d = cfg.to_dict()
     # keys present
     for key in (
         "overpass_url",
         "timeout",
+        "overpass_date",
         "enable_tqdm_bar",
         "drive_useful_edges_attr",
         "walk_useful_edges_attr",
@@ -152,3 +260,4 @@ def test_to_dict_roundtrip_structure():
     assert isinstance(d["walk_useful_edges_attr"], list)
     assert isinstance(d["transport_useful_edges_attr"], list)
     assert isinstance(d["overpass_retry_statuses"], tuple)
+    assert d["overpass_date"] == "2020-01-01T00:00:00Z"
