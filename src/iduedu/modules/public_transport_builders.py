@@ -54,11 +54,20 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
 
     nodes_col = ["node_id", "point", "route", "type", "ref_id", "extra_data"]
     edges_col = ["u", "v", "type", "extra_data", "route", "geometry"]
+
     graph_nodes = graph_df[~graph_df["node_id"].isna()][nodes_col].copy()
+    mask = graph_nodes["ref_id"].isna()
+    graph_nodes["ref_id"] = graph_nodes["ref_id"].astype("string")
+    new_ids = [f"new_node_{i}" for i in range(1, mask.sum() + 1)]
+    graph_nodes.loc[mask, "ref_id"] = new_ids
+
     graph_edges = graph_df[graph_df["node_id"].isna()][edges_col].copy()
 
     if additional_data is not None:
         additional_edges, additional_nodes = additional_data
+        additional_nodes["ref_id"] = additional_nodes["ref_id"].astype("string")
+        additional_edges["v_ref"] = additional_edges["v_ref"].astype("string")
+        additional_edges["u_ref"] = additional_edges["u_ref"].astype("string")
         graph_nodes_combined = graph_nodes.merge(additional_nodes, left_on="ref_id", right_on="ref_id", how="outer")
         for column in nodes_col:
             if column in graph_nodes_combined.columns:
@@ -266,6 +275,8 @@ def _get_public_transport_graph(
         logger.warning("No routes found for public transport.")
         return nx.Graph()
 
+    overpass_data = overpass_data.dropna(subset=["transport_type"])
+
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     # необходимые osm теги из relation маршрута
@@ -322,6 +333,7 @@ def _get_public_transport_graph(
         polygon = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
         to_return = clip_nx_graph(to_return, polygon)
 
+    to_return = nx.convert_node_labels_to_integers(to_return)
     logger.debug("Done!")
     return to_return
 

@@ -92,7 +92,7 @@ def _link_unconnected(disconnected_ways) -> list:
     return connected_ways
 
 
-def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str]) -> pd.Series:
+def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str], loc_id) -> pd.Series:
     transformer = Transformer.from_crs("EPSG:4326", crs, always_xy=True)
 
     # TODO надо писать версию с merge_line и отдельными запросами по максимальной скорости
@@ -135,7 +135,7 @@ def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str]) -
 
     tags = loc.get("tags", {}) if isinstance(loc.get("tags"), dict) else {}
 
-    transport_name = None
+    transport_name = f"Unnamed_{loc_id}"
     if "ref" in tags:
         transport_name = tags["ref"]
     elif "name" in tags:
@@ -153,7 +153,7 @@ def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str]) -
     platforms, platforms_refs = process_roles(route, PLATFORM_ROLES)
     stops, stops_refs = process_roles(route, STOPS_ROLES)
 
-    ways_df = route[(route["type"] == "way") & (route["role"].fillna("") == "")]
+    ways_df = route[(route["type"] == "way") & (route["role"].fillna("").isin(["", "forward", "backward"]))]
 
     if not ways_df.empty:
         ways = (
@@ -241,7 +241,6 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
     extra_data = loc.extra_data
 
     if not path:
-        warnings.warn("В одном из маршрутов нет пути, пока не работаю с этим", UserWarning)
         return None
 
     def _side_left_or_right(point):
@@ -442,7 +441,7 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
 def parse_overpass_to_edgenode(loc, crs, needed_tags) -> pd.DataFrame | None:
     loc_id = loc.name
     transport_type = loc.transport_type
-    parsed_geometry = parse_overpass_route_response(loc, crs, needed_tags)
+    parsed_geometry = parse_overpass_route_response(loc, crs, needed_tags, loc_id)
     edgenode = geometry_to_graph_edge_node_df(parsed_geometry, transport_type, loc_id)
     return edgenode
 
@@ -515,7 +514,7 @@ def patch_members_roles_inplace(stop_areas_df):
 
 def parse_overpass_subway_data(
     stop_areas, stop_areas_group, stations_data, to_crs
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     graph_nodes = []
     graph_edges = []
 
@@ -680,6 +679,8 @@ def parse_overpass_subway_data(
                 return 0.0
         return 0.0
 
+    if len(nodes_gdf) == 0:
+        return None
     nodes_info = nodes_gdf[["ref_id", "point", "type", "extra_data"]].copy()
     nodes_info["depth_m"] = nodes_info["extra_data"].apply(_depth_from_extra)
 

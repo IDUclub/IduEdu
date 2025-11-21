@@ -89,6 +89,8 @@ def _build_edges_from_overpass(polygon: Polygon, way_filter: str, simplify: bool
     """
     logger.info("Downloading walk/drive network via Overpass ...")
     data = get_network_by_filters(polygon, way_filter)
+    if len(data) == 0:
+        return gpd.GeoDataFrame(), CRS.from_epsg(4326)
     logger.info("Downloading walk/drive network via Overpass done!")
     ways = data[data["type"] == "way"].copy()
 
@@ -113,10 +115,11 @@ def _build_edges_from_overpass(polygon: Polygon, way_filter: str, simplify: bool
 
     if simplify:
         # сшиваем ребра и переносим атрибуты через midpoints -> nearest
-        merged = list(
-            line_merge(MultiLineString(edges.geometry.to_list()), directed=True).geoms
-        )  # TODO Можно быстрее, если разьединить по тегам и распараллелить, тоже самое в DRIVE
-        lines = gpd.GeoDataFrame(geometry=merged, crs=local_crs)
+        merged_lines = line_merge(MultiLineString(edges.geometry.to_list()), directed=True)
+        list_of_merged = list(merged_lines.geoms) if merged_lines.geom_type == "MultiLineString" else [merged_lines]
+
+        # TODO Можно быстрее, если разьединить по тегам и распараллелить, тоже самое в DRIVE
+        lines = gpd.GeoDataFrame(geometry=list_of_merged, crs=local_crs)
 
         mid = lines.copy()
         mid.geometry = mid.interpolate(lines.length / 2)
@@ -198,6 +201,10 @@ def get_drive_graph(
 
     edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, simplify=simplify)
 
+    if len(edges) == 0:
+        logger.warning("No edges found, returning empty graph")
+        return nx.MultiDiGraph()
+
     if osm_edge_tags is None:
         needed_tags = set(config.drive_useful_edges_attr)
     else:
@@ -216,7 +223,10 @@ def get_drive_graph(
         edges = edges.clip(clip_poly_gdf, keep_geom_type=True)
 
     # двусторонние — дублируем с реверсом
-    two_way = edges[edges["oneway"] != "yes"].copy()
+    if "oneway" not in edges.columns:
+        two_way = edges.copy()
+    else:
+        two_way = edges[edges["oneway"] != "yes"].copy()
     two_way.geometry = two_way.geometry.reverse()
     edges = pd.concat([edges, two_way], ignore_index=True)
 
@@ -240,9 +250,11 @@ def get_drive_graph(
 
     edges[["category", "maxspeed_mpm"]] = edges["highway"].apply(lambda h: pd.Series(_get_highway_properties(h)))
 
-    maxspeed_osm_mpm = (pd.to_numeric(edges["maxspeed"], errors="coerce") * 1000.0 / 60.0).round(3)
-
-    edges["speed_mpm"] = maxspeed_osm_mpm.fillna(edges["maxspeed_mpm"])
+    if "maxspeed" in edges.columns:
+        maxspeed_osm_mpm = (pd.to_numeric(edges["maxspeed"], errors="coerce") * 1000.0 / 60.0).round(3)
+        edges["speed_mpm"] = maxspeed_osm_mpm.fillna(edges["maxspeed_mpm"])
+    else:
+        edges["speed_mpm"] = edges["maxspeed_mpm"]
 
     edges["length_meter"] = edges.geometry.length.round(3)
     edges["time_min"] = (edges["length_meter"] / edges["speed_mpm"]).round(3)
@@ -342,6 +354,10 @@ def get_walk_graph(
 
     edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, simplify=simplify)
 
+    if len(edges) == 0:
+        logger.warning("No edges found, returning empty graph")
+        return nx.MultiDiGraph()
+
     if osm_edge_tags is None:
         needed_tags = set(config.walk_useful_edges_attr)
     else:
@@ -390,8 +406,9 @@ def get_walk_graph(
     if keep_edge_geometry:
         edge_attrs |= {"geometry"}
     edge_attrs |= {"length_meter", "time_min", "type"}
+    edge_attrs = [attr for attr in edge_attrs if attr in edges.columns]
 
-    attrs_iter = edges[list(edge_attrs)].to_dict("records")
+    attrs_iter = edges[edge_attrs].to_dict("records")
     graph.add_edges_from((int(uu), int(vv), d) for uu, vv, d in zip(u, v, attrs_iter))
 
     if keep_largest_subgraph:

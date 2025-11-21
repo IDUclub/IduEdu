@@ -205,55 +205,93 @@ def join_pt_walk_graph(
                     time_min=round(line2.length / speed, 3),
                     type="walk",
                 )
-        # Если платформм несколько на эдж
+        # Если платформ несколько на эдж
         else:
             dist_project = [
                 (edge.project(platform), edge.interpolate(edge.project(platform)), ind)
                 for ind, platform in zip(row["index"], row.geometry)
             ]
             dist_project.sort(key=lambda x: x[0])
+
+            eps = 1e-6 * edge.length  # допуск по расстоянию вдоль эджа
+
+            # сгруппируем платформы по расстоянию(fallback на случай проецирования в одну точку пешеходки)
+            grouped = []
+            for dist, projected_point, cur_index in dist_project:
+                if not grouped:
+                    grouped.append([dist, projected_point, [cur_index]])
+                else:
+                    last_dist, last_point, idxs = grouped[-1]
+                    if abs(dist - last_dist) <= eps:
+                        idxs.append(cur_index)
+                    else:
+                        grouped.append([dist, projected_point, [cur_index]])
+
+            dist_project_grouped = grouped
+
+            merge_mapping = {}
+
             u_to_del = u
             v_to_del = v
             last_dist = 0
             last_u = u
-            for dist, projected_point, cur_index in dist_project:
+
+            for dist, projected_point, idxs in dist_project_grouped:
+                main_index = idxs[0]
+                for extra_idx in idxs[1:]:
+                    merge_mapping[extra_idx] = main_index
+
                 if dist == 0:
-                    # Если платформа проецируется на начало эджа
-                    mapping = {u: cur_index}
-                    u_to_del = cur_index
+                    # Если платформа проецируются на начало эджа
+                    mapping = {u: main_index}
+                    u_to_del = main_index
                     nx.relabel_nodes(walk, mapping, copy=False)
-                    points_grouped_by_edge.loc[points_grouped_by_edge["u"] == u, "u"] = cur_index
-                    points_grouped_by_edge.loc[points_grouped_by_edge["v"] == u, "v"] = cur_index
+
+                    points_grouped_by_edge.loc[points_grouped_by_edge["u"] == u, "u"] = main_index
+                    points_grouped_by_edge.loc[points_grouped_by_edge["v"] == u, "v"] = main_index
+
+                    last_u = main_index
+
                 elif dist == edge.length:
                     # Если на конец
-                    mapping = {v: cur_index}
-                    v_to_del = cur_index
+                    mapping = {v: main_index}
+                    v_to_del = main_index
                     nx.relabel_nodes(walk, mapping, copy=False)
-                    points_grouped_by_edge.loc[points_grouped_by_edge["u"] == v, "u"] = cur_index
-                    points_grouped_by_edge.loc[points_grouped_by_edge["v"] == v, "v"] = cur_index
+
+                    points_grouped_by_edge.loc[points_grouped_by_edge["u"] == v, "u"] = main_index
+                    points_grouped_by_edge.loc[points_grouped_by_edge["v"] == v, "v"] = main_index
+
+                    last_u = main_index
+
                 else:
                     # По очереди добавляем ноды/линии
                     line = substring(edge, last_dist, dist)
-                    if isinstance(line, Point):
-                        raise ValueError(f"wtf {line} cannot be linestring")
-                    walk.add_node(cur_index, x=round(projected_point.x, 5), y=round(projected_point.y, 5))
+
+                    if main_index not in walk:
+                        walk.add_node(
+                            main_index,
+                            x=round(projected_point.x, 5),
+                            y=round(projected_point.y, 5),
+                        )
+
                     walk.add_edge(
                         last_u,
-                        cur_index,
+                        main_index,
                         geometry=line,
                         length_meter=round(line.length, 3),
                         time_min=round(line.length / speed, 3),
                         type="walk",
                     )
                     walk.add_edge(
-                        cur_index,
+                        main_index,
                         last_u,
                         geometry=line.reverse(),
                         length_meter=round(line.length, 3),
                         time_min=round(line.length / speed, 3),
                         type="walk",
                     )
-                    last_u = cur_index
+                    last_u = main_index
+
                 last_dist = dist
 
             # Если последняя остановка спроецировалась не на конец эджа, надо добавить остаток
@@ -275,6 +313,15 @@ def join_pt_walk_graph(
                     time_min=round(line.length / speed, 3),
                     type="walk",
                 )
+
+            if merge_mapping:
+                nx.relabel_nodes(walk, merge_mapping, copy=False)
+                points_grouped_by_edge["u"] = points_grouped_by_edge["u"].replace(merge_mapping)
+                points_grouped_by_edge["v"] = points_grouped_by_edge["v"].replace(merge_mapping)
+
+                u_to_del = merge_mapping.get(u_to_del, u_to_del)
+                v_to_del = merge_mapping.get(v_to_del, v_to_del)
+
             edges_to_del.append((u_to_del, v_to_del, k))
             if u != v:
                 edges_to_del.append((v_to_del, u_to_del, k))
