@@ -1,3 +1,4 @@
+import time
 from typing import Literal
 
 import geopandas as gpd
@@ -6,7 +7,7 @@ import numpy as np
 import pandas as pd
 from geopandas import GeoDataFrame
 from pyproj import CRS
-from shapely import LineString, MultiLineString, Polygon, line_merge
+from shapely import LineString, MultiLineString, Polygon, line_merge, linestrings
 from shapely.geometry.multipolygon import MultiPolygon
 
 from iduedu import config
@@ -62,7 +63,12 @@ def _get_highway_properties(highway) -> tuple[str, float]:
     return lowest_reg, min_speed
 
 
-def _build_edges_from_overpass(polygon: Polygon, way_filter: str, simplify: bool = True) -> tuple[GeoDataFrame, CRS]:
+def _build_edges_from_overpass(
+    polygon: Polygon,
+    way_filter: str,
+    needed_tags: set[str],
+    simplify: bool = True,
+) -> tuple[GeoDataFrame, CRS]:
     """
     Download OSM ways by filter, segment into edges, and project to a local CRS.
 
@@ -87,11 +93,10 @@ def _build_edges_from_overpass(polygon: Polygon, way_filter: str, simplify: bool
         Attributes on merged edges are inferred from the nearest original segment around the midpoint,
         which may drop or aggregate original per-segment variability.
     """
-    logger.info("Downloading walk/drive network via Overpass ...")
     data = get_network_by_filters(polygon, way_filter)
     if len(data) == 0:
         return gpd.GeoDataFrame(), CRS.from_epsg(4326)
-    logger.info("Downloading walk/drive network via Overpass done!")
+    logger.info("Downloading network via Overpass done!")
     ways = data[data["type"] == "way"].copy()
 
     # Собираем координаты каждой линии (lon, lat)
@@ -105,30 +110,41 @@ def _build_edges_from_overpass(polygon: Polygon, way_filter: str, simplify: bool
     seg_counts = np.maximum(lengths - 1, 0)
     way_idx = np.repeat(ways.index.values, seg_counts)
 
-    geoms = [LineString([tuple(s), tuple(e)]) for s, e in zip(starts, ends)]
+    coords = np.stack([starts, ends], axis=1)
+    geoms = linestrings(coords)
 
     # локальная проекция
     local_crs = estimate_crs_for_bounds(*polygon.bounds)
 
     edges = gpd.GeoDataFrame({"way_idx": way_idx}, geometry=geoms, crs=4326).to_crs(local_crs)
-    edges = edges.join(ways[["id", "tags"]], on="way_idx")
 
+    tags = ways["tags"]
+
+    tag_keys: set[str] = set(needed_tags)
+    if len(tag_keys) > 50:
+        tags_expanded = pd.json_normalize(tags.tolist())
+        tags_expanded.index = ways.index
+        tags_df = tags_expanded.loc[:, tags_expanded.columns.intersection(tag_keys)]
+    else:
+        cols = {k: tags.map(lambda d, kk=k: d.get(kk) if isinstance(d, dict) else None) for k in tag_keys}
+        tags_df = pd.DataFrame(cols, index=ways.index)
+
+    edges = edges.join(tags_df, on="way_idx")
+
+    existing_columns = [c for c in needed_tags if c in edges.columns]
     if simplify:
         # сшиваем ребра и переносим атрибуты через midpoints -> nearest
         merged_lines = line_merge(MultiLineString(edges.geometry.to_list()), directed=True)
         list_of_merged = list(merged_lines.geoms) if merged_lines.geom_type == "MultiLineString" else [merged_lines]
 
-        # TODO Можно быстрее, если разьединить по тегам и распараллелить, тоже самое в DRIVE
         lines = gpd.GeoDataFrame(geometry=list_of_merged, crs=local_crs)
 
         mid = lines.copy()
         mid.geometry = mid.interpolate(lines.length / 2)
 
-        # TODO Вот тут подумать надо, теряются аттрибуты, надо ли складывать их "по умному", в листы.
         joined = gpd.sjoin_nearest(mid[["geometry"]], edges, how="left", max_distance=1)
         joined = joined.reset_index().drop_duplicates(subset="index").set_index("index")
-        lines = lines.join(joined[["tags", "id", "way_idx"]])
-
+        lines = lines.join(joined[existing_columns])
         edges = lines
 
     return edges, local_crs
@@ -199,12 +215,6 @@ def get_drive_graph(
     if network_type == "custom" and road_filter is None:
         raise ValueError("For road_type='custom' you must provide custom_filter")
 
-    edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, simplify=simplify)
-
-    if len(edges) == 0:
-        logger.warning("No edges found, returning empty graph")
-        return nx.MultiDiGraph()
-
     if osm_edge_tags is None:
         needed_tags = set(config.drive_useful_edges_attr)
     else:
@@ -212,11 +222,14 @@ def get_drive_graph(
 
     tags_to_retrieve = set(needed_tags) | {"oneway", "maxspeed", "highway"}
 
-    tags_df = pd.DataFrame.from_records(
-        ({k: v for k, v in d.items() if k in tags_to_retrieve} for d in edges["tags"]),
-        index=edges.index,
+    logger.info("Downloading drive network via Overpass ...")
+    edges, local_crs = _build_edges_from_overpass(
+        polygon4326, road_filter, needed_tags=tags_to_retrieve, simplify=simplify
     )
-    edges = edges.join(tags_df)
+
+    if len(edges) == 0:
+        logger.warning("No edges found, returning empty graph")
+        return nx.MultiDiGraph()
 
     if clip_by_territory:
         clip_poly_gdf = gpd.GeoDataFrame(geometry=[polygon4326], crs=4326).to_crs(local_crs)
@@ -352,22 +365,17 @@ def get_walk_graph(
     if network_type == "custom" and road_filter is None:
         raise ValueError("For road_type='custom' you must provide custom_filter")
 
-    edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, simplify=simplify)
-
-    if len(edges) == 0:
-        logger.warning("No edges found, returning empty graph")
-        return nx.MultiDiGraph()
-
     if osm_edge_tags is None:
         needed_tags = set(config.walk_useful_edges_attr)
     else:
         needed_tags = set(osm_edge_tags)
 
-    tags_df = pd.DataFrame.from_records(
-        ({k: v for k, v in d.items() if k in needed_tags} for d in edges["tags"]),
-        index=edges.index,
-    )
-    edges = edges.join(tags_df)
+    logger.info("Downloading walk network via Overpass ...")
+    edges, local_crs = _build_edges_from_overpass(polygon4326, road_filter, needed_tags=needed_tags, simplify=simplify)
+
+    if len(edges) == 0:
+        logger.warning("No edges found, returning empty graph")
+        return nx.MultiDiGraph()
 
     if clip_by_territory:
         clip_poly_gdf = gpd.GeoDataFrame(geometry=[polygon4326], crs=4326).to_crs(local_crs)
