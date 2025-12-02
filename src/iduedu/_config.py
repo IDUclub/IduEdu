@@ -39,12 +39,8 @@ class Config:
                 logger.warning(f"Invalid OVERPASS_DATE env value {env_date!r}: {exc}")
 
         # --- Caching ---
-        self.overpass_cache_dir: str | None = os.getenv("OVERPASS_CACHE_DIR")
-        self.overpass_cache_enabled: bool = os.getenv("OVERPASS_CACHE_ENABLED", "0") not in {
-            "0",
-            "false",
-            "False",
-        }
+        self.overpass_cache_dir: str = os.getenv("OVERPASS_CACHE_DIR", ".iduedu_cache")
+        self.overpass_cache_enabled: bool = os.getenv("OVERPASS_CACHE_ENABLED", "1").lower() not in {"0", "false"}
 
         # --- UX ---
         self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}
