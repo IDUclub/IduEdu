@@ -430,8 +430,8 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
         boarding_geom = LineString(
             [(round(projected_stop.x, 5), round(projected_stop.y, 5)), (round(platform.x, 5), round(platform.y, 5))]
         )
-        add_edge(node_id - 1, node_id, geometry=boarding_geom)
-        add_edge(node_id, node_id - 1, geometry=boarding_geom)
+        add_edge(node_id - 1, node_id, geometry=None)
+        add_edge(node_id, node_id - 1, geometry=None)
         node_id += 1
 
     to_return = pd.DataFrame(graph_data)

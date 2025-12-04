@@ -208,17 +208,20 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
         )
 
     for _, e in edges.iterrows():
+        payload = {
+            "route": e["route"],
+            "type": e["type"],
+            "length_meter": e["length_meter"],
+            "time_min": e["time_min"],
+            **(e["extra_data"] if isinstance(e["extra_data"], dict) else {}),
+        }
+        if keep_geometry and not pd.isna(e["geometry"]):
+            payload["geometry"] = e["geometry"]
         graph.add_edge(
             int(e["u"]),
             int(e["v"]),
-            route=e["route"],
-            type=e["type"],
-            geometry=(e["geometry"] if keep_geometry else None),
-            length_meter=e["length_meter"],
-            time_min=e["time_min"],
-            **(e["extra_data"] if isinstance(e["extra_data"], dict) else {}),
+            **payload,
         )
-
     return graph
 
 

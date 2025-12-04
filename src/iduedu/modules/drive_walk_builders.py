@@ -383,7 +383,12 @@ def get_walk_graph(
 
     two_way = edges.copy()
     two_way.geometry = two_way.geometry.reverse()
-    edges = pd.concat([edges, two_way], ignore_index=True)
+    edges["_ord"] = np.arange(len(edges)) * 2
+    two_way["_ord"] = np.arange(len(two_way)) * 2 + 1
+
+    edges = (
+        pd.concat([edges, two_way], ignore_index=True).sort_values("_ord").drop(columns="_ord").reset_index(drop=True)
+    )
 
     # u/v и узлы
     coords = edges.geometry.get_coordinates().to_numpy()
