@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           poetry config virtualenvs.in-project true
-          poetry install --with dev,test,docs
+          poetry install --with dev,docs
 
       - name: Check tag matches pyproject version
         run: |
