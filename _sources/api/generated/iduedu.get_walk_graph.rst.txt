@@ -1,0 +1,6 @@
+﻿iduedu.get\_walk\_graph
+=======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_walk_graph

@@ -1,0 +1,6 @@
+﻿iduedu.get\_adj\_matrix\_gdf\_to\_gdf
+=====================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_adj_matrix_gdf_to_gdf
