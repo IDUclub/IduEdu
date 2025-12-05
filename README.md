@@ -96,6 +96,33 @@ config.set_rate_limit(min_interval=1.0, max_retries=3, backoff_base=0.5)
 config.set_enable_tqdm(True)
 config.configure_logging(level="INFO")
 ```
+
+### Overpass caching
+IduEdu now supports optional file-based caching of Overpass responses to reduce network calls and speed up repeated queries. The cache stores JSON responses for boundary, network, routes and member requests.
+
+- Defaults
+  - caching is enabled by default
+  - default cache directory: .iduedu_cache (relative to the working directory)
+
+- Configure cache at runtime
+
+```python
+# disable cache entirely
+config.set_overpass_cache(enabled=False)
+
+# change cache directory and enable
+config.set_overpass_cache(cache_dir="/var/tmp/iduedu_overpass_cache", enabled=True)
+```
+
+- Environment variables (alternative to runtime config)
+  - OVERPASS_CACHE_DIR — path to cache directory (e.g. /tmp/overpass_cache)
+  - OVERPASS_CACHE_ENABLED — "0" / "false" to disable, any other value enables
+
+
+- Notes
+  - The cache only stores raw Overpass JSON responses (not derived graphs).
+  - To force fresh downloads, either remove the cache files in the cache directory or disable caching for the run using `config.set_overpass_cache(enabled=False)`.
+
 ### Historical snapshots
 
 You can fix queries to a specific OSM snapshot using the Overpass `date` parameter.
