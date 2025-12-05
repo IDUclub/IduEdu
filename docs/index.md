@@ -53,12 +53,10 @@ pip install iduedu
 ### 1) Build an intermodal graph
 
 ```python
-
 from iduedu import get_intermodal_graph
 
 # Define a territory (use OSM relation id or a shapely polygon/geodataframe)
 G = get_intermodal_graph(osm_id=1114252)  # e.g., Saint Petersburg, Vasileostrovsky District
-
 ```
 
 ### 2) Compute an OD matrix (time or length)
@@ -75,7 +73,6 @@ M = get_adj_matrix_gdf_to_gdf(
     origins, destinations, G, weight="time_min", dtype="float32", threshold=None
 )
 print(M.head())
-
 ```
 
 ---
@@ -95,10 +92,37 @@ config.set_rate_limit(min_interval=1.0, max_retries=3, backoff_base=0.5)
 config.set_enable_tqdm(True)
 config.configure_logging(level="INFO")
 ```
+
+### Overpass caching
+IduEdu provides optional file-based caching of Overpass JSON responses to speed repeated queries. This cache is used for boundaries, network queries, route relation queries and member fetches.
+
+- Runtime API:
+
+```python
+# Disable cache for this session
+config.set_overpass_cache(enabled=False)
+
+# Enable cache and change cache directory
+config.set_overpass_cache(cache_dir="/tmp/overpass_cache", enabled=True)
+```
+
+- Environment variables:
+
+```bash
+export OVERPASS_CACHE_DIR="/tmp/overpass_cache"
+export OVERPASS_CACHE_ENABLED="1"  # "0" or "false" disables cache
+```
+
+- Behavior notes:
+  - Cache is enabled by default and uses ".iduedu_cache" as the default directory.
+  - The cache stores raw Overpass JSON responses; it does not cache processed graphs or derived data.
+  - To force fresh downloads, clear the cache directory or disable caching for that run.
+
 ### Historical snapshots
 
 You can fix queries to a specific OSM snapshot using the Overpass `date` parameter.
 This allows retrieving map data as it existed at a given moment in time.
+
 ```python
 # Specific day
 config.set_overpass_date(date="2020-01-01")
@@ -107,7 +131,9 @@ config.set_overpass_date(date="2020-01-01")
 config.set_overpass_date(year=2020)            # → 2020-01-01T00:00:00Z
 config.set_overpass_date(year=2020, month=5)   # → 2020-05-01T00:00:00Z
 ```
+
 To reset and use the latest data again:
+
 ```python
 config.set_overpass_date()  # or config.set_overpass_date(None)
 ```
@@ -128,29 +154,3 @@ config.set_overpass_date()  # or config.set_overpass_date(None)
 > Contributions and ideas are welcome! Please open an issue or PR.
 
 ---
-
-## Contacts
-
-- [NCCR](https://actcognitive.org/) - National Center for Cognitive Research
-- [IDU](https://idu.itmo.ru/) - Institute of Design and Urban Studies
-- [Natalya Chichkova](https://t.me/nancy_nat) - project manager
-- [Danila Oleynikov (Donny)](https://t.me/ddonny_dd) - lead software engineer
----
-
-## Acknowledgments
-
-Реализовано при финансовой поддержке Фонда поддержки проектов Национальной технологической инициативы в рамках реализации "дорожной карты" развития высокотехнологичного направления "Искусственный интеллект" на период до 2030 года (Договор № 70-2021-00187)
-
-This research is financially supported by the Foundation for National Technology Initiative's Projects Support as a part of the roadmap implementation for the development of the high-tech field of Artificial Intelligence for the period up to 2030 (agreement 70-2021-00187)
-
----
-
-## License
-
-This project is open‑source. See the [LICENSE](LICENSE.txt) file for details.
-
----
-
-## Publications
-
-_Coming soon..._

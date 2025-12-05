@@ -22,6 +22,8 @@ def _clean_env(monkeypatch):
         "ENABLE_TQDM",
         "LOG_LEVEL",
         "CI",
+        "OVERPASS_CACHE_DIR",
+        "OVERPASS_CACHE_ENABLED",
     ]:
         monkeypatch.delenv(k, raising=False)
     yield
@@ -50,6 +52,9 @@ def test_defaults_no_env_and_tty(monkeypatch):
     assert isinstance(cfg.transport_useful_edges_attr, frozenset)
     # logger object is available
     assert cfg.logger is logger
+    # cache defaults
+    assert cfg.overpass_cache_dir == ".iduedu_cache"
+    assert cfg.overpass_cache_enabled is True
 
 
 def test_from_env_reads_values(monkeypatch):
@@ -61,6 +66,8 @@ def test_from_env_reads_values(monkeypatch):
     monkeypatch.setenv("ENABLE_TQDM", "0")
     monkeypatch.setenv("OVERPASS_USER_AGENT", "test-agent/1.0")
     monkeypatch.setenv("OVERPASS_DATE", "2020-01-01")
+    monkeypatch.setenv("OVERPASS_CACHE_DIR", "/tmp/overpass_cache")
+    monkeypatch.setenv("OVERPASS_CACHE_ENABLED", "0")
 
     cfg = Config()  # __init__ reads env
     assert cfg.overpass_url == "https://example.org/interpreter"
@@ -70,8 +77,9 @@ def test_from_env_reads_values(monkeypatch):
     assert cfg.overpass_backoff_base == 0.25
     assert cfg.enable_tqdm_bar is False
     assert cfg.user_agent == "test-agent/1.0"
-    # OVERPASS_DATE is normalized
     assert cfg.overpass_date == "2020-01-01T00:00:00Z"
+    assert cfg.overpass_cache_dir == "/tmp/overpass_cache"
+    assert cfg.overpass_cache_enabled is False
 
 
 def test_from_env_invalid_overpass_date(monkeypatch, caplog):
@@ -225,6 +233,24 @@ def test_build_overpass_header_custom_timeout_and_date_override():
     assert header2 == '[out:json][timeout:10][date:"2021-02-03T00:00:00Z"];'
 
 
+def test_set_overpass_cache_mutator():
+    cfg = Config()
+
+    assert cfg.overpass_cache_dir == ".iduedu_cache"
+    assert cfg.overpass_cache_enabled is True
+
+    cfg.set_overpass_cache(enabled=False)
+    assert cfg.overpass_cache_enabled is False
+
+    assert cfg.overpass_cache_dir == ".iduedu_cache"
+
+    cfg.set_overpass_cache(cache_dir="/var/cache/osm")
+    assert cfg.overpass_cache_dir == "/var/cache/osm"
+
+    cfg.set_overpass_cache(enabled=True)
+    assert cfg.overpass_cache_enabled is True
+
+
 def test_to_dict_roundtrip_structure():
     cfg = Config()
     cfg.set_overpass_url("https://mirror.test/api/interpreter")
@@ -232,6 +258,7 @@ def test_to_dict_roundtrip_structure():
     cfg.set_enable_tqdm(False)
     cfg.set_drive_useful_edges_attr(["hwy"])
     cfg.set_overpass_date(date="2020-01-01")
+    cfg.set_overpass_cache(enabled=False, cache_dir="/tmp/overpass_cache")
 
     d = cfg.to_dict()
     # keys present
@@ -250,6 +277,8 @@ def test_to_dict_roundtrip_structure():
         "user_agent",
         "proxies",
         "verify_ssl",
+        "overpass_cache_dir",
+        "overpass_cache_enabled",
     ):
         assert key in d
     # values are as expected
@@ -261,3 +290,5 @@ def test_to_dict_roundtrip_structure():
     assert isinstance(d["transport_useful_edges_attr"], list)
     assert isinstance(d["overpass_retry_statuses"], tuple)
     assert d["overpass_date"] == "2020-01-01T00:00:00Z"
+    assert d["overpass_cache_dir"] == "/tmp/overpass_cache"
+    assert d["overpass_cache_enabled"] is False

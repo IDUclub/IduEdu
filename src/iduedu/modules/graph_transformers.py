@@ -67,7 +67,7 @@ def keep_largest_strongly_connected_component(graph: nx.DiGraph, *, top_k_wcc_si
     weakly_connected_components = list(nx.weakly_connected_components(graph))
     if len(weakly_connected_components) > 1:
         sizes = [len(c) for c in weakly_connected_components]
-        logger.warning(
+        logger.debug(
             f"Graph contains {len(weakly_connected_components)} weakly connected components. "
             f"This means the graph has disconnected groups if edge directions are ignored. "
             f"Component sizes:: {_fmt_top_sizes(sizes, top_k=top_k_wcc_sizes)}"

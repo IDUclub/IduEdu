@@ -1,8 +1,47 @@
-cache
-/dist
-/.idea
-/.venv
-/.vscode
+# Project caches
+.iduedu_cache/
+cache/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python bytecode
+*.py[cod]
+*$py.class
+
+# Build / dist artifacts
+/dist/
+/build/
+/*.egg-info/
+
+# Virtual envs
+/.venv/
+/.env
+
+# IDE / tools
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# Coverage / test artifacts
+.coverage
+.coverage.*
+htmlcov/
+
+# Sphinx docs
+docs/_build/
+docs/_autoapi/
+docs/_autosummary/
+docs/_doctrees/
+_build/
+_autosummary/
+
+# Local dev stuff
 /dev
 /poetry.lock
-__pycache__
+
+# OS junk
+.DS_Store
+Thumbs.db

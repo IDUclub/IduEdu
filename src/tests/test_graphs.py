@@ -1,5 +1,6 @@
 # pylint: disable=redefined-outer-name, unused-import
 
+import geopandas as gpd
 import pytest
 
 from iduedu import (
@@ -9,6 +10,7 @@ from iduedu import (
     get_walk_graph,
     join_pt_walk_graph,
 )
+from iduedu.modules.overpass_downloaders import RequestError
 
 config.configure_logging("DEBUG")
 
@@ -36,6 +38,25 @@ def test_get_walk_graph(walk_graph):
     assert walk_graph is not None
     assert len(walk_graph.nodes) > 0
     assert len(walk_graph.edges) > 0
+
+
+def test_get_walk_graph_wrong_bounds(bounds):
+
+    wrong_poly = gpd.GeoDataFrame(geometry=[bounds], crs=4326).to_crs(3857).iloc[0].geometry
+    with pytest.raises(RequestError):
+        _ = get_walk_graph(territory=wrong_poly)
+
+
+def test_get_walk_graph_from_cache_custom_attrs(bounds, walk_graph):
+    g_walk_custom = get_walk_graph(
+        territory=bounds, osm_edge_tags=["surface", "footway"], clip_by_territory=True, keep_largest_subgraph=False
+    )
+    edge_attr_keys = {k for _, _, data in g_walk_custom.edges(data=True) for k in data.keys()}
+    assert g_walk_custom is not None
+    assert len(g_walk_custom.nodes) > 0
+    assert len(g_walk_custom.edges) > 0
+    assert "surface" in edge_attr_keys
+    assert "footway" in edge_attr_keys
 
 
 def test_get_single_public_transport_graph(bounds, subway_graph):

@@ -38,6 +38,10 @@ class Config:
             except ValueError as exc:
                 logger.warning(f"Invalid OVERPASS_DATE env value {env_date!r}: {exc}")
 
+        # --- Caching ---
+        self.overpass_cache_dir: str = os.getenv("OVERPASS_CACHE_DIR", ".iduedu_cache")
+        self.overpass_cache_enabled: bool = os.getenv("OVERPASS_CACHE_ENABLED", "1").lower() not in {"0", "false"}
+
         # --- UX ---
         self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}
 
@@ -83,6 +87,17 @@ class Config:
             raise ValueError(f"Invalid Overpass URL: {url!r}")
         with self._lock:
             self.overpass_url = url
+
+    def set_overpass_cache(self, *, enabled: bool | None = None, cache_dir: str | None = None):
+        """
+        Managing the file cache of Overpass requests.
+        enabled=True -> read/write cache
+        enabled=False -> ignore cache completely
+        """
+        if enabled is not None:
+            self.overpass_cache_enabled = bool(enabled)
+        if cache_dir is not None:
+            self.overpass_cache_dir = cache_dir
 
     def set_timeout(self, timeout: int):
         if timeout <= 0:
@@ -240,6 +255,8 @@ class Config:
             "user_agent": self.user_agent,
             "proxies": self.proxies,
             "verify_ssl": self.verify_ssl,
+            "overpass_cache_dir": self.overpass_cache_dir,
+            "overpass_cache_enabled": self.overpass_cache_enabled,
         }
 
     @classmethod

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from shapely import LineString, MultiPolygon, Polygon
 from tqdm.auto import tqdm
-from tqdm.contrib.concurrent import process_map, thread_map
+from tqdm.contrib.concurrent import process_map
 
 from iduedu import config
 from iduedu.enums.pt_enums import PublicTrasport
@@ -57,7 +57,7 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
 
     graph_nodes = graph_df[~graph_df["node_id"].isna()][nodes_col].copy()
     mask = graph_nodes["ref_id"].isna()
-    graph_nodes["ref_id"] = graph_nodes["ref_id"].astype("string")
+    graph_nodes["ref_id"] = graph_nodes["ref_id"].astype(int, errors="ignore").astype("string")
     new_ids = [f"new_node_{i}" for i in range(1, mask.sum() + 1)]
     graph_nodes.loc[mask, "ref_id"] = new_ids
 
@@ -65,9 +65,9 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
 
     if additional_data is not None:
         additional_edges, additional_nodes = additional_data
-        additional_nodes["ref_id"] = additional_nodes["ref_id"].astype("string")
-        additional_edges["v_ref"] = additional_edges["v_ref"].astype("string")
-        additional_edges["u_ref"] = additional_edges["u_ref"].astype("string")
+        additional_nodes["ref_id"] = additional_nodes["ref_id"].astype(int, errors="ignore").astype("string")
+        additional_edges["v_ref"] = additional_edges["v_ref"].astype(int, errors="ignore").astype("string")
+        additional_edges["u_ref"] = additional_edges["u_ref"].astype(int, errors="ignore").astype("string")
         graph_nodes_combined = graph_nodes.merge(additional_nodes, left_on="ref_id", right_on="ref_id", how="outer")
         for column in nodes_col:
             if column in graph_nodes_combined.columns:
@@ -81,6 +81,7 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
         no_point_refs = graph_nodes_combined[
             (graph_nodes_combined["point"].isna()) & (~graph_nodes_combined["ref_id"].isna())
         ][["ref_id"]].copy()
+
         if len(no_point_refs) > 0:
             no_point_refs = no_point_refs.merge(
                 additional_edges[["v_ref", "u_ref"]], left_on="ref_id", right_on="v_ref"
@@ -104,9 +105,8 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
             graph_nodes_combined.loc[mask, "ref_id"] = mapped[mask]
             graph_nodes_combined.loc[mask, "type"] = "subway_platform"
 
-            graph_nodes = graph_nodes_combined.dropna(subset=["node_id", "point"], how="all").copy()
-            graph_nodes["route"] = graph_nodes["route"].fillna("subway_transit")
-            # TODO delete duplicated platform node
+        graph_nodes_combined["route"] = graph_nodes_combined["route"].fillna("subway_transit")
+        graph_nodes = graph_nodes_combined.dropna(subset=["node_id", "point"], how="all").copy()
 
     platforms = graph_nodes[graph_nodes["type"] == "platform"].copy()
     platforms["point_group"] = platforms["point"].apply(lambda p: (round(p[0]), round(p[1])))
@@ -208,17 +208,20 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
         )
 
     for _, e in edges.iterrows():
+        payload = {
+            "route": e["route"],
+            "type": e["type"],
+            "length_meter": e["length_meter"],
+            "time_min": e["time_min"],
+            **(e["extra_data"] if isinstance(e["extra_data"], dict) else {}),
+        }
+        if keep_geometry and not pd.isna(e["geometry"]):
+            payload["geometry"] = e["geometry"]
         graph.add_edge(
             int(e["u"]),
             int(e["v"]),
-            route=e["route"],
-            type=e["type"],
-            geometry=(e["geometry"] if keep_geometry else None),
-            length_meter=e["length_meter"],
-            time_min=e["time_min"],
-            **(e["extra_data"] if isinstance(e["extra_data"], dict) else {}),
+            **payload,
         )
-
     return graph
 
 
