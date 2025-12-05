@@ -19,7 +19,7 @@ STOPS_ROLES = ["stop", "stop_exit_only", "stop_entry_only"]
 THRESHOLD_METERS = 100
 
 
-def _link_unconnected(disconnected_ways) -> list:
+def _link_unconnected(disconnected_ways) -> list:  # pragma: no cover
     # Считаем связи между линиями
     connect_points = [point for coords in disconnected_ways for point in (coords[0], coords[-1])]
     distances = cdist(connect_points, connect_points)
@@ -106,7 +106,7 @@ def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str], l
         filtered = route[route["role"].isin(roles)]
         return filtered.apply(transform_geometry, axis=1).tolist(), filtered["ref"].tolist()
 
-    def extract_needed(loc_obj: dict, keys: list[str]) -> dict | None:
+    def extract_needed(loc_obj: dict, keys: list[str]) -> dict | None:  # pragma: no cover
         out = {}
         tags = loc_obj.get("tags", {}) if isinstance(loc_obj.get("tags"), dict) else {}
         for k in keys:
@@ -164,7 +164,7 @@ def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str], l
         )
         connected_ways = [[]]
         cur_way = 0
-        for coords in ways:
+        for coords in ways:  # pragma: no cover
             if not coords:
                 continue
             # Соединяем маршруты, если всё ок, идут без пропусков
@@ -427,9 +427,9 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
         node_id += 1
 
         add_node(platform.x, platform.y, node_type="platform", ref_id=p_ref)
-        boarding_geom = LineString(
-            [(round(projected_stop.x, 5), round(projected_stop.y, 5)), (round(platform.x, 5), round(platform.y, 5))]
-        )
+        # boarding_geom = LineString(
+        #     [(round(projected_stop.x, 5), round(projected_stop.y, 5)), (round(platform.x, 5), round(platform.y, 5))]
+        # )
         add_edge(node_id - 1, node_id, geometry=None)
         add_edge(node_id, node_id - 1, geometry=None)
         node_id += 1

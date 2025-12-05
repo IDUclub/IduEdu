@@ -1,4 +1,3 @@
-import time
 from typing import Literal
 
 import geopandas as gpd
@@ -7,7 +6,7 @@ import numpy as np
 import pandas as pd
 from geopandas import GeoDataFrame
 from pyproj import CRS
-from shapely import LineString, MultiLineString, Polygon, line_merge, linestrings
+from shapely import MultiLineString, Polygon, line_merge, linestrings
 from shapely.geometry.multipolygon import MultiPolygon
 
 from iduedu import config

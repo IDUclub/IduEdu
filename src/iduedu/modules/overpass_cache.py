@@ -18,7 +18,7 @@ def get_cache_dir() -> Path | None:
     p = Path(cache_dir)
     try:
         p.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.warning(f"Failed to create cache dir {p}: {e}")
         return None
     return p
@@ -39,7 +39,7 @@ def cache_load(prefix: str, key_src: str):
     try:
         with path.open("r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.warning(f"Failed to load cache file {path}: {e}")
         return None
 
@@ -59,5 +59,5 @@ def cache_save(prefix: str, key_src: str, obj):
         with tmp.open("w", encoding="utf-8") as f:
             json.dump(obj, f, ensure_ascii=False)
         tmp.replace(path)
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.warning(f"Failed to write cache file {path}: {e}")

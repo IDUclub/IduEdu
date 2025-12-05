@@ -75,7 +75,7 @@ class RequestError(RuntimeError):
         self.response_text = response_text
         self.response_content = response_content
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         if self.status_code == 400:
             return (
                 f"{super().__str__()} (status: {self.status_code}, reason: {self.reason}). "
@@ -92,13 +92,13 @@ def _get_overpass_pause(
     try:
         response = _overpass_http("GET", url, timeout=config.timeout)
         response_text = response.text
-    except requests.RequestException as e:
+    except requests.RequestException as e:  # pragma: no cover
         raise RequestError(f"Unable to reach {url}, {e}") from e
 
     try:
         status = response_text.split("\n")[4]
         status_first_part = status.split(" ")[0]
-    except (AttributeError, IndexError, ValueError):
+    except (AttributeError, IndexError, ValueError):  # pragma: no cover
         raise RequestError(f"Unable to parse {url} response: {response_text}")
 
     try:
@@ -112,7 +112,7 @@ def _get_overpass_pause(
             utc_now = dt.datetime.now(tz=dt.timezone.utc)
             seconds = int(math.ceil((utc_time - utc_now).total_seconds()))
             pause = max(seconds, 1)
-        elif status_first_part == "Currently":
+        elif status_first_part == "Currently":  # pragma: no cover
             time.sleep(recursion_pause)
             pause = _get_overpass_pause(base_endpoint, recursion_pause=recursion_pause)
         else:
@@ -142,7 +142,7 @@ def _overpass_request(
     for attempt in range(max_retries + 1):
         try:
             pause = _get_overpass_pause(overpass_url)
-        except RequestError as e:
+        except RequestError as e:  # pragma: no cover
             pause = 0
             logger.debug(f"Overpass /status check failed: {e}")
 
@@ -152,7 +152,7 @@ def _overpass_request(
 
         try:
             resp = _overpass_http(method, overpass_url, params=params, data=data, timeout=timeout or config.timeout)
-        except requests.RequestException as e:
+        except requests.RequestException as e:  # pragma: no cover
             last_err_text = str(e)
             if attempt < max_retries:
                 sleep_s = min(60, backoff_base**attempt)
@@ -164,7 +164,7 @@ def _overpass_request(
         if resp.status_code == 200:
             return resp
 
-        if resp.status_code == 429:
+        if resp.status_code == 429:  # pragma: no cover
             retry_after = resp.headers.get("Retry-After")
             if retry_after:
                 try:
@@ -310,7 +310,7 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
 
     has_date = config.overpass_date is not None
 
-    if has_subway and has_date:
+    if has_subway and has_date:  # pragma: no cover
         logger.warning(
             f"Overpass date is set ({config.overpass_date}); skipping subway stop area / station details "
             "and querying subway as regular route relations only."

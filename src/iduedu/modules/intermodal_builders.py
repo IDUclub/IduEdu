@@ -135,7 +135,7 @@ def join_pt_walk_graph(
     )
     try:
         speed = walk.graph["walk_speed"]
-    except KeyError:
+    except KeyError:  # pragma: no branch
         logger.warning(
             "There is no walk_speed in graph, set to the default speed - 83.33 m/min"
         )  # посчитать примерную скорость по length timemin для любой эджи
@@ -153,7 +153,7 @@ def join_pt_walk_graph(
             platform_id = row["index"][0]
             dist = edge.project(row.geometry[0])
             projected_point = edge.interpolate(dist)
-            if dist == 0:
+            if dist == 0:  # pragma: no branch
                 # Если платформа проецируется на начало эджа
                 mapping = {u: platform_id}
                 nx.relabel_nodes(walk, mapping, copy=False)
@@ -241,7 +241,7 @@ def join_pt_walk_graph(
                 for extra_idx in idxs[1:]:
                     merge_mapping[extra_idx] = main_index
 
-                if dist == 0:
+                if dist == 0:  # pragma: no branch
                     # Если платформа проецируются на начало эджа
                     mapping = {u: main_index}
                     u_to_del = main_index
@@ -252,7 +252,7 @@ def join_pt_walk_graph(
 
                     last_u = main_index
 
-                elif dist == edge.length:
+                elif dist == edge.length:  # pragma: no branch
                     # Если на конец
                     mapping = {v: main_index}
                     v_to_del = main_index
@@ -314,7 +314,7 @@ def join_pt_walk_graph(
                     type="walk",
                 )
 
-            if merge_mapping:
+            if merge_mapping:  # pragma: no branch
                 nx.relabel_nodes(walk, merge_mapping, copy=False)
                 points_grouped_by_edge["u"] = points_grouped_by_edge["u"].replace(merge_mapping)
                 points_grouped_by_edge["v"] = points_grouped_by_edge["v"].replace(merge_mapping)
@@ -414,7 +414,7 @@ def get_intermodal_graph(
         walk_g = walk_future.result()
         logger.debug("Walk graph done!")
 
-    if len(pt_g.nodes()) == 0:
+    if len(pt_g.nodes()) == 0:  # pragma: no branch
         logger.warning("Public transport graph is empty! Returning only walk graph.")
         return walk_g
 

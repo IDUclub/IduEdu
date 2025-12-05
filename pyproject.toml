@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iduedu"
-version = "1.0.6"
+version = "1.1.0"
 license = "BSD-3-Clause"
 description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap."
 authors = ["DDonnyy <63115678+DDonnyy@users.noreply.github.com>"]
@@ -81,3 +81,13 @@ ensure_newline_before_comments = true
 line_length = 120
 split_on_trailing_comma = true
 skip = ["__init__.py"]
+
+[tool.coverage.run]
+branch = true
+source = ["iduedu"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "pragma: no branch",
+]

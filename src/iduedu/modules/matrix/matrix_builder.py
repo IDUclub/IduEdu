@@ -6,7 +6,6 @@ import networkx as nx
 import numba as nb
 import numpy as np
 import pandas as pd
-from numpy.core.multiarray import ndarray
 from pyproj import CRS
 from pyproj.exceptions import CRSError
 from scipy.spatial import KDTree
@@ -77,9 +76,7 @@ def dijkstra_numba_parallel(
     return distance_matrix
 
 
-def get_closest_nodes(
-    gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph
-) -> tuple[list[Any], float | ndarray | Iterable | int]:
+def get_closest_nodes(gdf_from: gpd.GeoDataFrame, to_nx_graph: nx.Graph) -> tuple[list[Any], float | Iterable | int]:
     """
     Find the nearest graph node for each geometry in a GeoDataFrame.
 
