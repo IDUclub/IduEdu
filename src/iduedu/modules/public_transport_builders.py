@@ -8,13 +8,13 @@ from tqdm.contrib.concurrent import process_map
 
 from iduedu import config
 from iduedu.enums.pt_enums import PublicTrasport
-from iduedu.modules.overpass_parsers import parse_overpass_subway_data, parse_overpass_to_edgenode
-
-from .graph_transformers import clip_nx_graph, estimate_crs_for_bounds
-from .overpass_downloaders import (
+from iduedu.modules.overpass.overpass_downloaders import (
     get_4326_boundary,
     get_routes_by_poly,
 )
+from iduedu.modules.overpass.overpass_parsers import parse_overpass_subway_data, parse_overpass_to_edgenode
+
+from .graph_transformers import clip_nx_graph, estimate_crs_for_bounds
 
 logger = config.logger
 
@@ -278,6 +278,7 @@ def _get_public_transport_graph(
         logger.warning("No routes found for public transport.")
         return nx.Graph()
 
+    # TODO Не дропать, фильтровать
     overpass_data = overpass_data.dropna(subset=["transport_type"])
 
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()

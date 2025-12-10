@@ -12,7 +12,7 @@ from shapely import LineString, MultiPolygon, Polygon, unary_union
 from shapely.ops import polygonize
 
 from iduedu import config
-from iduedu.modules.overpass_cache import cache_load, cache_save
+from iduedu.modules.overpass.overpass_cache import cache_load, cache_save
 
 logger = config.logger
 
@@ -331,6 +331,12 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
             route_filter = f'["route"~"^({pattern})$"]'
 
         query_parts.append(f'rel(poly:"{polygon_coords}"){route_filter}->.routes_basic;')
+        query_parts.append(
+            """
+            way(r.routes_basic);
+            out tags qt;
+            """.strip()
+        )
 
     enable_subway_details = has_subway and not has_date
 
@@ -388,6 +394,10 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
         route_type = tags.get("route")
         e["transport_type"] = route_type
 
+        is_way_data = etype == "way" and tags.get("highway", None) is not None
+
+        e["is_way_data"] = is_way_data
+
         if enable_subway_details:
             is_stop_area = etype == "relation" and tags.get("public_transport") == "stop_area"
             is_stop_area_group = (
@@ -441,7 +451,7 @@ def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
     return pd.DataFrame(json_result)
 
 
-def fetch_member_tags(members_missing, chunk_size=2000):
+def fetch_member_tags(members_missing, chunk_size=10000):
     """
     members_missing: iterable of dicts  {'type': 'node|way|relation', 'ref': int}
     :returns {("node", 123): {tags...}, ("way", 456): {tags...}, ...}

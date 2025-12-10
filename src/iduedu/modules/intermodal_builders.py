@@ -4,13 +4,13 @@ from typing import Any
 import geopandas as gpd
 import networkx as nx
 import pandas as pd
-from shapely import LineString, MultiPolygon, Point, Polygon
+from shapely import LineString, MultiPolygon, Polygon
 from shapely.ops import substring
 
 from iduedu import config
 from iduedu.modules.drive_walk_builders import get_walk_graph
 from iduedu.modules.graph_transformers import keep_largest_strongly_connected_component
-from iduedu.modules.overpass_downloaders import get_4326_boundary
+from iduedu.modules.overpass.overpass_downloaders import get_4326_boundary
 from iduedu.modules.public_transport_builders import get_all_public_transport_graph
 
 logger = config.logger

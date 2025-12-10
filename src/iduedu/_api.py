@@ -11,5 +11,5 @@ from .modules.graph_transformers import (
 )
 from .modules.intermodal_builders import get_intermodal_graph, join_pt_walk_graph
 from .modules.matrix.matrix_builder import get_adj_matrix_gdf_to_gdf, get_closest_nodes
-from .modules.overpass_downloaders import get_4326_boundary
+from .modules.overpass.overpass_downloaders import get_4326_boundary
 from .modules.public_transport_builders import get_all_public_transport_graph, get_single_public_transport_graph

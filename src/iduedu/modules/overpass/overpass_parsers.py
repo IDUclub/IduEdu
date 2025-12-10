@@ -1,5 +1,4 @@
 import math
-import warnings
 from collections import defaultdict
 from itertools import chain, combinations
 
@@ -9,14 +8,69 @@ from pandas import DataFrame
 from pyproj import CRS, Transformer
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import cdist
-from shapely import LineString, Point
+from shapely import LineString, MultiLineString, Point, line_merge
 from shapely.ops import substring
 
-from iduedu.modules.overpass_downloaders import fetch_member_tags
+from iduedu.modules.overpass.overpass_downloaders import fetch_member_tags
 
 PLATFORM_ROLES = ["platform_entry_only", "platform", "platform_exit_only"]
 STOPS_ROLES = ["stop", "stop_exit_only", "stop_entry_only"]
 THRESHOLD_METERS = 100
+
+
+def transform_geometry(loc, transformer):
+    if isinstance(loc["geometry"], float):
+        return transformer.transform(loc["lon"], loc["lat"])
+    p = LineString([transformer.transform(coords["lon"], coords["lat"]) for coords in loc["geometry"]]).centroid
+    return p.x, p.y
+
+
+def process_roles(route, roles):
+    filtered = route[route["role"].isin(roles)]
+    return filtered.apply(transform_geometry, axis=1).tolist(), filtered["ref"].tolist()
+
+
+def side_left_or_right(point, path):
+    # 1 if left 0 if right для определения с какой стороны от линии точки
+    dist = path.project(point)
+
+    d1 = dist - 1 if dist - 1 > 0 else 0
+    d2 = dist + 1 if dist + 1 < path.length else path.length
+    line = substring(path, d1, d2)
+    x1, y1 = line.coords[0]
+    x2, y2 = line.coords[-1]
+    x, y = point.coords[0]
+
+    cross_product = (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)
+    if cross_product > 0:
+        return 1
+    return 0
+
+
+def offset_point(point, path_line, direction, distance=7) -> tuple[float, float]:
+    # для размещения платформы по одну сторону от пути на расстоянии
+    dist = path_line.project(point)
+    d1 = dist - 1 if dist - 1 > 0 else 0
+    d2 = dist + 1.1 if dist + 1.1 < path_line.length else path_line.length
+    nearest_pt_on_line = path_line.interpolate(dist)
+    line = substring(path_line, d1, d2)
+
+    x1, y1 = line.coords[0]
+    x2, y2 = line.coords[-1]
+
+    dx, dy = x2 - x1, y2 - y1
+    length = math.sqrt(dx**2 + dy**2)
+    dx, dy = dx / length, dy / length
+
+    if direction == 0:  # Вправо
+        nx, ny = dy, -dx
+    else:  # Влево
+        nx, ny = -dy, dx
+
+    # Смещенная точка
+    offset_x = nearest_pt_on_line.x + nx * distance
+    offset_y = nearest_pt_on_line.y + ny * distance
+    return offset_x, offset_y
 
 
 def _link_unconnected(disconnected_ways) -> list:  # pragma: no cover
@@ -438,6 +492,253 @@ def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> Da
     return to_return
 
 
+def overpass_subway_to_edgenode(subway_data: pd.DataFrame, local_crs):
+    transformer = Transformer.from_crs("EPSG:4326", local_crs, always_xy=True)
+
+    transport_type = "subway"
+
+    for column in ["is_stop_area", "is_stop_area_group", "is_station"]:
+        subway_data[column] = subway_data[column].astype("boolean").fillna(False)
+    routes_data = subway_data[
+        ~((subway_data["is_stop_area"]) | (subway_data["is_stop_area_group"]) | (subway_data["is_station"]))
+    ].copy()
+    stop_areas = subway_data[subway_data["is_stop_area"]].copy()
+    stop_areas_group = subway_data[subway_data["is_stop_area_group"]].copy()
+    stations_data = subway_data[subway_data["is_station"]].copy()
+
+    def add_node(node_id, x, y, node_type):
+        x = round(x, 5)
+        y = round(y, 5)
+        nodes_data.append(
+            {
+                "node_id": node_id,
+                "point": (x, y),
+                "route": transport_name,
+                "type": node_type,
+            }
+        )
+
+    def add_edge(u, v, edge_type, geometry=None):
+        payload = {
+            "u": u,
+            "v": v,
+            "route": transport_name,
+            "type": edge_type,
+            # "extra_data": extra_data,
+        }
+        if geometry is not None:
+            payload["geometry"] = LineString([(round(x, 5), round(y, 5)) for x, y in geometry.coords])
+        edges_data.append(payload)
+
+    add_edges, add_nodes = parse_overpass_subway_data(
+        stop_areas, stop_areas_group, stations_data, local_crs
+    )  # Входы/выходы, пересадки и тд
+    add_edges.rename(columns={"u_ref": "u", "v_ref": "v"}, inplace=True)
+    add_nodes.rename(columns={"ref_id": "node_id"}, inplace=True)
+
+    nodes_data: list[dict] = []
+    edges_data: list[dict] = []
+
+    for _, row in routes_data.iterrows():
+
+        loc_id = row.name
+        tags = row.get("tags", {})
+        tags = tags if isinstance(tags, dict) else {}
+        transport_name = f"Unnamed_{loc_id}"
+        if "ref" in tags:
+            transport_name = tags["ref"]
+        elif "name" in tags:
+            transport_name = tags["name"]
+        members = row.get("members", [])
+        if not isinstance(members, list):
+            continue
+        members = pd.DataFrame(members)
+        for col in ("geometry", "lat", "lon", "role", "type"):
+            if col not in members.columns:
+                members[col] = np.nan
+
+        members = members.dropna(subset=["lat", "lon", "geometry"], how="all")
+
+        platforms, platforms_refs = process_roles(members, PLATFORM_ROLES)
+        stops, stops_refs = process_roles(members, STOPS_ROLES)
+
+        ways_df = members[(members["type"] == "way") & (members["role"].fillna("").isin(["", "forward", "backward"]))]
+
+        lines = MultiLineString(
+            [LineString([transformer.transform(p["lon"], p["lat"]) for p in pts]) for pts in ways_df["geometry"].values]
+        )
+        merged_lines = line_merge(lines, directed=True)
+
+        if not isinstance(merged_lines, LineString):
+            raise Exception()
+
+        path = merged_lines
+
+        items = (
+            []
+        )  # [(platform_coords, platform_ref, stop_coords, stop_ref), на выходе не может быть пары без платформы
+
+        platform_len, stops_len = len(platforms), len(stops)
+        matched_p, matched_s = set(), set()
+        pairs = {}  # p_idx -> s_idx
+
+        if platform_len and stops_len:
+
+            stop_tree = cKDTree(stops)
+            k = min(2, stops_len)
+            dists, idxs = stop_tree.query(platforms, k=k)
+
+            dists = np.asarray(dists)
+            idxs = np.asarray(idxs)
+            if dists.ndim == 1:  # это случается, когда k == 1
+                dists = dists[:, None]
+                idxs = idxs[:, None]
+
+            candidates = []
+            for p_i in range(platform_len):
+                for rank in range(dists.shape[1]):
+                    dist = float(dists[p_i, rank])
+                    if not np.isfinite(dist) or dist > THRESHOLD_METERS:
+                        continue
+                    s_i = int(idxs[p_i, rank])
+                    candidates.append((dist, p_i, s_i))
+
+            candidates.sort(key=lambda t: t[0])
+            for dist, p_i, s_i in candidates:
+                if p_i not in matched_p and s_i not in matched_s:
+                    pairs[p_i] = s_i
+                    matched_p.add(p_i)
+                    matched_s.add(s_i)
+
+        for p_i, s_i in pairs.items():
+            items.append(
+                {
+                    "p": platforms[p_i],
+                    "pref": platforms_refs[p_i],
+                    "s": stops[s_i],
+                    "sref": stops_refs[s_i],
+                }
+            )
+
+        if stops_len:
+            base_dir = side_left_or_right(Point(platforms[platform_len // 2]), path) if platform_len else 1
+            for s_i in range(stops_len):  # Проверка остановок
+                if s_i in matched_s:
+                    continue
+                # Добавляем пару с остановкой но без платформы
+                add_edges_from_stop = add_edges[add_edges["u"] == stops_refs[s_i]]
+                s_pt = Point(stops[s_i])
+                p_pt = offset_point(s_pt, path, base_dir)  # new platform
+                p_ref = f"from_{stops_refs[s_i]}"  # new platform
+
+                if len(add_edges_from_stop) > 0:
+                    potential_nodes = add_nodes[add_nodes["node_id"].isin(add_edges_from_stop["v"])]
+                    for _, row in potential_nodes.iterrows():
+                        if row.type == "subway_platform":
+                            p_pt = row.point if not pd.isna(row.point) else p_pt
+                            p_ref = row.node_id
+                            break
+
+                items.append(
+                    {
+                        "p": p_pt,
+                        "pref": p_ref,
+                        "s": stops[s_i],
+                        "sref": stops_refs[s_i],
+                    }
+                )
+
+        for p_i in range(platform_len):
+            if p_i in matched_p:
+                continue
+            raise Exception("some platforms has no stop")
+            # Добавляем пару с платформой у которой нету остановки
+            items.append(
+                {
+                    "p": platforms[p_i],
+                    "pref": platforms_refs[p_i],
+                    "s": None,
+                    "sref": f"from_{platforms_refs[p_i]}",
+                }
+            )
+
+        if not items:
+            items.append({"p": offset_point(path.interpolate(0), path, 1, 7), "pref": None, "s": None, "sref": None})
+            items.append(
+                {"p": offset_point(path.interpolate(path.length), path, 1, 7), "pref": None, "s": None, "sref": None}
+            )
+
+        items.sort(key=lambda d: path.project(Point(d["p"])))
+
+        last_dist = None
+        last_projected_stop_id = None
+
+        for item in items:
+            plat_xy = item["p"]
+            plat_ref = item.get("pref")
+
+            stop_xy = item["s"]
+            if stop_xy is None:
+                stop_xy = plat_xy
+            stop_ref = item.get("sref")
+
+            platform = Point(plat_xy)
+            stop = Point(stop_xy)
+
+            stop_dist = path.project(stop)
+
+            projected_stop = path.interpolate(stop_dist)
+
+            # Платформы лежат нереалистично далеко от спроецированных остановок, ошибка в данных осм
+            if projected_stop.distance(platform) > 100:
+                continue
+
+            add_node(node_id=stop_ref, x=projected_stop.x, y=projected_stop.y, node_type=transport_type)
+
+            if last_dist is not None:
+                seg = substring(path, last_dist, stop_dist)
+                if isinstance(seg, Point):
+                    seg = LineString((seg, seg))
+                add_edge(u=last_projected_stop_id, v=stop_ref, edge_type=transport_type, geometry=seg)
+
+            last_projected_stop_id = stop_ref
+            last_dist = stop_dist
+
+            add_node(node_id=plat_ref, x=platform.x, y=platform.y, node_type="subway_platform")
+            add_edge(u=plat_ref, v=stop_ref, edge_type="boarding", geometry=None)
+            add_edge(u=stop_ref, v=plat_ref, edge_type="boarding", geometry=None)
+
+    nodes_df = pd.DataFrame(nodes_data).drop_duplicates(subset=["node_id"])
+    merged_nodes = pd.merge(add_nodes, nodes_df, how="outer", on="node_id")
+    base_cols = {c[:-2] for c in merged_nodes.columns if c.endswith("_x")}
+    for base in base_cols:
+        col_x = f"{base}_x"
+        col_y = f"{base}_y"
+
+        merged_nodes[base] = merged_nodes[col_x].combine_first(merged_nodes[col_y])
+        merged_nodes.drop(columns=[col_x, col_y], inplace=True)
+
+    edges_df = pd.DataFrame(edges_data)
+    merged_edges = pd.merge(add_edges, edges_df, how="outer", on=["u", "v"])
+    base_cols = {c[:-2] for c in merged_edges.columns if c.endswith("_x")}
+    for base in base_cols:
+        col_x = f"{base}_x"
+        col_y = f"{base}_y"
+
+        merged_edges[base] = merged_edges[col_x].combine_first(merged_edges[col_y])
+        merged_edges.drop(columns=[col_x, col_y], inplace=True)
+
+    platforms_ids = merged_nodes[merged_nodes["type"] == "subway_platform"]["node_id"].unique()
+    platforms_with_station = merged_edges[
+        (merged_edges["u"].isin(platforms_ids)) & (merged_edges["type"] != "boarding")
+    ]["u"].unique()
+    platforms_wout_station = np.setdiff1d(platforms_ids, platforms_with_station)
+    if len(platforms_wout_station) > 0:
+        merged_nodes.loc[merged_nodes["node_id"].isin(platforms_wout_station), "type"] = "platform"
+
+    return merged_edges, merged_nodes
+
+
 def parse_overpass_to_edgenode(loc, crs, needed_tags) -> pd.DataFrame | None:
     loc_id = loc.name
     transport_type = loc.transport_type
@@ -492,12 +793,12 @@ def patch_members_roles_inplace(stop_areas_df):
             role = (m.get("role") or "").strip()
             if role == "":
                 missing.append({"type": m["type"], "ref": int(m["ref"])})
-
+    print(missing)
     if not missing:
         return
 
     tags_map = fetch_member_tags(missing)
-
+    print(tags_map)
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
             if (m.get("role") or "").strip():
