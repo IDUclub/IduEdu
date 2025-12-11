@@ -12,7 +12,11 @@ from iduedu.modules.overpass.overpass_downloaders import (
     get_4326_boundary,
     get_routes_by_poly,
 )
-from iduedu.modules.overpass.overpass_parsers import parse_overpass_subway_data, parse_overpass_to_edgenode
+from iduedu.modules.overpass.overpass_parsers import (
+    overpass_routes_to_df,
+    parse_overpass_subway_data,
+    parse_overpass_to_edgenode,
+)
 
 from .graph_transformers import clip_nx_graph, estimate_crs_for_bounds
 
@@ -271,7 +275,8 @@ def _get_public_transport_graph(
 
     ptts = ", ".join(transport_types)
     logger.info(f"Downloading routes via Overpass with types {ptts} ...")
-    overpass_data = get_routes_by_poly(polygon, transport_types)
+    overpass_response: list[dict] = get_routes_by_poly(polygon, transport_types)
+    overpass_data = overpass_routes_to_df(overpass_response, platform_stop_data_use)
     logger.info(f"Downloading routes via Overpass with types {ptts} done!")
 
     if overpass_data.shape[0] == 0:

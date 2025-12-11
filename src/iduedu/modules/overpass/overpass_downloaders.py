@@ -300,7 +300,7 @@ def _poly_to_overpass(poly: Polygon) -> str:
     return " ".join(f"{y} {x}" for x, y in poly.exterior.coords[:-1])
 
 
-def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> pd.DataFrame:
+def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> list[dict]:
     public_transport_types = list(dict.fromkeys(public_transport_types))
     if not public_transport_types:
         return pd.DataFrame()
@@ -380,49 +380,7 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
         logger.debug("Using cached routes_by_poly result")
 
     json_result = json_root.get("elements", [])
-
-    if not json_result:
-        empty = pd.DataFrame()
-        for col in ("is_stop_area", "is_stop_area_group", "is_station"):
-            empty[col] = pd.Series(dtype=bool)
-        return empty
-
-    for e in json_result:
-        tags = e.get("tags") or {}
-        etype = e.get("type")
-
-        route_type = tags.get("route")
-        e["transport_type"] = route_type
-
-        is_way_data = etype == "way" and tags.get("highway", None) is not None
-
-        e["is_way_data"] = is_way_data
-
-        if enable_subway_details:
-            is_stop_area = etype == "relation" and tags.get("public_transport") == "stop_area"
-            is_stop_area_group = (
-                etype == "relation"
-                and tags.get("public_transport") == "stop_area_group"
-                and tags.get("type") == "public_transport"
-            )
-            is_station = tags.get("public_transport") == "station"
-
-            e["is_stop_area"] = is_stop_area
-            e["is_stop_area_group"] = is_stop_area_group
-            e["is_station"] = is_station
-
-            if is_stop_area or is_stop_area_group or is_station:
-                e["transport_type"] = "subway"
-
-    data = pd.DataFrame(json_result)
-
-    for col in ("is_stop_area", "is_stop_area_group", "is_station"):
-        if col not in data.columns:
-            data[col] = False
-        else:
-            data[col] = data[col].fillna(False).astype(bool)
-
-    return data
+    return json_result
 
 
 def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:

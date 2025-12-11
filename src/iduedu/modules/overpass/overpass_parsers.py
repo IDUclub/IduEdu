@@ -1,21 +1,119 @@
 import math
+import re
 from collections import defaultdict
 from itertools import chain, combinations
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 from pyproj import CRS, Transformer
 from scipy.spatial import cKDTree
 from scipy.spatial.distance import cdist
 from shapely import LineString, MultiLineString, Point, line_merge
 from shapely.ops import substring
 
+from iduedu.enums.highway_enums import HighwayType
 from iduedu.modules.overpass.overpass_downloaders import fetch_member_tags
 
 PLATFORM_ROLES = ["platform_entry_only", "platform", "platform_exit_only"]
 STOPS_ROLES = ["stop", "stop_exit_only", "stop_entry_only"]
 THRESHOLD_METERS = 100
+
+
+def parse_maxspeed_to_m_per_min(raw: str | int | float | None) -> float | None:
+
+    if raw is None:
+        return None
+
+    s = str(raw).strip().lower()
+    if not s:
+        return None
+
+    try:
+        v = float(s)
+        return v * 1000.0 / 60.0
+    except ValueError:
+        pass
+
+    # "50 km/h" / "50kph" / "50kmh"
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*(km/h|kmh|kph)$", s)
+    if m:
+        v = float(m.group(1))
+        return v * 1000.0 / 60.0
+
+    # mph
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*(mph)$", s)
+    if m:
+        v = float(m.group(1))
+        # 1 mph ≈ 1.60934 km/h
+        v_kmh = v * 1.60934
+        return v_kmh * 1000.0 / 60.0
+
+    return None
+
+
+def overpass_routes_to_df(json_routes: list[dict], enable_subway_details: bool) -> pd.DataFrame:
+    def _compute_way_speed(tags: dict) -> float:
+        highway = tags.get("highway")
+        if not highway:
+            return None, None
+        maxspeed_tag = tags.get("maxspeed")
+        speed = parse_maxspeed_to_m_per_min(maxspeed_tag)
+        if speed is None:
+            try:
+                ht = HighwayType(highway)
+                speed = ht.max_speed
+            except ValueError:
+                speed = HighwayType.UNCLASSIFIED.max_speed
+        return speed
+
+    if not json_routes:
+        empty = pd.DataFrame()
+        for col in ("is_stop_area", "is_stop_area_group", "is_station"):
+            empty[col] = pd.Series(dtype=bool)
+        return empty
+
+    for e in json_routes:
+        tags = e.get("tags") or {}
+        etype = e.get("type")
+
+        route_type = tags.get("route")
+        e["transport_type"] = route_type
+
+        if etype == "way" and "highway" in tags:
+            e["is_way_data"] = True
+            speed = _compute_way_speed(tags)
+            e["way_speed_m_per_min"] = speed
+
+        if route_type in ["bus", "tram", "trolley"]:
+            members = e.get("members") or []
+            ways_refs = set([mem.get("ref") for mem in members])
+            e["ways_refs"] = ways_refs
+
+        if enable_subway_details:
+            is_stop_area = etype == "relation" and tags.get("public_transport") == "stop_area"
+            is_stop_area_group = (
+                etype == "relation"
+                and tags.get("public_transport") == "stop_area_group"
+                and tags.get("type") == "public_transport"
+            )
+            is_station = tags.get("public_transport") == "station"
+
+            e["is_stop_area"] = is_stop_area
+            e["is_stop_area_group"] = is_stop_area_group
+            e["is_station"] = is_station
+
+            if is_stop_area or is_stop_area_group or is_station:
+                e["transport_type"] = "subway"
+
+    data = pd.DataFrame(json_routes)
+
+    for col in ("is_stop_area", "is_stop_area_group", "is_station", "is_way_data"):
+        if col not in data.columns:
+            data[col] = False
+        else:
+            data[col] = data[col].fillna(False).astype(bool)
+
+    return data
 
 
 def transform_geometry(loc, transformer):
@@ -281,7 +379,7 @@ def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str], l
     )
 
 
-def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> DataFrame | None:
+def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> pd.DataFrame | None:
 
     name = loc.route
 
