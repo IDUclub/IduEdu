@@ -8,6 +8,7 @@ from tqdm.contrib.concurrent import process_map
 
 from iduedu import config
 from iduedu.enums.pt_enums import PublicTrasport
+from iduedu.modules.graph_transformers import clip_nx_graph, estimate_crs_for_bounds
 from iduedu.modules.overpass.overpass_downloaders import (
     get_4326_boundary,
     get_routes_by_poly,
@@ -17,8 +18,6 @@ from iduedu.modules.overpass.overpass_parsers import (
     parse_overpass_subway_data,
     parse_overpass_to_edgenode,
 )
-
-from .graph_transformers import clip_nx_graph, estimate_crs_for_bounds
 
 logger = config.logger
 
