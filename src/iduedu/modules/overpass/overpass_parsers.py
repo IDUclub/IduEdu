@@ -11,7 +11,6 @@ from scipy.spatial.distance import cdist
 from shapely import LineString, MultiLineString, Point, line_merge
 from shapely.ops import substring
 
-from dev.speeds import stop_areas
 from iduedu.enums.highway_enums import HighwayType
 from iduedu.modules.overpass.overpass_downloaders import fetch_member_tags
 
@@ -200,11 +199,81 @@ def extract_needed(loc_obj: pd.Series, keys: list[str]) -> dict | None:  # pragm
     return out or None
 
 
-def _link_unconnected(disconnected_ways) -> list:  # pragma: no cover
-    # Считаем связи между линиями
-    connect_points = [point for coords in disconnected_ways for point in (coords[0], coords[-1])]
+def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
+    """
+    disconnected_ways: list[dict] where each dict is:
+      {
+        "coords": list[tuple[float,float]],   # vertices
+        "speeds": list[float],               # per-segment speeds, len == len(coords)-1
+      }
+
+    returns dict in same format: {"coords": ..., "speeds": ...}
+    """
+
+    def reverse_way(w: dict) -> dict:
+        # reverse coords, and reverse segment speeds accordingly
+        return {"coords": w["coords"][::-1], "speeds": w["speeds"][::-1]}
+
+    def append_right(dst: dict, w: dict) -> dict:
+        """Concatenate dst + w, removing duplicate join vertex if present."""
+        if not dst["coords"]:
+            return {"coords": w["coords"][:], "speeds": w["speeds"][:]}
+
+        if not w["coords"]:
+            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
+
+        coords2 = w["coords"]
+        speeds2 = w["speeds"]
+
+        # drop duplicate join point
+        if dst["coords"][-1] == coords2[0]:
+            coords2 = coords2[1:]
+            speeds2 = speeds2[1:]  # drop segment that started at removed vertex
+
+        if not coords2:
+            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
+
+        return {
+            "coords": dst["coords"] + coords2,
+            "speeds": dst["speeds"] + speeds2,
+        }
+
+    def append_left(dst: dict, w: dict) -> dict:
+        """Concatenate w + dst, removing duplicate join vertex if present."""
+        if not dst["coords"]:
+            return {"coords": w["coords"][:], "speeds": w["speeds"][:]}
+
+        if not w["coords"]:
+            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
+
+        coords1 = w["coords"]
+        speeds1 = w["speeds"]
+
+        # drop duplicate join point (end of w equals start of dst)
+        if coords1[-1] == dst["coords"][0]:
+            coords1 = coords1[:-1]
+            speeds1 = speeds1[:-1]  # drop segment ending at removed vertex
+
+        if not coords1:
+            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
+
+        return {
+            "coords": coords1 + dst["coords"],
+            "speeds": speeds1 + dst["speeds"],
+        }
+
+    connect_points = []
+    for w in disconnected_ways:
+        coords = w.get("coords", [])
+        if not coords:
+            connect_points += [(0.0, 0.0), (0.0, 0.0)]
+        else:
+            connect_points += [coords[0], coords[-1]]
+
     distances = cdist(connect_points, connect_points)
     n = distances.shape[0]
+
+    # mask same-line endpoints
     mask = (np.arange(n)[:, None] // 2) == (np.arange(n) // 2)
     distances[mask] = np.inf
 
@@ -212,55 +281,61 @@ def _link_unconnected(disconnected_ways) -> list:  # pragma: no cover
         rel_point = point // 2 * 2
         return rel_point if rel_point != point else rel_point + 1
 
-    connected_ways = []
-    # pylint: disable=unbalanced-tuple-unpacking
+    # pick first best connection
     first_con_1, first_con_2 = np.unravel_index(np.argmin(distances), distances.shape)
+
+    # forbid using chosen points again
     distances[first_con_1, :] = np.inf
     distances[first_con_2, :] = np.inf
     distances[:, first_con_2] = np.inf
     distances[:, first_con_1] = np.inf
+
     first_con_1_rel, first_con_2_rel = [relative_point(x) for x in (first_con_1, first_con_2)]
     distances[first_con_1_rel, first_con_2_rel] = np.inf
     distances[first_con_2_rel, first_con_1_rel] = np.inf
     distances[:, first_con_1_rel] = np.inf
     distances[:, first_con_2_rel] = np.inf
+    distances[first_con_1_rel, :] = np.inf
+    distances[first_con_2_rel, :] = np.inf
 
     line1, line2 = first_con_1 // 2, first_con_2 // 2
 
-    if first_con_1 % 2 == 1:
-        connected_ways += disconnected_ways[line1]
-    else:
-        connected_ways += disconnected_ways[line1][::-1]
-    if first_con_2 % 2 == 0:
-        connected_ways += disconnected_ways[line2]
-    else:
-        connected_ways += disconnected_ways[line2][::-1]
+    # Orient line1 so that chosen endpoint (first_con_1) becomes the RIGHT end
+    w1 = disconnected_ways[line1]
+    if first_con_1 % 2 == 1:  # chosen is end -> keep
+        connected = {"coords": w1["coords"][:], "speeds": w1["speeds"][:]}
+    else:  # chosen is start -> reverse so it becomes end
+        w1r = reverse_way(w1)
+        connected = {"coords": w1r["coords"], "speeds": w1r["speeds"]}
 
-    extreme_points = [first_con_1_rel, first_con_2_rel]
+    # Orient line2 so that chosen endpoint (first_con_2) becomes the LEFT start
+    w2 = disconnected_ways[line2]
+    if first_con_2 % 2 == 0:  # chosen is start -> keep
+        connected = append_right(connected, w2)
+    else:  # chosen is end -> reverse so it becomes start
+        connected = append_right(connected, reverse_way(w2))
+
+    extreme_points = [first_con_1_rel, first_con_2_rel]  # left extreme idx, right extreme idx
 
     for _ in range(len(disconnected_ways) - 2):
-        # pylint: disable=invalid-sequence-index
         position, ind = np.unravel_index(np.argmin(distances[extreme_points]), (2, n))
         next_con = (extreme_points[position], ind)
         rel_point = relative_point(next_con[1])
 
         line = ind // 2
+        w = disconnected_ways[line]
+
         if position == 0:
-            connected_ways = (
-                disconnected_ways[line] + connected_ways
-                if ind % 2 == 1
-                else (disconnected_ways[line][::-1] + connected_ways)
-            )
+            # joining to LEFT side: make chosen endpoint become RIGHT end of w
+            w_oriented = w if (ind % 2 == 1) else reverse_way(w)
+            connected = append_left(connected, w_oriented)
             extreme_points = [rel_point, extreme_points[1]]
         else:
-            connected_ways = (
-                connected_ways + disconnected_ways[line]
-                if ind % 2 == 0
-                else (connected_ways + disconnected_ways[line][::-1])
-            )
+            # joining to RIGHT side: make chosen endpoint become LEFT start of w
+            w_oriented = w if (ind % 2 == 0) else reverse_way(w)
+            connected = append_right(connected, w_oriented)
             extreme_points = [extreme_points[0], rel_point]
 
-        # Чтоб нельзя было зациклиться
         distances[:, rel_point] = np.inf
         distances[next_con[0], :] = np.inf
         distances[next_con[1], :] = np.inf
@@ -270,332 +345,54 @@ def _link_unconnected(disconnected_ways) -> list:  # pragma: no cover
         distances[rel_point, rel_point_2] = np.inf
         distances[rel_point_2, rel_point] = np.inf
 
-    return connected_ways
-
-
-def parse_overpass_route_response(loc: dict, crs: CRS, needed_tags: list[str], loc_id) -> pd.Series:
-    transformer = Transformer.from_crs("EPSG:4326", crs, always_xy=True)
-
-    # TODO надо писать версию с merge_line и отдельными запросами по максимальной скорости
-    def transform_geometry(loc):
-        if isinstance(loc["geometry"], float):
-            return transformer.transform(loc["lon"], loc["lat"])
-        p = LineString([transformer.transform(coords["lon"], coords["lat"]) for coords in loc["geometry"]]).centroid
-        return p.x, p.y
-
-    def process_roles(route, roles):
-        filtered = route[route["role"].isin(roles)]
-        return filtered.apply(transform_geometry, axis=1).tolist(), filtered["ref"].tolist()
-
-    tags = loc.get("tags", {}) if isinstance(loc.get("tags"), dict) else {}
-
-    transport_name = f"Unnamed_{loc_id}"
-    if "ref" in tags:
-        transport_name = tags["ref"]
-    elif "name" in tags:
-        transport_name = tags["name"]
-
-    members = loc.get("members", [])
-    route = pd.DataFrame(members) if isinstance(members, list) else pd.DataFrame()
-
-    for col in ("geometry", "lat", "lon", "role", "type"):
-        if col not in route.columns:
-            route[col] = np.nan
-
-    route = route.dropna(subset=["lat", "lon", "geometry"], how="all")
-
-    platforms, platforms_refs = process_roles(route, PLATFORM_ROLES)
-    stops, stops_refs = process_roles(route, STOPS_ROLES)
-
-    ways_df = route[(route["type"] == "way") & (route["role"].fillna("").isin(["", "forward", "backward"]))]
-
-    if not ways_df.empty:
-        ways = (
-            ways_df["geometry"]
-            .reset_index(drop=True)
-            .apply(lambda g: [transformer.transform(pt["lon"], pt["lat"]) for pt in g])
-            .tolist()
-        )
-        connected_ways = [[]]
-        cur_way = 0
-        for coords in ways:  # pragma: no cover
-            if not coords:
-                continue
-            # Соединяем маршруты, если всё ок, идут без пропусков
-            if not connected_ways[cur_way]:
-                connected_ways[cur_way] += coords
-                continue
-            if coords[0] == coords[-1]:
-                # Круговое движение зацикленное зачастую в осм, можно отработать, но сходу не придумал
-                continue
-            if connected_ways[cur_way][-1] == coords[0]:
-                connected_ways[cur_way] += coords[1:]
-
-            elif connected_ways[cur_way][-1] == coords[-1]:
-                connected_ways[cur_way] += coords[::-1][1:]
-
-            elif connected_ways[cur_way][0] == coords[0]:
-                connected_ways[cur_way] = coords[1:][::-1] + connected_ways[cur_way]
-
-            elif connected_ways[cur_way][0] == coords[-1]:
-                connected_ways[cur_way] = coords + connected_ways[cur_way][1:]
-
-            # Случай если нету соединяющей точки между линиями маршрута
-            else:
-                connected_ways += [coords]
-                cur_way += 1
-        # Соединяем линии по ближайшим точкам этих линий
-
-        if len(connected_ways) > 1:
-            # удаляем все круговые движения
-            to_del = [i for i, data in enumerate(connected_ways) if data[0] == data[-1]]
-            # Если кол-во удалений == кол-во путей, надо оставить хотя бы самый большой
-            if len(to_del) == len(connected_ways):
-                # Найдём индекс самого длинного пути среди замкнутых
-                longest_index = max(to_del, key=lambda i: len(connected_ways[i]))
-                # Удалим все, кроме самого длинного
-                to_del.remove(longest_index)
-            connected_ways = [i for j, i in enumerate(connected_ways) if j not in to_del]
-        if len(connected_ways) > 1:
-            path = _link_unconnected(connected_ways)
-        else:
-            if not connected_ways or not connected_ways[0]:
-                raise Exception("No connected ways")
-            path = connected_ways[0]
-
-    else:
-        path = None
-
-    extra = extract_needed(loc, needed_tags)
-
-    return pd.Series(
-        {
-            "path": path,
-            "platforms": platforms,
-            "platforms_refs": platforms_refs,
-            "stops": stops,
-            "stops_refs": stops_refs,
-            "route": transport_name,
-            "extra_data": extra,
-        }
-    )
-
-
-def geometry_to_graph_edge_node_df(loc: pd.Series, transport_type, loc_id) -> pd.DataFrame | None:
-
-    name = loc.route
-
-    platforms = list(loc.platforms or [])  # same size ->
-    platforms_refs = list(loc.platforms_refs or [])
-
-    stops = list(loc.stops or [])
-    stops_refs = list(loc.stops_refs or [])
-
-    path = loc.path
-    extra_data = loc.extra_data
-
-    if not path:
-        return None
-
-    def _side_left_or_right(point):
-        # 1 if left 0 if right для определения с какой стороны от линии точки
-        dist = path.project(point)
-
-        d1 = dist - 1 if dist - 1 > 0 else 0
-        d2 = dist + 1 if dist + 1 < path.length else path.length
-        line = substring(path, d1, d2)
-        x1, y1 = line.coords[0]
-        x2, y2 = line.coords[-1]
-        x, y = point.coords[0]
-
-        cross_product = (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)
-        if cross_product > 0:
-            return 1
-        return 0
-
-    def _offset_point(point, direction, distance=7) -> tuple[float, float]:
-        # для размещения платформы по одну сторону от пути на расстоянии
-        dist = path.project(point)
-        d1 = dist - 1 if dist - 1 > 0 else 0
-        d2 = dist + 1.1 if dist + 1.1 < path.length else path.length
-        nearest_pt_on_line = path.interpolate(dist)
-        line = substring(path, d1, d2)
-
-        x1, y1 = line.coords[0]
-        x2, y2 = line.coords[-1]
-
-        dx, dy = x2 - x1, y2 - y1
-        length = math.sqrt(dx**2 + dy**2)
-        dx, dy = dx / length, dy / length
-
-        if direction == 0:  # Вправо
-            nx, ny = dy, -dx
-        else:  # Влево
-            nx, ny = -dy, dx
-
-        # Смещенная точка
-        offset_x = nearest_pt_on_line.x + nx * distance
-        offset_y = nearest_pt_on_line.y + ny * distance
-        return offset_x, offset_y
-
-    path = LineString(path)
-
-    items = []  # [(platform_coords, platform_ref, stop_coords, stop_ref), на выходе не может быть пары без платформы
-
-    platform_len, stops_len = len(platforms), len(stops)
-    matched_p, matched_s = set(), set()
-    pairs = {}  # p_idx -> s_idx
-
-    if platform_len and stops_len:
-
-        stop_tree = cKDTree(stops)
-        k = min(2, stops_len)
-        dists, idxs = stop_tree.query(platforms, k=k)
-
-        dists = np.asarray(dists)
-        idxs = np.asarray(idxs)
-        if dists.ndim == 1:  # это случается, когда k == 1
-            dists = dists[:, None]
-            idxs = idxs[:, None]
-
-        candidates = []
-        for p_i in range(platform_len):
-            for rank in range(dists.shape[1]):
-                dist = float(dists[p_i, rank])
-                if not np.isfinite(dist) or dist > THRESHOLD_METERS:
-                    continue
-                s_i = int(idxs[p_i, rank])
-                candidates.append((dist, p_i, s_i))
-
-        candidates.sort(key=lambda t: t[0])
-        for dist, p_i, s_i in candidates:
-            if p_i not in matched_p and s_i not in matched_s:
-                pairs[p_i] = s_i
-                matched_p.add(p_i)
-                matched_s.add(s_i)
-
-    for p_i, s_i in pairs.items():
-        items.append(
-            {
-                "p": platforms[p_i],
-                "pref": platforms_refs[p_i],
-                "s": stops[s_i],
-                "sref": stops_refs[s_i],
-            }
-        )
-
-    if stops_len:
-        base_dir = _side_left_or_right(Point(platforms[platform_len // 2])) if platform_len else 1
-        for s_i in range(stops_len):
-            if s_i in matched_s:
-                continue
-            s_pt = Point(stops[s_i])
-            items.append(
-                {
-                    "p": _offset_point(s_pt, base_dir),
-                    "pref": f"from_{stops_refs[s_i]}",  # new platform
-                    "s": s_pt.xy,
-                    "sref": stops_refs[s_i],
-                }
-            )
-
-    for p_i in range(platform_len):
-        if p_i in matched_p:
-            continue
-        items.append(
-            {
-                "p": platforms[p_i],
-                "pref": platforms_refs[p_i],
-                "s": None,
-                "sref": f"from_{platforms_refs[p_i]}",
-            }
-        )
-
-    if not items:
-        items.append({"p": _offset_point(path.interpolate(0), 1, 7), "pref": None, "s": None, "sref": None})
-        items.append({"p": _offset_point(path.interpolate(path.length), 1, 7), "pref": None, "s": None, "sref": None})
-
-    items.sort(key=lambda d: path.project(Point(d["p"])))
-
-    graph_data: list[dict] = []
-    node_id = 0
-    last_dist = None
-    last_projected_stop_id = None
-
-    def add_node(x, y, node_type=None, ref_id=None):
-        x = round(x, 5)
-        y = round(y, 5)
-        graph_data.append(
-            {
-                "node_id": (loc_id, node_id),
-                "point": (x, y),
-                "route": name,
-                "type": (node_type if node_type else transport_type),
-                "ref_id": ref_id,
-            }
-        )
-
-    def add_edge(u, v, geometry=None, transport=None):
-
-        payload = {
-            "u": (loc_id, u),
-            "v": (loc_id, v),
-            "route": name,
-            "type": (transport_type if transport else "boarding"),
-            "extra_data": extra_data,
-        }
-        if geometry is not None:
-            payload["geometry"] = LineString([(round(x, 5), round(y, 5)) for x, y in geometry.coords])
-        graph_data.append(payload)
-
-    for item in items:
-        p_xy = item["p"]
-        p_ref = item.get("pref")
-
-        s_xy = item["s"]
-        if s_xy is None:
-            s_xy = p_xy
-        s_ref = item.get("sref")
-
-        platform = Point(p_xy)
-        stop = Point(s_xy)
-
-        stop_dist = path.project(stop)
-
-        projected_stop = path.interpolate(stop_dist)
-
-        # Платформы лежат нереалистично далеко от спроецированных остановок, ошибка в данных осм
-        if projected_stop.distance(platform) > 100:
-            continue
-
-        add_node(projected_stop.x, projected_stop.y, ref_id=s_ref)
-
-        if last_dist is not None:
-            seg = substring(path, last_dist, stop_dist)
-            if isinstance(seg, Point):
-                seg = LineString((seg, seg))
-            add_edge(last_projected_stop_id, node_id, geometry=seg, transport=True)
-
-        last_projected_stop_id = node_id
-        last_dist = stop_dist
-        node_id += 1
-
-        add_node(platform.x, platform.y, node_type="platform", ref_id=p_ref)
-        # boarding_geom = LineString(
-        #     [(round(projected_stop.x, 5), round(projected_stop.y, 5)), (round(platform.x, 5), round(platform.y, 5))]
-        # )
-        add_edge(node_id - 1, node_id, geometry=None)
-        add_edge(node_id, node_id - 1, geometry=None)
-        node_id += 1
-
-    to_return = pd.DataFrame(graph_data)
-    return to_return
-
-
-def overpass_ground_transport2edgenode(loc: pd.Series, local_crs, needed_tags, ref2speed):
+    return connected
+
+
+def overpass_ground_transport2edgenode(
+    loc: pd.Series,
+    local_crs,
+    ref2speed,
+    needed_tags,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     nodes_data: list[dict] = []
     edges_data: list[dict] = []
+
+    def speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
+
+        print("a: ", a, "b: ", b)
+
+        if b < a:
+            a, b = b, a
+        if b <= a:
+            return float(np.nan)
+
+        i0 = int(np.searchsorted(cumdist, a, side="right") - 1)
+        i1 = int(np.searchsorted(cumdist, b, side="left"))
+
+        i0 = max(i0, 0)
+        i1 = min(i1, len(seg_speeds))
+
+        total_len = 0.0
+        acc = 0.0
+
+        for i in range(i0, i1 + 1):
+            if i < 0 or i >= len(seg_speeds):
+                continue
+            seg_a = cumdist[i]
+            seg_b = cumdist[i + 1]
+            overlap_a = max(a, seg_a)
+            overlap_b = min(b, seg_b)
+            ol = overlap_b - overlap_a
+            if ol > 0:
+                v = seg_speeds[i]
+                acc += ol * v
+                total_len += ol
+
+        print("total_len: ", total_len)
+        print("acc: ", acc)
+
+        return float(acc / total_len) if total_len > 0 else float(np.nan)
 
     def add_node(node_id, x, y, node_type):
         x = round(x, 5)
@@ -625,7 +422,7 @@ def overpass_ground_transport2edgenode(loc: pd.Series, local_crs, needed_tags, r
     transformer = Transformer.from_crs("EPSG:4326", local_crs, always_xy=True)
     tags = loc.get("tags", {}) if isinstance(loc.get("tags"), dict) else {}
     loc_id = loc.name
-
+    transport_type = loc.transport_type
     transport_name = f"Unnamed_{loc_id}"
     if "ref" in tags:
         transport_name = tags["ref"]
@@ -646,69 +443,111 @@ def overpass_ground_transport2edgenode(loc: pd.Series, local_crs, needed_tags, r
     ways_df = route[(route["type"] == "way") & (route["role"].fillna("").isin(["", "forward", "backward"]))][
         ["ref", "geometry"]
     ]
+    if len(ways_df) == 0:
+        return pd.DataFrame(), pd.DataFrame()
+
     ways_df["speed"] = ways_df["ref"].map(ref2speed)
 
-    if not ways_df.empty:
-        ways = (
-            ways_df["geometry"]
-            .reset_index(drop=True)
-            .apply(lambda g: [transformer.transform(pt["lon"], pt["lat"]) for pt in g])
-            .tolist()
-        )
-        connected_ways = [[]]
-        cur_way = 0
-        for coords in ways:  # pragma: no cover
-            if not coords:
-                continue
-            # Соединяем маршруты, если всё ок, идут без пропусков
-            if not connected_ways[cur_way]:
-                connected_ways[cur_way] += coords
-                continue
-            if coords[0] == coords[-1]:
-                # Круговое движение зацикленное зачастую в осм, можно отработать, но сходу не придумал
-                continue
-            if connected_ways[cur_way][-1] == coords[0]:
-                connected_ways[cur_way] += coords[1:]
+    ways = []
+    for _, r in ways_df.reset_index(drop=True).iterrows():
+        g = r["geometry"]
+        coords = [transformer.transform(pt["lon"], pt["lat"]) for pt in g]
+        ways.append((coords, float(r["speed"])))
+    connected_ways = [{"coords": [], "speeds": []}]
+    cur_way = 0
 
-            elif connected_ways[cur_way][-1] == coords[-1]:
-                connected_ways[cur_way] += coords[::-1][1:]
+    def append_way(dst, coords, speed, drop_first=False, reverse=False):
+        if reverse:
+            coords = coords[::-1]
+        if drop_first and coords:
+            coords = coords[1:]
+        if not coords:
+            return
 
-            elif connected_ways[cur_way][0] == coords[0]:
-                connected_ways[cur_way] = coords[1:][::-1] + connected_ways[cur_way]
+        if not dst["coords"]:
+            dst["coords"] = coords
+            dst["speeds"] = [speed] * (len(coords) - 1)
+            return
 
-            elif connected_ways[cur_way][0] == coords[-1]:
-                connected_ways[cur_way] = coords + connected_ways[cur_way][1:]
+        prev_last = dst["coords"][-1]
+        if coords[0] != prev_last:
+            dst["coords"] += coords
+            dst["speeds"] += [speed] * (len(coords) - 1)
+            return
 
-            # Случай если нету соединяющей точки между линиями маршрута
-            else:
-                connected_ways += [coords]
-                cur_way += 1
-        # Соединяем линии по ближайшим точкам этих линий
+        dst["coords"] += coords[1:]
+        dst["speeds"] += [speed] * (len(coords) - 1)
 
-        if len(connected_ways) > 1:
-            # удаляем все круговые движения
-            to_del = [i for i, data in enumerate(connected_ways) if data[0] == data[-1]]
-            # Если кол-во удалений == кол-во путей, надо оставить хотя бы самый большой
-            if len(to_del) == len(connected_ways):
-                # Найдём индекс самого длинного пути среди замкнутых
-                longest_index = max(to_del, key=lambda i: len(connected_ways[i]))
-                # Удалим все, кроме самого длинного
-                to_del.remove(longest_index)
-            connected_ways = [i for j, i in enumerate(connected_ways) if j not in to_del]
-        if len(connected_ways) > 1:
-            path = _link_unconnected(connected_ways)
+    for coords, speed in ways:  # pragma: no cover
+        if not coords:
+            continue
+
+        dst = connected_ways[cur_way]
+
+        if not dst["coords"]:
+            append_way(dst, coords, speed)
+            continue
+
+        if coords[0] == coords[-1]:
+            continue
+
+        if dst["coords"][-1] == coords[0]:
+            append_way(dst, coords, speed, drop_first=True, reverse=False)
+
+        elif dst["coords"][-1] == coords[-1]:
+            append_way(dst, coords, speed, drop_first=True, reverse=True)
+
+        elif dst["coords"][0] == coords[0]:
+            new_coords = coords[::-1] + dst["coords"][1:]
+            new_speeds = [speed] * (len(coords) - 1) + dst["speeds"][1:]
+            connected_ways[cur_way] = {"coords": new_coords, "speeds": new_speeds}
+
+        elif dst["coords"][0] == coords[-1]:
+            new_coords = coords + dst["coords"][1:]
+            new_speeds = [speed] * (len(coords) - 1) + dst["speeds"][1:]
+            connected_ways[cur_way] = {"coords": new_coords, "speeds": new_speeds}
+
         else:
-            if not connected_ways or not connected_ways[0]:
-                raise Exception("No connected ways")
-            path = connected_ways[0]
+            connected_ways += [{"coords": coords, "speeds": [speed] * (len(coords) - 1)}]
+            cur_way += 1
 
+    if len(connected_ways) > 1:
+        # удаляем все круговые движения (замкнутые линии)
+        to_del = [
+            i
+            for i, w in enumerate(connected_ways)
+            if w.get("coords") and len(w["coords"]) >= 2 and w["coords"][0] == w["coords"][-1]
+        ]
+
+        # Если кол-во удалений == кол-во путей, надо оставить хотя бы самый большой
+        if to_del and len(to_del) == len(connected_ways):
+            # найдём индекс самого длинного пути среди замкнутых
+            longest_index = max(to_del, key=lambda i: len(connected_ways[i].get("coords", [])))
+            # удалим все, кроме самого длинного
+            to_del.remove(longest_index)
+
+        connected_ways = [w for j, w in enumerate(connected_ways) if j not in to_del]
+
+    if len(connected_ways) > 1:
+        cw = _link_unconnected(connected_ways)
     else:
-        path = None
-        return path
+        cw = connected_ways[0]
+        if not cw.get("coords") or len(cw["coords"]) < 2:
+            raise Exception("No connected ways")
 
     extra = extract_needed(loc, needed_tags)
 
-    path = LineString(path)
+    path_coords = cw["coords"]
+    seg_speeds = cw["speeds"]  # len = len(path_coords)-1
+    path = LineString(path_coords)
+
+    cumdist = [0.0]
+    for i in range(len(path_coords) - 1):
+        dx = path_coords[i + 1][0] - path_coords[i][0]
+        dy = path_coords[i + 1][1] - path_coords[i][1]
+        cumdist.append(cumdist[-1] + (dx * dx + dy * dy) ** 0.5)
+    cumdist = np.asarray(cumdist)
+    seg_speeds = np.asarray(seg_speeds, dtype=float)
 
     items = []  # [(platform_coords, platform_ref, stop_coords, stop_ref), на выходе не может быть пары без платформы
 
@@ -762,7 +601,7 @@ def overpass_ground_transport2edgenode(loc: pd.Series, local_crs, needed_tags, r
             s_pt = Point(stops[s_i])
             items.append(
                 {
-                    "p": offset_point(s_pt, base_dir),
+                    "p": offset_point(s_pt, path, base_dir),
                     "pref": f"from_{stops_refs[s_i]}",  # new platform
                     "s": s_pt.xy,
                     "sref": stops_refs[s_i],
@@ -818,7 +657,18 @@ def overpass_ground_transport2edgenode(loc: pd.Series, local_crs, needed_tags, r
             seg = substring(path, last_dist, stop_dist)
             if isinstance(seg, Point):
                 seg = LineString((seg, seg))
-            add_edge(u=last_projected_stop_id, v=stop_ref, edge_type=transport_type, geometry=seg)
+
+            print("path.length:", path.length)
+            print("cumdist[-1]:", cumdist[-1], "len(seg_speeds):", len(seg_speeds), "len(coords):", len(path_coords))
+            print("last_dist:", last_dist, "stop_dist:", stop_dist)
+
+            v_avg = speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
+            print("v_avg", v_avg)
+            print("----")
+            extra_edge = {**extra, "speed": v_avg}
+            add_edge(
+                u=last_projected_stop_id, v=stop_ref, edge_type=transport_type, geometry=seg, extra_data=extra_edge
+            )
 
         last_projected_stop_id = stop_ref
         last_dist = stop_dist
@@ -832,6 +682,7 @@ def overpass_ground_transport2edgenode(loc: pd.Series, local_crs, needed_tags, r
 
     nodes_df = pd.DataFrame(nodes_data).drop_duplicates(subset=["node_id"])
     edges_df = pd.DataFrame(edges_data)
+    return edges_df, nodes_df
 
 
 def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
@@ -902,8 +753,8 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
 
         members = members.dropna(subset=["lat", "lon", "geometry"], how="all")
 
-        platforms, platforms_refs = process_roles(members, PLATFORM_ROLES)
-        stops, stops_refs = process_roles(members, STOPS_ROLES)
+        platforms, platforms_refs = process_roles(members, PLATFORM_ROLES, transformer)
+        stops, stops_refs = process_roles(members, STOPS_ROLES, transformer)
 
         ways_df = members[(members["type"] == "way") & (members["role"].fillna("").isin(["", "forward", "backward"]))]
 
@@ -1080,14 +931,6 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
         merged_nodes.loc[merged_nodes["node_id"].isin(platforms_wout_station), "type"] = "platform"
 
     return merged_edges, merged_nodes
-
-
-def parse_overpass_to_edgenode(loc, crs, needed_tags) -> pd.DataFrame | None:
-    loc_id = loc.name
-    transport_type = loc.transport_type
-    parsed_geometry = parse_overpass_route_response(loc, crs, needed_tags, loc_id)
-    edgenode = geometry_to_graph_edge_node_df(parsed_geometry, transport_type, loc_id)
-    return edgenode
 
 
 def infer_role_from_tags(tags: dict) -> str:

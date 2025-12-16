@@ -16,7 +16,6 @@ from iduedu.modules.overpass.overpass_downloaders import (
 from iduedu.modules.overpass.overpass_parsers import (
     overpass_routes_to_df,
     parse_overpass_subway_data,
-    parse_overpass_to_edgenode,
 )
 
 logger = config.logger
