@@ -14,7 +14,9 @@ from iduedu.modules.overpass.overpass_downloaders import (
     get_routes_by_poly,
 )
 from iduedu.modules.overpass.overpass_parsers import (
+    overpass_ground_transport2edgenode,
     overpass_routes_to_df,
+    overpass_subway2edgenode,
     parse_overpass_subway_data,
 )
 
@@ -227,8 +229,9 @@ def _graph_data_to_nx(graph_df, keep_geometry: bool = True, additional_data=None
     return graph
 
 
-def _multi_parse_overpass_to_edgenode(args):
-    return parse_overpass_to_edgenode(*args)
+def _multi_ground_to_edgenode(args):
+    # args: (row, local_crs, ref2speed, needed_tags)
+    return overpass_ground_transport2edgenode(*args)
 
 
 def _get_public_transport_graph(
@@ -267,78 +270,103 @@ def _get_public_transport_graph(
     polygon = get_4326_boundary(osm_id=osm_id, territory=territory)
 
     # Если парсим метро - ожидаем в ответе информацию о станциях
-    platform_stop_data_use = False
+    enable_subway_details = False
     if "subway" in transport_types and config.overpass_date is None:
-        platform_stop_data_use = True
+        enable_subway_details = True
 
     ptts = ", ".join(transport_types)
     logger.info(f"Downloading routes via Overpass with types {ptts} ...")
     overpass_response: list[dict] = get_routes_by_poly(polygon, transport_types)
-    overpass_data = overpass_routes_to_df(overpass_response, platform_stop_data_use)
+    overpass_data = overpass_routes_to_df(overpass_response, enable_subway_details=enable_subway_details)
     logger.info(f"Downloading routes via Overpass with types {ptts} done!")
 
     if overpass_data.shape[0] == 0:
         logger.warning("No routes found for public transport.")
         return nx.Graph()
 
-    # TODO Не дропать, фильтровать
-    overpass_data = overpass_data.dropna(subset=["transport_type"])
-
     local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     # необходимые osm теги из relation маршрута
-    if osm_edge_tags is None:
-        needed_tags = set(config.transport_useful_edges_attr)
-    else:
-        needed_tags = set(osm_edge_tags)
+    needed_tags = set(config.transport_useful_edges_attr) if osm_edge_tags is None else set(osm_edge_tags)
 
-    # Отделяем станции от маршрутов при необходимости
-    if platform_stop_data_use:
-        for column in ["is_stop_area", "is_stop_area_group", "is_station"]:
-            overpass_data[column] = overpass_data[column].astype("boolean").fillna(False)
-        routes_data = overpass_data[
-            ~((overpass_data["is_stop_area"]) | (overpass_data["is_stop_area_group"]) | (overpass_data["is_station"]))
-        ].copy()
-        stop_areas = overpass_data[overpass_data["is_stop_area"]].copy()
-        stop_areas_group = overpass_data[overpass_data["is_stop_area_group"]].copy()
-        stations_data = overpass_data[overpass_data["is_station"]].copy()
-        add_data = parse_overpass_subway_data(stop_areas, stop_areas_group, stations_data, local_crs)
-    else:
-        routes_data = overpass_data.copy()
-        add_data = None
-
-    if not config.enable_tqdm_bar:
-        logger.debug("Parsing public transport routes")
-    if overpass_data.shape[0] > 100:
-        # Если много маршрутов - обрабатываем в параллели
-        edgenode_for_routes = process_map(
-            _multi_parse_overpass_to_edgenode,
-            [(row, local_crs, needed_tags) for _, row in routes_data.iterrows()],
-            desc="Parsing public transport routes",
-            chunksize=1,
-            disable=not config.enable_tqdm_bar,
+    way_data = overpass_data[overpass_data["is_way_data"]].copy()
+    if len(way_data) > 0:
+        ref2speed = (
+            way_data[["id", "way_speed_m_per_min"]]
+            .dropna(subset=["id"])
+            .set_index("id")["way_speed_m_per_min"]
+            .to_dict()
         )
     else:
-        tqdm.pandas(desc="Parsing public transport routes", disable=not config.enable_tqdm_bar)
-        edgenode_for_routes = [
-            data
-            for data in routes_data.progress_apply(
-                lambda x: parse_overpass_to_edgenode(x, local_crs, needed_tags), axis=1
-            ).tolist()
-            if data is not None
-        ]
+        ref2speed = {}
 
-    if len(edgenode_for_routes) == 0:
+    pt_edges_nodes = []
+    ground_types = {"bus", "tram", "trolley"}
+    pt_data = overpass_data[overpass_data["transport_type"].isin(ground_types)].copy()
+
+    if len(pt_data) > 0:
+        if not config.enable_tqdm_bar:
+            logger.debug("Parsing ground public transport routes")
+
+        if len(pt_data) > 100:
+            results = process_map(
+                _multi_ground_to_edgenode,
+                [(row, local_crs, ref2speed, needed_tags) for _, row in pt_data.iterrows()],
+                desc="Parsing ground PT routes",
+                chunksize=1,
+                disable=not config.enable_tqdm_bar,
+            )
+        else:
+            tqdm.pandas(desc="Parsing ground PT routes", disable=not config.enable_tqdm_bar)
+            results = pt_data.progress_apply(
+                lambda row: overpass_ground_transport2edgenode(row, local_crs, ref2speed, needed_tags),
+                axis=1,
+            ).tolist()
+
+        for edges_df, nodes_df in results:
+            if edges_df is None or nodes_df is None:
+                continue
+            if len(edges_df) == 0 and len(nodes_df) == 0:
+                continue
+            pt_edges_nodes.append((edges_df, nodes_df))
+
+    subway_edges_nodes = None
+    if "subway" in transport_types:
+        subway_data = overpass_data[overpass_data["transport_type"] == "subway"].copy()
+        if len(subway_data) > 0:
+            subway_edges_nodes = overpass_subway2edgenode(subway_data, local_crs)
+
+    edge_frames = []
+    node_frames = []
+
+    for e, n in pt_edges_nodes:
+        if len(e) > 0:
+            edge_frames.append(e)
+        if len(n) > 0:
+            node_frames.append(n)
+
+    if subway_edges_nodes is not None:
+        e, n = subway_edges_nodes
+        if len(e) > 0:
+            edge_frames.append(e)
+        if len(n) > 0:
+            node_frames.append(n)
+
+    if not edge_frames and not node_frames:
         logger.warning("No routes were parsed for public transport.")
         return nx.DiGraph()
-    graph_df = pd.concat(edgenode_for_routes, ignore_index=True)
-    to_return = _graph_data_to_nx(graph_df, keep_geometry=keep_edge_geometry, additional_data=add_data)
+
+    edges_all = pd.concat(edge_frames, ignore_index=True) if edge_frames else pd.DataFrame()
+    nodes_all = pd.concat(node_frames, ignore_index=True) if node_frames else pd.DataFrame()
+
+    # TODO
+    to_return = _graph_data_to_nx(graph_df, keep_geometry=keep_edge_geometry, additional_data=None)
     to_return.graph["crs"] = local_crs
     to_return.graph["type"] = "public_trasport"
 
     if clip_by_territory:
-        polygon = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
-        to_return = clip_nx_graph(to_return, polygon)
+        poly_proj = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
+        to_return = clip_nx_graph(to_return, poly_proj)
 
     to_return = nx.convert_node_labels_to_integers(to_return)
     logger.debug("Done!")

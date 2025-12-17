@@ -12,7 +12,7 @@ from shapely import LineString, MultiPolygon, Polygon, unary_union
 from shapely.ops import polygonize
 
 from iduedu import config
-from iduedu.modules.overpass.overpass_cache import cache_load, cache_save
+from iduedu.modules.overpass.overpass_cache import cache_load, cache_save_async
 
 logger = config.logger
 
@@ -226,7 +226,7 @@ def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
             params={"data": overpass_query},
         )
         json_result = resp.json()
-        cache_save("boundary", cache_key_src, json_result)
+        cache_save_async("boundary", cache_key_src, json_result)
     else:
         logger.debug(f"Using cached territory bounds with osm_id <{osm_id}>")
     geoms = []
@@ -375,7 +375,7 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
             data={"data": overpass_query},
         )
         json_root = resp.json()
-        cache_save("routes", cache_key_src, json_root)
+        cache_save_async("routes", cache_key_src, json_root)
     else:
         logger.debug("Using cached routes_by_poly result")
 
@@ -402,7 +402,7 @@ def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
             data={"data": overpass_query},
         )
         json_root = resp.json()
-        cache_save("network", cache_key_src, json_root)
+        cache_save_async("network", cache_key_src, json_root)
     else:
         logger.debug(f"Using cached network.")
     json_result = json_root.get("elements", [])
@@ -453,7 +453,7 @@ def fetch_member_tags(members_missing, chunk_size=10000):
         if json_root is None:
             resp = _overpass_request(method="POST", overpass_url=config.overpass_url, data={"data": q})
             json_root = resp.json()
-            cache_save("members", cache_key_src, json_root)
+            cache_save_async("members", cache_key_src, json_root)
         else:
             logger.debug("Using cached fetch_member_tags chunk")
 

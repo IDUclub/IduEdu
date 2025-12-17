@@ -111,7 +111,7 @@ def overpass_routes_to_df(json_routes: list[dict], enable_subway_details: bool) 
         if col not in data.columns:
             data[col] = False
         else:
-            data[col] = data[col].fillna(False).astype(bool)
+            data[col] = data[col].infer_objects(copy=False).fillna(False).astype(bool)
 
     return data
 
@@ -209,66 +209,16 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
 
     returns dict in same format: {"coords": ..., "speeds": ...}
     """
-
-    def reverse_way(w: dict) -> dict:
-        # reverse coords, and reverse segment speeds accordingly
-        return {"coords": w["coords"][::-1], "speeds": w["speeds"][::-1]}
-
-    def append_right(dst: dict, w: dict) -> dict:
-        """Concatenate dst + w, removing duplicate join vertex if present."""
-        if not dst["coords"]:
-            return {"coords": w["coords"][:], "speeds": w["speeds"][:]}
-
-        if not w["coords"]:
-            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
-
-        coords2 = w["coords"]
-        speeds2 = w["speeds"]
-
-        # drop duplicate join point
-        if dst["coords"][-1] == coords2[0]:
-            coords2 = coords2[1:]
-            speeds2 = speeds2[1:]  # drop segment that started at removed vertex
-
-        if not coords2:
-            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
-
-        return {
-            "coords": dst["coords"] + coords2,
-            "speeds": dst["speeds"] + speeds2,
-        }
-
-    def append_left(dst: dict, w: dict) -> dict:
-        """Concatenate w + dst, removing duplicate join vertex if present."""
-        if not dst["coords"]:
-            return {"coords": w["coords"][:], "speeds": w["speeds"][:]}
-
-        if not w["coords"]:
-            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
-
-        coords1 = w["coords"]
-        speeds1 = w["speeds"]
-
-        # drop duplicate join point (end of w equals start of dst)
-        if coords1[-1] == dst["coords"][0]:
-            coords1 = coords1[:-1]
-            speeds1 = speeds1[:-1]  # drop segment ending at removed vertex
-
-        if not coords1:
-            return {"coords": dst["coords"][:], "speeds": dst["speeds"][:]}
-
-        return {
-            "coords": coords1 + dst["coords"],
-            "speeds": speeds1 + dst["speeds"],
-        }
+    ways = [w for w in disconnected_ways if w.get("coords")]
+    if not ways:
+        return {"coords": [], "speeds": []}
+    if len(ways) == 1:
+        return {"coords": ways[0]["coords"][:], "speeds": ways[0]["speeds"][:]}
 
     connect_points = []
-    for w in disconnected_ways:
-        coords = w.get("coords", [])
-        if not coords:
-            connect_points += [(0.0, 0.0), (0.0, 0.0)]
-        else:
-            connect_points += [coords[0], coords[-1]]
+    for w in ways:
+        coords = w["coords"]
+        connect_points += [coords[0], coords[-1]]
 
     distances = cdist(connect_points, connect_points)
     n = distances.shape[0]
@@ -295,45 +245,61 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
     distances[first_con_2_rel, first_con_1_rel] = np.inf
     distances[:, first_con_1_rel] = np.inf
     distances[:, first_con_2_rel] = np.inf
-    distances[first_con_1_rel, :] = np.inf
-    distances[first_con_2_rel, :] = np.inf
 
     line1, line2 = first_con_1 // 2, first_con_2 // 2
+    w1, w2 = ways[line1], ways[line2]
 
-    # Orient line1 so that chosen endpoint (first_con_1) becomes the RIGHT end
-    w1 = disconnected_ways[line1]
-    if first_con_1 % 2 == 1:  # chosen is end -> keep
-        connected = {"coords": w1["coords"][:], "speeds": w1["speeds"][:]}
-    else:  # chosen is start -> reverse so it becomes end
-        w1r = reverse_way(w1)
-        connected = {"coords": w1r["coords"], "speeds": w1r["speeds"]}
+    if first_con_1 % 2 == 1:
+        connected_coords = w1["coords"][:]
+        connected_speeds = w1["speeds"][:]
+    else:
+        connected_coords = w1["coords"][::-1]
+        connected_speeds = w1["speeds"][::-1]
 
-    # Orient line2 so that chosen endpoint (first_con_2) becomes the LEFT start
-    w2 = disconnected_ways[line2]
-    if first_con_2 % 2 == 0:  # chosen is start -> keep
-        connected = append_right(connected, w2)
-    else:  # chosen is end -> reverse so it becomes start
-        connected = append_right(connected, reverse_way(w2))
+    if first_con_2 % 2 == 0:
+        coords2 = w2["coords"][:]
+        speeds2 = w2["speeds"][:]
+    else:
+        coords2 = w2["coords"][::-1]
+        speeds2 = w2["speeds"][::-1]
 
-    extreme_points = [first_con_1_rel, first_con_2_rel]  # left extreme idx, right extreme idx
+    connected_coords += coords2
+    connected_speeds += speeds2
 
-    for _ in range(len(disconnected_ways) - 2):
+    extreme_points = [first_con_1_rel, first_con_2_rel]
+
+    for _ in range(len(ways) - 2):
         position, ind = np.unravel_index(np.argmin(distances[extreme_points]), (2, n))
         next_con = (extreme_points[position], ind)
-        rel_point = relative_point(next_con[1])
+        rel_point = relative_point(ind)
 
-        line = ind // 2
-        w = disconnected_ways[line]
+        w = ways[ind // 2]
 
         if position == 0:
-            # joining to LEFT side: make chosen endpoint become RIGHT end of w
-            w_oriented = w if (ind % 2 == 1) else reverse_way(w)
-            connected = append_left(connected, w_oriented)
+            if ind % 2 == 1:
+                coords = w["coords"][:]
+                speeds = w["speeds"][:]
+            else:
+                coords = w["coords"][::-1]
+                speeds = w["speeds"][::-1]
+
+            if coords and connected_coords and coords[-1] == connected_coords[0]:
+                coords = coords[:-1]
+            connected_coords = coords + connected_coords
+            connected_speeds = speeds + connected_speeds
+
             extreme_points = [rel_point, extreme_points[1]]
         else:
-            # joining to RIGHT side: make chosen endpoint become LEFT start of w
-            w_oriented = w if (ind % 2 == 0) else reverse_way(w)
-            connected = append_right(connected, w_oriented)
+            if ind % 2 == 0:
+                coords = w["coords"][:]
+                speeds = w["speeds"][:]
+            else:
+                coords = w["coords"][::-1]
+                speeds = w["speeds"][::-1]
+
+            connected_coords = connected_coords + coords
+            connected_speeds = connected_speeds + speeds
+
             extreme_points = [extreme_points[0], rel_point]
 
         distances[:, rel_point] = np.inf
@@ -345,7 +311,7 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
         distances[rel_point, rel_point_2] = np.inf
         distances[rel_point_2, rel_point] = np.inf
 
-    return connected
+    return {"coords": connected_coords, "speeds": connected_speeds}
 
 
 def overpass_ground_transport2edgenode(
@@ -359,8 +325,6 @@ def overpass_ground_transport2edgenode(
     edges_data: list[dict] = []
 
     def speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
-
-        print("a: ", a, "b: ", b)
 
         if b < a:
             a, b = b, a
@@ -388,10 +352,6 @@ def overpass_ground_transport2edgenode(
                 v = seg_speeds[i]
                 acc += ol * v
                 total_len += ol
-
-        print("total_len: ", total_len)
-        print("acc: ", acc)
-
         return float(acc / total_len) if total_len > 0 else float(np.nan)
 
     def add_node(node_id, x, y, node_type):
@@ -453,30 +413,9 @@ def overpass_ground_transport2edgenode(
         g = r["geometry"]
         coords = [transformer.transform(pt["lon"], pt["lat"]) for pt in g]
         ways.append((coords, float(r["speed"])))
+
     connected_ways = [{"coords": [], "speeds": []}]
     cur_way = 0
-
-    def append_way(dst, coords, speed, drop_first=False, reverse=False):
-        if reverse:
-            coords = coords[::-1]
-        if drop_first and coords:
-            coords = coords[1:]
-        if not coords:
-            return
-
-        if not dst["coords"]:
-            dst["coords"] = coords
-            dst["speeds"] = [speed] * (len(coords) - 1)
-            return
-
-        prev_last = dst["coords"][-1]
-        if coords[0] != prev_last:
-            dst["coords"] += coords
-            dst["speeds"] += [speed] * (len(coords) - 1)
-            return
-
-        dst["coords"] += coords[1:]
-        dst["speeds"] += [speed] * (len(coords) - 1)
 
     for coords, speed in ways:  # pragma: no cover
         if not coords:
@@ -485,31 +424,42 @@ def overpass_ground_transport2edgenode(
         dst = connected_ways[cur_way]
 
         if not dst["coords"]:
-            append_way(dst, coords, speed)
+            dst["coords"] = coords
+            dst["speeds"] = [speed] * len(coords)
             continue
 
         if coords[0] == coords[-1]:
             continue
 
+        # хвост текущего == голова нового: dst += coords[1:]
         if dst["coords"][-1] == coords[0]:
-            append_way(dst, coords, speed, drop_first=True, reverse=False)
-
+            dst["coords"] += coords[1:]
+            dst["speeds"] += [speed] * (len(coords) - 1)
+        # хвост текущего == хвост нового: dst += coords[::-1][1:]
         elif dst["coords"][-1] == coords[-1]:
-            append_way(dst, coords, speed, drop_first=True, reverse=True)
-
+            rcoords = coords[::-1]
+            dst["coords"] += rcoords[1:]
+            dst["speeds"] += [speed] * (len(coords) - 1)
+        # голова текущего == голова нового: coords[::-1] + dst[1:]
         elif dst["coords"][0] == coords[0]:
             new_coords = coords[::-1] + dst["coords"][1:]
-            new_speeds = [speed] * (len(coords) - 1) + dst["speeds"][1:]
+            new_speeds = ([speed] * (len(coords) - 1)) + dst["speeds"]
             connected_ways[cur_way] = {"coords": new_coords, "speeds": new_speeds}
 
+        # голова текущего == хвост нового: coords + dst[1:]
         elif dst["coords"][0] == coords[-1]:
             new_coords = coords + dst["coords"][1:]
-            new_speeds = [speed] * (len(coords) - 1) + dst["speeds"][1:]
+            new_speeds = ([speed] * (len(coords) - 1)) + dst["speeds"]
             connected_ways[cur_way] = {"coords": new_coords, "speeds": new_speeds}
 
+        # нет соединяющей точки — новый компонент
         else:
-            connected_ways += [{"coords": coords, "speeds": [speed] * (len(coords) - 1)}]
+            connected_ways.append({"coords": coords, "speeds": [speed] * len(coords)})
             cur_way += 1
+
+    for w in connected_ways:
+        if w["coords"] and len(w["speeds"]) != len(w["coords"]):
+            raise ValueError(f"speeds/coords mismatch: {len(w['speeds'])} vs {len(w['coords'])}")
 
     if len(connected_ways) > 1:
         # удаляем все круговые движения (замкнутые линии)
@@ -538,7 +488,8 @@ def overpass_ground_transport2edgenode(
     extra = extract_needed(loc, needed_tags)
 
     path_coords = cw["coords"]
-    seg_speeds = cw["speeds"]  # len = len(path_coords)-1
+    seg_speeds = cw["speeds"][:-1]
+
     path = LineString(path_coords)
 
     cumdist = [0.0]
@@ -658,13 +609,8 @@ def overpass_ground_transport2edgenode(
             if isinstance(seg, Point):
                 seg = LineString((seg, seg))
 
-            print("path.length:", path.length)
-            print("cumdist[-1]:", cumdist[-1], "len(seg_speeds):", len(seg_speeds), "len(coords):", len(path_coords))
-            print("last_dist:", last_dist, "stop_dist:", stop_dist)
-
             v_avg = speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
-            print("v_avg", v_avg)
-            print("----")
+
             extra_edge = {**extra, "speed": v_avg}
             add_edge(
                 u=last_projected_stop_id, v=stop_ref, edge_type=transport_type, geometry=seg, extra_data=extra_edge
