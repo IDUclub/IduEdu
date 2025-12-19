@@ -11,7 +11,7 @@ from scipy.spatial.distance import cdist
 from shapely import LineString, MultiLineString, Point, line_merge
 from shapely.ops import substring
 
-from iduedu.enums.highway_enums import HighwayType
+from iduedu.constants.highway_enums import HighwayType
 from iduedu.modules.overpass.overpass_downloaders import fetch_member_tags
 
 PLATFORM_ROLES = ["platform_entry_only", "platform", "platform_exit_only"]
@@ -111,7 +111,7 @@ def overpass_routes_to_df(json_routes: list[dict], enable_subway_details: bool) 
         if col not in data.columns:
             data[col] = False
         else:
-            data[col] = data[col].infer_objects(copy=False).fillna(False).astype(bool)
+            data[col] = data[col].astype("boolean").fillna(False).astype(bool)
 
     return data
 
@@ -366,7 +366,7 @@ def overpass_ground_transport2edgenode(
             }
         )
 
-    def add_edge(u, v, edge_type, geometry=None, extra_data=None):
+    def add_edge(u, v, edge_type, geometry=None, extra_data=None, speed_m_min=None):
         payload = {
             "u": u,
             "v": v,
@@ -377,6 +377,8 @@ def overpass_ground_transport2edgenode(
             payload["geometry"] = LineString([(round(x, 5), round(y, 5)) for x, y in geometry.coords])
         if extra_data is not None:
             payload["extra_data"] = extra_data
+        if speed is not None:
+            payload["speed_m_min"] = speed_m_min
         edges_data.append(payload)
 
     transformer = Transformer.from_crs("EPSG:4326", local_crs, always_xy=True)
@@ -611,15 +613,19 @@ def overpass_ground_transport2edgenode(
 
             v_avg = speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
 
-            extra_edge = {**extra, "speed": v_avg}
             add_edge(
-                u=last_projected_stop_id, v=stop_ref, edge_type=transport_type, geometry=seg, extra_data=extra_edge
+                u=last_projected_stop_id,
+                v=stop_ref,
+                edge_type=transport_type,
+                geometry=seg,
+                extra_data=extra,
+                speed_m_min=v_avg,
             )
 
         last_projected_stop_id = stop_ref
         last_dist = stop_dist
 
-        add_node(node_id=plat_ref, x=platform.x, y=platform.y, node_type="subway_platform")
+        add_node(node_id=plat_ref, x=platform.x, y=platform.y, node_type="platform")
         # boarding_geom = LineString(
         #     [(round(projected_stop.x, 5), round(projected_stop.y, 5)), (round(platform.x, 5), round(platform.y, 5))]
         # )
@@ -925,12 +931,12 @@ def patch_members_roles_inplace(stop_areas_df):
             role = (m.get("role") or "").strip()
             if role == "":
                 missing.append({"type": m["type"], "ref": int(m["ref"])})
-    print(missing)
+
     if not missing:
         return
 
     tags_map = fetch_member_tags(missing)
-    print(tags_map)
+
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
             if (m.get("role") or "").strip():
