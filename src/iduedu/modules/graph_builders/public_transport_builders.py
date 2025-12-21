@@ -23,7 +23,7 @@ logger = config.logger
 
 
 def _graph_data_to_nx(
-    graph_nodes_df, graph_edges_df, trasport_registry: TransportRegistry, keep_geometry: bool = True
+    graph_nodes_df, graph_edges_df, transport_registry: TransportRegistry, keep_geometry: bool = True
 ) -> nx.DiGraph:
     """
     Build a directed public-transport graph from a mixed edge/node DataFrame, with optional subway add-ons.
@@ -65,7 +65,7 @@ def _graph_data_to_nx(
 
     not_platforms = graph_nodes_df[graph_nodes_df["type"] != "platform"].copy()
     not_platforms["point_group"] = not_platforms["point"].apply(lambda p: (round(p[0]), round(p[1])))
-    not_platforms = not_platforms.groupby(["point_group", "route", "type"], as_index=False).agg(
+    not_platforms = not_platforms.groupby(["point_group", "route", "type"], as_index=False, dropna=False).agg(
         point=("point", "first"),
         node_id=("node_id", lambda s: tuple(s.dropna())),
         extra_data=("extra_data", merge_dicts_last),
@@ -86,6 +86,8 @@ def _graph_data_to_nx(
         graph_edges_df["length_meter"] = np.nan
     if "time_min" not in graph_edges_df.columns:
         graph_edges_df["time_min"] = np.nan
+    if "speed_m_min" not in graph_edges_df.columns:
+        graph_edges_df["speed_m_min"] = np.nan
 
     def calc_len_time(row):
         if row.type == "boarding":
@@ -94,10 +96,8 @@ def _graph_data_to_nx(
         if geom is None:
             return 0.0, 0.0
         length_m = float(round(geom.length, 3))
-
-        spec = trasport_registry.get(str(row.type))
-
-        speed_limit_mpm = 1
+        spec = transport_registry.get(str(row.type))
+        speed_limit_mpm = row.speed_m_min
 
         time_min = spec.travel_time_min(
             length_m,
@@ -119,23 +119,24 @@ def _graph_data_to_nx(
         route = list(set(node["route"])) if isinstance(node["route"], tuple) else [node["route"]]
         if len(route) == 1:
             route = route[0]
+        node_extra = node.get("extra_data")
         graph.add_node(
             idx,
             x=float(node["point"][0]),
             y=float(node["point"][1]),
             type=node["type"],
             route=route,
-            ref_id=(node["ref_id"][0] if isinstance(node["ref_id"], tuple) and node["ref_id"] else node["ref_id"]),
-            **(node["extra_data"] if isinstance(node["extra_data"], dict) else {}),
+            **(node_extra if isinstance(node_extra, dict) else {}),
         )
 
     for _, e in graph_edges_df.iterrows():
+        edge_extra = e.get("extra_data")
         payload = {
             "route": e["route"],
             "type": e["type"],
             "length_meter": e["length_meter"],
             "time_min": e["time_min"],
-            **(e["extra_data"] if isinstance(e["extra_data"], dict) else {}),
+            **(edge_extra if isinstance(edge_extra, dict) else {}),
         }
         if keep_geometry and not pd.isna(e["geometry"]):
             payload["geometry"] = e["geometry"]
@@ -157,7 +158,7 @@ def _get_public_transport_graph(
     territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None,
     transport_types: list[str],
     osm_edge_tags: list[str],
-    trasport_registry: TransportRegistry,
+    transport_registry: TransportRegistry,
     clip_by_territory: bool = False,
     keep_edge_geometry: bool = True,
 ):
@@ -266,17 +267,19 @@ def _get_public_transport_graph(
     graph_edges_df = pd.concat(graph_edges_df, ignore_index=True) if graph_edges_df else pd.DataFrame()
     graph_nodes_df = pd.concat(graph_nodes_df, ignore_index=True) if graph_nodes_df else pd.DataFrame()
 
-    to_return = _graph_data_to_nx(graph_nodes_df, graph_edges_df, keep_geometry=keep_edge_geometry)
-    to_return.graph["crs"] = local_crs
-    to_return.graph["type"] = "public_trasport"
+    nx_graph = _graph_data_to_nx(
+        graph_nodes_df, graph_edges_df, transport_registry=transport_registry, keep_geometry=keep_edge_geometry
+    )
+    nx_graph.graph["crs"] = local_crs
+    nx_graph.graph["type"] = "public_trasport"
 
     if clip_by_territory:
         poly_proj = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
-        to_return = clip_nx_graph(to_return, poly_proj)
+        nx_graph = clip_nx_graph(nx_graph, poly_proj)
 
-    to_return = nx.convert_node_labels_to_integers(to_return)
+    nx_graph = nx.convert_node_labels_to_integers(nx_graph)
     logger.debug("Done!")
-    return to_return
+    return nx_graph
 
 
 def get_single_public_transport_graph(
@@ -287,7 +290,7 @@ def get_single_public_transport_graph(
     clip_by_territory: bool = False,
     keep_edge_geometry: bool = True,
     osm_edge_tags: list[str] | None = None,  # overrides default tags
-    trasport_registry: TransportRegistry | None = None,
+    transport_registry: TransportRegistry | None = None,
 ):
     """
     Build a directed graph for a single public-transport mode within a given territory.
@@ -322,15 +325,20 @@ def get_single_public_transport_graph(
         - Lengths and times are computed in a **local projected CRS** estimated from the boundary; per-edge speeds are
           taken from mode-specific defaults (and, for subway connectors, from connector-type defaults).
     """
-    # public_transport_type = (
-    #     public_transport_type.value() if isinstance(public_transport_type, PublicTrasport) else public_transport_type
-    # )
-    registry = trasport_registry or DEFAULT_REGISTRY
+    registry = transport_registry or DEFAULT_REGISTRY
+
+    pt = str(public_transport_type).strip().lower()
+    registry_types = set(registry.list_types() if hasattr(registry, "list_types") else registry.type_list())
+
+    if pt not in registry_types:
+        raise ValueError(f"Unknown transport type: {pt!r}. Available: {sorted(registry_types)}")
+
     return _get_public_transport_graph(
         osm_id=osm_id,
         territory=territory,
-        transport_types=[public_transport_type],
+        transport_types=[pt],
         osm_edge_tags=osm_edge_tags,
+        transport_registry=registry,
         clip_by_territory=clip_by_territory,
         keep_edge_geometry=keep_edge_geometry,
     )
@@ -396,7 +404,7 @@ def get_all_public_transport_graph(
         territory=territory,
         transport_types=transport_types,
         osm_edge_tags=osm_edge_tags,
-        trasport_registry=registry,
+        transport_registry=registry,
         clip_by_territory=clip_by_territory,
         keep_edge_geometry=keep_edge_geometry,
     )

@@ -409,60 +409,66 @@ def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
     return pd.DataFrame(json_result)
 
 
-def fetch_member_tags(members_missing, chunk_size=10000):
+def fetch_member_tags(members_missing):
     """
-    members_missing: iterable of dicts  {'type': 'node|way|relation', 'ref': int}
-    :returns {("node", 123): {tags...}, ("way", 456): {tags...}, ...}
+    members_missing: iterable of dicts {'type': 'node|way|relation', 'ref': int}
+
+    returns:
+      {
+        ("node", 123): {"tags": {...}, "__latlon__": (lon,lat)},
+        ("way", 456):  {"tags": {...}, "__center__": (lon,lat), "__geometry__": [...]},
+        ("relation",7):{"tags": {...}, "__center__": (lon,lat), "__geometry__": [...]},
+      }
     """
     ids = defaultdict(list)
     for m in members_missing:
-        t = m["type"]
-        ids[t].append(int(m["ref"]))
+        ids[m["type"]].append(int(m["ref"]))
 
     for k in list(ids.keys()):
         ids[k] = sorted(set(ids[k]))
 
-    result = {}
+    if not any(ids.values()):
+        return {}
 
-    def _build_query(sub_ids: dict) -> str:
+    def _build_query(all_ids: dict) -> str:
         parts = []
-        if sub_ids.get("node"):
-            parts.append(f'node(id:{",".join(map(str, sub_ids["node"]))});')
-        if sub_ids.get("way"):
-            parts.append(f'way(id:{",".join(map(str, sub_ids["way"]))});')
-        if sub_ids.get("relation"):
-            parts.append(f'rel(id:{",".join(map(str, sub_ids["relation"]))});')
+        if all_ids.get("node"):
+            parts.append(f'node(id:{",".join(map(str, all_ids["node"]))});')
+        if all_ids.get("way"):
+            parts.append(f'way(id:{",".join(map(str, all_ids["way"]))});')
+        if all_ids.get("relation"):
+            parts.append(f'rel(id:{",".join(map(str, all_ids["relation"]))});')
+
         body = "\n".join(parts)
         header = config.overpass_header
-        return f"{header}\n(\n{body}\n);\nout tags center qt;"
 
-    def _yield_chunks(type_key):
-        arr = ids.get(type_key, [])
-        for i in range(0, len(arr), chunk_size):
-            yield {type_key: arr[i : i + chunk_size]}
+        return f"{header}\n(\n{body}\n);\nout center qt;"
 
-    chunks = []
-    for tk in ("node", "way", "relation"):
-        chunks.extend(_yield_chunks(tk))
+    q = _build_query(ids)
+    cache_key_src = f"{config.overpass_url}\nPOST\n{q}"
+    json_root = cache_load("members", cache_key_src)
 
-    for sub in chunks:
-        q = _build_query(sub)
-        cache_key_src = f"{config.overpass_url}\nPOST\n{q}"
-        json_root = cache_load("members", cache_key_src)
+    if json_root is None:
+        resp = _overpass_request(method="POST", overpass_url=config.overpass_url, data={"data": q})
+        json_root = resp.json()
+        cache_save_async("members", cache_key_src, json_root)
+    else:
+        logger.debug("Using cached fetch_member_tags")
 
-        if json_root is None:
-            resp = _overpass_request(method="POST", overpass_url=config.overpass_url, data={"data": q})
-            json_root = resp.json()
-            cache_save_async("members", cache_key_src, json_root)
-        else:
-            logger.debug("Using cached fetch_member_tags chunk")
+    result = {}
+    for e in json_root.get("elements", []) or []:
+        key = (e["type"], int(e["id"]))
+        payload = {"tags": e.get("tags", {}) or {}}
 
-        els = json_root.get("elements", [])
-        for e in els:
-            key = (e["type"], int(e["id"]))
-            result[key] = e.get("tags", {}) or {}
-            if e["type"] != "node":
-                if "center" in e:
-                    result[key]["__center__"] = (e["center"]["lon"], e["center"]["lat"])
+        if e.get("type") == "node" and ("lon" in e and "lat" in e):
+            payload["__latlon__"] = (e["lon"], e["lat"])
+
+        if e.get("type") != "node" and "center" in e:
+            payload["__center__"] = (e["center"]["lon"], e["center"]["lat"])
+
+        if "geometry" in e and e["geometry"]:
+            payload["__geometry__"] = e["geometry"]
+
+        result[key] = payload
 
     return result

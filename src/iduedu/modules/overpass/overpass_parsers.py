@@ -204,16 +204,28 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
     disconnected_ways: list[dict] where each dict is:
       {
         "coords": list[tuple[float,float]],   # vertices
-        "speeds": list[float],               # per-segment speeds, len == len(coords)-1
+        "speeds": list[float] | None,         # optional
       }
 
-    returns dict in same format: {"coords": ..., "speeds": ...}
+    returns dict: {"coords": ..., "speeds": ...}
+      - speeds is None if input had no speeds
     """
     ways = [w for w in disconnected_ways if w.get("coords")]
     if not ways:
-        return {"coords": [], "speeds": []}
+        return {"coords": [], "speeds": None}
+
+    any_has_speeds = any(("speeds" in w) and (w["speeds"] is not None) for w in ways)
+
+    if any_has_speeds:
+        for w in ways:
+            if ("speeds" not in w) or (w["speeds"] is None):
+                raise ValueError("Mixed ways: some have speeds and some don't")
+
     if len(ways) == 1:
-        return {"coords": ways[0]["coords"][:], "speeds": ways[0]["speeds"][:]}
+        return {
+            "coords": ways[0]["coords"][:],
+            "speeds": (ways[0]["speeds"][:] if any_has_speeds else None),
+        }
 
     connect_points = []
     for w in ways:
@@ -251,20 +263,21 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
 
     if first_con_1 % 2 == 1:
         connected_coords = w1["coords"][:]
-        connected_speeds = w1["speeds"][:]
+        connected_speeds = w1["speeds"][:] if any_has_speeds else None
     else:
         connected_coords = w1["coords"][::-1]
-        connected_speeds = w1["speeds"][::-1]
+        connected_speeds = w1["speeds"][::-1] if any_has_speeds else None
 
     if first_con_2 % 2 == 0:
         coords2 = w2["coords"][:]
-        speeds2 = w2["speeds"][:]
+        speeds2 = w2["speeds"][:] if any_has_speeds else None
     else:
         coords2 = w2["coords"][::-1]
-        speeds2 = w2["speeds"][::-1]
+        speeds2 = w2["speeds"][::-1] if any_has_speeds else None
 
     connected_coords += coords2
-    connected_speeds += speeds2
+    if any_has_speeds:
+        connected_speeds += speeds2
 
     extreme_points = [first_con_1_rel, first_con_2_rel]
 
@@ -278,27 +291,29 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
         if position == 0:
             if ind % 2 == 1:
                 coords = w["coords"][:]
-                speeds = w["speeds"][:]
+                speeds = w["speeds"][:] if any_has_speeds else None
             else:
                 coords = w["coords"][::-1]
-                speeds = w["speeds"][::-1]
+                speeds = w["speeds"][::-1] if any_has_speeds else None
 
             if coords and connected_coords and coords[-1] == connected_coords[0]:
                 coords = coords[:-1]
             connected_coords = coords + connected_coords
-            connected_speeds = speeds + connected_speeds
+            if any_has_speeds:
+                connected_speeds = speeds + connected_speeds
 
             extreme_points = [rel_point, extreme_points[1]]
         else:
             if ind % 2 == 0:
                 coords = w["coords"][:]
-                speeds = w["speeds"][:]
+                speeds = w["speeds"][:] if any_has_speeds else None
             else:
                 coords = w["coords"][::-1]
-                speeds = w["speeds"][::-1]
+                speeds = w["speeds"][::-1] if any_has_speeds else None
 
             connected_coords = connected_coords + coords
-            connected_speeds = connected_speeds + speeds
+            if any_has_speeds:
+                connected_speeds = connected_speeds + speeds
 
             extreme_points = [extreme_points[0], rel_point]
 
@@ -311,7 +326,7 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
         distances[rel_point, rel_point_2] = np.inf
         distances[rel_point_2, rel_point] = np.inf
 
-    return {"coords": connected_coords, "speeds": connected_speeds}
+    return {"coords": connected_coords, "speeds": (connected_speeds if any_has_speeds else None)}
 
 
 def overpass_ground_transport2edgenode(
@@ -716,7 +731,9 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
         merged_lines = line_merge(lines, directed=True)
 
         if not isinstance(merged_lines, LineString):
-            raise Exception()
+            separated_lines = [line for line in merged_lines.geoms if isinstance(line, LineString)]
+            cw = _link_unconnected([{"coords": list(ls.coords)} for ls in separated_lines])
+            merged_lines = LineString(cw["coords"])
 
         path = merged_lines
 
@@ -878,7 +895,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
     platforms_with_station = merged_edges[
         (merged_edges["u"].isin(platforms_ids)) & (merged_edges["type"] != "boarding")
     ]["u"].unique()
-    platforms_wout_station = np.setdiff1d(platforms_ids, platforms_with_station)
+    platforms_wout_station = np.setdiff1d(platforms_ids.astype("object"), platforms_with_station.astype("object"))
     if len(platforms_wout_station) > 0:
         merged_nodes.loc[merged_nodes["node_id"].isin(platforms_wout_station), "type"] = "platform"
 
@@ -924,12 +941,16 @@ def infer_role_from_tags(tags: dict) -> str:
 
 
 def patch_members_roles_inplace(stop_areas_df):
-
     missing = []
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
-            role = (m.get("role") or "").strip()
-            if role == "":
+            role_missing = (m.get("role") or "").strip() == ""
+
+            has_latlon = "lat" in m and "lon" in m and m["lat"] is not None and m["lon"] is not None
+            has_geom = "geometry" in m and m["geometry"]
+            geo_missing = (not has_latlon) and (not has_geom)
+
+            if role_missing or geo_missing:
                 missing.append({"type": m["type"], "ref": int(m["ref"])})
 
     if not missing:
@@ -939,16 +960,29 @@ def patch_members_roles_inplace(stop_areas_df):
 
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
-            if (m.get("role") or "").strip():
-                continue
             key = (m["type"], int(m["ref"]))
-            tags = tags_map.get(key, {})
-            role = infer_role_from_tags(tags)
-            if role:
-                m["role"] = role
-            if "lon" not in m and "__center__" in tags:
-                cx, cy = tags["__center__"]
-                m["lon"], m["lat"] = cx, cy
+            payload = tags_map.get(key, {})
+
+            if (m.get("role") or "").strip() == "":
+                tags = payload.get("tags", {}) or {}
+                role = infer_role_from_tags(tags)
+                if role:
+                    m["role"] = role
+
+            # 2) lat/lon
+            has_latlon = "lat" in m and "lon" in m and m["lat"] is not None and m["lon"] is not None
+            if not has_latlon:
+                if "__latlon__" in payload:
+                    lon, lat = payload["__latlon__"]
+                    m["lon"], m["lat"] = lon, lat
+                elif "__center__" in payload:
+                    lon, lat = payload["__center__"]
+                    m["lon"], m["lat"] = lon, lat
+
+            # 3) geometry
+            has_geom = "geometry" in m and m["geometry"]
+            if not has_geom and "__geometry__" in payload:
+                m["geometry"] = payload["__geometry__"]
 
 
 def parse_overpass_subway_data(
@@ -1036,6 +1070,8 @@ def parse_overpass_subway_data(
                 new_lon, new_lat = LineString((xy["lon"], xy["lat"]) for xy in node["geometry"]).centroid.xy
                 node["lon"], node["lat"] = new_lon[0], new_lat[0]
             if "lon" not in node:
+                print(node)
+                continue
                 node["lon"], node["lat"] = None, None
 
             add_node(node["ref"], node["lon"], node["lat"], node["role"])

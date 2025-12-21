@@ -70,14 +70,14 @@ class TransportSpec:
         d_acc = max(float(self.accel_dist_m), 0.0)
         d_brk = max(float(self.brake_dist_m), 0.0)
 
-        # если сегмент слишком короткий — масштабируем зоны разгона/торможения
         span = d_acc + d_brk
         if span > 1e-9 and segment_len_m < span:
-            k = segment_len_m / span
-            d_acc *= k
-            d_brk *= k
+            V_peak = velocity * (segment_len_m / span)
+            V_peak = max(V_peak, float(min_speed_mpm))
 
-        d_cruise = max(segment_len_m - (d_acc + d_brk), 0.0)
+            return (2.0 * segment_len_m) / V_peak
+
+        d_cruise = max(segment_len_m - span, 0.0)
 
         # время в минутах (на accel/brake средняя скорость ~ V/2)
         t_acc = (2.0 * d_acc) / velocity
