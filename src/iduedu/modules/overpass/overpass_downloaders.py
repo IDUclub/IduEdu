@@ -321,7 +321,7 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
     header = config.overpass_header
     query_parts = [header]
 
-    simple_route_types = public_transport_types if has_date else non_subway_types
+    simple_route_types = non_subway_types
 
     if simple_route_types:
         if len(simple_route_types) == 1:

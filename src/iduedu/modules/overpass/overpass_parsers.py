@@ -329,6 +329,53 @@ def _link_unconnected(disconnected_ways) -> dict:  # pragma: no cover
     return {"coords": connected_coords, "speeds": (connected_speeds if any_has_speeds else None)}
 
 
+def _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs):
+    items = []  # [(platform_coords, platform_ref, stop_coords, stop_ref), на выходе не может быть пары без платформы
+
+    platform_len, stops_len = len(platforms), len(stops)
+    matched_p, matched_s = set(), set()
+    pairs = {}  # p_idx -> s_idx
+
+    if platform_len and stops_len:
+
+        stop_tree = cKDTree(stops)
+        k = min(2, stops_len)
+        dists, idxs = stop_tree.query(platforms, k=k)
+
+        dists = np.asarray(dists)
+        idxs = np.asarray(idxs)
+        if dists.ndim == 1:  # это случается, когда k == 1
+            dists = dists[:, None]
+            idxs = idxs[:, None]
+
+        candidates = []
+        for p_i in range(platform_len):
+            for rank in range(dists.shape[1]):
+                dist = float(dists[p_i, rank])
+                if not np.isfinite(dist) or dist > THRESHOLD_METERS:
+                    continue
+                s_i = int(idxs[p_i, rank])
+                candidates.append((dist, p_i, s_i))
+
+        candidates.sort(key=lambda t: t[0])
+        for dist, p_i, s_i in candidates:
+            if p_i not in matched_p and s_i not in matched_s:
+                pairs[p_i] = s_i
+                matched_p.add(p_i)
+                matched_s.add(s_i)
+
+    for p_i, s_i in pairs.items():
+        items.append(
+            {
+                "p": platforms[p_i],
+                "pref": platforms_refs[p_i],
+                "s": stops[s_i],
+                "sref": stops_refs[s_i],
+            }
+        )
+    return items, matched_p, matched_s
+
+
 def overpass_ground_transport2edgenode(
     loc: pd.Series,
     local_crs,
@@ -517,64 +564,9 @@ def overpass_ground_transport2edgenode(
     cumdist = np.asarray(cumdist)
     seg_speeds = np.asarray(seg_speeds, dtype=float)
 
-    items = []  # [(platform_coords, platform_ref, stop_coords, stop_ref), на выходе не может быть пары без платформы
-
     platform_len, stops_len = len(platforms), len(stops)
-    matched_p, matched_s = set(), set()
-    pairs = {}  # p_idx -> s_idx
 
-    if platform_len and stops_len:
-
-        stop_tree = cKDTree(stops)
-        k = min(2, stops_len)
-        dists, idxs = stop_tree.query(platforms, k=k)
-
-        dists = np.asarray(dists)
-        idxs = np.asarray(idxs)
-        if dists.ndim == 1:  # это случается, когда k == 1
-            dists = dists[:, None]
-            idxs = idxs[:, None]
-
-        candidates = []
-        for p_i in range(platform_len):
-            for rank in range(dists.shape[1]):
-                dist = float(dists[p_i, rank])
-                if not np.isfinite(dist) or dist > THRESHOLD_METERS:
-                    continue
-                s_i = int(idxs[p_i, rank])
-                candidates.append((dist, p_i, s_i))
-
-        candidates.sort(key=lambda t: t[0])
-        for dist, p_i, s_i in candidates:
-            if p_i not in matched_p and s_i not in matched_s:
-                pairs[p_i] = s_i
-                matched_p.add(p_i)
-                matched_s.add(s_i)
-
-    for p_i, s_i in pairs.items():
-        items.append(
-            {
-                "p": platforms[p_i],
-                "pref": platforms_refs[p_i],
-                "s": stops[s_i],
-                "sref": stops_refs[s_i],
-            }
-        )
-
-    if stops_len:
-        base_dir = side_left_or_right(Point(platforms[platform_len // 2]), path) if platform_len else 1
-        for s_i in range(stops_len):
-            if s_i in matched_s:
-                continue
-            s_pt = Point(stops[s_i])
-            items.append(
-                {
-                    "p": offset_point(s_pt, path, base_dir),
-                    "pref": f"from_{stops_refs[s_i]}",  # new platform
-                    "s": s_pt.xy,
-                    "sref": stops_refs[s_i],
-                }
-            )
+    items, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
 
     for p_i in range(platform_len):
         if p_i in matched_p:
@@ -737,51 +729,9 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
 
         path = merged_lines
 
-        items = (
-            []
-        )  # [(platform_coords, platform_ref, stop_coords, stop_ref), на выходе не может быть пары без платформы
-
         platform_len, stops_len = len(platforms), len(stops)
-        matched_p, matched_s = set(), set()
-        pairs = {}  # p_idx -> s_idx
 
-        if platform_len and stops_len:
-
-            stop_tree = cKDTree(stops)
-            k = min(2, stops_len)
-            dists, idxs = stop_tree.query(platforms, k=k)
-
-            dists = np.asarray(dists)
-            idxs = np.asarray(idxs)
-            if dists.ndim == 1:  # это случается, когда k == 1
-                dists = dists[:, None]
-                idxs = idxs[:, None]
-
-            candidates = []
-            for p_i in range(platform_len):
-                for rank in range(dists.shape[1]):
-                    dist = float(dists[p_i, rank])
-                    if not np.isfinite(dist) or dist > THRESHOLD_METERS:
-                        continue
-                    s_i = int(idxs[p_i, rank])
-                    candidates.append((dist, p_i, s_i))
-
-            candidates.sort(key=lambda t: t[0])
-            for dist, p_i, s_i in candidates:
-                if p_i not in matched_p and s_i not in matched_s:
-                    pairs[p_i] = s_i
-                    matched_p.add(p_i)
-                    matched_s.add(s_i)
-
-        for p_i, s_i in pairs.items():
-            items.append(
-                {
-                    "p": platforms[p_i],
-                    "pref": platforms_refs[p_i],
-                    "s": stops[s_i],
-                    "sref": stops_refs[s_i],
-                }
-            )
+        items, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
 
         if stops_len:
             base_dir = side_left_or_right(Point(platforms[platform_len // 2]), path) if platform_len else 1
@@ -814,7 +764,6 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
         for p_i in range(platform_len):
             if p_i in matched_p:
                 continue
-            raise Exception("some platforms has no stop")
             # Добавляем пару с платформой у которой нету остановки
             items.append(
                 {
