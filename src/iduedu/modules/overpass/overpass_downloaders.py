@@ -301,7 +301,8 @@ def _poly_to_overpass(poly: Polygon) -> str:
 
 
 def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> list[dict]:
-    public_transport_types = list(dict.fromkeys(public_transport_types))
+    public_transport_types = sorted(set(public_transport_types))
+
     if not public_transport_types:
         return pd.DataFrame()
 

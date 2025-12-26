@@ -568,6 +568,21 @@ def overpass_ground_transport2edgenode(
 
     items, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
 
+    if stops_len:
+        base_dir = side_left_or_right(Point(platforms[platform_len // 2]), path) if platform_len else 1
+        for s_i in range(stops_len):
+            if s_i in matched_s:
+                continue
+            s_pt = Point(stops[s_i])
+            items.append(
+                {
+                    "p": offset_point(s_pt, path, base_dir),
+                    "pref": f"from_{stops_refs[s_i]}",  # new platform
+                    "s": s_pt.xy,
+                    "sref": stops_refs[s_i],
+                }
+            )
+
     for p_i in range(platform_len):
         if p_i in matched_p:
             continue

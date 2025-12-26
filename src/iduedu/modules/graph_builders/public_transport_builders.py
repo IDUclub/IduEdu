@@ -53,6 +53,9 @@ def _graph_data_to_nx(
                 out[k] = v
         return out
 
+    if "extra_data" not in graph_nodes_df.columns:
+        graph_nodes_df["extra_data"] = [{} for _ in range(len(graph_nodes_df))]
+
     platforms = graph_nodes_df[graph_nodes_df["type"] == "platform"].copy()
     platforms["point_group"] = platforms["point"].apply(lambda p: (round(p[0]), round(p[1])))
     platforms = platforms.groupby("point_group", as_index=False).agg(
