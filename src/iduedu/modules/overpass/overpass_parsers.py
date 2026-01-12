@@ -376,6 +376,37 @@ def _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs):
     return items, matched_p, matched_s
 
 
+def _speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
+
+    if b < a:
+        a, b = b, a
+    if b <= a:
+        return float(np.nan)
+
+    i0 = int(np.searchsorted(cumdist, a, side="right") - 1)
+    i1 = int(np.searchsorted(cumdist, b, side="left"))
+
+    i0 = max(i0, 0)
+    i1 = min(i1, len(seg_speeds))
+
+    total_len = 0.0
+    acc = 0.0
+
+    for i in range(i0, i1):
+        if i < 0 or i >= len(seg_speeds):
+            continue
+        seg_a = cumdist[i]
+        seg_b = cumdist[i + 1]
+        overlap_a = max(a, seg_a)
+        overlap_b = min(b, seg_b)
+        ol = overlap_b - overlap_a
+        if ol > 0:
+            v = seg_speeds[i]
+            acc += ol * v
+            total_len += ol
+    return float(acc / total_len) if total_len > 0 else float(np.nan)
+
+
 def overpass_ground_transport2edgenode(
     loc: pd.Series,
     local_crs,
@@ -385,36 +416,6 @@ def overpass_ground_transport2edgenode(
 
     nodes_data: list[dict] = []
     edges_data: list[dict] = []
-
-    def speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
-
-        if b < a:
-            a, b = b, a
-        if b <= a:
-            return float(np.nan)
-
-        i0 = int(np.searchsorted(cumdist, a, side="right") - 1)
-        i1 = int(np.searchsorted(cumdist, b, side="left"))
-
-        i0 = max(i0, 0)
-        i1 = min(i1, len(seg_speeds))
-
-        total_len = 0.0
-        acc = 0.0
-
-        for i in range(i0, i1 + 1):
-            if i < 0 or i >= len(seg_speeds):
-                continue
-            seg_a = cumdist[i]
-            seg_b = cumdist[i + 1]
-            overlap_a = max(a, seg_a)
-            overlap_b = min(b, seg_b)
-            ol = overlap_b - overlap_a
-            if ol > 0:
-                v = seg_speeds[i]
-                acc += ol * v
-                total_len += ol
-        return float(acc / total_len) if total_len > 0 else float(np.nan)
 
     def add_node(node_id, x, y, node_type):
         x = round(x, 5)
@@ -566,7 +567,7 @@ def overpass_ground_transport2edgenode(
 
     platform_len, stops_len = len(platforms), len(stops)
 
-    items, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
+    stop_plat_pairs, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
 
     if stops_len:
         base_dir = side_left_or_right(Point(platforms[platform_len // 2]), path) if platform_len else 1
@@ -574,7 +575,7 @@ def overpass_ground_transport2edgenode(
             if s_i in matched_s:
                 continue
             s_pt = Point(stops[s_i])
-            items.append(
+            stop_plat_pairs.append(
                 {
                     "p": offset_point(s_pt, path, base_dir),
                     "pref": f"from_{stops_refs[s_i]}",  # new platform
@@ -586,7 +587,7 @@ def overpass_ground_transport2edgenode(
     for p_i in range(platform_len):
         if p_i in matched_p:
             continue
-        items.append(
+        stop_plat_pairs.append(
             {
                 "p": platforms[p_i],
                 "pref": platforms_refs[p_i],
@@ -595,18 +596,30 @@ def overpass_ground_transport2edgenode(
             }
         )
 
-    if not items:
-        items.append({"p": offset_point(path.interpolate(0), path, 1, 7), "pref": None, "s": None, "sref": None})
-        items.append(
-            {"p": offset_point(path.interpolate(path.length), path, 1, 7), "pref": None, "s": None, "sref": None}
+    if not stop_plat_pairs:
+        stop_plat_pairs.append(
+            {
+                "p": offset_point(path.interpolate(0), path, 1, 7),
+                "pref": f"{loc_id}_0",
+                "s": None,
+                "sref": f"from_{loc_id}_0",
+            }
+        )
+        stop_plat_pairs.append(
+            {
+                "p": offset_point(path.interpolate(path.length), path, 1, 7),
+                "pref": f"{loc_id}_1",
+                "s": None,
+                "sref": f"from_{loc_id}_1",
+            }
         )
 
-    items.sort(key=lambda d: path.project(Point(d["p"])))
+    stop_plat_pairs.sort(key=lambda d: path.project(Point(d["p"])))
 
     last_dist = None
     last_projected_stop_id = None
 
-    for item in items:
+    for item in stop_plat_pairs:
         plat_xy = item["p"]
         plat_ref = item.get("pref")
 
@@ -632,8 +645,7 @@ def overpass_ground_transport2edgenode(
             seg = substring(path, last_dist, stop_dist)
             if isinstance(seg, Point):
                 seg = LineString((seg, seg))
-
-            v_avg = speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
+            v_avg = _speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
 
             add_edge(
                 u=last_projected_stop_id,
@@ -746,7 +758,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
 
         platform_len, stops_len = len(platforms), len(stops)
 
-        items, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
+        stop_plat_pairs, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
 
         if stops_len:
             base_dir = side_left_or_right(Point(platforms[platform_len // 2]), path) if platform_len else 1
@@ -767,7 +779,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
                             p_ref = row.node_id
                             break
 
-                items.append(
+                stop_plat_pairs.append(
                     {
                         "p": p_pt,
                         "pref": p_ref,
@@ -780,7 +792,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
             if p_i in matched_p:
                 continue
             # Добавляем пару с платформой у которой нету остановки
-            items.append(
+            stop_plat_pairs.append(
                 {
                     "p": platforms[p_i],
                     "pref": platforms_refs[p_i],
@@ -789,18 +801,30 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
                 }
             )
 
-        if not items:
-            items.append({"p": offset_point(path.interpolate(0), path, 1, 7), "pref": None, "s": None, "sref": None})
-            items.append(
-                {"p": offset_point(path.interpolate(path.length), path, 1, 7), "pref": None, "s": None, "sref": None}
+        if not stop_plat_pairs:
+            stop_plat_pairs.append(
+                {
+                    "p": offset_point(path.interpolate(0), path, 1, 7),
+                    "pref": f"{loc_id}_0",
+                    "s": None,
+                    "sref": f"from_{loc_id}_0",
+                }
+            )
+            stop_plat_pairs.append(
+                {
+                    "p": offset_point(path.interpolate(path.length), path, 1, 7),
+                    "pref": f"{loc_id}_1",
+                    "s": None,
+                    "sref": f"from_{loc_id}_1",
+                }
             )
 
-        items.sort(key=lambda d: path.project(Point(d["p"])))
+        stop_plat_pairs.sort(key=lambda d: path.project(Point(d["p"])))
 
         last_dist = None
         last_projected_stop_id = None
 
-        for item in items:
+        for item in stop_plat_pairs:
             plat_xy = item["p"]
             plat_ref = item.get("pref")
 

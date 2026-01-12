@@ -9,7 +9,7 @@ from shapely.ops import substring
 
 from iduedu import config
 from iduedu.modules.graph_builders.drive_walk_builders import get_walk_graph
-from iduedu.modules.graph_builders.public_transport_builders import get_all_public_transport_graph
+from iduedu.modules.graph_builders.public_transport_builders import get_public_transport_graph
 from iduedu.modules.graph_transformers import keep_largest_strongly_connected_component
 from iduedu.modules.overpass.overpass_downloaders import get_4326_boundary
 
@@ -405,7 +405,7 @@ def get_intermodal_graph(
         walk_future = executor.submit(get_walk_graph, territory=boundary, **walk_kwargs)
         logger.debug("Started downloading and parsing walk graph...")
 
-        pt_future = executor.submit(get_all_public_transport_graph, territory=boundary, **pt_kwargs)
+        pt_future = executor.submit(get_public_transport_graph, territory=boundary, **pt_kwargs)
         logger.debug("Started downloading and parsing public transport graph...")
 
         pt_g = pt_future.result()

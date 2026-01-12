@@ -1,3 +1,5 @@
+import warnings
+
 import geopandas as gpd
 import networkx as nx
 import numpy as np
@@ -41,10 +43,6 @@ def _graph_data_to_nx(
     Returns:
         (nx.DiGraph): Directed graph
     """
-
-    def avg_point(points):
-        arr = np.asarray([p for p in points if p is not None], dtype=float)
-        return tuple(arr.mean(axis=0)) if len(arr) else None
 
     def merge_dicts_last(dicts):
         out = {}
@@ -156,38 +154,48 @@ def _multi_ground_to_edgenode(args):
     return overpass_ground_transport2edgenode(*args)
 
 
-def _get_public_transport_graph(
-    osm_id: int,
+def _build_public_transport_graph(
+    osm_id: int | None,
     territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None,
     transport_types: list[str],
-    osm_edge_tags: list[str],
+    osm_edge_tags: list[str] | None,
     transport_registry: TransportRegistry,
     clip_by_territory: bool = False,
     keep_edge_geometry: bool = True,
 ):
     """
-    Build a directed public-transport graph for one or several transport types inside a territory.
+    Build a directed public-transport graph for one or multiple OSM public-transport modes inside a territory.
 
-    The function:
-    1) resolves a boundary polygon (EPSG:4326);
-    2) downloads routes via Overpass in parallel;
-    3) (for subway) additionally parses stop areas/groups and stations, producing entrances/transfers;
-    4) parses each route into edge/node rows (parallel for large inputs);
-    5) assembles a single `nx.DiGraph` via `_graph_data_to_nx`, computing missing edge length/time;
-    6) optionally clips the graph by the territory.
+    Pipeline:
+      1) Resolve a boundary polygon (EPSG:4326) from ``osm_id`` and/or ``territory``.
+      2) Download PT routes via Overpass for the requested ``transport_types``.
+      3) Optionally (subway) parse station/stop-area context (entrances, exits, transfers).
+      4) Parse each route into node/edge tables (parallelized for large inputs).
+      5) Assemble a single ``nx.DiGraph`` via ``_graph_data_to_nx`` and compute missing edge ``length_meter`` and
+         ``time_min`` using ``transport_registry``.
+      6) Optionally clip the graph by the territory boundary (in the projected CRS).
 
     Parameters:
-        osm_id (int): OSM relation/area id of the territory; used if `territory` is not provided.
-        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Boundary geometry in EPSG:4326.
-        transport_types (list[str]): Transport types to include (e.g., `["bus", "tram", "subway"]`).
-        osm_edge_tags (list[str]): Which route/member tags to retain on edges/nodes (overrides defaults).
-        clip_by_territory (bool): If True, clip the final graph to the (projected) boundary.
-        keep_edge_geometry (bool): If True, store shapely `geometry` on edges.
+        osm_id:
+            OSM relation/area id of the territory. Used if ``territory`` is not provided.
+        territory:
+            Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given.
+        transport_types:
+            List of OSM public-transport route types to include (already normalized), e.g. ``["bus", "tram", "subway"]``.
+        osm_edge_tags:
+            Optional list of OSM tag keys to retain on edges/nodes. If None, defaults from configuration are used.
+        transport_registry:
+            Registry used to compute per-edge travel time (minutes) based on mode parameters (max speed, accel/brake
+            distances, traffic coefficient). Also used for transport-type validation in public APIs.
+        clip_by_territory:
+            If True, clip the final graph to the (projected) boundary.
+        keep_edge_geometry:
+            If True, store ``shapely`` edge geometries (in the local projected CRS) on graph edges.
 
     Returns:
-        (nx.DiGraph): Directed PT graph. Graph attributes set by this function:
-            - `graph["crs"]` (int/EPSG of the local projected CRS),
-            - `graph["type"]` = "public_trasport" (sic).
+        ``nx.DiGraph``: Directed PT graph. Graph attributes set by this function:
+          - ``graph["crs"]``: EPSG integer of the local projected CRS
+          - ``graph["type"]``: ``"public_transport"``
     """
 
     polygon = get_4326_boundary(osm_id=osm_id, territory=territory)
@@ -226,14 +234,14 @@ def _get_public_transport_graph(
     graph_edges_df = []
     graph_nodes_df = []
 
-    ground_types = {"bus", "tram", "trolley"}
+    ground_types = {"bus", "tram", "trolleybus"}
     ground_pt_data = overpass_data[overpass_data["transport_type"].isin(ground_types)].copy()
 
     if len(ground_pt_data) > 0:
         if not config.enable_tqdm_bar:
             logger.debug("Parsing ground public transport routes")
 
-        if len(ground_pt_data) > 100:
+        if len(ground_pt_data) > 1000:
             results = process_map(
                 _multi_ground_to_edgenode,
                 [(row, local_crs, ref2speed, needed_tags) for _, row in ground_pt_data.iterrows()],
@@ -274,7 +282,7 @@ def _get_public_transport_graph(
         graph_nodes_df, graph_edges_df, transport_registry=transport_registry, keep_geometry=keep_edge_geometry
     )
     nx_graph.graph["crs"] = local_crs
-    nx_graph.graph["type"] = "public_trasport"
+    nx_graph.graph["type"] = "public_transport"
 
     if clip_by_territory:
         poly_proj = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
@@ -285,6 +293,82 @@ def _get_public_transport_graph(
     return nx_graph
 
 
+def get_public_transport_graph(
+    *,
+    osm_id: int | None = None,
+    territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None = None,
+    transport_types: str | list[str] | None = None,
+    clip_by_territory: bool = False,
+    keep_edge_geometry: bool = True,
+    osm_edge_tags: list[str] | None = None,
+    transport_registry: TransportRegistry | None = None,
+) -> nx.Graph:
+    """
+    Build a directed public-transport graph for one or multiple transport modes within a territory.
+
+    The function resolves a boundary (by ``osm_id`` or ``territory``), downloads OpenStreetMap public-transport routes
+    inside that boundary, converts them into a projected ``nx.DiGraph``, and computes per-edge length (meters) and
+    travel time (minutes). Multiple modes can coexist in the same graph; node ids are unified across modes.
+
+    For the ``subway`` mode, additional station context may be added (entrances/exits and inter-station transfers),
+    and available station metadata may be merged into node attributes.
+
+    Parameters:
+        osm_id:
+            OSM relation/area id of the territory. Provide this or ``territory``.
+        territory:
+            Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given.
+        transport_types:
+            Transport mode(s) to include. Accepts:
+              - ``None``: include all types available in ``transport_registry``;
+              - ``str``: a single OSM route type, e.g. ``"bus"``;
+              - ``Sequence[str]``: multiple types, e.g. ``["tram", "bus", "trolleybus", "subway"]``.
+
+            Values are normalized with ``strip().lower()`` and validated against the registry.
+        clip_by_territory:
+            If True, clip the resulting graph to the boundary (in the local CRS).
+        keep_edge_geometry:
+            If True, store ``shapely`` geometries (in local CRS) on edges.
+        osm_edge_tags:
+            Subset of OSM tags to retain on edges/nodes. If None, a default subset is used.
+        transport_registry:
+            Transport registry used to validate transport types and to compute per-edge travel times (via each mode's
+            parameters such as max speed, acceleration/braking distances, and traffic coefficient).
+            If None, ``DEFAULT_REGISTRY`` is used.
+
+    Returns:
+        Directed PT graph (``nx.DiGraph``) with:
+            - node attrs: ``x``, ``y`` (local CRS), ``type``, ``route``, ``ref_id``, plus optional station metadata;
+            - edge attrs: ``type``, ``route``, ``length_meter``, ``time_min``, optional ``geometry``, and selected OSM tags.
+
+        Graph attrs typically include: ``graph["crs"]`` (EPSG int), ``graph["type"]`` = ``"public_transport"``.
+    """
+    registry = transport_registry or DEFAULT_REGISTRY
+    registry_types = set(registry.list_types())
+
+    # normalize transport_types -> list[str]
+    if transport_types is None:
+        types = list(registry_types)
+    elif isinstance(transport_types, str):
+        types = [transport_types.strip().lower()]
+    else:
+        types = [str(t).strip().lower() for t in transport_types]
+
+    unknown = [t for t in types if t not in registry_types]
+    if unknown:
+        raise ValueError(f"Unknown transport type(s): {unknown}. Available: {sorted(registry_types)}")
+
+    return _build_public_transport_graph(
+        osm_id=osm_id,
+        territory=territory,
+        transport_types=types,
+        osm_edge_tags=osm_edge_tags,
+        transport_registry=registry,
+        clip_by_territory=clip_by_territory,
+        keep_edge_geometry=keep_edge_geometry,
+    )
+
+
 def get_single_public_transport_graph(
     public_transport_type: str,
     *,
@@ -292,58 +376,24 @@ def get_single_public_transport_graph(
     territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None = None,
     clip_by_territory: bool = False,
     keep_edge_geometry: bool = True,
-    osm_edge_tags: list[str] | None = None,  # overrides default tags
+    osm_edge_tags: list[str] | None = None,
     transport_registry: TransportRegistry | None = None,
-):
-    """
-    Build a directed graph for a single public-transport mode within a given territory.
-
-    The function resolves a boundary (by `osm_id` or `territory`), downloads OpenStreetMap routes  inside that boundary,
-    converts them into a projected `nx.DiGraph`, and computes per-edge length (meters) and travel time (minutes).
-    When the mode is **subway**, additional station context is incorporated: entrances/exits and inter-station
-    transfers are added; station metadata (e.g., name, depth) is attached to nodes where available.
-
-    Parameters:
-        public_transport_type (str | PublicTrasport): One mode, e.g. `"bus"`, `"tram"`, `"trolleybus"`, `"subway"`.
-            You may pass a `PublicTrasport` enum or its string value.
-        osm_id (int | None): OSM relation/area id of the territory. Provide this or `territory`.
-        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Boundary geometry in EPSG:4326 (or a GeoDataFrame).
-            Used when `osm_id` is not given.
-        clip_by_territory (bool): If True, the resulting graph is clipped to the boundary (in the local CRS).
-        keep_edge_geometry (bool): If True, edge shapes (`shapely` geometries in local CRS) are stored on edges.
-        osm_edge_tags (list[str] | None): Subset of OSM tags to retain on edges/nodes. If None, a sensible default
-            is used from configuration; only requested keys are joined from OSM element tags.
-        transport_registry (TransportRegistry | None): Transport registry used to validate available transport types and
-            to compute per-edge travel times (via each mode's parameters such as max speed, acceleration/braking
-            distances, and traffic coefficient). If None, ``DEFAULT_REGISTRY`` is used.
-
-    Returns:
-        (nx.DiGraph): Directed PT graph with:
-            - node attrs: `x`, `y` (floats, local CRS), `type`, `route`, `ref_id`, plus merged station `extra_data` (if any);
-            - edge attrs: `type`, `route`, `length_meter`, `time_min`, optional `geometry`, and selected OSM tags.
-
-          Graph attrs: `graph["crs"]` (EPSG int of the local projected CRS), `graph["type"]` = `"public_trasport"`.
-
-    Notes:
-        - Lengths and times are computed in a **local projected CRS** estimated from the boundary; per-edge speeds are
-          taken from mode-specific defaults (and, for subway connectors, from connector-type defaults).
-    """
-    registry = transport_registry or DEFAULT_REGISTRY
-
-    pt = str(public_transport_type).strip().lower()
-    registry_types = set(registry.list_types() if hasattr(registry, "list_types") else registry.type_list())
-
-    if pt not in registry_types:
-        raise ValueError(f"Unknown transport type: {pt!r}. Available: {sorted(registry_types)}")
-
-    return _get_public_transport_graph(
+) -> nx.Graph:
+    """Backward-compatible wrapper. Prefer `get_public_transport_graph(..., transport_types="bus")`."""
+    warnings.warn(
+        "get_single_public_transport_graph() is deprecated and will be removed in the next release. "
+        "Use get_public_transport_graph(transport_types='...') instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return get_public_transport_graph(
         osm_id=osm_id,
         territory=territory,
-        transport_types=[pt],
-        osm_edge_tags=osm_edge_tags,
-        transport_registry=registry,
+        transport_types=str(public_transport_type),
         clip_by_territory=clip_by_territory,
         keep_edge_geometry=keep_edge_geometry,
+        osm_edge_tags=osm_edge_tags,
+        transport_registry=transport_registry,
     )
 
 
@@ -353,61 +403,23 @@ def get_all_public_transport_graph(
     territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None = None,
     clip_by_territory: bool = False,
     keep_edge_geometry: bool = True,
-    transport_types: list[str] = None,
-    osm_edge_tags: list[str] | None = None,  # overrides default tags
+    transport_types: list[str] | None = None,
+    osm_edge_tags: list[str] | None = None,
     transport_registry: TransportRegistry | None = None,
 ) -> nx.Graph:
-    """
-    Build a combined directed graph for multiple public-transport modes within a territory.
-
-    The function collects routes for the requested modes (e.g. ``bus``, ``tram``, ``trolleybus``, ``subway``),
-    converts them into a single projected graph, and computes per-edge length and travel time. Edges from different
-    modes coexist in the same ``nx.DiGraph``; node ids are unified across modes. For the subway mode, station context
-    may be added (entrances/exits and inter-station transfers), and available station metadata is merged into node
-    attributes.
-
-    Parameters:
-        osm_id (int | None): OSM relation/area id of the territory. Provide this or `territory`.
-        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Boundary geometry in EPSG:4326 (or a GeoDataFrame).
-        clip_by_territory (bool): If True, clip the final graph to the boundary (in the local CRS).
-        keep_edge_geometry (bool): If True, retain `shapely` geometries on edges.
-        transport_types (list[str] | None): List of OSM public-transport route types to include (strings), e.g.
-            ``["tram", "bus", "trolleybus", "subway"]``. If None, defaults to all types available in the registry.
-        osm_edge_tags (list[str] | None): Which OSM tags to keep on edges/nodes. If None, a default subset from
-            configuration is used; only these keys are joined from OSM.
-        transport_registry (TransportRegistry | None): Transport registry used to validate available transport types and
-            to compute per-edge travel times (via each mode's parameters such as max speed, acceleration/braking
-            distances, and traffic coefficient). If None, ``DEFAULT_REGISTRY`` is used.
-    Returns:
-        (nx.DiGraph): Combined directed PT graph. Typical attributes:
-
-            - node attrs: `x`, `y` (local CRS), `type`, `route`, `ref_id`, station `extra_data` where applicable;
-            - edge attrs: `type`, `route`, `length_meter`, `time_min`, optional `geometry`, plus selected OSM tags.
-            Graph attrs: `graph["crs"]` (EPSG int), `graph["type"]` = `"public_trasport"`.
-
-    Notes:
-        Each mode’s ways are downloaded inside the boundary and transformed into directed edges. Per-edge travel time
-        is derived from the transport registry settings and (optionally) road speed limits when available.
-    """
-
-    registry = transport_registry or DEFAULT_REGISTRY
-    registry_types = set(registry.list_types())
-
-    if transport_types is None:
-        transport_types = list(registry_types)
-    else:
-        transport_types = [t.strip().lower() for t in transport_types]
-
-    unknown = [t for t in transport_types if t not in registry_types]
-    if unknown:
-        raise ValueError(f"Unknown transport type(s): {unknown}. Available: {sorted(registry_types)}")
-
-    return _get_public_transport_graph(
+    """Backward-compatible wrapper. Prefer `get_public_transport_graph(..., transport_types=[...])`."""
+    warnings.warn(
+        "get_all_public_transport_graph() is deprecated and will be removed in the next release. "
+        "Use get_public_transport_graph(transport_types=[...]) instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return get_public_transport_graph(
         osm_id=osm_id,
         territory=territory,
-        transport_types=transport_types,
-        osm_edge_tags=osm_edge_tags,
-        transport_registry=registry,
+        transport_types=transport_types,  # None or list[str]
         clip_by_territory=clip_by_territory,
         keep_edge_geometry=keep_edge_geometry,
+        osm_edge_tags=osm_edge_tags,
+        transport_registry=transport_registry,
     )

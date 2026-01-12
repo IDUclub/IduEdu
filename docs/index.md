@@ -152,5 +152,3 @@ config.set_overpass_date()  # or config.set_overpass_date(None)
 - Richer edge attributes (e.g., elevation, turn costs)
 
 > Contributions and ideas are welcome! Please open an issue or PR.
-
----

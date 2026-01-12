@@ -250,7 +250,7 @@ def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
 
 
 def get_4326_boundary(
-    *, osm_id: int | None = None, territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None = None
+    *, osm_id: int | None = None, territory: Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None = None
 ) -> Polygon:
     """
     Normalize a territory boundary to a single EPSG:4326 Polygon.
@@ -261,7 +261,7 @@ def get_4326_boundary(
 
     Parameters:
         osm_id (int | None): OSM relation id. If provided, boundary is fetched via Overpass.
-        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Existing boundary geometry
+        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None): Existing boundary geometry
             or a GeoDataFrame containing it. If GeoDataFrame is given, it is reprojected to 4326
             and unioned (`.union_all()`).
 
@@ -281,19 +281,24 @@ def get_4326_boundary(
         >>> get_4326_boundary(territory=multi_poly_4326)  # convex hull of multipart
         >>> get_4326_boundary(territory=territory_gdf)    # GDF -> to_crs(4326) -> union_all -> Polygon
     """
-    if osm_id:
+    if osm_id is not None:
         territory = get_boundary_by_osm_id(osm_id)
 
+    if territory is None:
+        raise ValueError("Either osm_id or territory must be specified")
+
+    if isinstance(territory, (gpd.GeoDataFrame, gpd.GeoSeries)):
+        obj = territory.to_crs(4326)
+        territory = obj.union_all() if isinstance(obj, gpd.GeoSeries) else obj.geometry.union_all()
+
+    # Shapely geometries
     if isinstance(territory, Polygon):
         return territory
 
     if isinstance(territory, MultiPolygon):
         return Polygon(territory.convex_hull)
 
-    if isinstance(territory, gpd.GeoDataFrame):
-        return get_4326_boundary(territory=territory.to_crs(4326).union_all())
-
-    raise ValueError("Either osm_id or polygon must be specified")
+    raise TypeError("territory must be one of: Polygon, MultiPolygon, GeoDataFrame, GeoSeries (or provide osm_id)")
 
 
 def _poly_to_overpass(poly: Polygon) -> str:

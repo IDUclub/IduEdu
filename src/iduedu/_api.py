@@ -3,6 +3,7 @@ from .modules.graph_builders.drive_walk_builders import get_drive_graph, get_wal
 from .modules.graph_builders.intermodal_builders import get_intermodal_graph, join_pt_walk_graph
 from .modules.graph_builders.public_transport_builders import (
     get_all_public_transport_graph,
+    get_public_transport_graph,
     get_single_public_transport_graph,
 )
 from .modules.graph_transformers import (
