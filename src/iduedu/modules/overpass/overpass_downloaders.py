@@ -104,7 +104,7 @@ def _get_overpass_pause(
     try:
         _ = int(status_first_part)  # number of available slots
         pause: float = 0
-    except ValueError:
+    except ValueError:  # pragma: no cover
         if status_first_part == "Slot":
             utc_time_str = status.split(" ")[3]
             pattern = "%Y-%m-%dT%H:%M:%SZ,"

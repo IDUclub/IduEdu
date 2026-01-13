@@ -421,7 +421,7 @@ def reproject_graph(graph: nx.Graph, target_crs) -> nx.Graph:
             graph.nodes[nid]["x"] = float(geom.x)
             graph.nodes[nid]["y"] = float(geom.y)
 
-    if graph.is_multigraph():
+    if graph.is_multigraph():  # pragma: no cover
         edge_records = [
             (u, v, k, data)
             for u, v, k, data in graph.edges(keys=True, data=True)

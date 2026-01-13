@@ -4,11 +4,25 @@ from dataclasses import dataclass, replace
 @dataclass(frozen=True, slots=True)
 class TransportSpec:
     """
-    name: ключ типа транспорта (как в OSM route=*)
-    vmax_tech_kmh: тех. максимум, км/ч
-    accel_dist_m: дистанция разгона до vmax, м
-    brake_dist_m: дистанция торможения с vmax, м
-    traffic_coef: [0..1], где 1 = без пробок, 0.7 = среднее замедление и т.п.
+    Configuration of a single public-transport mode used to estimate travel time on graph edges.
+
+    Each transport specification defines technical and operational characteristics of a mode
+    (e.g. bus, tram, subway) that are used to compute per-edge travel time based on segment length,
+    road speed limits, acceleration/braking behavior, and traffic conditions.
+
+    Attributes:
+        name (str):
+            Transport type identifier, usually matching the OSM ``route=*`` value
+            (e.g. ``"bus"``, ``"tram"``, ``"subway"``).
+        vmax_tech_kmh (float):
+            Technical maximum speed of the vehicle in kilometers per hour.
+        accel_dist_m (float):
+            Typical distance (meters) required to accelerate from standstill to cruising speed.
+        brake_dist_m (float):
+            Typical distance (meters) required to decelerate from cruising speed to standstill.
+        traffic_coef (float):
+            Traffic slowdown coefficient. Values below 1.0 reduce effective speed due to congestion,
+            values close to 1.0 indicate free-flow or priority operation.
     """
 
     name: str
@@ -25,10 +39,8 @@ class TransportSpec:
             v = getattr(self, field)
             if v is None:
                 raise ValueError(f"{field} must not be None")
-            try:
-                v = float(v)
-            except Exception as e:
-                raise ValueError(f"{field} must be numeric, got {type(getattr(self, field))}") from e
+            if not isinstance(v, (float, int)):
+                raise ValueError(f"{field} must be numeric, got {type(getattr(self, field))}")
 
         if self.vmax_tech_kmh <= 0:
             raise ValueError("vmax_tech_kmh must be > 0")
@@ -45,15 +57,31 @@ class TransportSpec:
         min_speed_mpm: float = 60.0,  # 60 м/мин = 1 м/с = 3.6 км/ч
     ) -> float:
         """
-        Время прохождения сегмента в МИНУТАХ.
+        Compute travel time (minutes) for a single graph segment.
 
-        Учитывает:
-          - tech vmax транспорта (self.vmax_tech_kmh)
-          - ограничение дороги (speed_limit_mpm), если есть
-          - traffic_coef (пробки/приоритет)
-          - время на разгон/торможение по accel_dist_m + brake_dist_m
+        The method estimates traversal time using a simplified kinematic model that accounts for:
+        - the transport mode technical maximum speed;
+        - an optional road speed limit;
+        - traffic slowdown coefficient;
+        - time lost on acceleration and braking.
 
-        segment_len_m: длина сегмента (метры) — ОБЯЗАТЕЛЬНО
+        For short segments where the vehicle cannot reach cruising speed, a reduced peak speed
+        is assumed and the segment is traversed using an acceleration–deceleration profile
+        without a cruising phase.
+
+        Parameters:
+            segment_len_m (float):
+                Segment length in meters. Must be positive.
+            speed_limit_mpm (float | None):
+                Optional road speed limit in meters per minute. If provided, the effective speed
+                will not exceed this value.
+            min_speed_mpm (float):
+                Lower bound for effective speed (meters per minute), used to avoid unrealistically
+                large travel times on very short segments.
+
+        Returns:
+            float:
+                Estimated travel time for the segment in minutes.
         """
         segment_len_m = float(segment_len_m)
         if segment_len_m <= 0:
@@ -88,6 +116,17 @@ class TransportSpec:
 
 
 class TransportRegistry:
+    """
+    Registry of available public-transport modes and their specifications.
+
+    The registry stores ``TransportSpec`` objects indexed by normalized transport type names
+    (lowercase). It provides utilities for validating transport types, updating parameters,
+    and ensuring that unknown types encountered during parsing are assigned reasonable defaults.
+
+    The registry is used throughout graph construction to compute per-edge travel times
+    consistently across different transport modes.
+    """
+
     def __init__(self, specs: dict[str, TransportSpec] | None = None):
         self._specs: dict[str, TransportSpec] = {}
         if specs:
@@ -115,8 +154,8 @@ class TransportRegistry:
             raise ValueError(f"Transport {spec.name!r} already exists (use overwrite=True)")
         self._specs[spec.name] = spec
 
-    def update(self, name: str, **fields) -> TransportSpec:
-        key = self._norm_key(name)
+    def update(self, transport_type: str, **fields) -> TransportSpec:
+        key = self._norm_key(transport_type)
         cur = self.get(key)
         if "name" in fields:
             fields["name"] = self._norm_key(fields["name"])

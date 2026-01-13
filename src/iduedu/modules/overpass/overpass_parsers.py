@@ -596,7 +596,7 @@ def overpass_ground_transport2edgenode(
             }
         )
 
-    if not stop_plat_pairs:
+    if not stop_plat_pairs:  # pragma: no cover
         stop_plat_pairs.append(
             {
                 "p": offset_point(path.interpolate(0), path, 1, 7),
@@ -801,7 +801,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
                 }
             )
 
-        if not stop_plat_pairs:
+        if not stop_plat_pairs:  # pragma: no cover
             stop_plat_pairs.append(
                 {
                     "p": offset_point(path.interpolate(0), path, 1, 7),
@@ -859,8 +859,12 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
             add_edge(u=plat_ref, v=stop_ref, edge_type="boarding", geometry=None)
             add_edge(u=stop_ref, v=plat_ref, edge_type="boarding", geometry=None)
 
+    if len(edges_data) == 0:
+        return pd.DataFrame(), pd.DataFrame()
     nodes_df = pd.DataFrame(nodes_data).drop_duplicates(subset=["node_id"])
+
     merged_nodes = pd.merge(add_nodes, nodes_df, how="outer", on="node_id")
+
     base_cols = {c[:-2] for c in merged_nodes.columns if c.endswith("_x")}
     for base in base_cols:
         col_x = f"{base}_x"
@@ -883,9 +887,13 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs):
     platforms_with_station = merged_edges[
         (merged_edges["u"].isin(platforms_ids)) & (merged_edges["type"] != "boarding")
     ]["u"].unique()
-    platforms_wout_station = np.setdiff1d(platforms_ids.astype("object"), platforms_with_station.astype("object"))
+
+    platforms_wout_station = (
+        pd.Index(platforms_ids.astype(str)).difference(platforms_with_station.astype(str)).to_numpy()
+    )
+
     if len(platforms_wout_station) > 0:
-        merged_nodes.loc[merged_nodes["node_id"].isin(platforms_wout_station), "type"] = "platform"
+        merged_nodes.loc[merged_nodes["node_id"].astype(str).isin(platforms_wout_station), "type"] = "platform"
 
     return merged_edges, merged_nodes
 
@@ -1116,8 +1124,12 @@ def parse_overpass_subway_data(
                 add_edge(pair[0], pair[1], "subway_transfer")
                 add_edge(pair[1], pair[0], "subway_transfer")
 
-    edges_gdf = pd.DataFrame(graph_edges)
-    nodes_gdf = pd.DataFrame(graph_nodes)
+    edges_gdf = pd.DataFrame(graph_edges, columns=["u_ref", "v_ref", "type"])
+    nodes_gdf = pd.DataFrame(graph_nodes, columns=["ref_id", "point", "type"])
+
+    if len(edges_gdf) == 0:
+        return edges_gdf, nodes_gdf
+
     nodes_gdf["extra_data"] = {}
 
     for _, station_data in stations_data.iterrows():

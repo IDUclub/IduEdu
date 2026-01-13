@@ -4,6 +4,7 @@
 :maxdepth: 2
 
 High-level functions <api/high_level>
+Transport registry <api/transport_registry>
 Graph utilities <api/utilities>
 Matrices <api/matrices>
 Overpass helpers <api/overpass>

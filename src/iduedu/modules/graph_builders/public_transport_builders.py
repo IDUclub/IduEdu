@@ -4,7 +4,7 @@ import geopandas as gpd
 import networkx as nx
 import numpy as np
 import pandas as pd
-from shapely import LineString, MultiPolygon, Polygon
+from shapely import MultiPolygon, Polygon
 from tqdm.auto import tqdm
 from tqdm.contrib.concurrent import process_map
 
@@ -172,7 +172,7 @@ def _build_public_transport_graph(
       3) Optionally (subway) parse station/stop-area context (entrances, exits, transfers).
       4) Parse each route into node/edge tables (parallelized for large inputs).
       5) Assemble a single ``nx.DiGraph`` via ``_graph_data_to_nx`` and compute missing edge ``length_meter`` and
-         ``time_min`` using ``transport_registry``.
+         ``time_min`` using ``transport_registry.rst``.
       6) Optionally clip the graph by the territory boundary (in the projected CRS).
 
     Parameters:
@@ -235,13 +235,15 @@ def _build_public_transport_graph(
     graph_nodes_df = []
 
     ground_types = {"bus", "tram", "trolleybus"}
-    ground_pt_data = overpass_data[overpass_data["transport_type"].isin(ground_types)].copy()
+    ground_pt_data = overpass_data[
+        (overpass_data["transport_type"].isin(ground_types)) & (~overpass_data["is_way_data"])
+    ].copy()
 
     if len(ground_pt_data) > 0:
         if not config.enable_tqdm_bar:
             logger.debug("Parsing ground public transport routes")
 
-        if len(ground_pt_data) > 1000:
+        if len(ground_pt_data) > 500:
             results = process_map(
                 _multi_ground_to_edgenode,
                 [(row, local_crs, ref2speed, needed_tags) for _, row in ground_pt_data.iterrows()],
@@ -258,18 +260,18 @@ def _build_public_transport_graph(
 
         for edges_df, nodes_df in results:
             if len(edges_df) > 0:
-                graph_edges_df.append(edges_df)
+                graph_edges_df.append(edges_df.dropna(axis=1, how="all"))
             if len(nodes_df) > 0:
-                graph_nodes_df.append(nodes_df)
+                graph_nodes_df.append(nodes_df.dropna(axis=1, how="all"))
 
     if expect_subway:
         subway_data = overpass_data[overpass_data["transport_type"] == "subway"].copy()
         if len(subway_data) > 0:
             subway_edges, subway_nodes = overpass_subway2edgenode(subway_data, local_crs)
             if len(subway_edges) > 0:
-                graph_edges_df.append(subway_edges)
+                graph_edges_df.append(subway_edges.dropna(axis=1, how="all"))
             if len(subway_nodes) > 0:
-                graph_nodes_df.append(subway_nodes)
+                graph_nodes_df.append(subway_nodes.dropna(axis=1, how="all"))
 
     if not graph_edges_df and not graph_nodes_df:
         logger.warning("No routes were parsed for public transport.")
@@ -320,7 +322,7 @@ def get_public_transport_graph(
             Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given.
         transport_types:
             Transport mode(s) to include. Accepts:
-              - ``None``: include all types available in ``transport_registry``;
+              - ``None``: include all types available in ``transport_registry.rst``;
               - ``str``: a single OSM route type, e.g. ``"bus"``;
               - ``Sequence[str]``: multiple types, e.g. ``["tram", "bus", "trolleybus", "subway"]``.
 
@@ -378,8 +380,13 @@ def get_single_public_transport_graph(
     keep_edge_geometry: bool = True,
     osm_edge_tags: list[str] | None = None,
     transport_registry: TransportRegistry | None = None,
-) -> nx.Graph:
-    """Backward-compatible wrapper. Prefer `get_public_transport_graph(..., transport_types="bus")`."""
+) -> nx.Graph:  # pragma: no cover
+    """
+    Deprecated wrapper for ``get_public_transport_graph``.
+
+    This function will be removed in a future release.
+    Use ``get_public_transport_graph(transport_types="...")`` instead.
+    """
     warnings.warn(
         "get_single_public_transport_graph() is deprecated and will be removed in the next release. "
         "Use get_public_transport_graph(transport_types='...') instead.",
@@ -406,8 +413,13 @@ def get_all_public_transport_graph(
     transport_types: list[str] | None = None,
     osm_edge_tags: list[str] | None = None,
     transport_registry: TransportRegistry | None = None,
-) -> nx.Graph:
-    """Backward-compatible wrapper. Prefer `get_public_transport_graph(..., transport_types=[...])`."""
+) -> nx.Graph:  # pragma: no cover
+    """
+    Deprecated wrapper for ``get_public_transport_graph``.
+
+    This function will be removed in a future release.
+    Use ``get_public_transport_graph(transport_types=[...])`` instead.
+    """
     warnings.warn(
         "get_all_public_transport_graph() is deprecated and will be removed in the next release. "
         "Use get_public_transport_graph(transport_types=[...]) instead.",
