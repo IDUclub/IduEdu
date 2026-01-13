@@ -6,11 +6,11 @@ import pytest
 from iduedu import (
     config,
     get_drive_graph,
-    get_single_public_transport_graph,
+    get_public_transport_graph,
     get_walk_graph,
     join_pt_walk_graph,
 )
-from iduedu.modules.overpass_downloaders import RequestError
+from iduedu.modules.overpass.overpass_downloaders import RequestError
 
 config.configure_logging("DEBUG")
 
@@ -24,7 +24,7 @@ def walk_graph(bounds):
 @pytest.fixture(scope="module")
 def subway_graph(bounds):
     print("\n Downloading subway graph for bounds \n")
-    return get_single_public_transport_graph(public_transport_type="subway", territory=bounds)
+    return get_public_transport_graph(transport_types="subway", territory=bounds)
 
 
 def test_get_drive_graph(bounds):
@@ -66,7 +66,7 @@ def test_get_single_public_transport_graph(bounds, subway_graph):
 
 
 def test_get_single_pt_graph_where_not_exist(bounds):
-    train_graph = get_single_public_transport_graph(public_transport_type="train", territory=bounds)
+    train_graph = get_public_transport_graph(transport_types="train", territory=bounds)
     assert len(train_graph.nodes) == 0
     assert len(train_graph.edges) == 0
 

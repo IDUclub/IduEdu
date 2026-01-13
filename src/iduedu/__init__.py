@@ -11,4 +11,4 @@ from ._config import config
 from ._api import *
 from ._version import VERSION as __version__
 
-from .enums import HighwayType, PublicTrasport
+from .constants import HighwayType

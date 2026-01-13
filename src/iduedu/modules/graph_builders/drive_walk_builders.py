@@ -10,10 +10,10 @@ from shapely import MultiLineString, Polygon, line_merge, linestrings
 from shapely.geometry.multipolygon import MultiPolygon
 
 from iduedu import config
-from iduedu.enums.highway_enums import HighwayType
-from iduedu.enums.network_enums import Network
+from iduedu.constants.highway_enums import HighwayType
+from iduedu.constants.network_enums import Network
 from iduedu.modules.graph_transformers import estimate_crs_for_bounds, keep_largest_strongly_connected_component
-from iduedu.modules.overpass_downloaders import get_4326_boundary, get_network_by_filters
+from iduedu.modules.overpass.overpass_downloaders import get_4326_boundary, get_network_by_filters
 
 logger = config.logger
 

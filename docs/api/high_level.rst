@@ -9,7 +9,6 @@ High-level functions
 
     get_drive_graph
     get_walk_graph
-    get_all_public_transport_graph
-    get_single_public_transport_graph
+    get_public_transport_graph
     get_intermodal_graph
     join_pt_walk_graph

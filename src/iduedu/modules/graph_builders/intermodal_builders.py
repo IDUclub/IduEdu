@@ -4,14 +4,14 @@ from typing import Any
 import geopandas as gpd
 import networkx as nx
 import pandas as pd
-from shapely import LineString, MultiPolygon, Point, Polygon
+from shapely import LineString, MultiPolygon, Polygon
 from shapely.ops import substring
 
 from iduedu import config
-from iduedu.modules.drive_walk_builders import get_walk_graph
+from iduedu.modules.graph_builders.drive_walk_builders import get_walk_graph
+from iduedu.modules.graph_builders.public_transport_builders import get_public_transport_graph
 from iduedu.modules.graph_transformers import keep_largest_strongly_connected_component
-from iduedu.modules.overpass_downloaders import get_4326_boundary
-from iduedu.modules.public_transport_builders import get_all_public_transport_graph
+from iduedu.modules.overpass.overpass_downloaders import get_4326_boundary
 
 logger = config.logger
 
@@ -135,7 +135,7 @@ def join_pt_walk_graph(
     )
     try:
         speed = walk.graph["walk_speed"]
-    except KeyError:  # pragma: no branch
+    except KeyError:  # pragma: no cover
         logger.warning(
             "There is no walk_speed in graph, set to the default speed - 83.33 m/min"
         )  # посчитать примерную скорость по length timemin для любой эджи
@@ -153,7 +153,7 @@ def join_pt_walk_graph(
             platform_id = row["index"][0]
             dist = edge.project(row.geometry[0])
             projected_point = edge.interpolate(dist)
-            if dist == 0:  # pragma: no branch
+            if dist == 0:  # pragma: no cover
                 # Если платформа проецируется на начало эджа
                 mapping = {u: platform_id}
                 nx.relabel_nodes(walk, mapping, copy=False)
@@ -241,7 +241,7 @@ def join_pt_walk_graph(
                 for extra_idx in idxs[1:]:
                     merge_mapping[extra_idx] = main_index
 
-                if dist == 0:  # pragma: no branch
+                if dist == 0:  # pragma: no cover
                     # Если платформа проецируются на начало эджа
                     mapping = {u: main_index}
                     u_to_del = main_index
@@ -252,7 +252,7 @@ def join_pt_walk_graph(
 
                     last_u = main_index
 
-                elif dist == edge.length:  # pragma: no branch
+                elif dist == edge.length:  # pragma: no cover
                     # Если на конец
                     mapping = {v: main_index}
                     v_to_del = main_index
@@ -314,7 +314,7 @@ def join_pt_walk_graph(
                     type="walk",
                 )
 
-            if merge_mapping:  # pragma: no branch
+            if merge_mapping:  # pragma: no cover
                 nx.relabel_nodes(walk, merge_mapping, copy=False)
                 points_grouped_by_edge["u"] = points_grouped_by_edge["u"].replace(merge_mapping)
                 points_grouped_by_edge["v"] = points_grouped_by_edge["v"].replace(merge_mapping)
@@ -405,7 +405,7 @@ def get_intermodal_graph(
         walk_future = executor.submit(get_walk_graph, territory=boundary, **walk_kwargs)
         logger.debug("Started downloading and parsing walk graph...")
 
-        pt_future = executor.submit(get_all_public_transport_graph, territory=boundary, **pt_kwargs)
+        pt_future = executor.submit(get_public_transport_graph, territory=boundary, **pt_kwargs)
         logger.debug("Started downloading and parsing public transport graph...")
 
         pt_g = pt_future.result()
@@ -414,7 +414,7 @@ def get_intermodal_graph(
         walk_g = walk_future.result()
         logger.debug("Walk graph done!")
 
-    if len(pt_g.nodes()) == 0:  # pragma: no branch
+    if len(pt_g.nodes()) == 0:  # pragma: no cover
         logger.warning("Public transport graph is empty! Returning only walk graph.")
         return walk_g
 

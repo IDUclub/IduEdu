@@ -1,5 +1,7 @@
 import hashlib
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from iduedu import config
@@ -42,6 +44,37 @@ def cache_load(prefix: str, key_src: str):
     except Exception as e:  # pragma: no cover
         logger.warning(f"Failed to load cache file {path}: {e}")
         return None
+
+
+_CACHE_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="osm-cache")
+
+
+_IN_FLIGHT = set()
+_IN_FLIGHT_LOCK = threading.Lock()
+
+
+def cache_save_async(prefix: str, key_src: str, obj) -> None:
+
+    job_key = (prefix, key_src)
+
+    with _IN_FLIGHT_LOCK:
+        if job_key in _IN_FLIGHT:
+            return
+        _IN_FLIGHT.add(job_key)
+
+    try:
+        snapshot = json.loads(json.dumps(obj, ensure_ascii=False))
+    except Exception:
+        snapshot = obj
+
+    def _run():
+        try:
+            cache_save(prefix, key_src, snapshot)
+        finally:
+            with _IN_FLIGHT_LOCK:
+                _IN_FLIGHT.discard(job_key)
+
+    _CACHE_EXECUTOR.submit(_run)
 
 
 def cache_save(prefix: str, key_src: str, obj):

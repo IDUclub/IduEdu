@@ -12,7 +12,7 @@ from shapely import LineString, MultiPolygon, Polygon, unary_union
 from shapely.ops import polygonize
 
 from iduedu import config
-from iduedu.modules.overpass_cache import cache_load, cache_save
+from iduedu.modules.overpass.overpass_cache import cache_load, cache_save_async
 
 logger = config.logger
 
@@ -104,7 +104,7 @@ def _get_overpass_pause(
     try:
         _ = int(status_first_part)  # number of available slots
         pause: float = 0
-    except ValueError:
+    except ValueError:  # pragma: no cover
         if status_first_part == "Slot":
             utc_time_str = status.split(" ")[3]
             pattern = "%Y-%m-%dT%H:%M:%SZ,"
@@ -226,7 +226,7 @@ def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
             params={"data": overpass_query},
         )
         json_result = resp.json()
-        cache_save("boundary", cache_key_src, json_result)
+        cache_save_async("boundary", cache_key_src, json_result)
     else:
         logger.debug(f"Using cached territory bounds with osm_id <{osm_id}>")
     geoms = []
@@ -250,7 +250,7 @@ def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
 
 
 def get_4326_boundary(
-    *, osm_id: int | None = None, territory: Polygon | MultiPolygon | gpd.GeoDataFrame | None = None
+    *, osm_id: int | None = None, territory: Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None = None
 ) -> Polygon:
     """
     Normalize a territory boundary to a single EPSG:4326 Polygon.
@@ -261,7 +261,7 @@ def get_4326_boundary(
 
     Parameters:
         osm_id (int | None): OSM relation id. If provided, boundary is fetched via Overpass.
-        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Existing boundary geometry
+        territory (Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None): Existing boundary geometry
             or a GeoDataFrame containing it. If GeoDataFrame is given, it is reprojected to 4326
             and unioned (`.union_all()`).
 
@@ -281,27 +281,33 @@ def get_4326_boundary(
         >>> get_4326_boundary(territory=multi_poly_4326)  # convex hull of multipart
         >>> get_4326_boundary(territory=territory_gdf)    # GDF -> to_crs(4326) -> union_all -> Polygon
     """
-    if osm_id:
+    if osm_id is not None:
         territory = get_boundary_by_osm_id(osm_id)
 
+    if territory is None:
+        raise ValueError("Either osm_id or territory must be specified")
+
+    if isinstance(territory, (gpd.GeoDataFrame, gpd.GeoSeries)):
+        obj = territory.to_crs(4326)
+        territory = obj.union_all() if isinstance(obj, gpd.GeoSeries) else obj.geometry.union_all()
+
+    # Shapely geometries
     if isinstance(territory, Polygon):
         return territory
 
     if isinstance(territory, MultiPolygon):
         return Polygon(territory.convex_hull)
 
-    if isinstance(territory, gpd.GeoDataFrame):
-        return get_4326_boundary(territory=territory.to_crs(4326).union_all())
-
-    raise ValueError("Either osm_id or polygon must be specified")
+    raise TypeError("territory must be one of: Polygon, MultiPolygon, GeoDataFrame, GeoSeries (or provide osm_id)")
 
 
 def _poly_to_overpass(poly: Polygon) -> str:
     return " ".join(f"{y} {x}" for x, y in poly.exterior.coords[:-1])
 
 
-def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> pd.DataFrame:
-    public_transport_types = list(dict.fromkeys(public_transport_types))
+def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> list[dict]:
+    public_transport_types = sorted(set(public_transport_types))
+
     if not public_transport_types:
         return pd.DataFrame()
 
@@ -321,7 +327,7 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
     header = config.overpass_header
     query_parts = [header]
 
-    simple_route_types = public_transport_types if has_date else non_subway_types
+    simple_route_types = non_subway_types
 
     if simple_route_types:
         if len(simple_route_types) == 1:
@@ -331,6 +337,12 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
             route_filter = f'["route"~"^({pattern})$"]'
 
         query_parts.append(f'rel(poly:"{polygon_coords}"){route_filter}->.routes_basic;')
+        query_parts.append(
+            """
+            way(r.routes_basic);
+            out tags qt;
+            """.strip()
+        )
 
     enable_subway_details = has_subway and not has_date
 
@@ -369,50 +381,12 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> p
             data={"data": overpass_query},
         )
         json_root = resp.json()
-        cache_save("routes", cache_key_src, json_root)
+        cache_save_async("routes", cache_key_src, json_root)
     else:
         logger.debug("Using cached routes_by_poly result")
 
     json_result = json_root.get("elements", [])
-
-    if not json_result:
-        empty = pd.DataFrame()
-        for col in ("is_stop_area", "is_stop_area_group", "is_station"):
-            empty[col] = pd.Series(dtype=bool)
-        return empty
-
-    for e in json_result:
-        tags = e.get("tags") or {}
-        etype = e.get("type")
-
-        route_type = tags.get("route")
-        e["transport_type"] = route_type
-
-        if enable_subway_details:
-            is_stop_area = etype == "relation" and tags.get("public_transport") == "stop_area"
-            is_stop_area_group = (
-                etype == "relation"
-                and tags.get("public_transport") == "stop_area_group"
-                and tags.get("type") == "public_transport"
-            )
-            is_station = tags.get("public_transport") == "station"
-
-            e["is_stop_area"] = is_stop_area
-            e["is_stop_area_group"] = is_stop_area_group
-            e["is_station"] = is_station
-
-            if is_stop_area or is_stop_area_group or is_station:
-                e["transport_type"] = "subway"
-
-    data = pd.DataFrame(json_result)
-
-    for col in ("is_stop_area", "is_stop_area_group", "is_station"):
-        if col not in data.columns:
-            data[col] = False
-        else:
-            data[col] = data[col].fillna(False).astype(bool)
-
-    return data
+    return json_result
 
 
 def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
@@ -434,67 +408,73 @@ def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
             data={"data": overpass_query},
         )
         json_root = resp.json()
-        cache_save("network", cache_key_src, json_root)
+        cache_save_async("network", cache_key_src, json_root)
     else:
         logger.debug(f"Using cached network.")
     json_result = json_root.get("elements", [])
     return pd.DataFrame(json_result)
 
 
-def fetch_member_tags(members_missing, chunk_size=2000):
+def fetch_member_tags(members_missing):
     """
-    members_missing: iterable of dicts  {'type': 'node|way|relation', 'ref': int}
-    :returns {("node", 123): {tags...}, ("way", 456): {tags...}, ...}
+    members_missing: iterable of dicts {'type': 'node|way|relation', 'ref': int}
+
+    returns:
+      {
+        ("node", 123): {"tags": {...}, "__latlon__": (lon,lat)},
+        ("way", 456):  {"tags": {...}, "__center__": (lon,lat), "__geometry__": [...]},
+        ("relation",7):{"tags": {...}, "__center__": (lon,lat), "__geometry__": [...]},
+      }
     """
     ids = defaultdict(list)
     for m in members_missing:
-        t = m["type"]
-        ids[t].append(int(m["ref"]))
+        ids[m["type"]].append(int(m["ref"]))
 
     for k in list(ids.keys()):
         ids[k] = sorted(set(ids[k]))
 
-    result = {}
+    if not any(ids.values()):
+        return {}
 
-    def _build_query(sub_ids: dict) -> str:
+    def _build_query(all_ids: dict) -> str:
         parts = []
-        if sub_ids.get("node"):
-            parts.append(f'node(id:{",".join(map(str, sub_ids["node"]))});')
-        if sub_ids.get("way"):
-            parts.append(f'way(id:{",".join(map(str, sub_ids["way"]))});')
-        if sub_ids.get("relation"):
-            parts.append(f'rel(id:{",".join(map(str, sub_ids["relation"]))});')
+        if all_ids.get("node"):
+            parts.append(f'node(id:{",".join(map(str, all_ids["node"]))});')
+        if all_ids.get("way"):
+            parts.append(f'way(id:{",".join(map(str, all_ids["way"]))});')
+        if all_ids.get("relation"):
+            parts.append(f'rel(id:{",".join(map(str, all_ids["relation"]))});')
+
         body = "\n".join(parts)
         header = config.overpass_header
-        return f"{header}\n(\n{body}\n);\nout tags center qt;"
 
-    def _yield_chunks(type_key):
-        arr = ids.get(type_key, [])
-        for i in range(0, len(arr), chunk_size):
-            yield {type_key: arr[i : i + chunk_size]}
+        return f"{header}\n(\n{body}\n);\nout center qt;"
 
-    chunks = []
-    for tk in ("node", "way", "relation"):
-        chunks.extend(_yield_chunks(tk))
+    q = _build_query(ids)
+    cache_key_src = f"{config.overpass_url}\nPOST\n{q}"
+    json_root = cache_load("members", cache_key_src)
 
-    for sub in chunks:
-        q = _build_query(sub)
-        cache_key_src = f"{config.overpass_url}\nPOST\n{q}"
-        json_root = cache_load("members", cache_key_src)
+    if json_root is None:
+        resp = _overpass_request(method="POST", overpass_url=config.overpass_url, data={"data": q})
+        json_root = resp.json()
+        cache_save_async("members", cache_key_src, json_root)
+    else:
+        logger.debug("Using cached fetch_member_tags")
 
-        if json_root is None:
-            resp = _overpass_request(method="POST", overpass_url=config.overpass_url, data={"data": q})
-            json_root = resp.json()
-            cache_save("members", cache_key_src, json_root)
-        else:
-            logger.debug("Using cached fetch_member_tags chunk")
+    result = {}
+    for e in json_root.get("elements", []) or []:
+        key = (e["type"], int(e["id"]))
+        payload = {"tags": e.get("tags", {}) or {}}
 
-        els = json_root.get("elements", [])
-        for e in els:
-            key = (e["type"], int(e["id"]))
-            result[key] = e.get("tags", {}) or {}
-            if e["type"] != "node":
-                if "center" in e:
-                    result[key]["__center__"] = (e["center"]["lon"], e["center"]["lat"])
+        if e.get("type") == "node" and ("lon" in e and "lat" in e):
+            payload["__latlon__"] = (e["lon"], e["lat"])
+
+        if e.get("type") != "node" and "center" in e:
+            payload["__center__"] = (e["center"]["lon"], e["center"]["lat"])
+
+        if "geometry" in e and e["geometry"]:
+            payload["__geometry__"] = e["geometry"]
+
+        result[key] = payload
 
     return result

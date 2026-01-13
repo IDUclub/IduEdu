@@ -4,6 +4,7 @@
 :maxdepth: 2
 
 High-level functions <api/high_level>
+Transport registry <api/transport_registry>
 Graph utilities <api/utilities>
 Matrices <api/matrices>
 Overpass helpers <api/overpass>
@@ -152,5 +153,3 @@ config.set_overpass_date()  # or config.set_overpass_date(None)
 - Richer edge attributes (e.g., elevation, turn costs)
 
 > Contributions and ideas are welcome! Please open an issue or PR.
-
----
