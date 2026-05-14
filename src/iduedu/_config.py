@@ -7,6 +7,8 @@ from typing import Iterable, Literal, Optional
 
 from loguru import logger
 
+from ._version import VERSION
+
 LogLevel = Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
@@ -18,7 +20,11 @@ class Config:
     def __init__(self):
         # --- Overpass endpoints ---
         self.overpass_url: str = os.getenv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
-        self.user_agent: str = os.getenv("OVERPASS_USER_AGENT", "iduedu/0.1 (+https://example.org)")
+
+        self.user_agent: str = os.getenv(
+            "OVERPASS_USER_AGENT", f"iduedu/{VERSION} (+https://github.com/DDonnyy/IduEdu)"
+        )
+
         self.proxies: Optional[dict[str, str]] = None
         self.verify_ssl: bool = True
 
