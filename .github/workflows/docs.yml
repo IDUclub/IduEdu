@@ -5,14 +5,14 @@ on:
     branches: [main]
     paths:
       - "docs/**"
-      - "src/**"
+      - "iduedu/**"
       - "pyproject.toml"
       - ".github/workflows/docs.yml"
   pull_request:
     branches: [main]
     paths:
       - "docs/**"
-      - "src/**"
+      - "iduedu/**"
       - "pyproject.toml"
       - ".github/workflows/docs.yml"
 

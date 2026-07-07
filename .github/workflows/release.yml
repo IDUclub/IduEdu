@@ -1,63 +1,67 @@
 name: Release
 
+# Automated releases driven by Conventional Commits (python-semantic-release).
+# On every push to main the version is computed from commit messages since the
+# last tag, iduedu/_version.py + CHANGELOG.md are bumped and committed, a vX.Y.Z
+# tag and GitHub Release are created, and the package is published to PyPI via
+# Trusted Publishing (OIDC). See CONTRIBUTING.md for the developer workflow.
+
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches: [main]
+
+# Do not run concurrent releases; let an in-flight release finish first.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  # Fast, self-contained gate so we never publish code that does not build/pass.
+  # Network (Overpass) tests are intentionally excluded here — they gate PRs in
+  # ci_pipeline.yml, but must not make releases flaky.
+  gate:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Poetry
-        run: pip install poetry
+      - name: Install uv
+        run: python -m pip install --upgrade pip uv
 
       - name: Install dependencies
-        run: |
-          poetry config virtualenvs.in-project true
-          poetry install --with dev,docs
+        run: make install-dev
 
-      - name: Check tag matches pyproject version
-        run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          POETRY_VERSION="$(poetry version -s)"
-          echo "Tag version: $TAG_VERSION"
-          echo "pyproject version: $POETRY_VERSION"
-          if [ "$TAG_VERSION" != "$POETRY_VERSION" ]; then
-            echo "Version mismatch: tag v$TAG_VERSION != pyproject $POETRY_VERSION"
-            exit 1
-          fi
+      - name: Check formatting
+        run: make format-check
 
-      - name: Build package
-        run: poetry build
+      - name: Run fast tests
+        run: make test
 
-      - name: Publish to PyPI
-        env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          poetry publish --no-interaction --username __token__ --password "$POETRY_PYPI_TOKEN_PYPI"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+  release:
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the version commit + tag and create the GitHub Release
+      id-token: write # OIDC for PyPI Trusted Publishing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body: |
-            Release for ${{ github.ref_name }}.
+          fetch-depth: 0 # full history + tags are required to compute the next version
 
-          files: |
-            dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Python Semantic Release
+        id: release
+        uses: python-semantic-release/python-semantic-release@v9.21.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to PyPI (Trusted Publishing)
+        if: steps.release.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1

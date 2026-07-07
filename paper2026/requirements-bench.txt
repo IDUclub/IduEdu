@@ -1,0 +1,27 @@
+# Benchmark environment for the IduEdu paper.
+# Install into a dedicated venv, NOT the main project venv:
+#   cd paper
+#   uv venv .venv-bench --python 3.11
+#   uv pip install --python .venv-bench/Scripts/python.exe -r requirements-bench.txt
+#
+# iduedu itself is installed editable from the repo root (paper/ is a direct child).
+-e ../
+
+# graph-construction competitors
+osmnx>=2.0
+pyrosm>=0.6.2          # NOTE: stagnant since 2023; if it conflicts with pandas 3.x,
+                       # create a second venv with pandas<3 just for pyrosm runs —
+                       # resume-safe CSVs merge fine across environments.
+osmium>=3.7            # PBF header bbox extraction
+
+# OD / shortest-path competitors
+networkx>=3.3
+networkit>=11.0
+igraph>=0.11
+
+# harness + figures
+psutil>=5.9
+pyarrow>=19.0
+matplotlib>=3.10
+seaborn>=0.13
+jupyter>=1.1

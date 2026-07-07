@@ -4,38 +4,44 @@
 :maxdepth: 2
 
 High-level functions <api/high_level>
+Graph data model <api/graph_data_model>
+Migrating to UrbanGraph <migration_to_urban_graph>
+Benchmarks and design notes <benchmarks>
 Transport registry <api/transport_registry>
 Graph utilities <api/utilities>
 Matrices <api/matrices>
 Overpass helpers <api/overpass>
 Examples <examples/index>
 ```
-# **IduEdu** is an open-source Python library for the creation and manipulation of complex city networks from [OpenStreetMap](https://www.openstreetmap.org).
+# **IduEdu** is an open-source Python library for building and analyzing multimodal city networks from [OpenStreetMap](https://www.openstreetmap.org).
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI version](https://img.shields.io/pypi/v/iduedu.svg)](https://pypi.org/project/iduedu/)
 [![CI](https://github.com/DDonnyy/IduEdu/actions/workflows/ci_pipeline.yml/badge.svg)](https://github.com/DDonnyy/IduEdu/actions/workflows/ci_pipeline.yml)
 [![Coverage](https://codecov.io/gh/DDonnyy/IduEdu/graph/badge.svg?token=VN8CBP8ZW3)](https://codecov.io/gh/DDonnyy/IduEdu)
-[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/)
 [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)
 
 ---
 
 ## Features
 
-- **Graph Builders**
-  - `get_drive_graph` — driving network with speeds & categories
-  - `get_walk_graph` — pedestrian network (bi‑directional)
-  - `get_all_public_transport_graph` / `get_single_public_transport_graph` — bus, tram, trolleybus, subway
-  - `get_intermodal_graph` — compose PT + walk with platform snapping
-- **Geometry & CRS Correctness**
-  - Local UTM estimation for accurate metric lengths
-  - Safe graph ↔ GeoDataFrame conversion; optional geometry restoration
-- **Matrices**
-  - `get_adj_matrix_gdf_to_gdf` — OD matrices by length/time using Numba accelerated Dijkstra
-  - `get_closest_nodes` — nearest node snapping
-- **Utilities**
-  - `clip_nx_graph`, `reproject_graph`, `read_gml`/`write_gml`, etc.
+- **UrbanGraph model**: graph topology, geometry, CRS and weights are stored in explicit
+  `GeoDataFrame` node and edge tables, with lazy CSR adjacency for numerical routines.
+- **Street graph builders**: `get_drive_graph` and `get_walk_graph` build OSM-based networks with
+  local metric projection, travel-time weights and optional simplification.
+- **Public transport from OSM**: `get_public_transport_graph` builds static bus, tram, trolleybus and
+  subway graphs directly from OSM route relations.
+- **Intermodal graphs**: `get_intermodal_graph` combines public transport and walk networks by projecting
+  stops, platforms and subway access points onto pedestrian edges.
+- **Matrices and shortest paths**: `od_matrix` and Dijkstra helpers use Numba-backed CSR kernels, cutoff
+  thresholds and adaptive graph reversal for large accessibility workloads.
+- **Interoperability**: optional NetworkX adapters are available for projects that need graph exchange or
+  compatibility with older workflows.
+
+See [Benchmarks and design notes](benchmarks.md) for the construction benchmark summary, raw-result
+locations and limitations of the static public-transport model.
 
 ---
 
@@ -45,7 +51,7 @@ Examples <examples/index>
 pip install iduedu
 ```
 
-> Requires Python 3.10+ and common geospatial stack (GeoPandas, Shapely, PyProj, NetworkX, NumPy, Pandas).
+> Requires Python 3.11+ and common geospatial stack (GeoPandas, Shapely, PyProj, NetworkX, NumPy, Pandas).
 
 ---
 
@@ -64,14 +70,18 @@ G = get_intermodal_graph(osm_id=1114252)  # e.g., Saint Petersburg, Vasileostrov
 
 ```python
 import geopandas as gpd
-from iduedu import get_adj_matrix_gdf_to_gdf
+from iduedu import od_matrix
 
-# origins/destinations can be any geometries; representative points are used
-origins = gpd.GeoDataFrame(geometry=[...], crs=...)
-destinations = gpd.GeoDataFrame(geometry=[...], crs=...)
+# origins/destinations contain projected points already attached to graph nodes
+origins = gpd.GeoDataFrame({"graph_node_id": [...]}, geometry=[...], crs=G.crs)
+destinations = gpd.GeoDataFrame({"graph_node_id": [...]}, geometry=[...], crs=G.crs)
 
-M = get_adj_matrix_gdf_to_gdf(
-    origins, destinations, G, weight="time_min", dtype="float32", threshold=None
+M = od_matrix(
+    G,
+    gdf_sources=origins,
+    gdf_targets=destinations,
+    weight="time_min",
+    dtype="float32",
 )
 print(M.head())
 ```
@@ -100,6 +110,8 @@ IduEdu provides optional file-based caching of Overpass JSON responses to speed 
 - Runtime API:
 
 ```python
+from iduedu import config
+
 # Disable cache for this session
 config.set_overpass_cache(enabled=False)
 
@@ -125,17 +137,18 @@ You can fix queries to a specific OSM snapshot using the Overpass `date` paramet
 This allows retrieving map data as it existed at a given moment in time.
 
 ```python
+from iduedu import config
+
 # Specific day
 config.set_overpass_date(date="2020-01-01")
 
 # Or build from components
 config.set_overpass_date(year=2020)            # → 2020-01-01T00:00:00Z
 config.set_overpass_date(year=2020, month=5)   # → 2020-05-01T00:00:00Z
-```
 
-To reset and use the latest data again:
 
-```python
+# To reset and use the latest data again:
+
 config.set_overpass_date()  # or config.set_overpass_date(None)
 ```
 
@@ -149,7 +162,25 @@ config.set_overpass_date()  # or config.set_overpass_date(None)
 ## Roadmap / Ideas
 
 - More PT modes and GTFS import
-- Caching of Overpass responses
 - Richer edge attributes (e.g., elevation, turn costs)
 
 > Contributions and ideas are welcome! Please open an issue or PR.
+
+## Contacts
+
+- [NCCR](https://actcognitive.org/) - National Center for Cognitive Research
+- [IDU](https://idu.itmo.ru/) - Institute of Design and Urban Studies
+- [Natalya Chichkova](https://t.me/nancy_nat) - project manager
+- [Danila Oleynikov (Donny)](https://t.me/ddonny_dd) - lead software engineer
+---
+
+## Acknowledgments
+
+Реализовано при финансовой поддержке Фонда поддержки проектов Национальной технологической инициативы в рамках реализации "дорожной карты" развития высокотехнологичного направления "Искусственный интеллект" на период до 2030 года (Договор № 70-2021-00187)
+
+This research is financially supported by the Foundation for National Technology Initiative's Projects Support as a part of the roadmap implementation for the development of the high-tech field of Artificial Intelligence for the period up to 2030 (agreement 70-2021-00187)
+
+
+## Publications
+
+_Coming soon..._

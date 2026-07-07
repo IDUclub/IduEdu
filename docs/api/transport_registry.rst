@@ -23,6 +23,10 @@ Each transport specification describes:
 The registry is consulted during graph construction to compute the ``time_min`` attribute
 for each edge.
 
+See :doc:`../examples/transport_registry` for a runnable example that inspects
+the default registries, creates a custom registry, updates mode parameters, and
+passes the registry into public-transport graph construction.
+
 Default registry
 ----------------
 

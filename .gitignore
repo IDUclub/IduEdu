@@ -29,18 +29,22 @@ __pycache__/
 .coverage
 .coverage.*
 htmlcov/
+coverage.xml
 
 # Sphinx docs
 docs/_build/
 docs/_autoapi/
+docs/api/generated/
 docs/_autosummary/
 docs/_doctrees/
+docs/api/generated
 _build/
 _autosummary/
 
 # Local dev stuff
 /dev
 /poetry.lock
+/uv.lock
 
 # OS junk
 .DS_Store

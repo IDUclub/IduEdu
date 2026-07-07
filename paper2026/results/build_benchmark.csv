@@ -1,0 +1,181 @@
+library,area,network,simplify,attempt,time_sec,n_nodes,n_edges,representation_size_mb
+pyrosm,Helsinki,walk,NA,1,95.095,930427,2026920,5521.61
+pyrosm,Helsinki,walk,NA,2,94.833,930427,2026920,5521.61
+pyrosm,Helsinki,walk,NA,3,95.198,930427,2026920,5521.61
+iduedu,Helsinki,walk,True,1,18.22,296722,369603,59.07
+iduedu,Helsinki,walk,True,2,17.921,296722,369603,59.07
+iduedu,Helsinki,walk,True,3,17.952,296722,369603,59.07
+osmnx,Helsinki,walk,True,1,108.244,287556,720758,665.82
+osmnx,Helsinki,walk,True,2,108.194,287556,720758,665.82
+osmnx,Helsinki,walk,True,3,108.418,287556,720758,665.82
+iduedu,Helsinki,walk,False,1,10.255,838554,911435,128.24
+iduedu,Helsinki,walk,False,2,10.284,838554,911435,128.24
+iduedu,Helsinki,walk,False,3,10.24,838554,911435,128.24
+osmnx,Helsinki,walk,False,1,90.512,835079,1815788,1588.17
+osmnx,Helsinki,walk,False,2,89.294,835079,1815788,1588.17
+osmnx,Helsinki,walk,False,3,89.465,835079,1815788,1588.17
+pyrosm,Helsinki,drive,NA,1,43.745,425669,806171,2313.68
+pyrosm,Helsinki,drive,NA,2,44.327,425669,806171,2313.68
+pyrosm,Helsinki,drive,NA,3,43.875,425669,806171,2313.68
+iduedu,Helsinki,drive,True,1,4.518,25308,33539,9.7
+iduedu,Helsinki,drive,True,2,4.492,25308,33539,9.7
+iduedu,Helsinki,drive,True,3,4.483,25308,33539,9.7
+osmnx,Helsinki,drive,True,1,22.829,24938,52660,64.36
+osmnx,Helsinki,drive,True,2,22.984,24938,52660,64.36
+osmnx,Helsinki,drive,True,3,22.981,24938,52660,64.36
+iduedu,Helsinki,drive,False,1,12.329,220779,229010,48.54
+iduedu,Helsinki,drive,False,2,12.211,220779,229010,48.54
+iduedu,Helsinki,drive,False,3,12.281,220779,229010,48.54
+osmnx,Helsinki,drive,False,1,21.797,220240,386801,391.33
+osmnx,Helsinki,drive,False,2,21.841,220240,386801,391.33
+osmnx,Helsinki,drive,False,3,22.087,220240,386801,391.33
+pyrosm,Saint Petersburg,walk,NA,1,95.021,936728,2180832,5704.64
+pyrosm,Saint Petersburg,walk,NA,2,95.448,936728,2180832,5704.64
+pyrosm,Saint Petersburg,walk,NA,3,95.54,936728,2180832,5704.64
+iduedu,Saint Petersburg,walk,True,1,20.053,376103,516880,76.29
+iduedu,Saint Petersburg,walk,True,2,19.887,376103,516880,76.29
+iduedu,Saint Petersburg,walk,True,3,19.973,376103,516880,76.29
+osmnx,Saint Petersburg,walk,True,1,114.736,364202,1009264,864.81
+osmnx,Saint Petersburg,walk,True,2,114.921,364202,1009264,864.81
+osmnx,Saint Petersburg,walk,True,3,114.726,364202,1009264,864.81
+iduedu,Saint Petersburg,walk,False,1,10.099,859699,1000476,137.22
+iduedu,Saint Petersburg,walk,False,2,10.034,859699,1000476,137.22
+iduedu,Saint Petersburg,walk,False,3,9.976,859699,1000476,137.22
+osmnx,Saint Petersburg,walk,False,1,90.12,854979,1990794,1618.88
+osmnx,Saint Petersburg,walk,False,2,90.306,854979,1990794,1618.88
+osmnx,Saint Petersburg,walk,False,3,90.48,854979,1990794,1618.88
+pyrosm,Saint Petersburg,drive,NA,1,48.584,486729,961094,2646.01
+pyrosm,Saint Petersburg,drive,NA,2,49.034,486729,961094,2646.01
+pyrosm,Saint Petersburg,drive,NA,3,48.542,486729,961094,2646.01
+iduedu,Saint Petersburg,drive,True,1,2.757,13301,20850,5.98
+iduedu,Saint Petersburg,drive,True,2,2.728,13301,20850,5.98
+iduedu,Saint Petersburg,drive,True,3,2.73,13301,20850,5.98
+osmnx,Saint Petersburg,drive,True,1,11.365,13190,27331,33.8
+osmnx,Saint Petersburg,drive,True,2,11.418,13190,27331,33.8
+osmnx,Saint Petersburg,drive,True,3,11.443,13190,27331,33.8
+iduedu,Saint Petersburg,drive,False,1,7.059,121544,129093,28.78
+iduedu,Saint Petersburg,drive,False,2,7.098,121544,129093,28.78
+iduedu,Saint Petersburg,drive,False,3,7.038,121544,129093,28.78
+osmnx,Saint Petersburg,drive,False,1,11.149,122572,174880,196.97
+osmnx,Saint Petersburg,drive,False,2,11.154,122572,174880,196.97
+osmnx,Saint Petersburg,drive,False,3,11.123,122572,174880,196.97
+pyrosm,Moscow,walk,NA,1,154.91,1394798,3303718,8654.41
+pyrosm,Moscow,walk,NA,2,155.397,1394798,3303718,8654.41
+pyrosm,Moscow,walk,NA,3,155.201,1394798,3303718,8654.41
+iduedu,Moscow,walk,True,1,32.85,559035,799959,119.35
+iduedu,Moscow,walk,True,2,32.357,559035,799959,119.35
+iduedu,Moscow,walk,True,3,32.127,559035,799959,119.35
+osmnx,Moscow,walk,True,1,183.551,539466,1559530,1302.65
+osmnx,Moscow,walk,True,2,184.54,539466,1559530,1302.65
+osmnx,Moscow,walk,True,3,186.53,539466,1559530,1302.65
+iduedu,Moscow,walk,False,1,16.007,1321929,1562853,217.09
+iduedu,Moscow,walk,False,2,15.942,1321929,1562853,217.09
+iduedu,Moscow,walk,False,3,15.984,1321929,1562853,217.09
+osmnx,Moscow,walk,False,1,149.596,1312347,3105238,2472.73
+osmnx,Moscow,walk,False,2,147.603,1312347,3105238,2472.73
+osmnx,Moscow,walk,False,3,148.075,1312347,3105238,2472.73
+pyrosm,Moscow,drive,NA,1,74.226,705724,1370620,3855.7
+pyrosm,Moscow,drive,NA,2,74.098,705724,1370620,3855.7
+pyrosm,Moscow,drive,NA,3,74.951,705724,1370620,3855.7
+iduedu,Moscow,drive,True,1,4.924,22484,33392,9.67
+iduedu,Moscow,drive,True,2,4.826,22484,33392,9.67
+iduedu,Moscow,drive,True,3,4.775,22484,33392,9.67
+osmnx,Moscow,drive,True,1,22.304,22359,46370,58.69
+osmnx,Moscow,drive,True,2,22.489,22359,46370,58.69
+osmnx,Moscow,drive,True,3,22.4,22359,46370,58.69
+iduedu,Moscow,drive,False,1,12.704,223580,234487,52.96
+iduedu,Moscow,drive,False,2,12.661,223580,234487,52.96
+iduedu,Moscow,drive,False,3,12.679,223580,234487,52.96
+osmnx,Moscow,drive,False,1,22.089,225566,345755,374.59
+osmnx,Moscow,drive,False,2,22.133,225566,345755,374.59
+osmnx,Moscow,drive,False,3,22.146,225566,345755,374.59
+pyrosm,London,walk,NA,1,326.379,2920765,6384354,17292.34
+pyrosm,London,walk,NA,2,325.919,2920765,6384354,17292.34
+pyrosm,London,walk,NA,3,325.285,2920765,6384354,17292.34
+iduedu,London,walk,True,1,58.379,754368,958931,161.45
+iduedu,London,walk,True,2,55.948,754368,958931,161.45
+iduedu,London,walk,True,3,56.597,754368,958931,161.45
+osmnx,London,walk,True,1,319.727,720577,1849240,1780.01
+osmnx,London,walk,True,2,320.378,720577,1849240,1780.01
+osmnx,London,walk,True,3,318.815,720577,1849240,1780.01
+iduedu,London,walk,False,1,31.425,2533432,2737995,394.09
+iduedu,London,walk,False,2,31.01,2533432,2737995,394.09
+iduedu,London,walk,False,3,30.918,2533432,2737995,394.09
+osmnx,London,walk,False,1,259.193,2522907,5453888,4637.32
+osmnx,London,walk,False,2,260.499,2522907,5453888,4637.32
+osmnx,London,walk,False,3,259.799,2522907,5453888,4637.32
+pyrosm,London,drive,NA,1,187.248,1707901,3286615,9196.89
+pyrosm,London,drive,NA,2,185.653,1707901,3286615,9196.89
+pyrosm,London,drive,NA,3,186.391,1707901,3286615,9196.89
+iduedu,London,drive,True,1,28.506,186828,233826,57.69
+iduedu,London,drive,True,2,27.916,186828,233826,57.69
+iduedu,London,drive,True,3,27.447,186828,233826,57.69
+osmnx,London,drive,True,1,119.861,185455,424421,463.02
+osmnx,London,drive,True,2,119.838,185455,424421,463.02
+osmnx,London,drive,True,3,120.349,185455,424421,463.02
+iduedu,London,drive,False,1,57.813,1064897,1111890,229.07
+iduedu,London,drive,False,2,57.864,1064897,1111890,229.07
+iduedu,London,drive,False,3,57.91,1064897,1111890,229.07
+osmnx,London,drive,False,1,108.321,1066476,2004906,1928.02
+osmnx,London,drive,False,2,108.506,1066476,2004906,1928.02
+osmnx,London,drive,False,3,108.906,1066476,2004906,1928.02
+pyrosm,Seoul,walk,NA,1,116.368,1296805,2897724,5524.49
+pyrosm,Seoul,walk,NA,2,116.576,1296805,2897724,5524.49
+pyrosm,Seoul,walk,NA,3,117.422,1296805,2897724,5524.49
+iduedu,Seoul,walk,True,1,25.595,359660,510358,85.33
+iduedu,Seoul,walk,True,2,25.713,359660,510358,85.33
+iduedu,Seoul,walk,True,3,25.256,359660,510358,85.33
+osmnx,Seoul,walk,True,1,146.452,352193,1005200,908.24
+osmnx,Seoul,walk,True,2,146.667,352193,1005200,908.24
+osmnx,Seoul,walk,True,3,146.765,352193,1005200,908.24
+iduedu,Seoul,walk,False,1,13.373,1289761,1440459,206.55
+iduedu,Seoul,walk,False,2,13.427,1289761,1440459,206.55
+iduedu,Seoul,walk,False,3,13.263,1289761,1440459,206.55
+osmnx,Seoul,walk,False,1,121.146,1276863,2854508,2378.55
+osmnx,Seoul,walk,False,2,121.587,1276863,2854508,2378.55
+osmnx,Seoul,walk,False,3,121.882,1276863,2854508,2378.55
+pyrosm,Seoul,drive,NA,1,69.434,787202,1576176,3191.15
+pyrosm,Seoul,drive,NA,2,69.751,787202,1576176,3191.15
+pyrosm,Seoul,drive,NA,3,70.142,787202,1576176,3191.15
+iduedu,Seoul,drive,True,1,17.591,125410,187050,41.49
+iduedu,Seoul,drive,True,2,17.499,125410,187050,41.49
+iduedu,Seoul,drive,True,3,17.522,125410,187050,41.49
+osmnx,Seoul,drive,True,1,57.215,124312,334417,314.81
+osmnx,Seoul,drive,True,2,57.625,124312,334417,314.81
+osmnx,Seoul,drive,True,3,57.627,124312,334417,314.81
+iduedu,Seoul,drive,False,1,30.995,526138,587781,117.98
+iduedu,Seoul,drive,False,2,30.858,526138,587781,117.98
+iduedu,Seoul,drive,False,3,30.791,526138,587781,117.98
+osmnx,Seoul,drive,False,1,48.678,526982,1013418,947.45
+osmnx,Seoul,drive,False,2,48.827,526982,1013418,947.45
+osmnx,Seoul,drive,False,3,48.988,526982,1013418,947.45
+pyrosm,New York,walk,NA,1,162.015,1114435,2802716,5412.31
+pyrosm,New York,walk,NA,2,162.378,1114435,2802716,5412.31
+pyrosm,New York,walk,NA,3,163.368,1114435,2802716,5412.31
+iduedu,New York,walk,True,1,52.65,381686,570295,85.6
+iduedu,New York,walk,True,2,52.85,381686,570295,85.6
+iduedu,New York,walk,True,3,52.479,381686,570295,85.6
+osmnx,New York,walk,True,1,171.639,333755,1044522,879.37
+osmnx,New York,walk,True,2,171.815,333755,1044522,879.37
+osmnx,New York,walk,True,3,171.303,333755,1044522,879.37
+iduedu,New York,walk,False,1,25.062,985233,1173842,163.43
+iduedu,New York,walk,False,2,25.012,985233,1173842,163.43
+iduedu,New York,walk,False,3,24.822,985233,1173842,163.43
+osmnx,New York,walk,False,1,144.642,982809,2342628,1887.9
+osmnx,New York,walk,False,2,144.713,982809,2342628,1887.9
+osmnx,New York,walk,False,3,144.605,982809,2342628,1887.9
+pyrosm,New York,drive,NA,1,130.926,1270537,2297634,4899.12
+pyrosm,New York,drive,NA,2,131.404,1270537,2297634,4899.12
+pyrosm,New York,drive,NA,3,131.766,1270537,2297634,4899.12
+iduedu,New York,drive,True,1,23.084,136013,209577,49.66
+iduedu,New York,drive,True,2,22.773,136013,209577,49.66
+iduedu,New York,drive,True,3,22.711,136013,209577,49.66
+osmnx,New York,drive,True,1,85.478,134356,346315,346.52
+osmnx,New York,drive,True,2,85.848,134356,346315,346.52
+osmnx,New York,drive,True,3,85.791,134356,346315,346.52
+iduedu,New York,drive,False,1,46.351,811438,885001,188.39
+iduedu,New York,drive,False,2,46.182,811438,885001,188.39
+iduedu,New York,drive,False,3,46.009,811438,885001,188.39
+osmnx,New York,drive,False,1,78.459,812020,1380334,1424.29
+osmnx,New York,drive,False,2,79.132,812020,1380334,1424.29
+osmnx,New York,drive,False,3,79.068,812020,1380334,1424.29

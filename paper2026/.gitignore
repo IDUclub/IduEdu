@@ -1,0 +1,35 @@
+# Benchmark environment (recreate from requirements-bench.txt)
+.venv-bench/
+
+# Downloaded OSM extracts — hundreds of MB, re-downloaded on demand
+pbf_cache/
+*.osm.pbf
+
+# Overpass / iduedu response caches
+.iduedu_cache/
+cache/
+
+# Benchmark run logs
+results/logs/
+
+# Redundant CSV backups
+results/*.backup.csv
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.log
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.pdf

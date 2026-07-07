@@ -79,3 +79,6 @@ napoleon_type_aliases = {
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 lexers["ipython2"] = get_lexer_by_name("ipython3")
+
+latex_engine = "lualatex"
+language = "en"
