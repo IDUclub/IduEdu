@@ -2,7 +2,8 @@
 
 This guide covers the day-to-day workflow for humans and coding agents. The
 short version: **write [Conventional Commits](https://www.conventionalcommits.org/),
-open a PR, squash-merge it into `main`, and the release happens automatically.**
+open a PR, squash-merge it into the official `IDUclub/IduEdu` `main` branch, and the release happens
+automatically.**
 Never bump the version or create a tag by hand.
 
 ## Requirements
@@ -72,14 +73,18 @@ make version          # prints the current version
 
 ## Releases (automated — do not do this by hand)
 
-On every push to `main`, `.github/workflows/release.yml`:
+In the official `IDUclub/IduEdu` repository, every successful `Tests and Coverage` run for a push to
+`main` starts `.github/workflows/release.yml`:
 
-1. runs a fast (non-network) build/test gate;
-2. runs [python-semantic-release](https://python-semantic-release.readthedocs.io/),
+1. runs [python-semantic-release](https://python-semantic-release.readthedocs.io/),
    which computes the next version, updates `iduedu/_version.py` and
    `CHANGELOG.md`, commits `chore(release): vX.Y.Z [skip ci]`, tags `vX.Y.Z`, and
    creates the GitHub Release;
-3. publishes the built distributions to PyPI via Trusted Publishing (OIDC).
+2. publishes the built distributions to PyPI via Trusted Publishing (OIDC);
+3. lets `.github/workflows/docs.yml` rebuild and publish the official documentation to `gh-pages`.
+
+Development forks may run tests and documentation previews, but they do not publish releases or deploy
+the official documentation.
 
 The version lives in a **single source of truth**, `iduedu/_version.py`
 (`VERSION = "x.y.z"`); `pyproject.toml` reads it dynamically through hatchling.

@@ -1,13 +1,6 @@
 name: Docs
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "iduedu/**"
-      - "pyproject.toml"
-      - ".github/workflows/docs.yml"
   pull_request:
     branches: [main]
     paths:
@@ -15,9 +8,19 @@ on:
       - "iduedu/**"
       - "pyproject.toml"
       - ".github/workflows/docs.yml"
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
 
 jobs:
   build-docs:
+    if: >
+      github.event_name == 'pull_request' ||
+      (
+        github.repository == 'IDUclub/IduEdu' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,7 +29,16 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/checkout@v4
+
+      - name: Checkout released main
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -53,7 +65,7 @@ jobs:
           path: docs/_build/html
 
       - name: Deploy to gh-pages
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'workflow_run' }}
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

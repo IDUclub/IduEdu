@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: Tests and Coverage
 
 on:
   push:
@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
   id-token: write
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -32,7 +36,7 @@ jobs:
       - name: Check formatting
         run: make format-check
 
-      - name: Run tests with coverage (includes network tests)
+      - name: Run tests with coverage
         run: make coverage-xml
 
       - name: Upload coverage report artifact

@@ -145,8 +145,9 @@ markers = [
 #
 # The next version is derived from Conventional Commit messages since the last
 # tag: feat -> minor, fix/perf -> patch, feat!/BREAKING CHANGE -> major.
-# On push to main the release workflow bumps iduedu/_version.py, updates
-# CHANGELOG.md, commits, tags vX.Y.Z, and publishes. See CONTRIBUTING.md.
+# In the official repository, the release workflow runs after Tests and Coverage
+# succeeds on main, bumps iduedu/_version.py, updates CHANGELOG.md, commits,
+# tags vX.Y.Z, and publishes. See CONTRIBUTING.md.
 # ---------------------------------------------------------------------------
 [tool.semantic_release]
 version_variables = ["iduedu/_version.py:VERSION"]
