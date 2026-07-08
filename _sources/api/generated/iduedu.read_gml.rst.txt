@@ -1,0 +1,6 @@
+﻿iduedu.read\_gml
+================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: read_gml

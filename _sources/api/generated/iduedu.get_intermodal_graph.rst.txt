@@ -1,0 +1,6 @@
+﻿iduedu.get\_intermodal\_graph
+=============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_intermodal_graph
