@@ -25,3 +25,4 @@ pyarrow>=19.0
 matplotlib>=3.10
 seaborn>=0.13
 jupyter>=1.1
+objectnat==2.0.0

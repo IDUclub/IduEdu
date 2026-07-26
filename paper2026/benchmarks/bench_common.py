@@ -12,7 +12,6 @@ Design goals (same as the v1 scripts, generalized):
 
 from __future__ import annotations
 
-import gc
 import json
 import platform
 import time
@@ -87,7 +86,6 @@ class Measurement:
 
 def measure(func: Callable, *args, **kwargs) -> Measurement:
     """Run func, returning wall time and the result."""
-    gc.collect()
     t0 = time.perf_counter()
     result = func(*args, **kwargs)
     elapsed = time.perf_counter() - t0
@@ -97,7 +95,6 @@ def measure(func: Callable, *args, **kwargs) -> Measurement:
 def force_cleanup(*objs) -> None:
     for obj in objs:
         del obj
-    gc.collect()
 
 
 # ----------------------------
@@ -413,6 +410,7 @@ def dump_environment(tag: str) -> None:
         "geopandas",
         "shapely",
         "scipy",
+        "objectnat",
     ):
         try:
             packages[name] = md.version(name)

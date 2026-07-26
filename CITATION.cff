@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use IduEdu, please cite the software and the associated publication."
+title: "IduEdu"
+type: software
+authors:
+  - family-names: "Oleynikov"
+    given-names: "Danila"
+    orcid: "https://orcid.org/0009-0002-7881-1543"
+    affiliation: "ITMO University"
+    email: "ddonnyy@itmo.ru"
+version: "2.0.0"
+date-released: "2026-07-07"
+repository-code: "https://github.com/DDonnyy/IduEdu"
+url: "https://iduclub.github.io/IduEdu/"
+license: "BSD-3-Clause"
+keywords:
+  - "urban transport"
+  - "multimodal networks"
+  - "OpenStreetMap"
+  - "GeoPandas"
+  - "accessibility"
+  - "origin-destination matrix"

@@ -37,6 +37,8 @@ STEPS: list[tuple[str, str, list[str]]] = [
     ("od_rect", "bench_od.py", ["--mode", "rect"]),
     ("od_square", "bench_od.py", ["--mode", "square"]),
     ("validity", "bench_validity.py", []),
+    ("accessibility", "bench_accessibility.py", []),
+    ("scenarios", "bench_scenarios.py", ["--mode", "tram", "--route", "1"]),
 ]
 
 

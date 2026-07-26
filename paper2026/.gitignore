@@ -15,6 +15,16 @@ results/logs/
 # Redundant CSV backups
 results/*.backup.csv
 
+# Research data and processed outputs are published through Zenodo, not Git
+results/
+buildings_spb.parquet
+schools_spb.parquet
+
+# Local MDPI submission assets and prepared Zenodo uploads
+Definitions/
+zenodo-staging/
+template.tex
+
 # Python
 __pycache__/
 *.py[cod]
@@ -33,3 +43,7 @@ __pycache__/
 *.fdb_latexmk
 *.fls
 *.pdf
+
+# Vector figures required by manuscript_smartcities.tex
+!figures/tablefirst_figure.pdf
+!figures/workflow_figure.pdf

@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/)
 [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)
+[![Research artifacts DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21610964.svg)](https://doi.org/10.5281/zenodo.21610964)
 
 <p align="center">
 <img src="./docs/_static/iduedu_header.svg" alt="IduEdu logo banner" width="100%">
