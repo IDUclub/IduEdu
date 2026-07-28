@@ -35,7 +35,7 @@ Zenodo–GitHub integration as a separate Software record.
 
 - **B1 — graph construction:** IduEdu, OSMnx and Pyrosm across six cities,
   including construction time and representation size.
-- **B2 — intermodal construction:** walking, public-transport and graph-joining
+- **B2 — multimodal construction:** walking, public-transport and graph-joining
   stages.
 - **B3 — batch OD routing:** IduEdu, NetworKit and igraph in rectangular and
   square workloads, including cutoff experiments.
@@ -93,6 +93,26 @@ cd ../figures
 ../.venv-bench/Scripts/python.exe -m jupyter nbconvert \
   --to notebook --execute accessibility_figures.ipynb \
   --output accessibility_figures.ipynb
+```
+
+## Building the manuscript PDF
+
+Run the commands from `paper2026`.
+
+For a quick rebuild after text, layout or figure changes that do not modify
+citations or the bibliography, one `pdflatex` pass is sufficient:
+
+```bash
+pdflatex -interaction=nonstopmode -halt-on-error manuscript_smartcities.tex
+```
+
+After changing citations or `sample-base.bib`, rebuild the PDF together with
+the bibliography and references:
+
+```bash
+pdflatex -interaction=nonstopmode -halt-on-error manuscript_smartcities.tex
+bibtex manuscript_smartcities
+pdflatex -interaction=nonstopmode -halt-on-error manuscript_smartcities.tex
 ```
 
 ## Data provenance and licenses

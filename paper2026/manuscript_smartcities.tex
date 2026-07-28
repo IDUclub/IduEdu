@@ -3,7 +3,7 @@
 % Special Issue: Sustainable Mobility in Smart Cities: Advancing
 %                Accessibility, Efficiency, and Equity
 %=================================================================
-\documentclass[smartcities,article,submit,oneauthor]{Definitions/mdpi}
+\documentclass[smartcities,article,submit,moreauthors]{Definitions/mdpi}
 
 %=================================================================
 \firstpage{1}
@@ -32,16 +32,18 @@
 
 %=================================================================
 
-\Title{IduEdu: An Open-Source GeoDataFrame-Native Infrastructure for Multimodal Accessibility and Rapid Scenario Screening in Smart Cities}
+\Title{IduEdu: An Open-Source GeoDataFrame-Native Infrastructure for Multimodal Accessibility Analysis and Rapid Scenario Screening in Smart Cities}
 
 \newcommand{\orcidauthorA}{0009-0002-7881-1543}
+\newcommand{\orcidauthorB}{0000-0002-6382-5259}
 
-\Author{Danila Oleynikov $^{1,}$*\orcidA{}}
+\Author{Danila Oleynikov $^{1,}$*\orcidA{} and Natalia Chichkova $^{1}$\orcidB{}}
 
-\AuthorNames{Danila Oleynikov}
+\AuthorNames{Danila Oleynikov and Natalia Chichkova}
 
 \address{%
-    $^{1}$ \quad ITMO University, Saint Petersburg, Russia; ddonnyy@itmo.ru}
+    $^{1}$ \quad ITMO University, Saint Petersburg, Russia; ddonnyy@itmo.ru (D.O.);
+    nachichkova@niuitmo.ru (N.C.)}
 
 \corres{Correspondence: ddonnyy@itmo.ru}
 
@@ -56,7 +58,7 @@
     requiring GTFS, and exposes scalable routing primitives.
     Across six large cities, IduEdu builds street graphs $3.3$--$9.3\times$ faster than OSMnx, the de
     facto standard open-source tool for urban street-network analysis, with an order-of-magnitude
-    smaller in-memory representation, and and matches or exceeds optimized C/C++ graph backends on
+    smaller in-memory representation, and matches or exceeds optimized C/C++ graph backends on
     batch accessibility workloads.
     In a city-scale case study of Saint Petersburg (83{,}510 residential buildings, 911 schools), adding
     public transport to the walk-only network raises the mean number of schools reachable within 30~min
@@ -86,14 +88,18 @@
     of analysis transferable across cities, including cities where official transit feeds, smart-card
     records or survey data are unavailable.
     In practice, however, three barriers limit open-data mobility analytics at the city scale.
-    First, transport data and tooling are fragmented: street extraction, transit modeling and
-    accessibility computation live in different libraries with incompatible representations.
+    First, the required transport data---street geometry and attributes, public transport routes and
+    stop infrastructure, and, where available, service schedules---and the tooling around them are
+    fragmented: street extraction, transit modeling and accessibility computation live in different
+    libraries with incompatible representations.
     Second, constructing and storing explicit multimodal networks for a large city is expensive in both
-    time and memory.
+    time and memory~\cite{staudt2016networkit,benchmark_graphtools}, a cost we quantify in
+    Section~\ref{subsec:res-build}.
     Third, and most restrictive for planning applications, comparing many planning or disruption
     scenarios requires re-computing accessibility over and over, which multiplies the first two costs.
 
-    Existing open-source solutions each cover a part of this workflow.
+    Existing open-source solutions each cover a part of the chain from network extraction through
+    graph construction to accessibility computation.
     High-performance routing engines and simulation frameworks answer individual queries quickly but
     hide the network behind a service API~\cite{osrm,otp,graphhopper,valhalla}; accessibility frameworks
     provide indicators but depend on GTFS feeds and external routing
@@ -109,8 +115,6 @@
     scenarios~\cite{gogousou2026mobilityoracle,shulajkovska2024framework,salanovagrau2026pollution}, but
     they typically do not examine the computational cost of repeatedly building, storing and
     re-evaluating explicit multimodal city graphs.
-    In data-constrained settings the problem is compounded by dependence on GTFS, proprietary APIs or
-    full-scale simulators.
 
     What remains underexplored is an open, OSM-based pipeline that simultaneously (i) yields a spatial
     graph that is directly accessible and modifiable by the analyst, (ii) builds a static PT network
@@ -118,8 +122,12 @@
     quantifiably reduces the cost of repeated scenario analytics---while remaining compatible with the
     GeoPandas workflow and with user-defined algorithms.
 
-
-    We therefore evaluate both the computational infrastructure and the planning evidence it enables through four research questions:
+    We therefore ask four research questions.
+    The first three concern the infrastructure itself---whether such a representation can be built from
+    open data, what it costs, and whether that cost admits repeated city-scale analysis---while the
+    fourth tests the premise underlying them: whether an explicit multimodal network changes the
+    analytical conclusions at all, relative to the walk-only networks that current open-source tools
+    already provide.
     \begin{itemize}
         \item \textbf{RQ1.} Can a single OSM-based pipeline construct an explicit and compact
         multimodal representation of an urban network without requiring GTFS?
@@ -127,24 +135,36 @@
         time and graph-representation size compared with the widespread OSMnx/NetworkX stack and specialized graph backends?
         \item \textbf{RQ3.} Does the resulting efficiency allow city-scale accessibility assessment and
         repeated transport scenario screening within practically useful time?
-        \item \textbf{RQ4.} When applied city-wide, what spatial patterns of school accessibility and structural
-        dependence on public transport does the pipeline reveal, and which modes or routes have the greatest
-        effect under service-degradation and removal scenarios?
+        \item \textbf{RQ4.} Does a multimodal network affect the results of a city-scale
+        service-accessibility assessment (here, schools) relative to the walk-only network that current
+        open-source tools provide, and how strongly does this effect depend on individual transport
+        modes and routes?
 
     \end{itemize}
 
-    We answer these questions with IduEdu, an open-source Python library built around
-    \texttt{UrbanGraph}, a GeoDataFrame-native graph model.
+    We answer these questions with IduEdu~\cite{iduedu_docs}, an open-source Python library built
+    around \texttt{UrbanGraph}, a GeoDataFrame-native graph model.
     The contributions are: (i) an open-source, GeoDataFrame-native urban graph model in which editable spatial tables
     and the sparse computational representation are synchronized views of the same network; (ii) a pipeline for
-    constructing static PT and intermodal graphs directly from OSM without mandatory GTFS; (iii) scalable nearest-source
+    constructing static PT and multimodal graphs directly from OSM without mandatory GTFS; (iii) scalable nearest-source
     and batch-OD routing primitives combined with cache-aware graph reuse and table-level scenario editing;
     (iv) a reproducible evaluation of graph construction, representation size, routing scalability and per-scenario
     runtime against relevant graph stacks; and (v) a city-scale school-accessibility case study that maps multimodal
-    accessibility gains and evaluates service degradation and leave-one-route-out criticality across 635 PT routes.
-    To demonstrate downstream composability, ObjectNat~2.0~\cite{objectnat_docs} consumes
-    \texttt{UrbanGraph} directly to construct isochrone and coverage geometries, while scenario logic is expressed
+    accessibility gains and evaluates leave-one-route-out criticality across 635 PT routes together with
+    service-degradation scenarios.
+    To demonstrate downstream composability, ObjectNat~2.0~\cite{objectnat_docs}---an open-source
+    library for urban accessibility and service-provision indicators---consumes \texttt{UrbanGraph}
+    directly to construct isochrone and coverage geometries, while scenario logic is expressed
     through ordinary GeoPandas table operations and can likewise be replaced or extended by user-defined algorithms.
+
+    Integrated into a smart-city analytical stack, these properties bear directly on the recurring
+    planning tasks reviewed in Section~\ref{subsec:rw-tasks}: monitoring service accessibility,
+    comparing it across modes and population groups, ranking the transit elements a city most depends
+    on, and evaluating proposed interventions before they are committed.
+    An OSM-derived transit layer makes such analysis possible where no transit feed is maintained,
+    while an explicit and editable graph lets these tasks share one network at a cost of seconds per
+    scenario.
+
     The remainder of the paper reviews related tools, defines the graph model and experimental protocol,
     reports the construction, routing, accessibility and scenario results, and closes with their
     implications, limitations and conclusions.
@@ -155,32 +175,151 @@
     \section{Related Work}
     \label{sec:related-work}
 
-    We review the studies closest to ours in scope and venue---open-data network models applied to concrete urban decisions.
+    \subsection{Mobility Management Tasks in Smart Cities and Their Network Requirements}
+    \label{subsec:rw-tasks}
 
-    \subsection{OSM Graph Extraction and High-Performance Routing Engines}
-    \label{subsec:rw-osm-routing}
+    Smart-city mobility management is not a single problem but a set of recurring analytical tasks,
+    each with an established geospatial modelling practice.
+    Five of them account for most of the network-based literature relevant to this paper.
 
+    \begin{itemize}
+        \item \textbf{T1. Service accessibility and proximity planning.}
+        How many opportunities---shops, schools, clinics---residents can reach within a travel-time
+        budget, the question underlying the ``15-minute city'' agenda now embedded in municipal
+        policy. The conventional model is a set of isochrones or cumulative-opportunity counts
+        computed on a pedestrian network. Its limits are empirically documented: from GPS traces of
+        40 million devices, Abbiasov et al.~\cite{abbiasov2024fifteenmin} find that the median US
+        resident makes only 14\% of consumption trips within a 15-minute walk of home, so an
+        assessment confined to the walk network describes a small fraction of realized access.
+
+        \item \textbf{T2. Accessibility of social facilities and territorial equity.}
+        Whether disadvantaged or car-free populations can reach healthcare and education, typically
+        modelled with two-step floating catchment or cumulative-opportunity measures computed over
+        public transport. Gumina et al.~\cite{gumina2026mapping} contrast car and PT travel times to
+        education and healthcare in the Lazio region and weight the result by population; Zini et
+        al.~\cite{zini2024competitiveness} frame the same contrast as PT competitiveness with equity
+        implications for Rome and Turin. Bellantuono et al.~\cite{bellantuono2025rome} motivate the
+        task explicitly by transport poverty---residents without a car depend on transit alone for
+        medical access.
+
+        \item \textbf{T3. Network resilience and criticality screening.}
+        Which elements of the network carry the structural load and what happens when they fail.
+        Palk et al.~\cite{palk2026robustness} systematically review robustness assessment of public
+        transport networks and show that the choice of graph representation is itself a trade-off
+        between complexity reduction and information preservation that conditions the robustness
+        conclusions drawn from it. Bergantino et al.~\cite{bergantino2024resilience} review the
+        empirical side of this literature. Bellantuono et al.~\cite{bellantuono2025rome} instantiate
+        the task for a service: they remove high-centrality transit nodes and measure the induced
+        change in travel time to healthcare facilities, finding that accessibility resilience is
+        governed by network redundancy. Methodologically the task \emph{is} a sequence of network
+        modifications, each followed by re-computation.
+
+        \item \textbf{T4. Multimodal integration and land-use coupling.}
+        How modes function together and how the resulting accessibility relates to land use. Ladin et
+        al.~\cite{ladin2025review} review modelling approaches for multimodal systems across
+        optimization, travel behaviour and resilience, and identify data limitations and
+        computational complexity as recurring constraints on scalability. Gu and
+        Dou~\cite{gu2026multilayer} state the gap directly---accessibility has largely been assessed
+        within single transport modes, with limited attention to the integrated functioning of
+        multimodal systems---and address it with a multilayer network model over 7826 urban grids in
+        Shanghai, in which peripheral zones show fragmented connectivity that single-mode analysis
+        does not expose.
+
+        \item \textbf{T5. Policy and scenario evaluation.}
+        Comparing a baseline against candidate interventions. Shulajkovska et
+        al.~\cite{shulajkovska2024framework} compute formalized KPIs for baseline and policy scenarios
+        across four cities using MATSim simulations; Salanova Grau et
+        al.~\cite{salanovagrau2026pollution} compare baseline and pollution-aware pedestrian routes
+        over 3000 OD pairs, quantifying an ${\approx}4\%$ exposure reduction for an ${\approx}3\%$
+        detour; Liyanage et al.~\cite{liyanage2025ondemand} evaluate on-demand transit with a hybrid
+        simulation calibrated on 225,000 smart-card trips. In the framework closest to ours, The
+        Mobility Oracle~\cite{gogousou2026mobilityoracle}, what-if scenarios such as a street closure
+        are expressed as modifications of a multimodal graph followed by re-computation of the same OD
+        relations.
+    \end{itemize}
+
+    Two requirements recur across these tasks.
+    First, most of them cannot be answered on a single-mode network: T1 and T2 compare walking against
+    transit-based access, T3 asks what a transit element contributes over the alternatives that remain
+    once it is gone, and T4 makes modal integration the object of study itself.
+    What they require is an explicit \emph{multimodal} graph in which walking, transit services and the
+    transfers between them are represented in one structure---and, for T3 and T5, one that can be
+    modified.
+    Second, none of these tasks is a single computation: proximity targets are monitored over time,
+    criticality is screened element by element, and scenarios are compared in series.
+    The cost of constructing such a network and re-computing over it therefore bounds which questions
+    can be asked at all---a constraint the reviews above name~\cite{ladin2025review} but do not
+    quantify.
+    The remainder of this section examines how such graphs are built and computed today.
+
+    \subsection{Constructing Urban Network Graphs from Open Data}
+    \label{subsec:rw-construction}
+
+    Street-network extraction from OSM is mature.
     \textbf{OSMnx}~\cite{boeing2025osmnx} is the most widely used Python tool for extracting and
     analyzing street networks from OSM, applied across a broad range of urban
     studies~\cite{coutrot2022,nilsson2019,feng2020,liao2020}.
     It automates network download via the Overpass API~\cite{overpass_api} and produces a directed
     \texttt{networkx.MultiDiGraph}~\cite{hagberg2008networkx}, with mature support for visualization,
     graph simplification and basic street-network analysis.
-    It targets static street networks only and does not support PT or multimodal graph construction.
     \textbf{Pyrosm}~\cite{pyrosm_docs} offers an alternative based on local OSM PBF extracts; its Cython
-    implementation is efficient for city- to country-scale processing, and it likewise returns
-    NetworkX-compatible street graphs without PT modeling or OD computation.
+    implementation is efficient for city- to country-scale processing.
+    Both target static street networks and neither constructs public transport or multimodal graphs.
 
-    A separate class of solutions comprises high-performance routing engines: OSRM~\cite{osrm},
-    GraphHopper~\cite{graphhopper}, Valhalla~\cite{valhalla} and OpenTripPlanner~\cite{otp}.
-    These systems are optimized for low-latency route, matrix and isochrone queries on large networks
-    and are typically deployed as standalone services with HTTP APIs.
+    Extending construction to public transport is where the tooling thins out, and where a common
+    dependency appears.
+    \textbf{UrbanAccess}~\cite{blanchard2017urbanaccess} and the companion library
+    \textbf{OSMnet}~\cite{osmnet_github}, parts of the Urban Data Science Toolkit, construct an
+    integrated pedestrian--transit representation from OSM and General Transit Feed Specification
+    (GTFS) data~\cite{gtfs_spec}: UrbanAccess processes GTFS feeds while OSMnet extracts the walking
+    network.
+    The result is exposed as \texttt{pandas} DataFrames~\cite{mckinney2010pandas} and is primarily
+    intended for accessibility computation in \texttt{Pandana}~\cite{foti2014pandana}.
+    For a selected service period, UrbanAccess converts scheduled travel times into fixed edge costs
+    and estimates waiting as half the average headway.
+    Its GTFS ingestion mechanism relies on the GTFS Data Exchange catalog, unmaintained since 2016,
+    which renders many feeds unavailable; the latest release (0.2.2) dates to 2020.
+    \textbf{Peartree}~\cite{peartree_github} converts GTFS feeds into a static route-and-stop PT graph
+    in NetworkX format (with OSMnx suggested for the walk layer); it implements no routing algorithms
+    of its own, and its latest release (0.6.4) dates to 2021.
+    \textbf{NxTransit}~\cite{nxtransit} combines GTFS feeds with OSM street data into a multimodal
+    NetworkX graph and adds time-dependent shortest paths, travel-time matrices and service-area
+    analysis; its repository was archived in January 2025.
+    \textbf{city2graph}~\cite{city2graph} converts OSM, Overture, GTFS and shared-mobility feeds into
+    graph representations that interoperate between GeoDataFrames, NetworkX and PyTorch Geometric;
+    it targets graph neural networks and feature preparation rather than routing, and does not compute
+    travel times or accessibility itself.
+
+    Two properties are shared by all four transit-capable builders.
+    Each requires a GTFS feed for the transit layer, which restricts them to cities that publish and
+    maintain one---a substantial limitation given that the tasks of
+    Section~\ref{subsec:rw-tasks} are most pressing precisely where data are scarce.
+    And, with the partial exception of city2graph's converters, the graph they return is a
+    NetworkX or \texttt{pandas} object that must be handed to a separate library before large-scale
+    computation.
+
+    \subsection{Routing and Accessibility Engines}
+    \label{subsec:rw-routing}
+
+    A separate class of solutions computes over networks rather than exposing them.
+    Deployed routing services---OSRM~\cite{osrm}, GraphHopper~\cite{graphhopper},
+    Valhalla~\cite{valhalla} and OpenTripPlanner~\cite{otp}---are optimized for low-latency route,
+    matrix and isochrone queries on large networks and are typically deployed as standalone services
+    with HTTP APIs.
     GraphHopper, Valhalla and OpenTripPlanner support multimodal scenarios with timetable-aware GTFS
     integration, whereas OSRM is limited to static road networks.
-    None of them exposes an explicit graph in a form suitable for arbitrary analysis and modification
-    with standard graph libraries; interaction from Python is only possible through external APIs.
-    For scenario screening this matters: each network modification requires rebuilding or re-deploying
-    the service rather than editing a table.
+
+    In accessibility research the reference stack is the R5 engine, a Java multimodal router developed
+    at Conveyal that uses extensions of the RAPTOR family of algorithms, wrapped for R by
+    \textbf{r5r}~\cite{pereira2021r5r} and for Python by \textbf{r5py}~\cite{fink2022r5py}.
+    Taking an OSM extract and GTFS feeds as input, these produce travel-time matrices,
+    cumulative-opportunity accessibility, isochrones and detailed itineraries, computed over a
+    departure-time window rather than a single static cost.
+    They are therefore capable of timetable-aware analysis that the present work does not attempt
+    (Section~\ref{subsec:pt-construction}).
+    What they do not provide is access to the network itself: the routable network is an opaque
+    artifact compiled from the input files, so expressing a scenario means editing and re-ingesting
+    those files rather than editing the graph.
 
     \subsection{Scalable Graph Analytics}
     \label{subsec:rw-graph-libs}
@@ -200,94 +339,41 @@
     into separate tables for bulk geospatial operations, so a typical workflow maintains at least two
     representations of the same network.
 
-    \subsection{Open-Data Multimodal Modeling and Scenario Frameworks}
-    \label{subsec:rw-frameworks}
-
-    \textbf{UrbanAccess}~\cite{blanchard2017urbanaccess} and the companion library
-    \textbf{OSMnet}~\cite{osmnet_github}, parts of the Urban Data Science Toolkit, construct an
-    integrated pedestrian--transit representation from OSM and General Transit Feed Specification
-    (GTFS) data~\cite{gtfs_spec}: UrbanAccess processes GTFS feeds while OSMnet extracts the walking
-    network.
-    The result is exposed as \texttt{pandas} DataFrames~\cite{mckinney2010pandas} and is primarily
-    intended for accessibility computation in \texttt{Pandana}~\cite{foti2014pandana}.
-    For a selected service period, UrbanAccess converts scheduled travel times into fixed edge costs
-    and estimates waiting as half the average headway.
-
-    The GTFS ingestion mechanism relies on the GTFS Data Exchange catalog, unmaintained since 2016,
-    which renders many feeds unavailable; the latest release (0.2.2) dates to 2020.
-
-    \textbf{Peartree}~\cite{peartree_github} converts GTFS feeds into a static route-and-stop PT graph
-    in NetworkX format (with OSMnx suggested for the pedestrian layer).
-    The resulting graph reflects the topological structure of the transit network and can be merged with
-    walking graphs, but the library implements no routing algorithms of its own; the latest release
-    (0.6.4) dates to 2021.
-    Both tools illustrate the central role of GTFS in existing multimodal pipelines---and, by extension,
-    the difficulty of applying them in cities where no maintained GTFS feed exists.
-
-    \subsection{Smart-City Mobility and Accessibility Decision Support}
-    \label{subsec:rw-smartcity}
-
-    \textbf{The Mobility Oracle}~\cite{gogousou2026mobilityoracle} is a framework for approximating
-    human mobility over a multimodal NetworkX graph built from OSM and GTFS data, incorporating user preferences
-    and synthetic demand.
-    Modal splits are validated against official statistics for Vienna and Munich, and what-if scenarios
-    (e.g., a street closure) are expressed as modifications of the underlying graph followed by
-    re-computation of the same OD relations.
-    Methodologically, it converts GTFS timetables into a statically weighted PT graph; like IduEdu, it
-    therefore routes over static edge costs rather than timetables, although IduEdu derives them from
-    OSM without GTFS.
-
-    The framework focuses on behavioral approximation and does not examine the computational cost of
-    building and repeatedly re-computing the underlying graphs.
-
-    \textbf{Urban analytics platforms for service accessibility} pursue indicator publication.
-    Gumina et al.~\cite{gumina2026mapping} map education and healthcare accessibility in the Lazio
-    region using linked open data, contrasting car and PT travel times, weighting by population and
-    revealing territorial gaps.
-    Their PT analysis, however, is bounded by GTFS availability and relies on external routing APIs, so
-    the network itself is neither exposed nor modifiable.
-    Zini et al.~\cite{zini2024competitiveness} frame accessibility as a measure of PT competitiveness
-    with equity implications, comparing Rome and Turin; the contribution is conceptual and
-    indicator-oriented rather than infrastructural.
-
-    \textbf{Simulation-based scenario frameworks} evaluate policies at higher fidelity and higher cost.
-    Shulajkovska et al.~\cite{shulajkovska2024framework} present an open-source framework in which
-    formalized KPIs are computed for baseline and policy scenarios across four cities using MATSim
-    simulations, targeting non-expert stakeholders.
-    Salanova Grau et al.~\cite{salanovagrau2026pollution} demonstrate an end-to-end data-driven workflow
-    for pollution-aware pedestrian routing in Thessaloniki, quantifying an ${\approx}4\%$ exposure
-    reduction for an ${\approx}3\%$ detour over 3000 OD pairs.
-    Liyanage et al.~\cite{liyanage2025ondemand} evaluate on-demand PT with a hybrid simulation
-    calibrated on 225,000 smart-card trips and survey data.
-    These studies deliver domain results, but each depends on data unavailable in many cities (GTFS,
-    smart-card records, surveys) or on heavyweight simulation infrastructure.
-
-    Across these works a common pattern emerges: a concrete urban problem, an end-to-end framework, a
-    baseline compared against alternative scenarios or external observations, and a result expressed in
-    a domain metric (accessibility, exposure, modal split, waiting time).
-    None of them, however, focuses on the computational infrastructure needed to make such analyses
-    cheap to repeat.
-    IduEdu targets precisely that layer: it does not replace behavioral or simulation models but
-    provides the explicit, modifiable multimodal graph and fast routing primitives on which they can be
-    built.
-
     \subsection{Positioning of IduEdu}
     \label{subsec:rw-positioning}
 
-    IduEdu occupies the analytical infrastructure layer between open geodata and applied smart-city
-    models.
-    It is neither a passenger-behavior model nor a timetable-aware GTFS router, transport simulator,
-    or turnkey decision-support system.
+    The tasks of Section~\ref{subsec:rw-tasks} require an explicit, modifiable multimodal graph that is
+    cheap to rebuild; the tools of
+    Sections~\ref{subsec:rw-construction}--\ref{subsec:rw-graph-libs} each supply part of that and
+    leave the combination to the analyst.
+    Builders produce a graph but depend on GTFS and hand computation to another library; routing
+    engines compute quickly but hide the network; graph backends are fast but neither construct urban
+    networks nor retain geometry.
+    IduEdu targets precisely that gap: it does not replace behavioral or simulation models but provides
+    the explicit, modifiable multimodal graph and fast routing primitives on which they can be built,
+    occupying the analytical infrastructure layer between open geodata and applied smart-city models.
+    Unlike the GTFS-based pipelines of Section~\ref{subsec:rw-construction}, which also route over
+    statically weighted PT graphs, IduEdu derives those weights from OSM alone and requires no transit
+    feed.
+    The choice of source also changes what the transit layer carries: an OSM route relation references
+    the street elements the vehicle traverses, so each service is bound to the same geometry as the
+    walk network, whereas the GTFS shape file is optional and, where present, is a standalone
+    coordinate sequence unconnected to the street network~\cite{gtfs_spec}---which makes it possible to
+    ask what a route passes along the way, not only which stops it links.
+    It is neither a passenger-behavior model nor a timetable-aware router in the sense of
+    R5~\cite{pereira2021r5r}, a transport simulator, or a turnkey decision-support system.
     Instead, it lets an analyst assemble a modifiable multimodal graph from OSM, bind urban objects to
     it, obtain travel-time, accessibility and OD results at city scale, and repeat the computation
     across a series of scenarios---all within the standard pandas/GeoPandas stack~\cite{geopandas}.
     Unlike the tools above, the user-facing representation (two GeoDataFrames) is also the source of the
     computational representation: a cached sparse matrix derived lazily from the edge table
     (Section~\ref{subsec:urban_graph}).
-    Downstream packages can build domain logic on top of this layer: ObjectNat~\cite{objectnat_docs}
-    already consumes \texttt{UrbanGraph} directly for isochrone, coverage and service-provision
-    analysis, and other studies can implement behavioral models, custom costs and preference schemes
-    over the same tables in an analogous way.
+    Downstream packages that compute urban indicators from a network---isochrones, service coverage,
+    provision---can build their domain logic on top of this layer instead of maintaining a graph
+    format of their own; ObjectNat~\cite{objectnat_docs} already does so, and we use it throughout the
+    case study.
+    Other studies can implement behavioral models, custom costs and preference schemes over the same
+    tables in an analogous way.
     Table~\ref{tab:tools_comparison} summarizes the comparison, distinguishing library capability from
     paper-level evidence.
 
@@ -309,13 +395,27 @@
                 \textbf{Tool}                   & \textbf{Data} & \textbf{Graph} & \textbf{GDF} & \textbf{MM} & \textbf{Prim.} & \textbf{Cost} & \textbf{Scen.} & \textbf{Scal.}\\
                 \midrule
                 OSMnx                           & OSM           & \checkmark     & \pmark       & \xmark      & \pmark         & \checkmark    & \pmark         & \pmark         \\
+                \midrule
                 Pyrosm                          & OSM           & \checkmark     & \pmark       & \xmark      & \xmark         & \pmark        & \pmark         & \pmark         \\
+                \midrule
                 UrbanAccess + OSMnet            & OSM + GTFS    & \pmark         & \xmark       & \checkmark  & \pmark         & \pmark        & \xmark         & \xmark         \\
+                \midrule
                 Peartree                        & GTFS          & \checkmark     & \xmark       & \pmark      & \xmark         & \xmark        & \xmark         & \xmark         \\
+                \midrule
+                NxTransit                       & OSM + GTFS    & \checkmark     & \xmark       & \checkmark  & \pmark         & \pmark        & \pmark         & \xmark         \\
+                \midrule
+                city2graph                      & OSM + GTFS    & \checkmark     & \checkmark   & \pmark      & \xmark         & \checkmark    & \pmark         & \xmark         \\
+                \midrule
                 OSRM                            & OSM           & \xmark         & \xmark       & \xmark      & \pmark         & \xmark        & \xmark         & \pmark         \\
+                \midrule
                 GraphHopper / Valhalla / OTP    & OSM + GTFS    & \xmark         & \xmark       & \checkmark  & \pmark         & \pmark        & \xmark & \pmark\\
+                \midrule
+                R5 / r5r / r5py                 & OSM + GTFS    & \xmark         & \xmark       & \checkmark  & \checkmark     & \pmark        & \xmark         & \pmark         \\
+                \midrule
                 NetworkX                        & ---           & \checkmark     & \xmark       & ---         & \pmark         & \checkmark    & \pmark         & \xmark         \\
+                \midrule
                 NetworKit / igraph / graph-tool & ---           & \checkmark     & \xmark       & ---         & \pmark         & \pmark        & \pmark         & \checkmark     \\
+                \midrule
                 \textbf{IduEdu}                 & OSM           & \checkmark     & \checkmark   & \checkmark  & \checkmark     & \checkmark    & \checkmark & \checkmark\\
                 \bottomrule
             \end{tabularx}
@@ -333,8 +433,8 @@
 
     Figure~\ref{fig:workflow} summarizes the analytical workflow this paper instantiates: open urban
     data (OSM street and PT infrastructure, building footprints, service locations) are converted into
-    a GeoDataFrame-native \texttt{UrbanGraph}; routing primitives---either IduEdu's own or downstream
-    algorithms such as ObjectNat's---turn the graph into travel-time structures (nearest-source tables,
+    a GeoDataFrame-native \texttt{UrbanGraph}; routing primitives---either IduEdu's own or those of a
+    downstream indicator package such as ObjectNat---turn the graph into travel-time structures (nearest-source tables,
     OD matrices, isochrone and coverage geometries); these are aggregated into accessibility indicators
     and maps; and scenario edits of the graph tables feed the same computation again, enabling
     systematic screening.
@@ -358,7 +458,7 @@
     \label{subsec:notation}
 
     Urban street and transport networks are modeled as a graph $G = (V, E)$ with vertex set $V$ and edge
-    set $E$~\cite{trudeau1994graphtheory,barthelemy2011spatial,newman2010networks}.
+    set $E$~\cite{trudeau1994graphtheory,barthelemy2011spatial,barthelemy2022spatial,newman2010networks}.
     Throughout this paper, $G$ is a spatial, weighted, directed (multi)graph, represented for numerical
     computation by a sparse adjacency matrix.
     In the street network, vertices correspond to intersections, junctions or dead ends and carry point
@@ -475,7 +575,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     edge travel time follows from segment length and assigned speed.
     The result is a directed, weighted \texttt{UrbanGraph} multigraph whose node and edge tables are
     formed vectorized from coordinate arrays, without intermediate object structures.
-    The pedestrian graph is built analogously, with all edges bidirectional.
+    The walk graph is built analogously, with all edges bidirectional.
 
     \subsection{Public Transport and Multimodal Graph Construction}
     \label{subsec:pt-construction}
@@ -508,7 +608,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     After processing all routes, the per-route graphs are merged into a single PT graph; platforms
     shared by several routes or modes are merged into common vertices, enabling correct transfer
     modeling.
-    Finally, the PT graph is integrated with the pedestrian network: each platform or subway access
+    Finally, the PT graph is integrated with the walk network: each platform or subway access
     point is matched to the nearest walk edge within a given radius and projected onto its geometry,
     splitting the edge in two without changing total walk weights (Figure~\ref{fig:pt_multimodal},
     right).
@@ -526,9 +626,9 @@ nearest = g.multi_source_dijkstra_nearest_source(
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{figures/pt_multimodal_example}
         \caption{Multimodal graph construction.
-            (\textbf{Left}) The pedestrian graph and the bus-route graph as separate networks.
+            (\textbf{Left}) The walk graph and the bus-route graph as separate networks.
             (\textbf{Right}) The resulting multimodal graph, in which PT platforms and stops are projected onto
-            pedestrian edges.\label{fig:pt_multimodal}}
+            walk edges.\label{fig:pt_multimodal}}
     \end{figure}
 
     \begin{table}[H]
@@ -541,7 +641,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
             \midrule
             PT travel time        & kinematic per-mode model: $v_{\max}\times$ traffic coefficient, acceleration/braking losses, street speed-limit cap & modeled\\
             \midrule
-            Boarding/waiting cost & 1 min baseline; $+5$/$+10$ min in P0 scenarios                                                                      & modeled (scenario parameter) \\
+            Boarding/waiting cost & 1 min baseline; $+5$/$+10$ min in degradation scenarios                                                            & modeled (scenario parameter) \\
             \midrule
             Subway station access & entrance/exit edges; vertical time from OSM station depth where recorded & observed + modeled\\
             \midrule
@@ -589,70 +689,66 @@ nearest = g.multi_source_dijkstra_nearest_source(
     \subsection{Accessibility Indicators}
     \label{subsec:indicators}
 
-    Let $\mathcal{O}$ be the set of residential origins and $\mathcal{S}$ the set of schools.
+    The indicators below are defined for an arbitrary class of urban service objects; in the case study
+    of this paper that class is schools, and the same definitions apply unchanged to clinics,
+    kindergartens or any other set of destinations.
+    Let $\mathcal{O}$ be the set of residential origins and $\mathcal{S}$ the set of service objects.
     For each origin $i \in \mathcal{O}$ and network mode
-    $M \in \{\mathrm{walk}, \mathrm{intermodal}\}$, let $t_i^{M}$ denote the travel time to the nearest
-    school and
+    $M \in \{\mathrm{walk}, \mathrm{multimodal}\}$, let $t_i^{M}$ denote the travel time to the nearest
+    service object and
     \begin{equation}
         n_i^{M}(\tau) = \bigl|\{ s \in \mathcal{S} : t_{is}^{M} \le \tau \}\bigr|
     \end{equation}
-    the number of schools reachable within cutoff $\tau \in \{15, 30, 45, 60\}$~min.
+    the number of service objects reachable within cutoff $\tau \in \{15, 30, 45, 60\}$~min.
     The effect of public transport is measured by the absolute and relative gains
     \begin{equation}
-        \Delta t_i = t_i^{\mathrm{walk}} - t_i^{\mathrm{intermodal}},
+        \Delta t_i = t_i^{\mathrm{walk}} - t_i^{\mathrm{multimodal}},
         \qquad
         r_i = \frac{\Delta t_i}{t_i^{\mathrm{walk}}} \quad \text{(for finite } t_i^{\mathrm{walk}}\text{)},
     \end{equation}
     and by the opportunity gain
-    $g_i(\tau) = n_i^{\mathrm{intermodal}}(\tau) - n_i^{\mathrm{walk}}(\tau)$.
+    $g_i(\tau) = n_i^{\mathrm{multimodal}}(\tau) - n_i^{\mathrm{walk}}(\tau)$.
     Each origin is classified at a reference cutoff into four classes: \emph{no effect} ($g_i = 0$),
     \emph{moderate} ($g_i > 0$ below both thresholds), \emph{substantial}
     ($g_i \ge \gamma_{\mathrm{abs}}$ or $g_i / n_i^{\mathrm{walk}} \ge \gamma_{\mathrm{rel}}$), and
-    \emph{newly reachable} ($n_i^{\mathrm{walk}} = 0$, $n_i^{\mathrm{intermodal}} > 0$).
-    Origins with no reachable school in either network at the reference cutoff form a separate
+    \emph{newly reachable} ($n_i^{\mathrm{walk}} = 0$, $n_i^{\mathrm{multimodal}} > 0$).
+    Origins with no reachable service object in either network at the reference cutoff form a separate
     \emph{unreachable} class.
     The reference cutoff is 15~min---the walking scale at which the presence or absence of a PT effect
     is spatially most discriminative---while the narrative of Section~\ref{subsec:res-case} focuses on
     the 30- and 45-min budgets, where the opportunity effect is strongest.
-    Class boundaries are fixed before analyzing results ($\gamma_{\mathrm{abs}} = 5$ schools,
+    Class boundaries are fixed before analyzing results ($\gamma_{\mathrm{abs}} = 5$ objects,
     $\gamma_{\mathrm{rel}} = 25\%$); their sensitivity to alternative values is examined in
     Appendix~\ref{app:class-sensitivity}.
-    Aggregate coverage indicators include the share of origins with at least one reachable school
-    within $\tau$ and isochrone/coverage areas in km\textsuperscript{2}.
+    Aggregate coverage indicators include the share of origins with at least one reachable service
+    object within $\tau$ and isochrone/coverage areas in km\textsuperscript{2}.
     Because origins are not population-weighted, we interpret all results as \emph{structural
     accessibility of residential locations}, not as social equity measures.
 
     \subsection{Isochrone and Coverage Geometry via ObjectNat}
     \label{subsec:objectnat}
 
-    Polygon-based views of the same routing results are produced with
-    ObjectNat~2.0~\cite{objectnat_docs}, an open-source spatial analysis package that accepts
-    \texttt{UrbanGraph} directly.
+    Polygon-based views of the same routing results are produced with ObjectNat~2.0.
     We use \texttt{get\_graph\_isochrones} and \texttt{get\_stepped\_graph\_isochrones} for per-origin
     (stepped) isochrones, and \texttt{get\_graph\_coverage} and \texttt{get\_stepped\_graph\_coverage}
-    for reverse-search catchments and stepped coverage zones of the school set.
+    for reverse-search catchments and stepped coverage zones of the destination set (the schools, in
+    our case study).
     The single-origin comparison in Figure~\ref{fig:isochrones} uses the network-following
     \texttt{ways} construction. Stepped isochrones and coverage maps use \texttt{radius}, whose compact
     and stable polygons remain legible at the full-city scale.
     Isochrone and coverage geometries also yield areal indicators (zone areas, buildings inside zones
     per time step).
 
-    \subsection{Scenario Definitions: Service Degradation (P0) and Route Criticality (P1)}
+    \subsection{Scenario Definitions: Route Criticality and Service Degradation}
     \label{subsec:scenarios}
 
     A scenario is a formal transformation of the baseline edge table followed by CSR rebuild and
     re-computation of the same indicators; every scenario records a manifest (scenario ID, edge filter, changed parameters, baseline fingerprint).
+    The two experiments below are complementary and are reported in the order in which they inform
+    each other: the screening first establishes which routes carry the structural load, and the
+    degradation experiment then probes service quality on one of them.
 
-    \textbf{P0 (parametric service degradation).}
-    For a selected mode or a single route $r$, the boarding edges are located by an attribute mask
-    (\texttt{type == "boarding"}) and their \texttt{time\_min} is
-    increased by $\delta \in \{5, 10\}$~min.
-    Where official headways are available, $\delta$ can be derived as half the headway
-    increase~\cite{gogousou2026mobilityoracle}; otherwise the penalties are explicitly hypothetical
-    sensitivity parameters.
-    P0 probes the sensitivity of accessibility to service quality.
-
-    \textbf{P1 (leave-one-route-out screening).}
+    \textbf{Leave-one-route-out screening.}
     For each major route $r$, a derived scenario removes its travel and boarding edges while keeping
     shared platforms and all other routes intact; isolated elements do not affect the computation.
     Routes are ranked by the loss of $\tau$-minute opportunities
@@ -662,15 +758,29 @@ nearest = g.multi_source_dijkstra_nearest_source(
     by the number of affected origins
     $A_r(\tau) = |\{ i : n_i^{(r)}(\tau) < n_i^{\mathrm{base}}(\tau) \}|$, and by newly unreachable
     origins.
-    P1 measures the structural criticality of individual routes.
+    This experiment measures the structural criticality of individual routes.
+
+    \textbf{Parametric service degradation.}
+    For a selected mode or a single route $r$, the boarding edges are located by an attribute mask
+    (\texttt{type == "boarding"}) and their \texttt{time\_min} is
+    increased by $\delta \in \{5, 10\}$~min.
+    Where official headways are available, $\delta$ can be derived as half the headway
+    increase~\cite{gogousou2026mobilityoracle}; otherwise the penalties are explicitly hypothetical
+    sensitivity parameters.
+    This experiment probes the sensitivity of accessibility to service quality.
+
     Neither experiment models timetables or passenger demand; both quantify how modeled structural
     accessibility responds to formally defined network changes.
+    In the released artifacts the two scenario families carry the identifiers \texttt{p1\_*} and
+    \texttt{p0\_*}, respectively.
 
     \subsection{Case Study Area, Data and Experimental Setup}
     \label{subsec:setup}
 
-    The applied case study asks where public transport substantially changes school accessibility from
-    residential buildings in Saint Petersburg, Russia (RQ4).
+    The applied case study asks what an explicit multimodal network adds to a city-scale assessment of
+    school accessibility from residential buildings in Saint Petersburg, Russia, relative to the
+    walk-only network that current extraction tools provide, and how far that difference depends on
+    individual modes and routes (RQ4).
     Origins are the 83{,}510 residential buildings of the city, selected from 168{,}886 building
     footprints. A balanced building-level population allocation is used only for the secondary
     population-weighted comparison of walk and multimodal coverage.
@@ -687,7 +797,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     territories; \textbf{B3} OD computation against NetworKit and igraph on the Saint Petersburg
     multimodal graph, in rectangular ($|D| = 911$ schools) and square (origins-to-origins) settings;
     \textbf{B4} in-memory representation size; \textbf{B5} the accessibility case study; and \textbf{B6}
-    the P0/P1 scenario experiments.
+    the two scenario experiments.
 
     The OD comparison protocol reflects each tool's real workflow.
     Competing libraries start not from IduEdu's internal representation but from a
@@ -723,6 +833,14 @@ nearest = g.multi_source_dijkstra_nearest_source(
     \section{Results}
     \label{sec:results}
 
+    The results follow the order of the research questions.
+    Section~\ref{subsec:res-validity} verifies that the constructed representation is correct (RQ1);
+    Sections~\ref{subsec:res-build}--\ref{subsec:res-ablations} measure what it costs to build and to
+    compute over, and attribute that cost to individual design decisions (RQ2);
+    Section~\ref{subsec:res-workflow} establishes that the resulting cost admits repeated city-scale
+    analysis (RQ3); and Sections~\ref{subsec:res-case}--\ref{subsec:res-p0} report what the multimodal
+    layer changes in such an analysis relative to a walk-only network (RQ4).
+
     \subsection{Graph and Public Transport Network Validity}
     \label{subsec:res-validity}
 
@@ -732,13 +850,13 @@ nearest = g.multi_source_dijkstra_nearest_source(
     reachability sets coincide exactly, and the maximum discrepancy of finite values does not exceed
     $3\cdot10^{-4}$~min, attributable to rounding accumulation of the \texttt{float32} kernel relative
     to the \texttt{float64} reference.
-    Second, pedestrian graphs built by IduEdu and OSMnx for the same territory are compared: despite
+    Second, walk graphs built by IduEdu and OSMnx for the same territory are compared: despite
     differing simplification rules, total network length agrees within ${\approx}1\%$, confirming
     equivalence of the extracted networks.
 
     Beyond numerical validity, we characterize the PT layer descriptively and compare it against the
     official route register of the city's transport authority.
-    The intermodal graph of Saint Petersburg reconstructs 635 PT routes from OSM for the study
+    The multimodal graph of Saint Petersburg reconstructs 635 PT routes from OSM for the study
     period---538 bus, 48 trolleybus and 43 tram routes and 6 subway lines---represented by 28{,}000
     travel edges (23{,}605 bus, 2{,}523 trolleybus, 1{,}738 tram, 134 subway), 29{,}342 boarding and
     29{,}342 alighting edges, and 663 subway-infrastructure edges (entrances, exits and in-station
@@ -774,228 +892,12 @@ nearest = g.multi_source_dijkstra_nearest_source(
         \end{tabularx}
     \end{table}
 
-    \subsection{Table-First Workflow and ObjectNat Integration}
-    \label{subsec:res-workflow}
-
-    The scenario mechanism of Listing~\ref{lst:tablefirst} is exercised at city scale throughout
-    Sections~\ref{subsec:res-p0} and~\ref{subsec:res-p1}; here we summarize its cost.
-    Locating and editing boarding edges by an attribute mask takes milliseconds (0.001--0.08~s for
-    55--1{,}823 edges); rebuilding the cached CSR of the 776{,}051-edge multimodal graph takes
-    ${\approx}1.3$~s; and re-running nearest-school and school-count routing for all 83{,}510 origins
-    takes ${\approx}5$--$7$~s.
-    A complete city-scale what-if evaluation is thus a ${\approx}7$-second operation, and ObjectNat
-    consumes the modified \texttt{UrbanGraph} directly to rebuild polygon products.
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/tablefirst_figure}
-        \caption{Table-first extensibility and ObjectNat integration. A scenario is expressed as an
-        ordinary GeoPandas mask over the \texttt{edges\_gdf} table and an assignment to a cost column
-            (here, a waiting penalty on the boarding edges of one route); the cached computational form is
-            rebuilt in place with \texttt{update\_adjacency\_matrix}, and the \emph{same}
-            \texttt{UrbanGraph} object then feeds both IduEdu's routing primitives and the downstream
-            ObjectNat isochrone/coverage functions without any format conversion. Approximate wall-clock
-            costs at city scale (776{,}051-edge graph, 83{,}510 origins) annotate the
-            arrows.\label{fig:tablefirst}}
-    \end{figure}
-
-    \subsection{School Accessibility in Saint Petersburg: Walk vs.\ Intermodal}
-    \label{subsec:res-case}
-
-    Table~\ref{tab:reachable_schools} summarizes the baseline, and two features stand out.
-    First, the time to the \emph{nearest} school barely changes when PT is added: the median is
-    10.5~min on the walk network and 10.3~min on the multimodal one.
-    In a city where the nearest school is typically a short walk away, PT is not needed for first
-    access; its effect appears in the tail of the distribution (90th percentile: 33.4 vs.\ 26.1~min)
-    and in peripheral pockets (Figure~\ref{fig:coverage}, right).
-    Second, the number of reachable schools---the opportunity metric---responds strongly, and the
-    response grows with the travel-time budget.
-    At 15~min, PT adds almost nothing (+0.4 schools on average): short trips are dominated by walking
-    once the modeled boarding cost is paid.
-    At 30~min it multiplies the mean opportunity set by 2.5 (9.5 $\to$ 23.5 schools; median 4 $\to$ 7),
-    at 45~min by 4.7 (19.2 $\to$ 90.3), and no saturation occurs even at 60~min.
-
-    Coverage moves accordingly: the share of buildings with at least one school within 30~min rises
-    from 88.0\% to 93.5\%, and within 45~min from 94.3\% to 98.0\%.
-    The secondary population-weighted comparison is deliberately reported as a walk-to-multimodal
-    difference rather than as an absolute coverage claim: the gain is 0.57 percentage points at
-    15~min, 0.61 at 30~min, 0.39 at 45~min and 0.16 at 60~min.
-    In this allocation, PT thus changes the coverage of residential locations more strongly than the
-    share of assigned population; this relative result is not interpreted as an equity measure.
-
-    Figure~\ref{fig:gain_metrics} details the distribution of the gain: at the 30-min budget, 71.0\%
-    of residential buildings gain at least one school, 17.6\% gain 6--20, and 8.2\% gain more than 50.
-    The 15-min classification of Section~\ref{subsec:indicators} localizes the effect spatially
-    (Figure~\ref{fig:gain_map}): 48.6\% of buildings see no effect and a further 33.7\% reach no
-    school within 15~min on either network, while the substantial (9.7\%), moderate (5.6\%) and newly
-    reachable (2.5\%) classes concentrate along tram and subway corridors.
-    The computation behind these results is fast: snapping and nearest-school routing take
-    1.4--1.7~s per network, and the complete 83{,}510$\times$911 school-count computation takes 6.1~s
-    on the walk graph and 38.0~s on the multimodal graph.
-
-    \begin{table}[H]
-        \caption{Number of schools reachable per residential origin within each travel-time cutoff, on
-        the walk and multimodal networks (83{,}510 residential origins, 911 schools). All values are
-        counts of schools; \emph{Gain} is the mean multimodal advantage over
-        walking.\label{tab:reachable_schools}}
-        \begin{tabularx}{\textwidth}{lCCCCC}
-            \toprule
-            & \multicolumn{3}{c}{\textbf{Mean (schools)}} & \multicolumn{2}{c}{\textbf{Median (schools)}} \\
-            \cmidrule(lr){2-4}\cmidrule(lr){5-6}
-            \textbf{Cutoff} & \textbf{Walk} & \textbf{Multimodal} & \textbf{Gain} & \textbf{Walk} & \textbf{Multimodal} \\
-            \midrule
-            15 min          & 2.78          & 3.16                & $+0.38$       & 1             & 1                   \\
-            30 min          & 9.46          & 23.51               & $+14.05$      & 4             & 7                   \\
-            45 min          & 19.18         & 90.32               & $+71.14$      & 8             & 21                  \\
-            60 min          & 31.94         & 194.72              & $+162.79$     & 13            & 55                  \\
-            \bottomrule
-        \end{tabularx}
-    \end{table}
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/objectnat_isochrone_comparison}
-        \caption{Thirty-minute isochrones from the same central residential origin (star) on the walk
-        network (\textbf{left}) and the multimodal network (\textbf{right}; PT routes colored by mode),
-            built with ObjectNat from the same \texttt{UrbanGraph} objects.\label{fig:isochrones}}
-    \end{figure}
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/objectnat_school_coverage}
-        \caption{School coverage in 5-min bands up to 30 min on the walk (\textbf{left}) and multimodal
-            (\textbf{center}) networks (ObjectNat reverse-search coverage; dots are schools).
-            (\textbf{Right}) Nearest-school time-band gain of the multimodal network, highlighting the
-            peripheral pockets where PT shortens first access.\label{fig:coverage}}
-    \end{figure}
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/accessibility_gain_metrics}
-        \caption{Opportunity gain from public transport.
-            (\textbf{Left}) Distribution of additional 30-min schools per residential origin.
-            (\textbf{Center}) Mean reachable schools by cutoff, walk $\to$ multimodal.
-            (\textbf{Right}) 15-min spatial effect classes.\label{fig:gain_metrics}}
-    \end{figure}
-
-    \begin{figure}[H]
-        \centering
-        \includegraphics[width=0.6\textwidth]{figures/accessibility_gain_map}
-        \caption{Mean additional schools reachable within 15 min per hexagonal cell (capped at the 95th
-        percentile), with PT routes and schools (dots) overlaid; historical city boundary.
-        Gains concentrate along tram and subway corridors, while large residential areas show no 15-min
-        effect.\label{fig:gain_map}}
-    \end{figure}
-
-    \subsection{Scenario P0: Waiting-Time Degradation}
-    \label{subsec:res-p0}
-
-    The degradation experiment targets the tram network: the whole mode, and route~16, which the P1
-    screening of Section~\ref{subsec:res-p1} identifies as the structurally most critical tram
-    route---a data-driven choice rather than a prior hypothesis.
-    Waiting penalties of $+5$ and $+10$~min are added to boarding edges (1{,}823 edges for the mode,
-    55 for the route), and all baseline indicators are re-computed; each scenario evaluation takes
-    6.3--7.2~s end-to-end.
-    Table~\ref{tab:p0} summarizes the losses.
-    A uniform $+10$~min penalty on the whole tram mode strips 168{,}504 30-min origin--school
-    opportunities (8.6\% of the multimodal baseline total) from 20{,}358 buildings; route~16 alone
-    accounts for 23{,}355 opportunities (1.2\%) across 4{,}908 buildings.
-    Notably, service degradation almost never severs access altogether: even the mode-wide $+10$~min
-    scenario leaves only 42 buildings without their last 30-min school, and the single-route scenarios
-    none---waiting quality narrows school choice rather than eliminating it
-    (Figure~\ref{fig:p0_delta}).
-
-    \begin{table}[H]
-        \caption{P0 waiting-time degradation ($+5$/$+10$ min on boarding edges): buildings losing at least
-        one reachable school and total lost origin--school opportunities at the 15- and 30-min
-        cutoffs.\label{tab:p0}}
-        \begin{tabularx}{\textwidth}{lCCCC}
-            \toprule
-            \textbf{Scenario}  & \textbf{Origins (15)} & \textbf{Lost pairs (15)} & \textbf{Origins (30)} & \textbf{Lost pairs (30)}\\
-            \midrule
-            All trams, +5 min  & 4{,}842               & 11{,}563                 & 20{,}244              & 143{,}570                \\
-            All trams, +10 min & 4{,}851               & 11{,}892                 & 20{,}358              & 168{,}504                \\
-            Tram 16, +5 min    & 806                   & 1{,}641                  & 4{,}835               & 20{,}354                 \\
-            Tram 16, +10 min   & 809                   & 1{,}703                  & 4{,}908               & 23{,}355                 \\
-            \bottomrule
-        \end{tabularx}
-    \end{table}
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/scenario_p0_waiting_delta}
-        \caption{Waiting-time degradation ($+10$ min): mean schools lost per affected origin within 30 min
-        for the whole tram mode (\textbf{left}) and for route 16 alone (\textbf{right}); the degraded
-        routes are highlighted. Both panels use a common 0--25-school color scale, capped just above the
-        larger panel's 95th percentile.\label{fig:p0_delta}}
-    \end{figure}
-
-    \subsection{Scenario P1: Leave-One-Route-Out Criticality Screening}
-    \label{subsec:res-p1}
-
-    The leave-one-route-out screening covers all 635 PT routes of the city.
-    A complete scenario pass takes 6.7~s at the median, and the summed per-route wall-clock time for the
-    full screening is 87.0~min on the workstation, fast enough to repeat after any network edit.
-    The overall ranking is dominated by the metro (Figure~\ref{fig:p1_ranking} shows the three most
-    critical routes of each mode): five metro lines occupy the top five positions, with
-    247{,}083, 208{,}837, 167{,}438, 104{,}880 and 86{,}325 lost 30-min opportunities respectively,
-    the busiest an order of magnitude above the most critical surface routes (tram 16: 23{,}473; tram
-    T1: 16{,}983; bus 211\cyr{Э}: 8{,}485), while trolleybus losses stay in the hundreds.
-    Removing metro line 1 alone affects 12{,}893 buildings (15.4\% of origins), with a mean loss of
-    3.0 and a maximum of 253 schools per building; even then, no building loses its last 30-min school
-    (33 lose their last 15-min school).
-    Conversely, most surface routes can be removed with little structural loss for school access; the
-    network's redundancy lies mainly in the dense bus layer. A small set of peripheral services is an
-    important exception: removing bus 691\cyr{Э}, 211\cyr{Э}, 679 or 211 leaves 216, 212, 143 or 138
-    origins, respectively, without any 30-min school, while removing metro line~5 does so for 39 origins.
-    Figure~\ref{fig:p1_maps} maps the spatial loss footprints of the most critical route of each
-    surface mode alongside metro line 1.
-    These results rank \emph{structural} criticality for school opportunities only; they say nothing
-    about ridership, capacity or other destinations.
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/route_criticality_ranking}
-        \caption{Leave-one-route-out criticality: top three routes per mode by lost 15- and 30-min
-        origin--school opportunities (symlog scale).\label{fig:p1_ranking}}
-    \end{figure}
-
-    \begin{figure}[H]
-        \includegraphics[width=\textwidth]{figures/scenario_p1_top_routes}
-        \caption{Spatial loss footprints for the most critical routes (metro line 1, bus
-        211\cyr{Э}, tram 16): mean schools lost per affected origin within 30 min;
-        the removed route is highlighted. Because route effects differ by an order of magnitude, each
-        panel has its own color bar capped at its 95th percentile.\label{fig:p1_maps}}
-    \end{figure}
-
-    \subsection{Cache-Aware Workflow: Cold Build, Warm Load and Scenario Reuse}
-    \label{subsec:res-cache}
-
-    Table~\ref{tab:cache_timing} decomposes the end-to-end cost of the case study.
-    Building the city multimodal graph from cached OSM responses takes 159.7~s and writing both
-    \texttt{.urbangraph} files (with the CSR included) another 12.5~s---paid once; every later
-    analysis starts from a 2.3~s warm load.
-    Routing at city scale is a matter of seconds (Section~\ref{subsec:res-case}), whereas ObjectNat
-    polygon construction costs 10--106~s per operation---up to an order of magnitude above routing.
-    The first scenario of a session additionally pays JIT warm-up (17.3~s); all subsequent scenarios
-    run at the 6.7~s median reported above.
-
-    \begin{table}[H]
-        \caption{End-to-end timing of the city-scale case study (single workstation).\label{tab:cache_timing}}
-        \begin{tabularx}{\textwidth}{lCC}
-            \toprule
-            \textbf{Stage}                                        & \textbf{Cold, s}  & \textbf{Warm, s}       \\
-            \midrule
-            Multimodal graph build (from cached OSM data)         & 159.7             & ---                    \\
-            Graph write / load (\texttt{.urbangraph}, incl.\ CSR) & 12.5              & 2.3                    \\
-            Snap + nearest-school routing (per network)           & ---               & 1.4--1.7               \\
-            School-count OD, 83{,}510 $\times$ 911                & ---               & 6.1 (walk) / 38.0 (mm) \\
-            Scenario pass (edit + CSR rebuild + routing)          & 17.3 (first, JIT) & 6.7 (median)           \\
-            ObjectNat polygon construction                        & ---               & 10--106 per operation  \\
-            \bottomrule
-        \end{tabularx}
-    \end{table}
-
-    \subsection{Street and Intermodal Graph Construction Performance}
+    \subsection{Street and Multimodal Graph Construction Performance}
     \label{subsec:res-build}
 
-    In benchmark B1, pedestrian and drive graph construction is compared across OSMnx, Pyrosm and
+    In benchmark B1, walk and drive graph construction is compared across OSMnx, Pyrosm and
     IduEdu.
-    The pedestrian network is the most demanding case, with the largest vertex and edge counts due to
+    The walk network is the most demanding case, with the largest vertex and edge counts due to
     detailed street infrastructure; the drive network adds directionality processing.
     To ensure comparability, all tools use the same area of interest: for each city an OSM PBF extract
     is downloaded, its header bounding box is extracted, and the same box is used as the geometric query
@@ -1003,11 +905,11 @@ nearest = g.multi_source_dijkstra_nearest_source(
     For OSMnx and IduEdu, runs with simplification enabled and disabled are compared; Pyrosm has no
     comparable switch.
 
-    IduEdu consistently outperforms OSMnx on pedestrian graphs.
+    IduEdu consistently outperforms OSMnx on walk graphs.
     With simplification enabled, the median speedup across six cities is ${\approx}5.7\times$ (from
     $3.3\times$ on New York to $6.0\times$ on Helsinki); without simplification it rises to
     ${\approx}8.8\times$ (from $5.8\times$ on New York to $9.3\times$ on Moscow).
-    In absolute terms, the Saint Petersburg pedestrian graph builds in ${\approx}20$~s versus
+    In absolute terms, the Saint Petersburg walk graph builds in ${\approx}20$~s versus
     ${\approx}115$~s for OSMnx and ${\approx}95$~s for Pyrosm.
     For the drive network with simplification, the speedup over OSMnx is $3.3$--$5.1\times$ (median
     ${\approx}4.2\times$).
@@ -1015,12 +917,12 @@ nearest = g.multi_source_dijkstra_nearest_source(
 
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{figures/build_benchmark_walk}
-        \caption{Pedestrian graph construction time and edge counts for OSMnx, Pyrosm and IduEdu across six
+        \caption{Walk graph construction time and edge counts for OSMnx, Pyrosm and IduEdu across six
         cities, with simplification enabled and disabled.\label{fig:build_walk}}
     \end{figure}
 
     Benchmark B2 measures multimodal construction on the same territories: for each city, the
-    pedestrian graph, the PT graph (buses, trams, trolleybuses, subway) and their integration are built
+    walk graph, the PT graph (buses, trams, trolleybuses, subway) and their integration are built
     sequentially, with time and edge counts recorded per stage.
     Figure~\ref{fig:intermodal_build} decomposes total construction time into PT, walk and join stages
     across cities of different scale and network structure.
@@ -1028,7 +930,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{figures/intermodal_stacked_time_by_city}
         \caption{Multimodal graph construction time in IduEdu, decomposed into public transport (PT),
-            pedestrian (Walk) and integration (Join) stages; labels give per-stage edge
+            walk and integration (Join) stages; labels give per-stage edge
             counts.\label{fig:intermodal_build}}
     \end{figure}
 
@@ -1039,7 +941,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     attributes.
     This protocol compares spatial graph representations, not geometry-free computational containers.
     As Figure~\ref{fig:memory} shows, columnar storage is substantially more compact at comparable
-    spatial information content: for the Saint Petersburg pedestrian graph (simplified),
+    spatial information content: for the Saint Petersburg walk graph (simplified),
     \texttt{UrbanGraph} occupies ${\approx}76$~MB versus ${\approx}865$~MB for the OSMnx
     \texttt{MultiDiGraph} (also simplified) and ${\approx}5.7$~GB for the raw, unsimplified Pyrosm
     graph.
@@ -1111,7 +1013,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     The ablation compares IduEdu build time with simplification on and off, recording median build
     time, resulting edge count and deterministic memory of the graph tables per city.
     As Figure~\ref{fig:ablation_simplify} shows, the effect is not universal but topology-dependent.
-    In pedestrian networks, the dense structure of intersections and local geometric joints makes
+    In walk networks, the dense structure of intersections and local geometric joints makes
     spatial merging expensive: such graphs build faster without simplification, yet the simplified
     graph remains far more compact---simplification cuts edge count and memory by
     ${\approx}2$--$3\times$.
@@ -1123,7 +1025,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
 
     \begin{figure}[H]
         \includegraphics[width=\textwidth]{figures/ablation_simplify}
-        \caption{Effect of graph simplification on build time for pedestrian and drive networks in IduEdu.
+        \caption{Effect of graph simplification on build time for walk and drive networks in IduEdu.
         Bars are annotated with resulting edge counts; group annotations give the relative change in build
         time, edge count and memory when simplification is enabled.\label{fig:ablation_simplify}}
     \end{figure}
@@ -1141,8 +1043,8 @@ nearest = g.multi_source_dijkstra_nearest_source(
     $\tau = 5$~min and $|O| = 8{,}192$ the speedup over full computation reaches ${\approx}259\times$,
     while at $\tau = 60$~min it declines to ${\approx}2\times$ as the bounded search approaches a full
     traversal.
-    Cutoff is thus most effective precisely in the local-accessibility scenarios typical of pedestrian
-    and PT analysis.
+    Cutoff is thus most effective precisely in the local-accessibility scenarios typical of walk and
+    PT analysis.
 
     \begin{table}[H]
         \caption{Relative speed-up of OD matrix computation in IduEdu with cutoff $\tau$ for square OD
@@ -1173,6 +1075,239 @@ nearest = g.multi_source_dijkstra_nearest_source(
     By construction the effect vanishes for square matrices (Figure~\ref{fig:od_square}), but it is
     decisive in the rectangular settings typical of accessibility assessment.
 
+    \subsection{Table-First Workflow, Graph Reuse and Their Cost}
+    \label{subsec:res-workflow}
+
+    Before turning to the applied results, we quantify what it costs to operate the pipeline, since
+    this is what makes the repeated analyses of Sections~\ref{subsec:res-p1}
+    and~\ref{subsec:res-p0} practical at all.
+
+    A scenario is an ordinary edit of the edge table (Listing~\ref{lst:tablefirst},
+    Figure~\ref{fig:tablefirst}).
+    Locating and editing boarding edges by an attribute mask takes milliseconds (0.001--0.08~s for
+    55--1{,}823 edges); rebuilding the cached CSR of the 776{,}051-edge multimodal graph takes
+    ${\approx}1.3$~s; and re-running nearest-school and school-count routing for all 83{,}510 origins
+    takes ${\approx}5$--$7$~s.
+    A complete city-scale what-if evaluation is thus a ${\approx}7$-second operation, and ObjectNat
+    consumes the modified \texttt{UrbanGraph} directly to rebuild polygon products.
+
+    The graph itself is built once and reused.
+    Table~\ref{tab:cache_timing} decomposes the end-to-end cost of the case study.
+    Building the city multimodal graph from cached OSM responses takes 159.7~s and writing both
+    \texttt{.urbangraph} files (with the CSR included) another 12.5~s---paid once; every later
+    analysis starts from a 2.3~s warm load.
+    ObjectNat polygon construction costs 10--106~s per operation---up to an order of magnitude above
+    routing---which is why isochrone and coverage geometries are cached alongside the graphs.
+    The first scenario of a session additionally pays JIT warm-up (17.3~s); all subsequent scenarios
+    run at the 6.7~s median quoted above.
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/tablefirst_figure}
+        \caption{Table-first extensibility and ObjectNat integration. A scenario is expressed as an
+        ordinary GeoPandas mask over the \texttt{edges\_gdf} table and an assignment to a cost column
+            (here, a waiting penalty on the boarding edges of one route); the cached computational form is
+            rebuilt in place with \texttt{update\_adjacency\_matrix}, and the \emph{same}
+            \texttt{UrbanGraph} object then feeds both IduEdu's routing primitives and the downstream
+            ObjectNat isochrone/coverage functions without any format conversion. Approximate wall-clock
+            costs at city scale (776{,}051-edge graph, 83{,}510 origins) annotate the
+            arrows.\label{fig:tablefirst}}
+    \end{figure}
+
+    \begin{table}[H]
+        \caption{End-to-end timing of the city-scale case study (single workstation).\label{tab:cache_timing}}
+        \begin{tabularx}{\textwidth}{lCC}
+            \toprule
+            \textbf{Stage}                                        & \textbf{Cold, s}  & \textbf{Warm, s}       \\
+            \midrule
+            Multimodal graph build (from cached OSM data)         & 159.7             & ---                    \\
+            Graph write / load (\texttt{.urbangraph}, incl.\ CSR) & 12.5              & 2.3                    \\
+            Snap + nearest-school routing (per network)           & ---               & 1.4--1.7               \\
+            School-count OD, 83{,}510 $\times$ 911                & ---               & 6.1 (walk) / 38.0 (mm) \\
+            Scenario pass (edit + CSR rebuild + routing)          & 17.3 (first, JIT) & 6.7 (median)           \\
+            ObjectNat polygon construction                        & ---               & 10--106 per operation  \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+
+    \subsection{School Accessibility in Saint Petersburg: Walk vs.\ Multimodal}
+    \label{subsec:res-case}
+
+    Table~\ref{tab:reachable_schools} summarizes the baseline, and two features stand out.
+    First, the time to the \emph{nearest} school barely changes when PT is added: the median is
+    10.5~min on the walk network and 10.3~min on the multimodal one.
+    In a city where the nearest school is typically a short walk away, PT is not needed for first
+    access; its effect appears in the tail of the distribution (90th percentile: 33.4 vs.\ 26.1~min)
+    and in peripheral pockets (Figure~\ref{fig:coverage}, right).
+    Second, the number of reachable schools---the opportunity metric---responds strongly, and the
+    response grows with the travel-time budget.
+    At 15~min, PT adds almost nothing (+0.4 schools on average): short trips are dominated by walking
+    once the modeled boarding cost is paid.
+    At 30~min it multiplies the mean opportunity set by 2.5 (9.5 $\to$ 23.5 schools; median 4 $\to$ 7),
+    at 45~min by 4.7 (19.2 $\to$ 90.3), and no saturation occurs even at 60~min.
+    Figure~\ref{fig:isochrones} shows the mechanism behind these numbers for a single origin: within
+    the same 30-min budget, the reachable area grows from one compact walking neighbourhood to a
+    corridor-shaped region stretched along the transit network, which is what brings distant schools
+    into range.
+    Read methodologically, this is the answer to RQ4: an assessment built on the walk-only network that
+    current extraction tools provide would describe basic school access correctly, but would understate
+    the reachable opportunity set 2.5-fold at a 30-min budget and---as
+    Section~\ref{subsec:res-p1} shows---would give no indication of how few routes that difference
+    rests on.
+
+    Coverage moves accordingly: the share of buildings with at least one school within 30~min rises
+    from 88.0\% to 93.5\%, and within 45~min from 94.3\% to 98.0\%.
+    The secondary population-weighted comparison is deliberately reported as a walk-to-multimodal
+    difference rather than as an absolute coverage claim: the gain is 0.57 percentage points at
+    15~min, 0.61 at 30~min, 0.39 at 45~min and 0.16 at 60~min.
+    In this allocation, PT thus changes the coverage of residential locations more strongly than the
+    share of assigned population; this relative result is not interpreted as an equity measure.
+
+    Figure~\ref{fig:gain_metrics} details the distribution of the gain: at the 30-min budget, 71.0\%
+    of residential buildings gain at least one school, 17.6\% gain 6--20, and 8.2\% gain more than 50.
+    The 15-min classification of Section~\ref{subsec:indicators} localizes the effect spatially
+    (Figure~\ref{fig:gain_map}): 48.6\% of buildings see no effect and a further 33.7\% reach no
+    school within 15~min on either network, while the substantial (9.7\%), moderate (5.6\%) and newly
+    reachable (2.5\%) classes concentrate along tram and subway corridors.
+    The computation behind these results is fast: snapping and nearest-school routing take
+    1.4--1.7~s per network, and the complete 83{,}510$\times$911 school-count computation takes 6.1~s
+    on the walk graph and 38.0~s on the multimodal graph.
+
+    \begin{table}[H]
+        \caption{Number of schools reachable per residential origin within each travel-time cutoff, on
+        the walk and multimodal networks (83{,}510 residential origins, 911 schools). All values are
+        counts of schools; \emph{Gain} is the mean multimodal advantage over
+        walking.\label{tab:reachable_schools}}
+        \begin{tabularx}{\textwidth}{lCCCCC}
+            \toprule
+            & \multicolumn{3}{c}{\textbf{Mean (schools)}} & \multicolumn{2}{c}{\textbf{Median (schools)}} \\
+            \cmidrule(lr){2-4}\cmidrule(lr){5-6}
+            \textbf{Cutoff} & \textbf{Walk} & \textbf{Multimodal} & \textbf{Gain} & \textbf{Walk} & \textbf{Multimodal} \\
+            \midrule
+            15 min          & 2.78          & 3.16                & $+0.38$       & 1             & 1                   \\
+            30 min          & 9.46          & 23.51               & $+14.05$      & 4             & 7                   \\
+            45 min          & 19.18         & 90.32               & $+71.14$      & 8             & 21                  \\
+            60 min          & 31.94         & 194.72              & $+162.79$     & 13            & 55                  \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/objectnat_isochrone_comparison}
+        \caption{Thirty-minute isochrones from the same central residential origin (black star), built
+        with ObjectNat from the same \texttt{UrbanGraph} objects.
+            (\textbf{Left}) Walk network; the reachable area is shown in orange.
+            (\textbf{Right}) Multimodal network; the reachable area is shown in blue, with public
+            transport routes drawn over it and colored by mode.
+            Both panels share the same map extent, the outline being the historical city
+            boundary.\label{fig:isochrones}}
+    \end{figure}
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/objectnat_school_coverage}
+        \caption{School coverage in 5-min bands up to 30 min on the walk (\textbf{left}) and multimodal
+            (\textbf{center}) networks (ObjectNat reverse-search coverage; dots are schools).
+            (\textbf{Right}) Nearest-school time-band gain of the multimodal network, highlighting the
+            peripheral pockets where PT shortens first access.\label{fig:coverage}}
+    \end{figure}
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/accessibility_gain_metrics}
+        \caption{Opportunity gain from public transport.
+            (\textbf{Left}) Distribution of additional 30-min schools per residential origin.
+            (\textbf{Center}) Mean reachable schools by cutoff, walk $\to$ multimodal.
+            (\textbf{Right}) 15-min spatial effect classes.\label{fig:gain_metrics}}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{figures/accessibility_gain_map}
+        \caption{Mean additional schools reachable within 15 min per hexagonal cell (capped at the 95th
+        percentile), with PT routes and schools (dots) overlaid; historical city boundary.
+        Gains concentrate along tram and subway corridors, while large residential areas show no 15-min
+        effect.\label{fig:gain_map}}
+    \end{figure}
+
+% NB: label suffixes -p1/-p0 are historical (screening was P1, degradation P0 in the
+% experiment scripts and released artifacts); the reading order is screening first.
+    \subsection{Scenario Screening: Leave-One-Route-Out Route Criticality}
+    \label{subsec:res-p1}
+
+    The leave-one-route-out screening covers all 635 PT routes of the city.
+    A complete scenario pass takes 6.7~s at the median, and the summed per-route wall-clock time for the
+    full screening is 87.0~min on the workstation, fast enough to repeat after any network edit.
+    The overall ranking is dominated by the metro (Figure~\ref{fig:p1_ranking} shows the three most
+    critical routes of each mode): five metro lines occupy the top five positions, with
+    247{,}083, 208{,}837, 167{,}438, 104{,}880 and 86{,}325 lost 30-min opportunities respectively,
+    the busiest an order of magnitude above the most critical surface routes (tram 16: 23{,}473; tram
+    T1: 16{,}983; bus 211\cyr{Э}: 8{,}485), while trolleybus losses stay in the hundreds.
+    Removing metro line 1 alone affects 12{,}893 buildings (15.4\% of origins), with a mean loss of
+    3.0 and a maximum of 253 schools per building; even then, no building loses its last 30-min school
+    (33 lose their last 15-min school).
+    Conversely, most surface routes can be removed with little structural loss for school access; the
+    network's redundancy lies mainly in the dense bus layer. A small set of peripheral services is an
+    important exception: removing bus 691\cyr{Э}, 211\cyr{Э}, 679 or 211 leaves 216, 212, 143 or 138
+    origins, respectively, without any 30-min school, while removing metro line~5 does so for 39 origins.
+    Figure~\ref{fig:p1_maps} maps the spatial loss footprints of the most critical route of each
+    surface mode alongside metro line 1.
+    These results rank \emph{structural} criticality for school opportunities only; they say nothing
+    about ridership, capacity or other destinations.
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/route_criticality_ranking}
+        \caption{Leave-one-route-out criticality: top three routes per mode by lost 15- and 30-min
+        origin--school opportunities (symlog scale).\label{fig:p1_ranking}}
+    \end{figure}
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/scenario_p1_top_routes}
+        \caption{Spatial loss footprints for the most critical routes (metro line 1, bus
+        211\cyr{Э}, tram 16): mean schools lost per affected origin within 30 min;
+        the removed route is highlighted. Because route effects differ by an order of magnitude, each
+        panel has its own color bar capped at its 95th percentile.\label{fig:p1_maps}}
+    \end{figure}
+
+    \subsection{Scenario Analysis: Waiting-Time Degradation}
+    \label{subsec:res-p0}
+
+    The degradation experiment targets the tram network: the whole mode, and route~16, which the
+    screening above identifies as the structurally most critical tram route---a data-driven choice
+    rather than a prior hypothesis.
+    Waiting penalties of $+5$ and $+10$~min are added to boarding edges (1{,}823 edges for the mode,
+    55 for the route), and all baseline indicators are re-computed; each scenario evaluation takes
+    6.3--7.2~s end-to-end.
+    Table~\ref{tab:p0} summarizes the losses.
+    A uniform $+10$~min penalty on the whole tram mode strips 168{,}504 30-min origin--school
+    opportunities (8.6\% of the multimodal baseline total) from 20{,}358 buildings; route~16 alone
+    accounts for 23{,}355 opportunities (1.2\%) across 4{,}908 buildings.
+    Notably, service degradation almost never severs access altogether: even the mode-wide $+10$~min
+    scenario leaves only 42 buildings without their last 30-min school, and the single-route scenarios
+    none---waiting quality narrows school choice rather than eliminating it
+    (Figure~\ref{fig:p0_delta}).
+
+    \begin{table}[H]
+        \caption{Waiting-time degradation ($+5$/$+10$ min on boarding edges): buildings losing at least
+        one reachable school and total lost origin--school opportunities at the 15- and 30-min
+        cutoffs.\label{tab:p0}}
+        \begin{tabularx}{\textwidth}{lCCCC}
+            \toprule
+            \textbf{Scenario}  & \textbf{Origins (15)} & \textbf{Lost pairs (15)} & \textbf{Origins (30)} & \textbf{Lost pairs (30)}\\
+            \midrule
+            All trams, +5 min  & 4{,}842               & 11{,}563                 & 20{,}244              & 143{,}570                \\
+            All trams, +10 min & 4{,}851               & 11{,}892                 & 20{,}358              & 168{,}504                \\
+            Tram 16, +5 min    & 806                   & 1{,}641                  & 4{,}835               & 20{,}354                 \\
+            Tram 16, +10 min   & 809                   & 1{,}703                  & 4{,}908               & 23{,}355                 \\
+            \bottomrule
+        \end{tabularx}
+    \end{table}
+
+    \begin{figure}[H]
+        \includegraphics[width=\textwidth]{figures/scenario_p0_waiting_delta}
+        \caption{Waiting-time degradation ($+10$ min): mean schools lost per affected origin within 30 min
+        for the whole tram mode (\textbf{left}) and for route 16 alone (\textbf{right}); the degraded
+        routes are highlighted. Both panels use a common 0--25-school color scale, capped just above the
+        larger panel's 95th percentile.\label{fig:p0_delta}}
+    \end{figure}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -1185,7 +1320,7 @@ nearest = g.multi_source_dijkstra_nearest_source(
     Three planning-relevant readings follow from the case study.
     First, basic school access in Saint Petersburg is walk-dominated: adding PT leaves the median
     nearest-school time unchanged, so policies aimed at first access---school siting, safe walking
-    routes---operate on the pedestrian network.
+    routes---operate on the walk network.
     What PT governs is school \emph{choice}: at a 30-min budget it multiplies the mean opportunity set
     by 2.5, and the gain map shows precisely which corridors deliver this effect and which large
     residential areas receive none.
@@ -1292,12 +1427,13 @@ nearest = g.multi_source_dijkstra_nearest_source(
     the conversion step that specialized graph backends require;
     (RQ3) adaptive reversal and cutoff make batch OD workloads scale to $10^5$ origins on a
     workstation, and a cached baseline graph turns a full city-scale scenario re-evaluation into a
-    ${\approx}7$-second operation---all 635 PT routes of Saint Petersburg were screened in 87~min;%
-    (RQ4) public transport leaves the median nearest-school time unchanged but multiplies the mean
-    30-min school opportunity set by 2.5; its effect is spatially concentrated along PT corridors,
-    with half of the residential buildings seeing no 15-min effect, and its structural backbone is
-    thin---the five main metro lines take the top five criticality ranks, the busiest an order of
-    magnitude above any surface route.
+    ${\approx}7$-second operation---all 635 PT routes of Saint Petersburg were screened in 87~min;
+    (RQ4) the multimodal layer changes the assessment substantially, but not where one might expect: a
+    walk-only analysis characterizes basic access correctly---the median nearest-school time is
+    unchanged---yet understates the reachable opportunity set 2.5-fold at a 30-min budget and cannot
+    reveal that this set rests on a thin backbone, with the five main metro lines taking the top five
+    criticality ranks, an order of magnitude above any surface route; the effect is also spatially
+    uneven, half of the residential buildings seeing no 15-min gain.
 
     The technical takeaway is that the user-facing and computational forms of an urban network need not
     be separate artifacts: making the GIS table canonical and deriving the sparse computational view
@@ -1305,8 +1441,8 @@ nearest = g.multi_source_dijkstra_nearest_source(
     workloads.
     The urban takeaway is that, for school accessibility in Saint Petersburg, public transport acts as
     an amplifier of choice rather than a provider of basic access, and that this choice rests on a
-    small critical backbone---a diagnosis the presented pipeline can reproduce for other OSM-covered
-    city in minutes.%
+    small critical backbone---a diagnosis the presented pipeline can reproduce for any other
+    OSM-covered city in minutes.
     The approach is bounded by its static, structural notion of accessibility: extending it with GTFS
     and time-dependent routing would broaden structural analysis to service-aware accessibility, and
     remains future work.
@@ -1320,8 +1456,9 @@ nearest = g.multi_source_dijkstra_nearest_source(
     \vspace{6pt}
 
     \authorcontributions{Conceptualization, methodology, software, validation, formal analysis,
-        investigation, data curation, writing---original draft preparation, writing---review and editing,
-        visualization: D.O. The author has read and agreed to the published version of the manuscript.}
+        investigation, data curation, writing---original draft preparation, visualization: D.O.;
+        supervision, writing---review and editing: N.C.
+        All authors have read and agreed to the published version of the manuscript.}
 
     \funding{This research received no external funding.}
 
@@ -1331,20 +1468,20 @@ nearest = g.multi_source_dijkstra_nearest_source(
 
     \dataavailability{The IduEdu source code and reproducibility scripts are available at
     \url{https://github.com/DDonnyy/IduEdu}. The OSM-derived inputs, processed benchmark outputs,
-    graph snapshots, environment manifests and case-study artifacts used in this study are openly
-    available in Zenodo at \url{https://doi.org/10.5281/zenodo.21610964}. OpenStreetMap data are
-    available under the Open Database License from \url{https://www.openstreetmap.org}.}
+        graph snapshots, environment manifests and case-study artifacts used in this study are openly
+        available in Zenodo at \url{https://doi.org/10.5281/zenodo.21610964}. OpenStreetMap data are
+        available under the Open Database License from \url{https://www.openstreetmap.org}.}
 
-\acknowledgments{During preparation of this manuscript, the author used OpenAI GPT-5 and Claude Opus 4.8
+    \acknowledgments{During preparation of this manuscript, the authors used OpenAI GPT-5 and Claude Opus 4.8
     for language editing, consistency checks, code-assisted verification against the reported artifacts,
-    and implementation of benchmark and comparative-figure generation scripts. The benchmark protocols,
-    comparison criteria, metrics, and figure concepts and specifications were designed by the author; the
-    AI systems assisted in translating those designs into executable code. The author reviewed, tested,
-    and edited all AI-assisted code and text and takes full responsibility for the analysis, results, and
-    content of the publication.
+        and implementation of benchmark and comparative-figure generation scripts. The benchmark protocols,
+        comparison criteria, metrics, and figure concepts and specifications were designed by the authors; the
+        AI systems assisted in translating those designs into executable code. The authors reviewed, tested,
+        and edited all AI-assisted code and text and take full responsibility for the analysis, results, and
+        content of the publication.
     }
 
-    \conflictsofinterest{The author declares no conflicts of interest.}
+    \conflictsofinterest{The authors declare no conflicts of interest.}
 
     \abbreviations{Abbreviations}{%
         The following abbreviations are used in this manuscript:\\
