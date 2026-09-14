@@ -9,6 +9,11 @@ from shapely.ops import substring
 
 from iduedu.graph.urban_graph import UrbanGraph
 
+# Objects closer than this to their attachment point are mapped onto the existing node instead of
+# getting a dedicated node: a shorter connector rounds to a zero length edge and cannot connect
+# anything, which would leave the object node isolated.
+MIN_CONNECTOR_LENGTH_M = 1e-3
+
 
 @dataclass(slots=True)
 class UrbanGraphChanges:
@@ -331,13 +336,17 @@ def project_objects2urban_graph(
             ``None``, nearest edges are searched without a distance limit.
         add_link_edge: If ``True``, create a dedicated object node and connector
             edge. If ``False``, map the object to the projection node on the graph.
+            An object that already lies on the graph is mapped to the node it
+            coincides with in both modes, because a connector edge shorter than
+            ``MIN_CONNECTOR_LENGTH_M`` cannot connect anything.
 
     Returns:
         Pair ``(changes, object2node_map)``. ``changes.nodes_gdf`` contains new
         nodes, ``changes.edges_gdf`` contains new edges, and
         ``changes.edges_to_delete`` contains replaced edge keys. ``object2node_map``
         is a ``Series`` indexed by the original object index with graph node ids as
-        values.
+        values. Node ids in the mapping always reference connected nodes; several
+        objects may share one node when they project to the same point.
 
     Raises:
         TypeError: If ``objects_gdf`` is not a GeoDataFrame.
@@ -404,6 +413,29 @@ def project_objects2urban_graph(
             graph_to_object = LineString([connect_point, object_point])
             new_edges_records.append(_edge_record(connect_node, object_node, graph_to_object))
 
+    def _attach_object(object_index, object_point: Point, connect_node, connect_point: Point) -> None:
+        nonlocal next_node_id
+        # An object that coincides with its attachment point is mapped onto that node: a dedicated
+        # node would need a connector shorter than MIN_CONNECTOR_LENGTH_M and would stay isolated.
+        if not add_link_edge or object_point.distance(connect_point) < MIN_CONNECTOR_LENGTH_M:
+            object2node_records.append({"object_index": object_index, "node_id": connect_node})
+            return
+        object_node = next_node_id
+        next_node_id += 1
+        new_nodes_records.append({"node_id": object_node, "object_index": object_index, "geometry": object_point})
+        _add_connector_edges(object_node, connect_node, object_point, connect_point)
+        object2node_records.append({"object_index": object_index, "node_id": object_node})
+
+    def _new_nodes_gdf() -> gpd.GeoDataFrame:
+        if not new_nodes_records:
+            return gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=local_crs), crs=local_crs)
+        return gpd.GeoDataFrame(new_nodes_records, geometry="geometry", crs=local_crs)
+
+    def _new_edges_gdf() -> gpd.GeoDataFrame:
+        if not new_edges_records:
+            return gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=local_crs), crs=local_crs)
+        return gpd.GeoDataFrame(new_edges_records, geometry="geometry", crs=local_crs)
+
     def _object2node_map_from_records() -> pd.Series:
         if not object2node_records:
             return pd.Series(dtype=int)
@@ -449,52 +481,44 @@ def project_objects2urban_graph(
     endpoint_object_index = projection_join.loc[endpoint_candidate, "object_index"].drop_duplicates()
 
     if not endpoint_object_index.empty:
-        endpoint_rows = projection_join[projection_join["object_index"].isin(endpoint_object_index)]
-
-        mixed_projection_object_index = endpoint_rows.loc[endpoint_rows["node2connect"].isna(), "object_index"].unique()
-        if len(mixed_projection_object_index) > 0:
-            raise ValueError(
-                "Some objects have both endpoint and non-endpoint nearest edges: "
-                f"{mixed_projection_object_index[:10].tolist()}"
-            )
-
-        nodes_per_object = endpoint_rows.groupby("object_index", sort=False)["node2connect"].nunique(dropna=True)
-        bad_object_index = nodes_per_object[nodes_per_object != 1].index
-        if len(bad_object_index) > 0:
-            raise ValueError(
-                "Some endpoint-projected objects connect to multiple graph nodes: " f"{bad_object_index[:10].tolist()}"
-            )
-
-        object_to_existing_node = endpoint_rows.groupby("object_index", sort=False)["node2connect"].first()
+        # An object may be equally close to several edges. When any of them is matched by an
+        # endpoint, that endpoint wins: attaching to an existing node is preferred over splitting
+        # another edge at the very same point. Ties between endpoints are resolved by node id so
+        # that repeated runs on the same data produce the same graph.
+        endpoint_rows = projection_join[
+            projection_join["object_index"].isin(endpoint_object_index) & projection_join["node2connect"].notna()
+        ]
+        object_to_existing_node = (
+            endpoint_rows.sort_values("node2connect").groupby("object_index", sort=False)["node2connect"].first()
+        )
 
         # Objects projected to edge endpoints are attached to existing graph nodes.
 
         for object_index, connect_node in object_to_existing_node.items():
-            object_point = rep_gdf.loc[object_index, "geometry"]
-            connect_point = gdf_nodes.loc[connect_node, "geometry"]
-
-            if add_link_edge:
-                object_node = next_node_id
-                next_node_id += 1
-                new_nodes_records.append(
-                    {"node_id": object_node, "object_index": object_index, "geometry": object_point}
-                )
-                _add_connector_edges(object_node, connect_node, object_point, connect_point)
-                object2node_records.append({"object_index": object_index, "node_id": object_node})
-            else:
-                object2node_records.append({"object_index": object_index, "node_id": connect_node})
+            _attach_object(
+                object_index,
+                rep_gdf.loc[object_index, "geometry"],
+                connect_node,
+                gdf_nodes.loc[connect_node, "geometry"],
+            )
 
         projection_join = projection_join[~projection_join["object_index"].isin(endpoint_object_index)].copy()
 
     if projection_join.empty:
-        new_nodes = gpd.GeoDataFrame(new_nodes_records, geometry="geometry", crs=local_crs)
+        # Every object snapped to an existing node, so no edge is split. The connector edges
+        # created above still have to be returned, otherwise the object nodes stay isolated.
+        new_nodes = _new_nodes_gdf()
         if not new_nodes.empty:
             new_nodes = new_nodes.set_index("node_id", drop=True).drop(columns="object_index", errors="ignore")
             new_nodes = new_nodes.to_crs(original_crs)
+        new_edges = _new_edges_gdf()
+        if not new_edges.empty:
+            new_edges = new_edges.to_crs(original_crs)
         object2node_map = _object2node_map_from_records()
         return (
             UrbanGraphChanges(
                 nodes_gdf=new_nodes if not new_nodes.empty else None,
+                edges_gdf=new_edges if not new_edges.empty else None,
                 edges_to_delete=pd.DataFrame(columns=["u", "v", "k"] if is_multigraph else ["u", "v"]),
                 is_multigraph=is_multigraph,
                 is_directed=is_directed,
@@ -539,16 +563,7 @@ def project_objects2urban_graph(
         projection_point: Point = row.project_point
         new_nodes_records.append({"node_id": projection_node, "geometry": projection_point})
         for object_index, object_point in row["object_pair"]:
-            if add_link_edge:
-                object_node = next_node_id
-                next_node_id += 1
-                new_nodes_records.append(
-                    {"node_id": object_node, "object_index": object_index, "geometry": object_point}
-                )
-                _add_connector_edges(object_node, projection_node, object_point, projection_point)
-                object2node_records.append({"object_index": object_index, "node_id": object_node})
-            else:
-                object2node_records.append({"object_index": object_index, "node_id": projection_node})
+            _attach_object(object_index, object_point, projection_node, projection_point)
 
     edge_group_agg = {
         "projection_node_id": tuple,
@@ -626,7 +641,7 @@ def project_objects2urban_graph(
             if line.length > 0 and last_u != v:
                 new_edges_records.append(_edge_record(last_u, v, line, k=edge_key, attrs=split_attrs))
 
-    new_nodes = gpd.GeoDataFrame(new_nodes_records, geometry="geometry", crs=local_crs)
+    new_nodes = _new_nodes_gdf()
 
     if object2node_records:
         object2node_map = _object2node_map_from_records()
@@ -645,7 +660,7 @@ def project_objects2urban_graph(
         if "object_index" in new_nodes.columns:
             new_nodes = new_nodes.drop(columns="object_index")
 
-    new_edges = gpd.GeoDataFrame(new_edges_records, geometry="geometry", crs=local_crs)
+    new_edges = _new_edges_gdf()
     if not new_edges.empty and "edge_index" in new_edges.columns:
         changed_edge_columns = {"u", "v", "k", "geometry", "edge_geometry", "length_meter", "time_min", "edge_index"}
         edge_attr_cols = [col for col in gdf_edges.columns if col not in changed_edge_columns]

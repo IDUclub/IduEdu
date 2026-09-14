@@ -1,5 +1,7 @@
 # pylint: disable=protected-access
 
+import inspect
+
 import geopandas as gpd
 import pandas as pd
 import pytest
@@ -137,9 +139,8 @@ def test_get_public_transport_graph_rejects_unknown_transport_type():
         get_public_transport_graph(transport_types=["bus", "not_a_mode"])
 
 
-def test_get_public_transport_graph_rejects_negative_boarding_time():
-    with pytest.raises(ValueError, match="avg_boarding_time_min"):
-        get_public_transport_graph(avg_boarding_time_min=-1.0)
+def test_get_public_transport_graph_has_no_global_boarding_time_parameter():
+    assert "avg_boarding_time_min" not in inspect.signature(get_public_transport_graph).parameters
 
 
 # ---------------------------------------------------------------------------

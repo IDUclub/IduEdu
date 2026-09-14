@@ -8,30 +8,34 @@ repository. All commands below are plain shell/CLI and assume no specific agent 
 This project ships a prebuilt knowledge graph at `graphify-out/` with god nodes, community structure, and
 cross-file relationships. Prefer it over blind grep/file-walking when answering questions about the codebase.
 
-If your runtime exposes a `/graphify` command or a graphify skill, use it first. Otherwise call the `graphify`
-CLI directly (rules below); if the `graphify` binary is not installed, fall back to reading `graphify-out/graph.json`
-or `graphify-out/GRAPH_REPORT.md` directly.
+If your runtime exposes a `/graphify` command or a graphify skill, use it first. Otherwise run the CLI through
+uv tool as `uv tool run --from graphifyy graphify <command>` (the PyPI package is `graphifyy`, while the executable
+is `graphify`). If uv cannot run the tool, fall back to reading `graphify-out/graph.json` or
+`graphify-out/GRAPH_REPORT.md` directly.
 
 Rules:
 
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use
-  `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a
-  scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- For codebase questions, first run `uv tool run --from graphifyy graphify query "<question>"` when
+  graphify-out/graph.json exists. Use `uv tool run --from graphifyy graphify path "<A>" "<B>"` for relationships and
+  `uv tool run --from graphifyy graphify explain "<concept>"` for focused concepts. These return a scoped subgraph,
+  usually much smaller than GRAPH_REPORT.md or raw grep output.
 - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip
   graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to
   use it.
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough
   context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- After modifying code, run `uv tool run --from graphifyy graphify update .` to keep the graph current
+  (AST-only, no API cost).
 
 # Project guide
 
 ## Project Overview
 
-**IduEdu** is a Python library for building and analyzing multi-modal city transport networks from OpenStreetMap data.
-It downloads OSM data via Overpass API, constructs `drive`, `walk`, and `public transport` graphs, joins them into
-intermodal networks, and computes OD-matrices with Numba-accelerated Dijkstra.
+**IduEdu** is a Python library for building and analyzing multi-modal city transport networks from OpenStreetMap and
+GTFS Schedule data. It downloads OSM data via Overpass API, reads local GTFS feeds, constructs `drive`, `walk`, and
+`public transport` graphs, joins them into intermodal networks, and computes OD-matrices with Numba-accelerated
+Dijkstra.
 
 Python 3.11–3.12 only. Package manager: **uv** (lockfile: `uv.lock`). Build backend: hatchling.
 
@@ -112,7 +116,11 @@ iduedu/
   graph_builders/
     drive_walk_builders.py      — get_drive_graph(), get_walk_graph()
     public_transport_builders.py — get_public_transport_graph()
+    gtfs_builders.py            — get_gtfs_public_transport_graph()
     intermodal_builders.py      — get_intermodal_graph(), join_pt_walk_graph()
+  gtfs/
+    reader.py        — local GTFS directory/ZIP loading
+    validation.py    — GTFS table and reference validation
   overpass/
     downloaders.py   — Overpass HTTP requests with retry/rate-limit
     parsers.py       — JSON → GeoDataFrame (nodes/edges)
@@ -130,6 +138,12 @@ Overpass API
   → downloaders.py (HTTP + cache)
   → parsers.py (JSON → GeoDataFrame)
   → graph_builders/ (GeoDataFrame → UrbanGraph)
+
+Local GTFS directory/ZIP
+  → gtfs/ (tables + validation)
+  → gtfs_builders.py (schedule aggregation → UrbanGraph)
+
+UrbanGraph layers
   → intermodal_builders.py (UrbanGraph + UrbanGraph → joined UrbanGraph)
   → graph/editors.py (project objects onto graph)
   → graph/shortest_paths.py → _numba/ (CSR Dijkstra → OD matrix)
@@ -137,9 +151,10 @@ Overpass API
 
 ### Public transport speed model
 
-`TransportSpec` (frozen dataclass) encodes per-mode physics: `vmax_tech_kmh`, `accel_dist_m`, `brake_dist_m`,
-`traffic_coef`. `DEFAULT_REGISTRY` covers bus/tram/trolleybus/subway; `DEFAULT_REGISTRY_W_TRAIN` adds train. Pass a
-custom `TransportRegistry` to `get_public_transport_graph()` to override speeds.
+`TransportSpec` (frozen dataclass) encodes per-mode physics and OSM boarding waits: `vmax_tech_kmh`, `accel_dist_m`,
+`brake_dist_m`, `base_speed_kmh`, `dwell_min`, `avg_wait_time_min`. `DEFAULT_REGISTRY` covers bus/tram/trolleybus/subway;
+`DEFAULT_REGISTRY_W_TRAIN` adds train. Pass a custom `TransportRegistry` to `get_public_transport_graph()` to
+override speeds or waiting times. GTFS boarding waits are schedule-derived and do not use the registry.
 
 ### Test organization
 

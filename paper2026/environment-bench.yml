@@ -1,0 +1,58 @@
+# Benchmark environment for the IduEdu paper — conda-forge, not pip.
+#
+# Why conda and not the pip route in requirements-bench.txt: pyrosm depends on
+# cykhash, and cykhash publishes NO wheels at all — not for any Python version,
+# not for any platform. pip therefore always tries to compile it, which on
+# Windows needs MSVC Build Tools. conda-forge ships it prebuilt, so this file is
+# the only way to get the pyrosm arm without a compiler.
+#
+# Setup (micromamba is a single executable and needs no administrator rights):
+#
+#   curl -L -o mm.tar.bz2 https://micro.mamba.pm/api/micromamba/win-64/latest
+#   tar -xf mm.tar.bz2 Library/bin/micromamba.exe
+#   set MAMBA_ROOT_PREFIX=C:\mm
+#   micromamba create -y -p C:\mm\bench -f environment-bench.yml
+#   C:\mm\bench\python.exe -m pip install -e ..          # iduedu itself, editable
+#
+# ⚠ Keep the prefix short, like C:\mm. The package cache nests
+# `pkgs/https/conda.anaconda.org/conda-forge/win-64/<package>/Lib/site-packages/...`,
+# and under a normal project path that crosses the 260-character Windows limit:
+# scikit-learn fails to extract and the whole environment creation aborts.
+#
+# ⚠ Run every timing arm in ONE environment on ONE machine. Times from two
+# machines must not share a table: this machine measured 1.42x slower than the
+# one that produced results/build_benchmark.archive-prevmachine.csv, uniformly
+# across libraries. The *ratios* survived (IduEdu over OSMnx: 4.86 there, 4.61
+# here) but the seconds did not.
+
+name: iduedu-bench
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+
+  # graph construction competitors
+  - pyrosm            # the reason this file exists; needs cykhash from conda-forge
+  - osmnx>=2.0
+  - cityseer          # pedestrian networks from a polygon, Rust core
+  - osmium>=3.7       # PBF header bbox extraction
+
+  # OD / shortest-path competitors
+  - networkx>=3.3
+  - networkit>=11.0
+  - python-igraph>=0.11
+  - rustworkx         # Rust core, wheels everywhere, no batched sources-by-targets API
+
+  # harness
+  - psutil>=5.9
+  - pyarrow>=19.0
+  - geopandas
+  - shapely
+  - pyproj
+  - numba
+
+  # accessibility case study; drop this line if objectnat is unavailable and run
+  # bench_accessibility.py from the pip environment instead
+  - pip
+  - pip:
+      - objectnat==2.0.0

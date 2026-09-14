@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from shapely.geometry import LineString, Point
 
-from iduedu.constants.transport_specs import DEFAULT_REGISTRY
+from iduedu.constants.transport_specs import DEFAULT_REGISTRY, TransportRegistry
 from iduedu.graph_builders.public_transport_builders import _graph_data_to_urban_graph
 
 pytestmark = pytest.mark.unit
@@ -18,7 +18,7 @@ def _nodes(rows, geoms):
 
 
 def test_graph_data_to_urban_graph_empty_nodes_returns_empty():
-    graph = _graph_data_to_urban_graph(gpd.GeoDataFrame(), gpd.GeoDataFrame(), DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(gpd.GeoDataFrame(), gpd.GeoDataFrame(), DEFAULT_REGISTRY, CRS)
     assert graph.nodes_gdf.empty
     assert graph.edges_gdf.empty
     assert graph.type == "public_transport"
@@ -26,7 +26,7 @@ def test_graph_data_to_urban_graph_empty_nodes_returns_empty():
 
 def test_graph_data_to_urban_graph_drops_nodes_without_geometry():
     nodes = _nodes({"node_id": ["s1"], "type": ["bus"], "route": ["A"]}, [None])
-    graph = _graph_data_to_urban_graph(nodes, gpd.GeoDataFrame(), DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(nodes, gpd.GeoDataFrame(), DEFAULT_REGISTRY, CRS)
     assert graph.nodes_gdf.empty
     assert graph.edges_gdf.empty
 
@@ -36,7 +36,7 @@ def test_graph_data_to_urban_graph_nodes_without_edges():
         {"node_id": ["s1", "p1"], "type": ["bus", "platform"], "route": ["A", "A"]},
         [Point(0, 0), Point(0, 7)],
     )
-    graph = _graph_data_to_urban_graph(nodes, gpd.GeoDataFrame(), DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(nodes, gpd.GeoDataFrame(), DEFAULT_REGISTRY, CRS)
     assert len(graph.nodes_gdf) == 2
     assert graph.edges_gdf.empty
 
@@ -57,11 +57,11 @@ def test_graph_data_to_urban_graph_builds_boarding_and_travel_edges():
         geometry=[LineString([(0, 0), (0, 300)]), LineString([(0, 0), (0, 7)])],
         crs=CRS,
     )
-    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS, 2.5)
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
 
     boarding = graph.edges_gdf[graph.edges_gdf["type"] == "boarding"].iloc[0]
     assert boarding["length_meter"] == 0.0
-    assert boarding["time_min"] == 2.5  # avg_boarding_time_min
+    assert boarding["time_min"] == DEFAULT_REGISTRY.get("bus").avg_wait_time_min
     assert bool(boarding["oneway"]) is True
 
     alighting = graph.edges_gdf[graph.edges_gdf["type"] == "alighting"].iloc[0]
@@ -74,6 +74,44 @@ def test_graph_data_to_urban_graph_builds_boarding_and_travel_edges():
     travel = graph.edges_gdf[graph.edges_gdf["type"] == "bus"].iloc[0]
     assert travel["length_meter"] == pytest.approx(300.0, abs=1e-3)
     assert travel["time_min"] > 0
+
+
+def test_graph_data_to_urban_graph_uses_mode_specific_wait_times():
+    nodes = _nodes(
+        {
+            "node_id": ["bus_stop", "tram_stop", "bus_platform", "tram_platform"],
+            "type": ["bus", "tram", "platform", "platform"],
+            "route": ["B", "T", "B", "T"],
+        },
+        [Point(0, 0), Point(100, 0), Point(0, 7), Point(100, 7)],
+    )
+    edges = gpd.GeoDataFrame(
+        {
+            "u": ["bus_stop", "tram_stop"],
+            "v": ["bus_platform", "tram_platform"],
+            "type": ["boarding", "boarding"],
+            "route": ["B", "T"],
+            "oneway": [False, False],
+        },
+        geometry=[LineString([(0, 0), (0, 7)]), LineString([(100, 0), (100, 7)])],
+        crs=CRS,
+    )
+    registry = TransportRegistry(
+        {
+            "bus": DEFAULT_REGISTRY.get("bus"),
+            "tram": DEFAULT_REGISTRY.get("tram"),
+        }
+    )
+    registry.update("bus", avg_wait_time_min=4.0)
+    registry.update("tram", avg_wait_time_min=7.0)
+
+    graph = _graph_data_to_urban_graph(nodes, edges, registry, CRS)
+    boarding = graph.edges_gdf.loc[graph.edges_gdf["type"].eq("boarding")]
+    target_modes = boarding["v"].map(graph.nodes_gdf["type"])
+    wait_by_mode = dict(zip(target_modes, boarding["time_min"]))
+
+    assert wait_by_mode == {"bus": 4.0, "tram": 7.0}
+    assert boarding["length_meter"].eq(0.0).all()
 
 
 def test_graph_data_to_urban_graph_keeps_shared_osm_nodes_route_specific():
@@ -96,7 +134,7 @@ def test_graph_data_to_urban_graph_keeps_shared_osm_nodes_route_specific():
         geometry=[LineString([(0, 0), (0, 300)]), LineString([(0, 0), (300, 0)])],
         crs=CRS,
     )
-    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
 
     route_a_edge = graph.edges_gdf.loc[graph.edges_gdf["route"] == "A"].iloc[0]
     route_b_edge = graph.edges_gdf.loc[graph.edges_gdf["route"] == "B"].iloc[0]
@@ -119,7 +157,7 @@ def test_graph_data_to_urban_graph_keeps_duplicate_route_lookup_endpoints():
         geometry=[LineString([(0, 0), (0, 300)])],
         crs=CRS,
     )
-    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
 
     assert len(graph.edges_gdf) == 1
 
@@ -134,7 +172,7 @@ def test_graph_data_to_urban_graph_fills_missing_oneway():
         geometry=[LineString([(0, 0), (0, 300)])],
         crs=CRS,
     )
-    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
 
     assert graph.edges_gdf["oneway"].dtype == bool
     # a non-boarding edge with missing oneway defaults to True (directed)
@@ -151,7 +189,7 @@ def test_graph_data_to_urban_graph_drops_edges_with_unknown_endpoints():
         geometry=[LineString([(0, 0), (0, 300)])],
         crs=CRS,
     )
-    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS, 1.0)
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
 
     assert len(graph.nodes_gdf) == 2
     assert graph.edges_gdf.empty

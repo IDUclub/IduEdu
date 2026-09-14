@@ -6,7 +6,7 @@ import pandas as pd
 from shapely import MultiPolygon, Polygon
 
 from iduedu import config
-from iduedu.graph.editors import apply_urban_graph_changes, project_objects2urban_graph
+from iduedu.graph.editors import apply_urban_graph_changes, join_urban_graphs, project_objects2urban_graph
 from iduedu.graph.transformers import keep_largest_connected_component
 from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.graph_builders.drive_walk_builders import get_walk_graph
@@ -15,8 +15,43 @@ from iduedu.overpass.downloaders import get_4326_boundary
 
 logger = config.logger
 
-PLATFORM_NODE_TYPES = {"platform", "subway_platform", "subway_entry_exit", "subway_entry", "subway_exit"}
+# Node types that are projected onto the walk network.
+# Subway objects that have no surface access are already retyped to ``platform`` by the parsers,
+# see ``parse_overpass_subway_data`` and ``overpass_subway2edgenode`` in ``iduedu/overpass/parsers.py``.
+PLATFORM_NODE_TYPES = {"platform", "station_entry_exit", "subway_entry_exit", "subway_entry", "subway_exit"}
 DEFAULT_WALK_SPEED_M_PER_MIN = 5 * 1000 / 60
+
+
+def _as_directed_multigraph(graph: UrbanGraph) -> UrbanGraph:
+    """Return ``graph`` as a directed multigraph with a boolean ``oneway`` column."""
+
+    edges = graph.edges_gdf.copy()
+    if not edges.empty:
+        if "oneway" not in edges.columns:
+            edges["oneway"] = False
+        edges["oneway"] = edges["oneway"].map(lambda value: False if pd.isna(value) else bool(value))
+        if not graph.is_multigraph:
+            edges["k"] = edges.groupby(["u", "v"], sort=False).cumcount()
+    return UrbanGraph(
+        nodes_gdf=graph.nodes_gdf.copy(),
+        edges_gdf=edges,
+        is_multigraph=True,
+        is_directed=True,
+        edge_direction_column="oneway",
+        adjacency_weight=graph.adjacency_weight,
+        crs=graph.crs,
+        graph_type=graph.type,
+    )
+
+
+def _walk_key_offsets(walk_edges: gpd.GeoDataFrame, pt_edges: gpd.GeoDataFrame):
+    """Count walk edges per ``(u, v)`` pair in the order of the public-transport edge table."""
+
+    if walk_edges.empty:
+        return 0
+    counts = walk_edges.groupby(["u", "v"], sort=False).size().rename("offset").reset_index()
+    offsets = pt_edges[["u", "v"]].merge(counts, on=["u", "v"], how="left")["offset"]
+    return offsets.fillna(0).astype(int).to_numpy()
 
 
 def join_pt_walk_graph(
@@ -78,6 +113,14 @@ def join_pt_walk_graph(
             max_dist=max_dist,
             add_link_edge=add_link_edge,
         )
+        unprojected = pt_platforms.index.difference(object2node_map.index)
+        if len(unprojected) > 0:
+            # Routes usually extend past the walk graph territory, so distant platforms are expected.
+            unprojected_by_type = pt_platforms.loc[unprojected, "type"].value_counts().to_dict()
+            logger.info(
+                f"{len(unprojected)} of {len(pt_platforms)} platform-like nodes are farther than {max_dist} m "
+                f"from the walk network and stay unconnected: {unprojected_by_type}"
+            )
         projected_walk = apply_urban_graph_changes(walk_directed, changes)
         walk_edges = projected_walk.edges_gdf.copy()
         if "type" not in walk_edges.columns:
@@ -147,47 +190,62 @@ def join_pt_walk_graph(
     relabel_mapping.update(dict(zip(pt_nodes_remapped.index, new_index)))
     pt_nodes_remapped.index = new_index
 
+    walk_part = _as_directed_multigraph(projected_walk)
+
     pt_edges_remapped = public_transport_g.edges_gdf.copy()
     if not pt_edges_remapped.empty:
         pt_edges_remapped["u"] = pt_edges_remapped["u"].map(relabel_mapping)
         pt_edges_remapped["v"] = pt_edges_remapped["v"].map(relabel_mapping)
         pt_edges_remapped = pt_edges_remapped.dropna(subset=["u", "v"]).copy()
-        if not pt_edges_remapped.empty:
-            pt_edges_remapped[["u", "v"]] = pt_edges_remapped[["u", "v"]].astype(int)
-            if public_transport_g.edge_direction_column is not None:
-                pt_edges_remapped[public_transport_g.edge_direction_column] = pt_edges_remapped[
-                    public_transport_g.edge_direction_column
-                ].astype(bool)
-            if public_transport_g.is_multigraph:
-                pt_edges_remapped["k"] = pt_edges_remapped.groupby(["u", "v"], sort=False).cumcount()
+    if not pt_edges_remapped.empty:
+        pt_edges_remapped[["u", "v"]] = pt_edges_remapped[["u", "v"]].astype(int)
+        if "oneway" in pt_edges_remapped.columns:
+            pt_edges_remapped["oneway"] = pt_edges_remapped["oneway"].map(
+                lambda value: True if pd.isna(value) else bool(value)
+            )
+        else:
+            pt_edges_remapped["oneway"] = True
+        # Edge keys must be unique across both tables, so PT keys continue the walk keys of the same pair.
+        pt_edges_remapped["k"] = pt_edges_remapped.groupby(["u", "v"], sort=False).cumcount() + _walk_key_offsets(
+            walk_part.edges_gdf, pt_edges_remapped
+        )
 
-    nodes = gpd.GeoDataFrame(
-        pd.concat([projected_walk.nodes_gdf, pt_nodes_remapped], axis=0, sort=False),
-        geometry=projected_walk.nodes_gdf.geometry.name,
-        crs=projected_walk.crs,
+    # Platforms projected onto the walk network keep their walk node ids, so those nodes belong to
+    # both parts; join_urban_graphs merges the duplicated index and keeps the walk row.
+    projected_targets = pd.Index(sorted(set(projected_mapping.values())))
+    pt_part_nodes = gpd.GeoDataFrame(
+        pd.concat([walk_part.nodes_gdf.loc[projected_targets], pt_nodes_remapped], axis=0, sort=False),
+        geometry=walk_part.nodes_gdf.geometry.name,
+        crs=walk_part.crs,
     )
-    edges = gpd.GeoDataFrame(
-        pd.concat([projected_walk.edges_gdf, pt_edges_remapped], axis=0, ignore_index=True, sort=False),
-        geometry=projected_walk.edges_gdf.geometry.name,
-        crs=projected_walk.crs,
-    )
-    if not edges.empty:
-        edges["oneway"] = edges["oneway"].astype(bool)
-        edges["k"] = edges.groupby(["u", "v"], sort=False).cumcount()
 
-    intermodal = UrbanGraph(
-        nodes_gdf=nodes,
-        edges_gdf=edges,
-        is_multigraph=True,
-        is_directed=True,
-        edge_direction_column="oneway",
-        adjacency_weight=projected_walk.adjacency_weight,
-        crs=projected_walk.crs,
-        graph_type="intermodal",
-    )
+    if pt_part_nodes.empty and pt_edges_remapped.empty:
+        pt_part = UrbanGraph.empty(
+            crs=walk_part.crs, is_multigraph=True, is_directed=True, edge_direction_column="oneway"
+        )
+    else:
+        pt_part = UrbanGraph(
+            nodes_gdf=pt_part_nodes,
+            edges_gdf=pt_edges_remapped,
+            is_multigraph=True,
+            is_directed=True,
+            edge_direction_column="oneway",
+            crs=walk_part.crs,
+            graph_type="public_transport",
+        )
+
+    intermodal = join_urban_graphs(walk_part, pt_part, graph_type="intermodal")
 
     if keep_largest_subgraph:
+        nodes_before = intermodal.nodes_gdf
         intermodal = keep_largest_connected_component(intermodal)
+        dropped = nodes_before.index.difference(intermodal.nodes_gdf.index)
+        if len(dropped) > 0 and "type" in nodes_before.columns:
+            # Typed nodes are the public-transport ones: losing them means a mode lost its
+            # connection to the walk network, which is worth reporting louder than the total count.
+            dropped_by_type = nodes_before.loc[dropped, "type"].dropna().value_counts().to_dict()
+            if dropped_by_type:
+                logger.warning(f"Public transport nodes dropped with the smaller components: {dropped_by_type}")
     logger.debug("Done composing intermodal UrbanGraph.")
     return intermodal
 

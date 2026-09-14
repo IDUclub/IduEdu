@@ -45,6 +45,7 @@ _autosummary/
 /dev
 /poetry.lock
 /uv.lock
+graphify-out
 
 # OS junk
 .DS_Store

@@ -28,6 +28,10 @@ def _two_node_graph(coords, edge_rows, *, crs=CRS, tag=None) -> UrbanGraph:
     return UrbanGraph(nodes, edges, is_multigraph=False, is_directed=False, crs=crs, graph_type="walk")
 
 
+def _degree(graph: UrbanGraph, node) -> int:
+    return int(((graph.edges_gdf["u"] == node) | (graph.edges_gdf["v"] == node)).sum())
+
+
 # ---------------------------------------------------------------------------
 # relabel / subgraph / clip
 # ---------------------------------------------------------------------------
@@ -170,7 +174,63 @@ def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     new_graph = apply_urban_graph_changes(graph, changes)
     # Original edge (0, 1) is preserved.
     assert ((new_graph.edges_gdf["u"] == 0) & (new_graph.edges_gdf["v"] == 1)).any()
-    assert object2node.loc[1000] in new_graph.nodes_gdf.index
+    object_node = object2node.loc[1000]
+    assert object_node in new_graph.nodes_gdf.index
+    assert _degree(new_graph, object_node) > 0  # the connector edge is part of the changes
+
+
+@pytest.mark.parametrize("add_link_edge", [True, False])
+def test_project_objects_lying_on_edge_reuses_projection_node(add_link_edge):
+    graph = undirected_line_graph()
+    # The object sits exactly on edge (1, 2): a connector edge would have zero length.
+    objects = gpd.GeoDataFrame(index=[1000], geometry=[Point(15.0, 0.0)], crs=CRS)
+
+    changes, object2node = project_objects2urban_graph(
+        graph, objects, WALK_SPEED_M_PER_MIN, add_link_edge=add_link_edge
+    )
+
+    # Only the projection node is created, and the object is mapped onto it.
+    assert len(changes.nodes_gdf) == 1
+    object_node = object2node.loc[1000]
+    assert object_node == changes.nodes_gdf.index[0]
+
+    new_graph = apply_urban_graph_changes(graph, changes)
+    assert _degree(new_graph, object_node) > 0
+    assert not new_graph.nodes_gdf.geometry.duplicated().any()
+
+
+@pytest.mark.parametrize("add_link_edge", [True, False])
+def test_project_objects_lying_on_node_reuses_existing_node(add_link_edge):
+    graph = undirected_line_graph()
+    objects = gpd.GeoDataFrame(index=[1000], geometry=[Point(10.0, 0.0)], crs=CRS)  # exactly node 1
+
+    changes, object2node = project_objects2urban_graph(
+        graph, objects, WALK_SPEED_M_PER_MIN, add_link_edge=add_link_edge
+    )
+
+    assert object2node.loc[1000] == 1
+    assert changes.nodes_gdf is None  # nothing to add, the object reuses node 1
+    assert changes.edges_to_delete.empty
+
+    new_graph = apply_urban_graph_changes(graph, changes)
+    assert len(new_graph.nodes_gdf) == len(graph.nodes_gdf)
+    assert _degree(new_graph, 1) == _degree(graph, 1)
+
+
+def test_project_objects_prefers_endpoint_over_equally_distant_edge_interior():
+    coords = {0: (0.0, 0.0), 1: (10.0, 0.0), 2: (13.0, 3.0), 3: (13.0, -3.0)}
+    graph = _two_node_graph(coords, [{"u": 0, "v": 1}, {"u": 2, "v": 3}])
+    # 1.5 m from node 1 and 1.5 m from the interior of edge (2, 3).
+    objects = gpd.GeoDataFrame(index=[1000], geometry=[Point(11.5, 0.0)], crs=CRS)
+
+    changes, object2node = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+
+    # Snapping to the existing node wins, so no edge is split.
+    assert changes.edges_to_delete.empty
+    new_graph = apply_urban_graph_changes(graph, changes)
+    object_node = object2node.loc[1000]
+    assert _degree(new_graph, object_node) > 0
+    assert set(zip(new_graph.edges_gdf["u"], new_graph.edges_gdf["v"])) >= {(0, 1), (2, 3)}
 
 
 def test_project_objects_returns_empty_changes_when_outside_max_dist():

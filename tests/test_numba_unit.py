@@ -7,8 +7,10 @@ from iduedu._numba.csr import coo_rows_to_arrays, sparse_row2numba_bool_matrix, 
 from iduedu._numba.shortest_paths import (
     dijkstra_numba_od_parallel,
     dijkstra_numba_path_length_parallel,
+    dijkstra_numba_path_parallel,
     multi_source_dijkstra_numba_nearest_source,
     multi_source_dijkstra_numba_path_length,
+    single_source_dijkstra_numba_path,
     single_source_dijkstra_numba_path_length,
 )
 
@@ -35,6 +37,10 @@ def _row_to_dict(row):
 
 def _triplet_row_to_dict(row):
     return {int(node): (int(source), float(distance)) for node, source, distance in row}
+
+
+def _paths_to_lists(rows):
+    return [[list(map(int, path)) for path in row] for row in rows]
 
 
 def test_numba_jit_coverage_is_enabled_before_numba_import():
@@ -144,3 +150,42 @@ def test_parallel_path_length_numba_returns_rows_per_origin():
     rows = dijkstra_numba_path_length_parallel(matrix, np.array([0, 3], dtype=np.int32), np.float32(10))
 
     assert [_row_to_dict(row) for row in rows] == [{0: 0.0, 1: 1.0, 2: 3.0, 3: 4.0}, {3: 0.0}]
+
+
+def test_single_source_dijkstra_numba_path_returns_nodes_and_handles_edge_cases():
+    matrix = sparse_row2numba_matrix(_weighted_matrix())
+
+    path = single_source_dijkstra_numba_path(matrix, np.int32(0), np.int32(3), np.float32(10))
+    cutoff_path = single_source_dijkstra_numba_path(matrix, np.int32(0), np.int32(3), np.float32(3))
+    same_node_path = single_source_dijkstra_numba_path(matrix, np.int32(2), np.int32(2), np.float32(0))
+
+    assert list(path) == [0, 1, 2, 3]
+    assert list(cutoff_path) == []
+    assert list(same_node_path) == [2]
+
+
+def test_parallel_dijkstra_numba_path_supports_all_to_all_and_pairwise():
+    matrix = sparse_row2numba_matrix(_weighted_matrix())
+    origins = np.array([0, 1], dtype=np.int32)
+    destinations = np.array([2, 3], dtype=np.int32)
+
+    all_to_all = dijkstra_numba_path_parallel(
+        matrix,
+        origins,
+        destinations,
+        np.float32(10),
+        False,
+    )
+    pairwise = dijkstra_numba_path_parallel(
+        matrix,
+        origins,
+        destinations,
+        np.float32(10),
+        True,
+    )
+
+    assert _paths_to_lists(all_to_all) == [
+        [[0, 1, 2], [0, 1, 2, 3]],
+        [[1, 2], [1, 2, 3]],
+    ]
+    assert _paths_to_lists(pairwise) == [[[0, 1, 2]], [[1, 2, 3]]]

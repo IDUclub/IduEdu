@@ -38,6 +38,18 @@ distance row, for example for per-origin accessibility profiles.
 Use :func:`od_matrix` when you need an origin-destination table between two
 sets of graph nodes or object tables.
 
+Use :func:`single_source_dijkstra_path` when one ordered node route is needed
+between a source and a destination. The search stops as soon as the destination
+is settled.
+
+Use :func:`multi_source_dijkstra_path` for a sparse matrix of ordered node
+routes. ``mode="all_to_all"`` computes every origin-destination combination;
+``mode="pairwise"`` matches the inputs by position.
+
+Use :func:`path_to_edges` to turn a node route into an ordered GeoDataFrame of
+the actual graph edges. This preserves curved edge geometry and transport
+attributes for mapping.
+
 GeoDataFrame inputs
 ~~~~~~~~~~~~~~~~~~~
 
@@ -57,3 +69,6 @@ For object-to-edge projection before OD calculations, see
     multi_source_dijkstra_nearest_source
     dijkstra_path_length_parallel
     od_matrix
+    single_source_dijkstra_path
+    multi_source_dijkstra_path
+    path_to_edges

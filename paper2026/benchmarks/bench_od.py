@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-B3 — OD-matrix benchmark: IduEdu vs NetworKit vs igraph.
+B3 — OD-matrix benchmark: IduEdu vs NetworKit vs igraph vs rustworkx.
 
 Two settings, selected by --mode:
   rect   : origins = residential buildings (growing |O|), destinations = schools (fixed |D|)
@@ -56,16 +56,22 @@ from bench_common import (
     node_coords,
     nx_to_igraph,
     nx_to_networkit,
+    nx_to_rustworkx,
     resolve_area_pbf,
     urban_to_networkx,
 )
+from wide_paths import use_paper_cache
 
 OUT_CSV = RESULTS_DIR / "od_benchmark.csv"
 KEY_COLUMNS = ["library", "mode", "n_sources", "threshold_min", "attempt"]
 
-DEV_DIR = Path(__file__).resolve().parents[2]  # dev/
-ORIGINS_PATH = DEV_DIR / "buildings_spb.parquet"
-DEST_PATH = DEV_DIR / "school.geojson"
+# Both layers live next to the manuscript, not one level up: parents[2] is the
+# repository root and pointed at a directory that was renamed long ago, so every
+# OD run failed on a missing file. Schools are a parquet layer beside the
+# buildings; the school.geojson this used to look for never existed here.
+PAPER_DIR = Path(__file__).resolve().parents[1]
+ORIGINS_PATH = PAPER_DIR / "buildings_spb.parquet"
+DEST_PATH = PAPER_DIR / "schools_spb.parquet"
 GRAPH_PATH = RESULTS_DIR / "spb_intermodal.urbangraph"
 SMOKE_GRAPH_PATH = RESULTS_DIR / "smoke.urbangraph"
 
@@ -83,6 +89,8 @@ THRESHOLDS_MIN = [5, 15, 30, 60]
 # Exclusive caps: competitors become impractically slow past these |O|.
 MAX_IGRAPH_SOURCES = 8192
 MAX_NETWORKIT_SOURCES = 65536
+#: rustworkx runs one Dijkstra per source in Python, so it is charged like igraph.
+MAX_RUSTWORKX_SOURCES = 8192
 SMOKE_OSM_ID = 1114252
 
 
@@ -155,6 +163,34 @@ def od_networkit(nk_graph, sources: list[int], targets: list[int]) -> np.ndarray
     return np.asarray(spsp.getDistances(), dtype=float)
 
 
+def od_rustworkx(rx_graph, sources: list[int], targets: list[int]) -> np.ndarray:
+    """One Dijkstra per source, because the library offers nothing else for a subset.
+
+    rustworkx has a fast Rust core, but its API has no sources-by-targets call:
+    either one source per invocation, or every pair at once. ``distance_matrix``
+    looks like the batched option and is not -- it ignores edge weights and counts
+    each edge as 1. ``all_pairs_dijkstra_path_lengths`` is genuinely parallel but
+    computes the whole matrix, which for a few hundred sources out of hundreds of
+    thousands of nodes is orders of magnitude more work.
+
+    So the loop runs in Python here, one call per source, while igraph does its own
+    loop inside C. That asymmetry is a property of the libraries rather than a
+    handicap imposed by this benchmark, and it is the honest thing to report.
+    """
+    import rustworkx as rx
+
+    unique = sorted({int(t) for t in targets})
+    column_of = {node: index for index, node in enumerate(unique)}
+    rows = []
+    for source in sources:
+        # PathLengthMapping is a rustworkx type, not a dict: materialise it once
+        # rather than probing it per target.
+        lengths = dict(rx.dijkstra_shortest_path_lengths(rx_graph, int(source), lambda w: float(w)))
+        rows.append([0.0 if node == int(source) else lengths.get(node, float("inf")) for node in unique])
+    matrix = np.asarray(rows, dtype=float)
+    return matrix[:, [column_of[int(t)] for t in targets]]
+
+
 def od_igraph(ig_graph, sources: list[int], targets: list[int]) -> np.ndarray:
     uniq: dict[int, int] = {}
     back = []
@@ -191,8 +227,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["rect", "square"], required=True)
     parser.add_argument("--smoke", action="store_true")
-    parser.add_argument("--libraries", default="iduedu,networkit,igraph")
+    parser.add_argument("--libraries", default="iduedu,networkit,igraph,rustworkx")
     args = parser.parse_args()
+
+    # See bench_build: without this the library caches relative to the working
+    # directory and the paper ends up with more than one Overpass cache.
+    use_paper_cache()
     mode = args.mode
     libraries = {x.strip() for x in args.libraries.split(",")}
 
@@ -227,7 +267,7 @@ def main() -> None:
         attempts = 1
     else:
         origins = gpd.read_parquet(ORIGINS_PATH)
-        dest = gpd.read_file(DEST_PATH)
+        dest = gpd.read_parquet(DEST_PATH) if DEST_PATH.suffix.lower() == ".parquet" else gpd.read_file(DEST_PATH)
         n_sources_list = N_SOURCES_SQUARE if mode == "square" else N_SOURCES_RECT
         thresholds = THRESHOLDS_MIN
         attempts = ATTEMPTS
@@ -249,6 +289,10 @@ def main() -> None:
             g_ig, pos_ig = nx_to_igraph(nx_graph)
             wp = [pos_ig[int(x)] for x in warm_ids]
             od_igraph(g_ig, wp, wp)
+        if "rustworkx" in libraries:
+            g_rx, pos_rx = nx_to_rustworkx(nx_graph)
+            wp = [pos_rx[int(x)] for x in warm_ids]
+            od_rustworkx(g_rx, wp, wp)
 
     rng = np.random.default_rng(SEED)
     selections = {
@@ -298,6 +342,8 @@ def main() -> None:
                 competitor_specs.append("networkit")
             if "igraph" in libraries and n_sources < MAX_IGRAPH_SOURCES:
                 competitor_specs.append("igraph")
+            if "rustworkx" in libraries and n_sources < MAX_RUSTWORKX_SOURCES:
+                competitor_specs.append("rustworkx")
 
             pending = [
                 lib for lib in competitor_specs if make_key([lib, mode, n_sources, None, attempt]) not in existing
@@ -325,6 +371,14 @@ def main() -> None:
                     dst = [pos[int(x)] for x in to_nx]
                     m_od = measure(od_networkit, g_nk, src, dst)
                     force_cleanup(g_nk, m_conv)
+                elif lib_name == "rustworkx":
+                    m_conv = measure(nx_to_rustworkx, nx_graph)
+                    g_rx, pos = m_conv.result
+                    t_convert = m_conv.time_sec
+                    src = [pos[int(x)] for x in from_nx]
+                    dst = [pos[int(x)] for x in to_nx]
+                    m_od = measure(od_rustworkx, g_rx, src, dst)
+                    force_cleanup(g_rx, m_conv)
                 else:  # igraph
                     m_conv = measure(nx_to_igraph, nx_graph)
                     g_ig, pos = m_conv.result

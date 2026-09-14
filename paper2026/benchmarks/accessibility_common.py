@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from bench_common import RESULTS_DIR, measure
 from scipy import sparse
+from wide_paths import OVERPASS_CACHE_DIR
 
 HERE = Path(__file__).resolve().parent
 PAPER_DIR = HERE.parent
@@ -20,7 +21,12 @@ ROOT_DIR = PAPER_DIR.parent
 
 ACCESSIBILITY_DIR = RESULTS_DIR / "accessibility"
 GRAPH_CACHE_DIR = RESULTS_DIR / "accessibility_cache"
-NETWORK_CACHE_DIR = HERE / ".iduedu_cache"
+
+#: The paper's single Overpass cache. This module used to keep its own inside
+#: ``benchmarks/``, so the same response could be downloaded twice -- once for the
+#: study, once for the timing benchmarks -- and the source directory carried two
+#: gigabytes of responses.
+NETWORK_CACHE_DIR = OVERPASS_CACHE_DIR
 SCENARIO_DETAIL_DIR = ACCESSIBILITY_DIR / "scenario_origins"
 
 MANIFEST_PATH = ACCESSIBILITY_DIR / "manifest.json"
@@ -135,11 +141,17 @@ def load_origins(path: Path, *, smoke: bool, max_origins: int | None) -> gpd.Geo
         raise ValueError(f"Origins have no CRS: {path}")
     origins = origins.loc[origins.geometry.notna() & ~origins.geometry.is_empty].copy()
 
+    # A building counts as an origin if it is flagged residential *or* someone lives
+    # in it. The two disagree in the Saint Petersburg layer: 428 buildings carry
+    # 62 972 residents while ``is_living`` is 0 -- dormitories and institutions,
+    # or simply mislabelled -- and the flag alone would drop them. ``population`` and
+    # ``resident_number`` are the two names this column arrives under.
     living_mask = pd.Series(False, index=origins.index)
     if "is_living" in origins.columns:
         living_mask |= origins["is_living"].fillna(False).astype(bool)
-    if "resident_number" in origins.columns:
-        living_mask |= pd.to_numeric(origins["resident_number"], errors="coerce").fillna(0).gt(0)
+    for column in ("resident_number", "population"):
+        if column in origins.columns:
+            living_mask |= pd.to_numeric(origins[column], errors="coerce").fillna(0).gt(0)
     if living_mask.any():
         origins = origins.loc[living_mask].copy()
 
@@ -233,7 +245,13 @@ def _walk_graph_from_intermodal(intermodal):
 
 
 def load_or_build_graphs(zone: gpd.GeoDataFrame, *, smoke: bool) -> tuple[Any, Any, dict]:
-    from iduedu import get_intermodal_graph, read_urban_graph, write_urban_graph
+    from iduedu import (
+        DEFAULT_REGISTRY,
+        TransportRegistry,
+        get_intermodal_graph,
+        read_urban_graph,
+        write_urban_graph,
+    )
 
     ensure_directories()
     configure_network_cache()
@@ -241,7 +259,19 @@ def load_or_build_graphs(zone: gpd.GeoDataFrame, *, smoke: bool) -> tuple[Any, A
         zone.to_crs(4326).geometry.iloc[0].wkb,
         f"simplify={not smoke}",
         "clip=True",
-        "boarding=1.0",
+        # The whole transport registry is part of the cache key, not just the
+        # boarding cost. The key used to be the literal "boarding=1.0"; deriving it
+        # from the waiting times fixed that case and left a wider one open, because
+        # a cached graph is equally stale when the *speed* constants change. They
+        # did change: recalibrating the kinematics moved the bus traffic coefficient
+        # from 0.05 to 0.375 without touching a single waiting time, so a key built
+        # from waits alone would have served a graph with the old run times.
+        "registry="
+        + ";".join(
+            f"{mode}:{spec.avg_wait_time_min},{spec.base_speed_kmh},"
+            f"{spec.dwell_min},{spec.accel_dist_m},{spec.brake_dist_m},{spec.vmax_tech_kmh}"
+            for mode, spec in ((mode, DEFAULT_REGISTRY.get(mode)) for mode in sorted(DEFAULT_REGISTRY.list_types()))
+        ),
         package_version("iduedu"),
     )
     intermodal_path = GRAPH_CACHE_DIR / f"intermodal_{graph_hash}.urbangraph"
@@ -272,13 +302,19 @@ def load_or_build_graphs(zone: gpd.GeoDataFrame, *, smoke: bool) -> tuple[Any, A
         print(f"[graph] loaded cached graphs ({graph_hash})", flush=True)
     else:
         print("[graph] building intermodal graph; .iduedu_cache is preserved")
+        # The library's measured waiting times are used as they are. This used to
+        # overwrite every mode with one minute, which is 5-11 times too low for
+        # surface transport -- and, because the walk graph has no boarding edges at
+        # all, the assumption applied to one side of the walk-vs-intermodal
+        # comparison only and inflated the reported gain.
+        paper_registry = TransportRegistry({mode: DEFAULT_REGISTRY.get(mode) for mode in DEFAULT_REGISTRY.list_types()})
         m_build = measure(
             get_intermodal_graph,
             territory=zone.to_crs(4326).geometry.iloc[0],
             clip_by_territory=True,
             keep_largest_subgraph=True,
             walk_kwargs={"simplify": not smoke, "keep_largest_subgraph": False},
-            pt_kwargs={"avg_boarding_time_min": 1.0},
+            pt_kwargs={"transport_registry": paper_registry},
         )
         intermodal = m_build.result
         walk = _walk_graph_from_intermodal(intermodal)

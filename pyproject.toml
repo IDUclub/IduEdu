@@ -124,6 +124,7 @@ skip = ["__init__.py"]
 [tool.coverage.run]
 branch = true
 source = ["iduedu"]
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = [

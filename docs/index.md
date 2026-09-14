@@ -8,17 +8,18 @@ Graph data model <api/graph_data_model>
 Migrating to UrbanGraph <migration_to_urban_graph>
 Benchmarks and design notes <benchmarks>
 Transport registry <api/transport_registry>
+GTFS public transport <api/gtfs>
 Graph utilities <api/utilities>
 Matrices <api/matrices>
 Overpass helpers <api/overpass>
 Examples <examples/index>
 ```
-# **IduEdu** is an open-source Python library for building and analyzing multimodal city networks from [OpenStreetMap](https://www.openstreetmap.org).
+# **IduEdu** is an open-source Python library for building and analyzing multimodal city networks from [OpenStreetMap](https://www.openstreetmap.org) and GTFS Schedule feeds.
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI version](https://img.shields.io/pypi/v/iduedu.svg)](https://pypi.org/project/iduedu/)
 [![Tests and Coverage](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml/badge.svg)](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml)
-[![Coverage](https://codecov.io/gh/IDUclub/IduEdu/graph/badge.svg)](https://codecov.io/gh/IDUclub/IduEdu)
+[![Coverage](https://raw.githubusercontent.com/IDUclub/IduEdu/python-coverage-comment-action-data/badge.svg)](https://github.com/IDUclub/IduEdu/tree/python-coverage-comment-action-data)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/)
 [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)
@@ -33,10 +34,13 @@ Examples <examples/index>
   local metric projection, travel-time weights and optional simplification.
 - **Public transport from OSM**: `get_public_transport_graph` builds static bus, tram, trolleybus and
   subway graphs directly from OSM route relations.
+- **Public transport from GTFS**: `get_gtfs_public_transport_graph` reads a local GTFS Schedule directory
+  or ZIP archive and builds a static graph with timetable-derived boarding waits.
 - **Intermodal graphs**: `get_intermodal_graph` combines public transport and walk networks by projecting
   stops, platforms and subway access points onto pedestrian edges.
 - **Matrices and shortest paths**: `od_matrix` and Dijkstra helpers use Numba-backed CSR kernels, cutoff
-  thresholds and adaptive graph reversal for large accessibility workloads.
+  thresholds and adaptive graph reversal for large accessibility workloads. Ordered node routes can
+  be converted back to their real edge geometries for map visualization.
 - **Interoperability**: optional NetworkX adapters are available for projects that need graph exchange or
   compatibility with older workflows.
 
@@ -161,7 +165,7 @@ config.set_overpass_date()  # or config.set_overpass_date(None)
 
 ## Roadmap / Ideas
 
-- More PT modes and GTFS import
+- GTFS transfers and time-dependent timetable routing
 - Richer edge attributes (e.g., elevation, turn costs)
 
 > Contributions and ideas are welcome! Please open an issue or PR.
