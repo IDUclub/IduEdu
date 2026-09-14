@@ -1,12 +1,69 @@
 # CHANGELOG
 
 
+## v2.1.0 (2026-09-14)
+
+### Continuous Integration
+
+- Chain release and docs workflows
+  ([`ed61e4a`](https://github.com/IDUclub/IduEdu/commit/ed61e4a7d5aca18f1fc7bd969538dd026f890e30))
+
+- rename the main CI workflow to Tests and Coverage - run release only in the official
+  IDUclub/IduEdu repository after successful main-branch quality checks - keep semantic-release as
+  the release gate, but allow no-op releases for non-release commits - rebuild and publish
+  documentation only after the Release workflow completes - restrict official documentation
+  deployment to IDUclub/IduEdu gh-pages - update README, docs badges and contributor notes for the
+  official workflow chain - remove the stale src path from docs configuration
+
+### Documentation
+
+- **paper**: Add Smart Cities manuscript and reproducibility materials
+  ([`3546d3e`](https://github.com/IDUclub/IduEdu/commit/3546d3e6eececea01852f88d5180e92a16b2eb8c))
+
+- **paper**: Restructure related work top-down, prepare submission
+  ([`6b57acd`](https://github.com/IDUclub/IduEdu/commit/6b57acd140fc6641803316cb3137202cc9c34ecc))
+
+### Features
+
+- Add GTFS public transport graphs and shortest path reconstruction
+  ([#23](https://github.com/IDUclub/IduEdu/pull/23),
+  [`eff0172`](https://github.com/IDUclub/IduEdu/commit/eff01729936067773277f2dfa7c116fbdc1fd005))
+
+Adds:
+
+GTFS Schedule support: get_gtfs_public_transport_graph builds a route-pattern graph from a feed,
+  directory or ZIP, filtered by service date and time window, with waits from scheduled headways,
+  GTFS shapes, extended route types and the station hierarchy; iduedu.gtfs adds read_gtfs_feed,
+  validate_gtfs_feed and merge_gtfs_feeds, which combines several feeds without identifier
+  collisions; shortest path reconstruction: single_source_dijkstra_path, multi_source_dijkstra_path
+  (all-to-all or pairwise, with cutoff, reverse routing and parallel Numba kernels) and
+  path_to_edges, also available as UrbanGraph methods; OSM route aliases: a request for tram also
+  fetches light_rail routes, and monorail and share taxi routes now reach the graph; a recalibrated
+  travel-time model: per-mode free-flow speed (base_speed_kmh), dwell and waiting time
+  (avg_wait_time_min) in TransportSpec, fitted against published timetables; peak speed on short
+  segments scales with sqrt(L / span). Fixes:
+
+OSM public transport routes no longer teleport across cities: pieces are ordered by cheapest
+  insertion, cut at holes over 1 km and follow the direction of their stops; routes without stops
+  are left out; graphs build for cities with a metro, subway routes without stop areas, and
+  relations with no members or refs; projected objects that coincide with the graph stay connected,
+  nearest-edge ties are resolved deterministically, and subway platforms are reached only through
+  stations and entrances in the intermodal graph; graph tables with mixed scalar types can be
+  written to parquet; the Docs workflow installs its dependencies from the pyproject docs group.
+  Also: the paper's study pipeline, benchmarks and figures under paper2026, coverage comments with
+  an in-repo badge instead of Codecov, and a manual Docs run.
+
+Migration: TransportSpec no longer has traffic_coef and needs base_speed_kmh;
+  get_public_transport_graph no longer takes avg_boarding_time_min, set the wait per mode through
+  TransportSpec.avg_wait_time_min instead. Travel times change with the recalibration.
+
+
 ## v2.0.0 (2026-07-07)
 
 ### Features
 
-- **graph**: Migrate IduEdu to UrbanGraph ([#21](https://github.com/DDonnyy/IduEdu/pull/21),
-  [`1f6781e`](https://github.com/DDonnyy/IduEdu/commit/1f6781e405d2fd576410c5b3cd420ffd2eecc262))
+- **graph**: Migrate IduEdu to UrbanGraph ([#21](https://github.com/IDUclub/IduEdu/pull/21),
+  [`1f6781e`](https://github.com/IDUclub/IduEdu/commit/1f6781e405d2fd576410c5b3cd420ffd2eecc262))
 
 * chore(todos): - added todos for feature release
 
@@ -108,14 +165,14 @@ BREAKING CHANGE: internal package paths and repository layout changed from src/i
 ### Bug Fixes
 
 - **config**: (#20)
-  ([`7809972`](https://github.com/DDonnyy/IduEdu/commit/780997245211ee84710a6622a4d258a41b71585d))
+  ([`7809972`](https://github.com/IDUclub/IduEdu/commit/780997245211ee84710a6622a4d258a41b71585d))
 
 OVERPASS_USER_AGENT naming changed
 
 ### Chores
 
 - Version bumped
-  ([`3e51b7d`](https://github.com/DDonnyy/IduEdu/commit/3e51b7d8e5c7ffc732857a406e80dbc5cdb0efe8))
+  ([`3e51b7d`](https://github.com/IDUclub/IduEdu/commit/3e51b7d8e5c7ffc732857a406e80dbc5cdb0efe8))
 
 
 ## v1.2.1 (2026-02-12)
@@ -123,7 +180,7 @@ OVERPASS_USER_AGENT naming changed
 ### Bug Fixes
 
 - **dependencies**: - added requests to required dep (lost earlier)
-  ([`e51214b`](https://github.com/DDonnyy/IduEdu/commit/e51214b1bce2b534201c23d017ce54d766aeef02))
+  ([`e51214b`](https://github.com/IDUclub/IduEdu/commit/e51214b1bce2b534201c23d017ce54d766aeef02))
 
 
 ## v1.2.0 (2026-01-13)
@@ -131,25 +188,25 @@ OVERPASS_USER_AGENT naming changed
 ### Features
 
 - **pt speed**: Wip
-  ([`db42c30`](https://github.com/DDonnyy/IduEdu/commit/db42c302c2a1dcb89051fdfbefd662be6b02fc6b))
+  ([`db42c30`](https://github.com/IDUclub/IduEdu/commit/db42c302c2a1dcb89051fdfbefd662be6b02fc6b))
 
 - **pt speed**: Wip
-  ([`dc0b059`](https://github.com/DDonnyy/IduEdu/commit/dc0b059550fc7eb9f736a0071e93fa4f751eb501))
+  ([`dc0b059`](https://github.com/IDUclub/IduEdu/commit/dc0b059550fc7eb9f736a0071e93fa4f751eb501))
 
 - **pt_routes**: - ways speed in overpass response data
-  ([`fa4a826`](https://github.com/DDonnyy/IduEdu/commit/fa4a82683c201d417043de711b2e2ba2bc59f9e7))
+  ([`fa4a826`](https://github.com/IDUclub/IduEdu/commit/fa4a82683c201d417043de711b2e2ba2bc59f9e7))
 
 ### Refactoring
 
 - **pt_parser**: - new interface for public transport graph, get_all_public_transport_graph and
   get_single_public_transport_graph will be deprecated
-  ([`266b065`](https://github.com/DDonnyy/IduEdu/commit/266b065109ab7e0d585f1915928e4734bfd07e13))
+  ([`266b065`](https://github.com/IDUclub/IduEdu/commit/266b065109ab7e0d585f1915928e4734bfd07e13))
 
 - **pt_parser**: Wip
-  ([`848dbc8`](https://github.com/DDonnyy/IduEdu/commit/848dbc80a0966f668ba854681bcadce7efd16f95))
+  ([`848dbc8`](https://github.com/IDUclub/IduEdu/commit/848dbc80a0966f668ba854681bcadce7efd16f95))
 
 - **pt_routes**: - ground public transport parser to edgenode refactor
-  ([`07acc47`](https://github.com/DDonnyy/IduEdu/commit/07acc47d0066b276582d470ec808cf0f717c38a7))
+  ([`07acc47`](https://github.com/IDUclub/IduEdu/commit/07acc47d0066b276582d470ec808cf0f717c38a7))
 
 
 ## v1.1.0 (2025-12-05)
@@ -157,101 +214,101 @@ OVERPASS_USER_AGENT naming changed
 ### Bug Fixes
 
 - Overpass_backoff_base default set to 2 sec
-  ([`bfbdfb1`](https://github.com/DDonnyy/IduEdu/commit/bfbdfb1a2541d649c76301b3987707520e4134b2))
+  ([`bfbdfb1`](https://github.com/IDUclub/IduEdu/commit/bfbdfb1a2541d649c76301b3987707520e4134b2))
 
 - **0.5.1**: Removed duplicated nodes
-  ([`d7d582e`](https://github.com/DDonnyy/IduEdu/commit/d7d582ea697cfc2f2b1cfd4a46bbd6786226e210))
+  ([`d7d582e`](https://github.com/IDUclub/IduEdu/commit/d7d582ea697cfc2f2b1cfd4a46bbd6786226e210))
 
 - **0.5.2**: Fix KeyError
-  ([`95e9cec`](https://github.com/DDonnyy/IduEdu/commit/95e9cec3ded787feed9d37e801cdbf788c2e8031))
+  ([`95e9cec`](https://github.com/IDUclub/IduEdu/commit/95e9cec3ded787feed9d37e801cdbf788c2e8031))
 
 - **0.5.4**: Fixed platform projections
-  ([`21a749b`](https://github.com/DDonnyy/IduEdu/commit/21a749b6abed76355c45232fc7b8390422452f5e))
+  ([`21a749b`](https://github.com/IDUclub/IduEdu/commit/21a749b6abed76355c45232fc7b8390422452f5e))
 
 - **intermodal_walk_builders**: - order in concating edges with their reverse copy for correct uvk
   in graph
-  ([`e982494`](https://github.com/DDonnyy/IduEdu/commit/e9824944c1213f7b75e4be012d0e776b8cf760f9))
+  ([`e982494`](https://github.com/IDUclub/IduEdu/commit/e9824944c1213f7b75e4be012d0e776b8cf760f9))
 
 - **matrix_builder**: - version 0.5.8
-  ([`e36b9d0`](https://github.com/DDonnyy/IduEdu/commit/e36b9d073822fe624aba2aeabf3339dbf888018f))
+  ([`e36b9d0`](https://github.com/IDUclub/IduEdu/commit/e36b9d073822fe624aba2aeabf3339dbf888018f))
 
 - **matrix_builder**: Added force node relabeling on matrix validation
-  ([`ca6e38a`](https://github.com/DDonnyy/IduEdu/commit/ca6e38a2961c2b467f54d7fe863de2dbf8f2a83c))
+  ([`ca6e38a`](https://github.com/IDUclub/IduEdu/commit/ca6e38a2961c2b467f54d7fe863de2dbf8f2a83c))
 
 - **reg_status**: Replaced deprecated code
-  ([`9691f42`](https://github.com/DDonnyy/IduEdu/commit/9691f4231a3b0e436f206290d65c870dc7ac1999))
+  ([`9691f42`](https://github.com/IDUclub/IduEdu/commit/9691f4231a3b0e436f206290d65c870dc7ac1999))
 
 ### Code Style
 
 - Added line
-  ([`094841d`](https://github.com/DDonnyy/IduEdu/commit/094841d24ead13d2a7acb1078b6b7ef2df3bbe9f))
+  ([`094841d`](https://github.com/IDUclub/IduEdu/commit/094841d24ead13d2a7acb1078b6b7ef2df3bbe9f))
 
 - Black fix
-  ([`b50c2e7`](https://github.com/DDonnyy/IduEdu/commit/b50c2e77faf031160dd0fc3346b7a7f06160e896))
+  ([`b50c2e7`](https://github.com/IDUclub/IduEdu/commit/b50c2e77faf031160dd0fc3346b7a7f06160e896))
 
 - Blacked
-  ([`7db7b6c`](https://github.com/DDonnyy/IduEdu/commit/7db7b6c4f75fae02249b80d18bd73153c513af88))
+  ([`7db7b6c`](https://github.com/IDUclub/IduEdu/commit/7db7b6c4f75fae02249b80d18bd73153c513af88))
 
 ### Continuous Integration
 
 - Fixing deploy-docs step
-  ([`8de4677`](https://github.com/DDonnyy/IduEdu/commit/8de4677e4d81a1d92f861c739e425dc41c9a5d99))
+  ([`8de4677`](https://github.com/IDUclub/IduEdu/commit/8de4677e4d81a1d92f861c739e425dc41c9a5d99))
 
 - Fixing deploy-docs step
-  ([`7c00608`](https://github.com/DDonnyy/IduEdu/commit/7c006087384f1091e48d304985a1b054b7c41bed))
+  ([`7c00608`](https://github.com/IDUclub/IduEdu/commit/7c006087384f1091e48d304985a1b054b7c41bed))
 
 - Fixing deploy-docs step
-  ([`e3aa296`](https://github.com/DDonnyy/IduEdu/commit/e3aa2965e2517adac2359a53ae9a9ca36faeea22))
+  ([`e3aa296`](https://github.com/IDUclub/IduEdu/commit/e3aa2965e2517adac2359a53ae9a9ca36faeea22))
 
 - Removed pyarrow install
-  ([`7ecf66b`](https://github.com/DDonnyy/IduEdu/commit/7ecf66b04285d72854d6ac512b31d3ebe559bb92))
+  ([`7ecf66b`](https://github.com/IDUclub/IduEdu/commit/7ecf66b04285d72854d6ac512b31d3ebe559bb92))
 
 - Removed pyarrow install
-  ([`e45f33d`](https://github.com/DDonnyy/IduEdu/commit/e45f33d1e05e937e5302c05056e7a31aecfb083e))
+  ([`e45f33d`](https://github.com/IDUclub/IduEdu/commit/e45f33d1e05e937e5302c05056e7a31aecfb083e))
 
 - Removed wrong dependency group
-  ([`3eb44d5`](https://github.com/DDonnyy/IduEdu/commit/3eb44d50e7cc64ef21d447c2b59e4f84320e7a0a))
+  ([`3eb44d5`](https://github.com/IDUclub/IduEdu/commit/3eb44d50e7cc64ef21d447c2b59e4f84320e7a0a))
 
 ### Documentation
 
 - - README.md update
-  ([`0972371`](https://github.com/DDonnyy/IduEdu/commit/09723715359c69f01d4c47ee604456a93749a035))
+  ([`0972371`](https://github.com/IDUclub/IduEdu/commit/09723715359c69f01d4c47ee604456a93749a035))
 
 - Added info about caching
-  ([`bccc69e`](https://github.com/DDonnyy/IduEdu/commit/bccc69e645ae7c342efb144b150cdbf5902539df))
+  ([`bccc69e`](https://github.com/IDUclub/IduEdu/commit/bccc69e645ae7c342efb144b150cdbf5902539df))
 
 ### Features
 
 - **0.4.0**: Tests & train enum
-  ([`bd7b500`](https://github.com/DDonnyy/IduEdu/commit/bd7b50021becdbebad5a4b94a0e76c69bc2e4a22))
+  ([`bd7b500`](https://github.com/IDUclub/IduEdu/commit/bd7b50021becdbebad5a4b94a0e76c69bc2e4a22))
 
 - **graph_transformer**: Added module for converting graph to GeoDataFrame
-  ([`253fbdb`](https://github.com/DDonnyy/IduEdu/commit/253fbdb8ea19a2b0b6cf3c54a6f5f4f354bc8cc4))
+  ([`253fbdb`](https://github.com/IDUclub/IduEdu/commit/253fbdb8ea19a2b0b6cf3c54a6f5f4f354bc8cc4))
 
 - **matrix_builder**: New Numba accelerated matrix computation instead networkit spsp
-  ([`24cb5ec`](https://github.com/DDonnyy/IduEdu/commit/24cb5ec5ce32204c7f227cadc778453a621fa9df))
+  ([`24cb5ec`](https://github.com/IDUclub/IduEdu/commit/24cb5ec5ce32204c7f227cadc778453a621fa9df))
 
 - **overpass_cache**: - caching overpass requests
-  ([`e64d746`](https://github.com/DDonnyy/IduEdu/commit/e64d7468feee6ace0e40f2a8a5e3c323650c0f3a))
+  ([`e64d746`](https://github.com/IDUclub/IduEdu/commit/e64d7468feee6ace0e40f2a8a5e3c323650c0f3a))
 
 ### Refactoring
 
 - **0.5.3**: Added coordinate rounds in any graph geometry
-  ([`7c8971a`](https://github.com/DDonnyy/IduEdu/commit/7c8971a4396f00008ebca158527a0acc57f25d71))
+  ([`7c8971a`](https://github.com/IDUclub/IduEdu/commit/7c8971a4396f00008ebca158527a0acc57f25d71))
 
 - **get_any_graph**: Added crs as optional and exception
-  ([`8b1c371`](https://github.com/DDonnyy/IduEdu/commit/8b1c3719a9b14a7d64fbfc27fee986e8c60e07a7))
+  ([`8b1c371`](https://github.com/IDUclub/IduEdu/commit/8b1c3719a9b14a7d64fbfc27fee986e8c60e07a7))
 
 - **get_any_graph**: Updated example
-  ([`7808f0a`](https://github.com/DDonnyy/IduEdu/commit/7808f0a36e51a444ab971ae1c1e65090e31807ef))
+  ([`7808f0a`](https://github.com/IDUclub/IduEdu/commit/7808f0a36e51a444ab971ae1c1e65090e31807ef))
 
 - **graph_transformer**: Edges and nodes to gdf made shorter
-  ([`7f1b969`](https://github.com/DDonnyy/IduEdu/commit/7f1b969cd113607e720b96a49db78639525cab0a))
+  ([`7f1b969`](https://github.com/IDUclub/IduEdu/commit/7f1b969cd113607e720b96a49db78639525cab0a))
 
 ### Testing
 
 - - added conftest.py
-  ([`20f3720`](https://github.com/DDonnyy/IduEdu/commit/20f372001bfb5067cf48774c5f6767b78ef9c8c9))
+  ([`20f3720`](https://github.com/IDUclub/IduEdu/commit/20f372001bfb5067cf48774c5f6767b78ef9c8c9))
 
 - - added some tests
-  ([`560aa82`](https://github.com/DDonnyy/IduEdu/commit/560aa8246da4b674e79275e6922de126ec9dce96))
+  ([`560aa82`](https://github.com/IDUclub/IduEdu/commit/560aa8246da4b674e79275e6922de126ec9dce96))
