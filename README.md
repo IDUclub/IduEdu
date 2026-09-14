@@ -3,7 +3,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI version](https://img.shields.io/pypi/v/iduedu.svg)](https://pypi.org/project/iduedu/)
 [![Tests and Coverage](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml/badge.svg)](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml)
-[![Coverage](https://codecov.io/gh/IDUclub/IduEdu/graph/badge.svg)](https://codecov.io/gh/IDUclub/IduEdu)
+[![Coverage](https://raw.githubusercontent.com/IDUclub/IduEdu/python-coverage-comment-action-data/badge.svg)](https://github.com/IDUclub/IduEdu/tree/python-coverage-comment-action-data)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/)
 [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)
