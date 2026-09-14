@@ -33,19 +33,15 @@ class RateLimiter:
 
     def wait(self):
         """Block until the next request slot is available."""
-        start = monotonic()
         with self._cv:
             while True:
                 now = monotonic()
                 if now >= self._next_ts:
                     # Fixed slot schedule.
                     self._next_ts = max(self._next_ts, now) + self.min_interval
-                    slept = monotonic() - start
-                    # logger.info(f"GRANT; slept={slept:.3f}s; next_slot_in={self._next_ts - now:.3f}s")
                     self._cv.notify_all()
                     return
                 to_sleep = self._next_ts - now
-                # logger.info(f"SLEEP for {to_sleep:.3f}s (next_ts={self._next_ts:.3f})")
                 self._cv.wait(timeout=to_sleep)
 
 

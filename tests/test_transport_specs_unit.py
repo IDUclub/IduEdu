@@ -114,10 +114,10 @@ def test_travel_time_respects_speed_limit():
     spec = TransportSpec("bus", vmax_tech_kmh=80, accel_dist_m=0, brake_dist_m=0, base_speed_kmh=60)
     L = 1000.0
 
-    # без лимита едем на свободной скорости вида: 60 km/h -> 1000 m/min
+    # no limit: the mode's free-flow speed, 60 km/h -> 1000 m/min
     t_free = spec.travel_time_min(L)
 
-    # лимит 600 m/min (36 km/h) ниже свободной скорости, поэтому связывает
+    # a 600 m/min (36 km/h) limit is below free flow, so it binds
     t_limited = spec.travel_time_min(L, speed_limit_mpm=600.0)
     assert t_limited > t_free
     assert approx(t_limited, L / 600.0, rel=1e-12, abs_=1e-12)
@@ -256,7 +256,7 @@ def test_registry_ensure_creates_default_when_missing():
     reg = TransportRegistry()
     spec = reg.ensure("ferry")
     assert spec.name == "ferry"
-    # дефолтные значения из ensure()
+    # defaults filled in by ensure()
     assert spec.vmax_tech_kmh > 0
     assert reg.get("ferry").name == "ferry"
 

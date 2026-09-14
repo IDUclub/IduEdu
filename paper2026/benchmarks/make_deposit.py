@@ -64,9 +64,12 @@ TABLES = [
 CODE = ["wide_*.py", "README.md"]
 
 #: figures/ carries the artwork of two papers. Only the generators, their basemap
-#: data and the nine images this manuscript shows are deposited: copying the
+#: data and the eleven images this manuscript shows are deposited: copying the
 #: directory whole put 22 MB into a 27 MB archive, and most of it was other work.
-FIGURE_CODE = ["figure_common.py", "figures_cus.py", "data/**/*"]
+#: ``overview_figure.tex`` is here because the paper's first figure is drawn in
+#: TikZ rather than measured: without its source that one image could not be
+#: rebuilt from the deposit, and everything else could.
+FIGURE_CODE = ["figure_common.py", "figures_cus.py", "overview_figure.tex", "data/**/*"]
 
 IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".venv*", "_*_preview", "*.log")
 
@@ -124,9 +127,19 @@ def feed_sources() -> pd.DataFrame:
 
 README = """# Open transit schedules against OpenStreetMap: measurements for {n_cities} cities
 
-This deposit accompanies the paper *How complete is OpenStreetMap for public
-transport?* It holds the measurements the paper reports, the code that produced
-them, and enough provenance to rebuild the inputs.
+This deposit accompanies the paper *Can OpenStreetMap stand in for a published
+timetable? A two-directional comparison across 126 cities*. It holds the
+measurements the paper reports, the code that produced them, and enough
+provenance to rebuild the inputs.
+
+Assembled {today}. Version 2 replaces every figure and the module that draws
+them. The artwork is now drawn at the size it is printed, so its lettering and
+its line widths are what the journal asks for; three generators whose images the
+paper does not show were removed; and the two panels of the Delhi plate, which
+had been labelled with the number of graph vertices, now carry the number of
+stops the coverage table reports. No stage of the pipeline was rerun: every
+measurement in `results/` is the one version 1 carried, and `MANIFEST.sha256`
+lets a reader confirm it.
 
 ## What is here
 
@@ -136,7 +149,7 @@ them, and enough provenance to rebuild the inputs.
 | `results/*.csv` | the measurements themselves, one row per city or per city and mode |
 | `results/feed_sources.csv` | identifier, catalogue, licence and URL of every schedule used |
 | `code/benchmarks/` | the pipeline, one module per stage |
-| `code/figures/` | the figure generator and the nine images the paper shows |
+| `code/figures/` | the figure generator and the eleven images the paper shows |
 | `environment/` | dependency specifications |
 | `MANIFEST.sha256` | checksum of every file above |
 
@@ -165,7 +178,7 @@ produced these results are identified in the paper by the digest
 ## Citing
 
 Cite the paper for the findings and this deposit for the measurements:
-<https://doi.org/10.5281/zenodo.22232337>.
+<https://doi.org/10.5281/zenodo.22232336>.
 
 ## Licence
 
@@ -184,8 +197,6 @@ OpenStreetMap and from published schedules. They are analysis output rather than
 extracted data, so they are ours to license -- with attribution to OpenStreetMap
 contributors, whose data they were computed from. The schedules remain under
 their publishers' own licences, listed per feed in `results/feed_sources.csv`.
-
-Assembled {today}.
 """
 
 

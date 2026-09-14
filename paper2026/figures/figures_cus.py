@@ -4,8 +4,9 @@ Three modules used to divide this work -- one for the charts, one for the city
 maps, one for packaging -- and the division cost more than it saved: the palette
 was defined twice under one name, the packaging step re-ran the chart module as a
 subprocess, and a reader looking for "the figures of this paper" had to know
-which of the three to open. The paper for Geographical Analysis keeps its own
-module beside this one.
+which of the three to open. The artwork of the Geographical Analysis paper lives
+in the same directory but is not made here: its charts come out of the benchmark
+runs and its two diagrams are standalone TikZ.
 
 Written as a script rather than a notebook on purpose: eleven figures over eight
 result tables are regenerated whenever a sweep is rerun, and a script is what a
@@ -29,21 +30,32 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from figure_common import (
+    BODY,
     CASE_COLORS,
     CASE_ORDER,
+    COLUMN_IN,
     COVERED,
     DPI,
     ELSEWHERE,
+    HAIRLINE,
+    HEAVY,
+    LABEL,
     MODE_ORDER,
     NO_NETWORK,
+    PANEL,
     PT_COLORS,
+    RASTER_DPI,
+    RULE,
     SPARSE,
     STROKE,
+    VECTOR,
     C,
+    canvas,
     city_coverage,
     classify_bus,
     load,
     per_mode_coverage,
+    pt,
     save,
     style_ax,
 )
@@ -55,20 +67,10 @@ from scipy.stats import spearmanr
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
 
-from wide_access import (  # noqa: E402
-    N_DESTINATIONS,
-    N_ORIGINS,
-    SEED,
-    THRESHOLDS_MIN,
-    _nearest_nodes,
-    _reach,
-    _sample_points,
-)
 from wide_cohort import measurable as cohort_cities  # noqa: E402
 from wide_paths import ALL_OSM_MODES, gtfs_graph_path, osm_graph_path  # noqa: E402
 
 from iduedu import read_urban_graph  # noqa: E402
-from iduedu.graph_builders.intermodal_builders import join_pt_walk_graph  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 MANUSCRIPT = HERE.parent / "manuscript_cus"
@@ -82,28 +84,21 @@ MAP = {"osm": "#AF52DE", "gtfs": "#00A8FF", "walk": "#D8D8DC", "dark": "#3A3A3C"
 #: chart. The journal takes EPS or TIFF, and for these two TIFF at 300 dpi is the
 #: honest choice: nobody zooms into an individual street, and a reviewer's PDF
 #: reader should not have to draw them.
-RASTER = {"wide_case_displacement_maps.png", "wide_case_accessibility_maps.png"}
-TIFF_DPI = 300
+RASTER = {"wide_case_displacement_maps.png", "wide_two_sources.png"}
 
 
 # ---------------------------------------------------------------------------
-# 1. The signature figure: completeness has two directions, not one
+# Figure 5. The signature figure: completeness has two directions, not one
 # ---------------------------------------------------------------------------
 def figure_coverage_scatter() -> None:
     frame = city_coverage().dropna(subset=["feed_to_osm_100", "osm_to_feed_100"])
-    fig, ax = plt.subplots(figsize=(8.4, 8.0), dpi=DPI)
+    fig, ax = plt.subplots(figsize=canvas(0.92), dpi=DPI)
     style_ax(ax, ygrid_only=False)
 
-    ax.axhline(0.5, color="black", alpha=0.18, linewidth=1.0, zorder=2)
-    ax.axvline(0.5, color="black", alpha=0.18, linewidth=1.0, zorder=2)
-    # Quadrant captions sit outside the data area, in axes fractions: inside the plot
-    # they landed on the cities they were meant to describe.
-    # The two upper captions used to sit above the axes, where the second line of
-    # the title ran straight through them. Inside the plot they have room: the top
-    # corners of this cloud are empty in every run.
-    # Подписи стоят у центра креста, а не по углам: углы заняты точками, а
-    # середина каждой четверти пуста во всех прогонах. Разнесены от осей на
-    # четверть поля, чтобы не наезжать на сами линии.
+    ax.axhline(0.5, color="black", alpha=0.18, linewidth=RULE, zorder=2)
+    ax.axvline(0.5, color="black", alpha=0.18, linewidth=RULE, zorder=2)
+    # Captions sit in the middle of each quadrant, which is empty in every run, rather
+    # than in the corners, which hold points; a quarter of the axes away from the lines.
     quadrants = [
         (0.26, 0.74, "OSM richer than the feed" + chr(10) + "(estimate runs high)", "center"),
         (0.74, 0.74, "both sources agree", "center"),
@@ -116,8 +111,9 @@ def figure_coverage_scatter() -> None:
             y,
             label,
             transform=ax.transAxes,
-            fontsize=10,
-            color=C["gray"],
+            fontsize=BODY,
+            # Not grey: the journal wants 4.5:1 contrast, and #8E8E93 on white gives 3.0.
+            color=C["dark"],
             ha=ha,
             va="center",
             style="italic",
@@ -125,7 +121,7 @@ def figure_coverage_scatter() -> None:
             linespacing=1.3,
         )
 
-    sizes = 18 + 170 * (frame["n_feed_stops"].rank(pct=True))
+    sizes = 14 + 120 * (frame["n_feed_stops"].rank(pct=True))
     ax.scatter(
         frame["feed_to_osm_100"],
         frame["osm_to_feed_100"],
@@ -133,7 +129,7 @@ def figure_coverage_scatter() -> None:
         c=C["iduedu"],
         alpha=0.55,
         edgecolor="white",
-        linewidth=0.8,
+        linewidth=HAIRLINE,
         zorder=3,
     )
     # Only the cities the text argues about, and each label pushed off its point in
@@ -167,28 +163,22 @@ def figure_coverage_scatter() -> None:
             point,
             textcoords="offset points",
             xytext=(dx, dy),
-            fontsize=9,
+            fontsize=BODY,
             ha="left" if dx > 0 else "right",
             color=C["dark"],
             path_effects=STROKE,
             zorder=5,
         )
 
-    ax.set_xlabel("share of feed stops found in OSM", fontsize=11)
-    ax.set_ylabel("share of OSM stops found in the feed", fontsize=11)
-    ax.set_title(
-        f"Completeness has two directions\n{len(frame)} cities, matching radius 100 m; marker size is feed size",
-        fontsize=13,
-        fontweight="bold",
-        loc="left",
-    )
+    ax.set_xlabel("share of feed stops found in OSM", fontsize=LABEL)
+    ax.set_ylabel("share of OSM stops found in the feed", fontsize=LABEL)
     ax.set_xlim(-0.03, 1.03)
     ax.set_ylim(-0.03, 1.03)
     save(fig, "wide_coverage_scatter.png")
 
 
 # ---------------------------------------------------------------------------
-# 2. Coverage by mode, with the matching radius made visible
+# Figure 4. Coverage by mode, with the matching radius made visible
 # ---------------------------------------------------------------------------
 def figure_coverage_by_mode() -> None:
     frame = per_mode_coverage()
@@ -199,12 +189,12 @@ def figure_coverage_by_mode() -> None:
     frame = frame.loc[frame["n_feed_stops"].gt(0) & frame["n_osm_stops"].gt(0)]
     modes = [mode for mode in MODE_ORDER if frame["mode"].eq(mode).sum() >= 3]
 
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.6), dpi=DPI)
+    fig, axes = plt.subplots(2, 1, figsize=canvas(0.68), dpi=DPI, sharex=True, sharey=True)
     for ax, (direction, denominator, title) in zip(
         axes,
         [
-            ("feed_to_osm", "n_feed_stops", "Feed → OSM: does OSM know this stop?"),
-            ("osm_to_feed", "n_osm_stops", "OSM → feed: does the feed know this stop?"),
+            ("feed_to_osm", "n_feed_stops", "(a) feed → OSM: does OSM know this stop?"),
+            ("osm_to_feed", "n_osm_stops", "(b) OSM → feed: does the feed know this stop?"),
         ],
     ):
         style_ax(ax)
@@ -226,7 +216,7 @@ def figure_coverage_by_mode() -> None:
                     color=PT_COLORS.get(mode, C["gray"]),
                     alpha=alpha,
                     edgecolor="white",
-                    linewidth=0.8,
+                    linewidth=HAIRLINE,
                     zorder=3,
                 )
                 if radius == 100:
@@ -236,7 +226,7 @@ def figure_coverage_by_mode() -> None:
                         [values.quantile(0.25), upper],
                         color="black",
                         alpha=0.45,
-                        linewidth=1.4,
+                        linewidth=RULE,
                         zorder=4,
                     )
                     # Above the whisker, not above the median: at the median the
@@ -247,7 +237,7 @@ def figure_coverage_by_mode() -> None:
                         min(upper, 1.0) + 0.022,
                         f"{values.median():.2f}",
                         ha="center",
-                        fontsize=9,
+                        fontsize=BODY,
                         color=C["dark"],
                         path_effects=STROKE,
                         zorder=5,
@@ -257,9 +247,9 @@ def figure_coverage_by_mode() -> None:
             cursor += gap
 
         ax.set_xticks([centre for _, _, centre in centres])
-        ax.set_xticklabels([f"{mode}\n{count} cities" for mode, count, _ in centres], fontsize=10)
-        ax.set_ylabel("median share across cities", fontsize=11)
-        ax.set_title(title, fontsize=12, fontweight="bold", loc="left")
+        ax.set_xticklabels([f"{mode}\n{count} cities" for mode, count, _ in centres], fontsize=BODY)
+        ax.set_ylabel("median share across cities", fontsize=LABEL)
+        ax.set_title(title, fontsize=PANEL, loc="left", color=C["dark"])
 
     # In the axes the legend landed on the bus whisker, which is the widest in the
     # figure; at figure level it has room of its own.
@@ -270,32 +260,30 @@ def figure_coverage_by_mode() -> None:
         ],
         title="matching radius",
         frameon=False,
-        fontsize=9,
-        title_fontsize=9,
+        fontsize=BODY,
+        title_fontsize=BODY,
         loc="upper right",
         ncols=3,
-        bbox_to_anchor=(0.99, 1.0),
+        handlelength=1.1,
+        handletextpad=0.4,
+        columnspacing=1.1,
+        bbox_to_anchor=(0.995, 1.005),
     )
     for ax in axes:
-        ax.set_ylim(0, 1.14)
-    fig.suptitle(
-        "Whether the two sources see the same stop, by mode and by tolerance",
-        fontsize=13.5,
-        fontweight="bold",
-        x=0.005,
-        ha="left",
-    )
+        ax.set_ylim(0, 1.16)
     save(fig, "wide_coverage_by_mode.png")
 
 
 # ---------------------------------------------------------------------------
-# 3. Low coverage is not one phenomenon
+# Figure 6. Low coverage is not one phenomenon
 # ---------------------------------------------------------------------------
 def figure_coverage_cases() -> None:
     bus = classify_bus(per_mode_coverage())
     order = CASE_ORDER
 
-    fig, axes = plt.subplots(1, 3, figsize=(15.0, 5.2), dpi=DPI, gridspec_kw={"width_ratios": [1.0, 1.0, 1.35]})
+    fig = plt.figure(figsize=canvas(0.92), dpi=DPI, layout="constrained")
+    grid = fig.add_gridspec(2, 2, height_ratios=[1.25, 1.0])
+    axes = [fig.add_subplot(grid[0, 0]), fig.add_subplot(grid[0, 1]), fig.add_subplot(grid[1, :])]
 
     ax = axes[0]
     style_ax(ax)
@@ -305,7 +293,7 @@ def figure_coverage_cases() -> None:
         counts,
         color=[CASE_COLORS[case] for case in order],
         edgecolor="white",
-        linewidth=0.8,
+        linewidth=HAIRLINE,
         width=0.68,
         zorder=3,
     )
@@ -315,7 +303,7 @@ def figure_coverage_cases() -> None:
             value + 0.6,
             str(value),
             ha="center",
-            fontsize=11,
+            fontsize=BODY,
             fontweight="bold",
             color=C["dark"],
             path_effects=STROKE,
@@ -323,14 +311,14 @@ def figure_coverage_cases() -> None:
         )
     short = {
         COVERED: "covered",
-        SPARSE: "sparse,\nsame area",
-        ELSEWHERE: "OSM maps\nelsewhere",
-        NO_NETWORK: "no network\nin OSM",
+        SPARSE: "sparse",
+        ELSEWHERE: "elsewhere",
+        NO_NETWORK: "no network",
     }
     ax.set_xticks(range(len(order)))
-    ax.set_xticklabels([short[case] for case in order], fontsize=9.5)
-    ax.set_ylabel("cities with a bus feed", fontsize=11)
-    ax.set_title("Four different situations", fontsize=12, fontweight="bold", loc="left")
+    ax.set_xticklabels([short[case] for case in order], fontsize=BODY, rotation=30, ha="right")
+    ax.set_ylabel("cities with a bus feed", fontsize=LABEL)
+    ax.set_title("(a)", fontsize=PANEL, loc="left", color=C["dark"])
 
     ax = axes[1]
     style_ax(ax)
@@ -347,14 +335,14 @@ def figure_coverage_cases() -> None:
         for element in ("whiskers", "caps", "medians"):
             for line in parts[element]:
                 line.set_color(C["dark"])
-                line.set_linewidth(1.2)
+                line.set_linewidth(RULE)
         positions.append(index)
         labels.append(short[case])
     ax.set_yscale("log")
     ax.set_xticks(positions)
-    ax.set_xticklabels(labels, fontsize=9.5)
-    ax.set_ylabel("distance to the nearest OSM stop, m", fontsize=11)
-    ax.set_title("Absence and displacement look nothing alike", fontsize=12, fontweight="bold", loc="left")
+    ax.set_xticklabels(labels, fontsize=BODY, rotation=30, ha="right")
+    ax.set_ylabel("distance to the nearest OSM stop, m", fontsize=LABEL)
+    ax.set_title("(b)", fontsize=PANEL, loc="left", color=C["dark"])
 
     ax = axes[2]
     style_ax(ax)
@@ -365,95 +353,20 @@ def figure_coverage_cases() -> None:
         displaced["nearest_median_m"] / 1000,
         color=CASE_COLORS[ELSEWHERE],
         edgecolor="white",
-        linewidth=0.8,
+        linewidth=HAIRLINE,
         height=0.68,
         zorder=3,
     )
     ax.set_yticks(y)
-    ax.set_yticklabels([key.replace("_", " ").title() for key in displaced["city_key"]], fontsize=9)
+    ax.set_yticklabels([key.replace("_", " ").title() for key in displaced["city_key"]], fontsize=BODY)
     ax.invert_yaxis()
-    ax.set_xlabel("median distance from a feed stop to the nearest OSM stop, km", fontsize=10)
-    ax.set_title("Same boundary, different halves of town", fontsize=12, fontweight="bold", loc="left")
-
-    fig.suptitle(
-        "A coverage of zero can mean OSM has nothing, or that it has the other side of the city",
-        fontsize=13.5,
-        fontweight="bold",
-        x=0.005,
-        ha="left",
-    )
+    ax.set_xlabel("median distance from a feed stop to the nearest OSM stop, km", fontsize=LABEL)
+    ax.set_title("(c)", fontsize=PANEL, loc="left", color=C["dark"])
     save(fig, "wide_coverage_cases.png")
 
 
 # ---------------------------------------------------------------------------
-# 4. Waiting times
-# ---------------------------------------------------------------------------
-def figure_waits() -> None:
-    frame = load("indicators_waits.csv", ["city_key", "mode"])
-    frame = frame.loc[frame["status"].eq("ok")]
-    per_mode = frame.loc[~frame["mode"].eq("*") & frame["wait_harmonic_min"].notna()]
-    modes = [mode for mode in MODE_ORDER if (per_mode["mode"] == mode).sum() >= 3]
-
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.4), dpi=DPI, gridspec_kw={"width_ratios": [1.25, 1.0]})
-
-    ax = axes[0]
-    style_ax(ax)
-    for index, mode in enumerate(modes):
-        values = per_mode.loc[per_mode["mode"].eq(mode), "wait_harmonic_min"]
-        jitter = (np.random.default_rng(7).random(len(values)) - 0.5) * 0.34
-        ax.scatter(
-            index + jitter,
-            values,
-            s=26,
-            color=PT_COLORS.get(mode, C["gray"]),
-            alpha=0.45,
-            edgecolor="white",
-            linewidth=0.6,
-            zorder=3,
-        )
-        ax.plot([index - 0.28, index + 0.28], [values.median()] * 2, color=C["dark"], linewidth=2.4, zorder=5)
-    ax.set_yscale("log")
-    ax.set_xticks(range(len(modes)))
-    ax.set_xticklabels([f"{mode}\n{(per_mode['mode'] == mode).sum()} cities" for mode in modes], fontsize=10)
-    ax.set_ylabel("waiting time, minutes (harmonic mean within a city)", fontsize=11)
-    ax.set_title("Waiting time by mode", fontsize=12, fontweight="bold", loc="left")
-    ax.legend(
-        handles=[Line2D([], [], color=C["dark"], linewidth=2.4, label="median across cities")],
-        frameon=False,
-        fontsize=9,
-        loc="upper left",
-    )
-
-    ax = axes[1]
-    style_ax(ax)
-    city = frame.loc[frame["mode"].eq("*") & frame["wait_harmonic_min"].notna()]
-    ax.hist(
-        city["wait_harmonic_min"].clip(upper=60),
-        bins=24,
-        color=C["iduedu"],
-        alpha=0.85,
-        edgecolor="white",
-        linewidth=0.8,
-        zorder=3,
-    )
-    ax.axvline(city["wait_harmonic_min"].median(), color=C["red"], linewidth=2.0, zorder=5)
-    ax.text(
-        city["wait_harmonic_min"].median() + 1.2,
-        ax.get_ylim()[1] * 0.9,
-        f"median {city['wait_harmonic_min'].median():.1f} min",
-        fontsize=10,
-        color=C["red"],
-        path_effects=STROKE,
-    )
-    ax.set_xlabel("waiting time, minutes (clipped at 60)", fontsize=11)
-    ax.set_ylabel("cities", fontsize=11)
-    ax.set_title(f"All modes pooled, {len(city)} cities", fontsize=12, fontweight="bold", loc="left")
-
-    save(fig, "wide_waits_by_mode.png")
-
-
-# ---------------------------------------------------------------------------
-# 5. Speed against segment length: why one free-flow speed cannot work
+# Figure 8. Speed against segment length: why one free-flow speed cannot work
 # ---------------------------------------------------------------------------
 def figure_speed_by_length() -> None:
     frame = load("speed_by_length.csv")
@@ -463,8 +376,9 @@ def figure_speed_by_length() -> None:
     frame["right"] = frame["length_class"].str.extract(r",\s*([\d.]+|inf)\]")[0].replace("inf", "8000").astype(float)
     frame["centre"] = np.sqrt(frame["left"].clip(lower=60) * frame["right"])
 
-    fig, ax = plt.subplots(figsize=(10.4, 6.2), dpi=DPI)
+    fig, ax = plt.subplots(figsize=canvas(0.60), dpi=DPI)
     style_ax(ax, ygrid_only=False)
+    markers = {"bus": "o", "tram": "s", "trolleybus": "^", "subway": "D", "train": "v"}
     for mode in MODE_ORDER:
         sub = frame.loc[frame["mode"].eq(mode) & frame["count"].ge(30)].sort_values("centre")
         if len(sub) < 3:
@@ -472,124 +386,24 @@ def figure_speed_by_length() -> None:
         ax.plot(
             sub["centre"],
             sub["median"],
-            marker="o",
-            markersize=6,
-            linewidth=2.2,
+            marker=markers.get(mode, "o"),
+            markersize=pt(3.5),
+            linewidth=HEAVY,
             color=PT_COLORS.get(mode, C["gray"]),
             label=f"{mode} ({int(sub['count'].sum()):,} segments)",
             zorder=4,
             markeredgecolor="white",
-            markeredgewidth=1.0,
+            markeredgewidth=HAIRLINE,
         )
     ax.set_xscale("log")
-    ax.set_xlabel("segment length, m (log scale)", fontsize=11)
-    ax.set_ylabel("observed speed from the schedule, km/h", fontsize=11)
-    ax.set_title(
-        "Speed keeps rising with distance and never flattens\n"
-        "which is why a single free-flow speed per mode cannot reproduce a network",
-        fontsize=13,
-        fontweight="bold",
-        loc="left",
-    )
-    ax.legend(frameon=False, fontsize=9.5, loc="upper left")
+    ax.set_xlabel("segment length, m (log scale)", fontsize=LABEL)
+    ax.set_ylabel("observed speed from the schedule, km/h", fontsize=LABEL)
+    ax.legend(frameon=False, fontsize=BODY, loc="upper left")
     save(fig, "wide_speed_by_length.png")
 
 
 # ---------------------------------------------------------------------------
-# 6. Calibration: what generalises and what only fits
-# ---------------------------------------------------------------------------
-def figure_calibration() -> None:
-    frame = load("kinematics_fit.csv")
-    if frame is None:
-        return
-    scope = frame.loc[frame["scope"].eq("surveyed_only")] if "scope" in frame else frame
-    scope = scope.set_index("mode").reindex([mode for mode in MODE_ORDER if mode in set(scope["mode"])]).reset_index()
-
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.4), dpi=DPI)
-
-    ax = axes[0]
-    style_ax(ax)
-    width = 0.26
-    x = np.arange(len(scope))
-    # Two bars, not three: how well the constants fit the cities they were fitted
-    # on, and how well they do on a city held out. The gap between them is the
-    # whole point, and the earlier "adopted / rejected" labels described our own
-    # decision process rather than a property of the data.
-    for offset, column, colour, label in (
-        (-width / 2, "fitted_error", C["iduedu"], "fitted on this sample"),
-        (width / 2, "loco_error", C["red"], "scored on a city left out of the fit"),
-    ):
-        ax.bar(
-            x + offset,
-            scope[column],
-            width=width,
-            color=colour,
-            alpha=0.9,
-            edgecolor="white",
-            linewidth=0.8,
-            zorder=3,
-            label=label,
-        )
-    for index, row in scope.iterrows():
-        gap = (row["loco_error"] - row["fitted_error"]) / row["fitted_error"]
-        ax.text(
-            index,
-            max(row["fitted_error"], row["loco_error"]) + 0.012,
-            f"+{gap:.0%}",
-            ha="center",
-            fontsize=9.5,
-            fontweight="bold",
-            color=C["dark"],
-            path_effects=STROKE,
-            zorder=6,
-        )
-    ax.set_xticks(x)
-    ax.set_xticklabels([f"{row['mode']}\n{int(row['cities'])} cities" for _, row in scope.iterrows()], fontsize=10)
-    ax.set_ylabel("median relative error of run time", fontsize=11)
-    ax.set_title("Only the bus transfers to a city it was not fitted on", fontsize=12, fontweight="bold", loc="left")
-    ax.legend(frameon=False, fontsize=9, loc="upper left")
-
-    ax = axes[1]
-    style_ax(ax)
-    both = frame.loc[frame["mode"].eq("bus")] if "scope" in frame else None
-    if both is not None and len(both) == 2:
-        rows = both.set_index("scope")
-        labels = ["all feeds\n(incl. generated from OSM)", "surveyed feeds only"]
-        values = [rows.loc["all", "fitted_base_speed_kmh"], rows.loc["surveyed_only", "fitted_base_speed_kmh"]]
-        counts = [int(rows.loc["all", "cities"]), int(rows.loc["surveyed_only", "cities"])]
-        ax.bar(
-            [0, 1],
-            values,
-            width=0.5,
-            color=[C["walk"], C["green"]],
-            alpha=0.9,
-            edgecolor="white",
-            linewidth=0.8,
-            zorder=3,
-        )
-        for index, (value, count) in enumerate(zip(values, counts)):
-            ax.text(
-                index,
-                value + max(values) * 0.02,
-                f"{value:.1f} km/h\n{count} cities",
-                ha="center",
-                fontsize=10,
-                fontweight="bold",
-                color=C["dark"],
-                path_effects=STROKE,
-                zorder=6,
-            )
-        ax.set_xticks([0, 1])
-        ax.set_xticklabels(labels, fontsize=10)
-        ax.set_xlim(-0.6, 1.6)
-        ax.set_ylim(0, max(values) * 1.25)
-        ax.set_ylabel("fitted free speed of a bus, km/h", fontsize=11)
-        ax.set_title("Feeds generated from OSM move the answer", fontsize=12, fontweight="bold", loc="left")
-    save(fig, "wide_calibration.png")
-
-
-# ---------------------------------------------------------------------------
-# 7. Provenance
+# Figure 9. Provenance
 # ---------------------------------------------------------------------------
 def figure_provenance() -> None:
     frame = load("feed_provenance.csv", ["city_key"])
@@ -598,7 +412,7 @@ def figure_provenance() -> None:
     frame = frame.loc[frame["status"].eq("ok")].sort_values("coincident_share", ascending=False)
     colours = [C["red"] if value >= 0.30 else C["iduedu"] for value in frame["coincident_share"]]
 
-    fig, axes = plt.subplots(1, 2, figsize=(14.0, 5.4), dpi=DPI, gridspec_kw={"width_ratios": [1.5, 1.0]})
+    fig, axes = plt.subplots(1, 2, figsize=canvas(0.62), dpi=DPI, gridspec_kw={"width_ratios": [1.3, 1.0]})
 
     ax = axes[0]
     style_ax(ax)
@@ -608,15 +422,13 @@ def figure_provenance() -> None:
         color=colours,
         width=1.0,
         edgecolor="white",
-        linewidth=0.25,
+        linewidth=HAIRLINE,
         zorder=3,
     )
-    ax.axhline(0.30, color=C["dark"], linestyle="--", linewidth=1.3, zorder=5)
-    ax.axhline(0.05, color=C["dark"], linestyle=":", linewidth=1.1, zorder=5)
-    ax.text(
-        len(frame) * 0.45, 0.36, "above: geometry copied from OSM", fontsize=9.5, color=C["dark"], path_effects=STROKE
-    )
-    ax.text(len(frame) * 0.45, 0.012, "below: surveyed", fontsize=9.5, color=C["dark"], path_effects=STROKE)
+    ax.axhline(0.30, color=C["dark"], linestyle="--", linewidth=RULE, zorder=5)
+    ax.axhline(0.05, color=C["dark"], linestyle=":", linewidth=RULE, zorder=5)
+    ax.text(len(frame) * 0.30, 0.36, "copied from OSM", fontsize=BODY, color=C["dark"], path_effects=STROKE)
+    ax.text(len(frame) * 0.30, 0.012, "surveyed", fontsize=BODY, color=C["dark"], path_effects=STROKE)
     # Symmetric log: the separation spans three orders of magnitude and a linear
     # axis pressed four fifths of the feeds into the baseline, which is exactly
     # the half of the distribution that carries the negative result.
@@ -626,8 +438,9 @@ def figure_provenance() -> None:
     ax.set_yticklabels(["0", "0.01", "0.05", "0.1", "0.3", "1"])
     derived = int((frame["coincident_share"] >= 0.30).sum())
     ax.set_xticks([])
-    ax.set_ylabel("share of feed vertices lying exactly on an OSM vertex", fontsize=10.5)
-    ax.set_title(f"{derived} of {len(frame)} feeds were generated from OSM", fontsize=12, fontweight="bold", loc="left")
+    ax.set_xlim(-1, len(frame))
+    ax.set_ylabel("share of feed vertices on an OSM vertex", fontsize=LABEL)
+    ax.set_title("(a)", fontsize=PANEL, loc="left", color=C["dark"])
 
     ax = axes[1]
     style_ax(ax)
@@ -640,20 +453,20 @@ def figure_provenance() -> None:
         alpha=0.85,
         height=0.68,
         edgecolor="white",
-        linewidth=0.8,
+        linewidth=HAIRLINE,
         zorder=3,
     )
     ax.set_yticks(y)
-    ax.set_yticklabels([key.replace("_", " ").title() for key in named["city_key"]], fontsize=9)
+    ax.set_yticklabels([key.replace("_", " ").title() for key in named["city_key"]], fontsize=BODY)
     ax.invert_yaxis()
     ax.set_xlim(0, 1.0)
-    ax.set_xlabel("coincidence with OSM geometry", fontsize=10)
-    ax.set_title("Most clearly derived", fontsize=12, fontweight="bold", loc="left")
+    ax.set_xlabel("coincidence with OSM geometry", fontsize=LABEL)
+    ax.set_title("(b)", fontsize=PANEL, loc="left", color=C["dark"])
     save(fig, "wide_provenance.png")
 
 
 # ---------------------------------------------------------------------------
-# 8 & 9. Accessibility: the spread, and what predicts it
+# Figures 10 and 11. Accessibility: the spread, and what predicts it
 # ---------------------------------------------------------------------------
 def accessibility_table() -> pd.DataFrame:
     access = load("accessibility.csv", ["city_key"])
@@ -676,7 +489,9 @@ def accessibility_table() -> pd.DataFrame:
 
 def figure_accessibility_spread() -> None:
     table = accessibility_table()
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.4), dpi=DPI, gridspec_kw={"width_ratios": [1.0, 1.3]})
+    fig, axes = plt.subplots(2, 1, figsize=canvas(0.86), dpi=DPI)
+    fig.subplots_adjust(left=0.17, right=0.83, top=0.955, bottom=0.075, hspace=0.36)
+    fig.set_layout_engine("none")
 
     ax = axes[0]
     style_ax(ax, ygrid_only=False)
@@ -684,7 +499,7 @@ def figure_accessibility_spread() -> None:
     # are badly wrong -- which a strip of jittered dots only hints at. Three
     # curves also make the point that the thresholds differ in spread and not in
     # centre, which three near-identical dot columns hid.
-    styles = {15: (C["light"], "-"), 30: (C["iduedu"], "-"), 45: (C["pt"], "--")}
+    styles = {15: (C["light"], ":"), 30: (C["iduedu"], "-"), 45: (C["pt"], "--")}
     for threshold, (colour, dash) in styles.items():
         values = table[f"ratio_{threshold}"].dropna().sort_values()
         share = np.arange(1, len(values) + 1) / len(values)
@@ -694,12 +509,12 @@ def figure_accessibility_spread() -> None:
             where="post",
             color=colour,
             linestyle=dash,
-            linewidth=2.2,
+            linewidth=HEAVY,
             label=f"{threshold} min  (median {values.median():.2f})",
             zorder=3,
         )
-    ax.axvline(1.0, color=C["red"], linestyle="--", linewidth=1.4, zorder=4)
-    ax.text(1.03, 0.06, "agreement", fontsize=9.5, color=C["red"], path_effects=STROKE, zorder=5)
+    ax.axvline(1.0, color=C["red"], linestyle="--", linewidth=RULE, zorder=4)
+    ax.text(1.03, 0.06, "agreement", fontsize=BODY, color=C["red"], path_effects=STROKE, zorder=5)
     ax.set_xscale("log")
     ax.set_xlim(0.15, 3.2)
     ax.set_ylim(0, 1)
@@ -708,12 +523,10 @@ def figure_accessibility_spread() -> None:
     ax.set_xticks([0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0])
     ax.get_xaxis().set_major_formatter(ScalarFormatter())
     ax.get_xaxis().set_minor_formatter(NullFormatter())
-    ax.set_xlabel("OSM estimate ÷ schedule reference", fontsize=11)
-    ax.set_ylabel("share of cities at or below", fontsize=11)
-    ax.legend(frameon=False, fontsize=10, loc="upper left")
-    ax.set_title(
-        f"Half the cities are close; a quarter are not\n{len(table)} cities", fontsize=12, fontweight="bold", loc="left"
-    )
+    ax.set_xlabel("OSM estimate ÷ schedule reference", fontsize=LABEL)
+    ax.set_ylabel("share of cities\nat or below", fontsize=LABEL)
+    ax.legend(frameon=False, fontsize=BODY, loc="upper left")
+    ax.set_title("(a)", fontsize=PANEL, loc="left", color=C["dark"])
 
     ax = axes[1]
     style_ax(ax)
@@ -722,7 +535,7 @@ def figure_accessibility_spread() -> None:
 
     colours = [C["red"] if value < 0.8 else C["green"] if value > 1.2 else C["light"] for value in ordered["ratio_30"]]
     ax.barh(y, ordered["ratio_30"] - 1.0, left=1.0, color=colours, height=1.0, zorder=3)
-    ax.axvline(1.0, color=C["dark"], linewidth=1.2, zorder=5)
+    ax.axvline(1.0, color=C["dark"], linewidth=RULE, zorder=5)
 
     # Labels go out into the margin beside the panel, on the side its bar points
     # to. Placed at the bar's own x they sat on top of the bars, and the leader
@@ -742,7 +555,7 @@ def figure_accessibility_spread() -> None:
 
     # Rows are thin next to the type, so a label needs a few of them to itself.
     span = len(ordered)
-    gap = max(span * 0.032, 3.0)
+    gap = max(span * 0.075, 6.0)
     for side in (-1, 1):
         # Named cities are the extremes, so they crowd against one end of the
         # ranking. Labels are therefore pushed away from that end -- downwards
@@ -765,31 +578,31 @@ def figure_accessibility_spread() -> None:
                 xycoords="data",
                 xytext=(1.012 if upper else -0.012, slot),
                 textcoords=("axes fraction", "data"),
-                fontsize=8.5,
+                fontsize=BODY,
                 va="center",
                 ha="left" if side > 0 else "right",
                 color=C["dark"],
                 zorder=6,
                 annotation_clip=False,
-                arrowprops={"arrowstyle": "-", "linewidth": 0.6, "color": C["gray"], "shrinkA": 1, "shrinkB": 1},
+                arrowprops={"arrowstyle": "-", "linewidth": HAIRLINE, "color": C["dark"], "shrinkA": 1, "shrinkB": 1},
             )
     ax.set_yticks([])
-    ax.set_xlabel("OSM estimate ÷ schedule reference, 30 minutes", fontsize=11)
-    ax.set_title("Every city, ordered", fontsize=12, fontweight="bold", loc="left")
+    ax.set_xlabel("OSM estimate ÷ schedule reference, 30 minutes", fontsize=LABEL)
+    ax.set_title("(b)", fontsize=PANEL, loc="left", color=C["dark"])
     save(fig, "wide_accessibility_spread.png")
 
 
 def figure_predictor() -> None:
     table = accessibility_table()
     panels = [
-        ("relative_completeness", "relative completeness\n(feed→OSM minus OSM→feed)", "needs the schedule"),
-        ("feed_to_osm_100", "OSM completeness alone\n(share of feed stops found in OSM)", "needs the schedule"),
-        ("relations_with_stops", "route relations listing their stops\n(share, OSM alone)", "needs nothing else"),
+        ("relative_completeness", "relative completeness", "needs the schedule"),
+        ("feed_to_osm_100", "OSM completeness alone", "needs the schedule"),
+        ("relations_with_stops", "relations listing stops", "needs nothing else"),
     ]
     panels = [panel for panel in panels if panel[0] in table.columns]
-    fig, axes = plt.subplots(1, len(panels), figsize=(6.6 * len(panels) / 1.45, 5.8), dpi=DPI, sharey=True)
+    fig, axes = plt.subplots(1, len(panels), figsize=canvas(0.82), dpi=DPI, sharey=True, layout="constrained")
 
-    for ax, (column, label, provenance) in zip(np.atleast_1d(axes), panels):
+    for letter, (ax, (column, label, provenance)) in zip("abc", zip(np.atleast_1d(axes), panels)):
         style_ax(ax, ygrid_only=False)
         subset = table[[column, "ratio_30"]].dropna()
         rho, p = spearmanr(subset[column], subset["ratio_30"])
@@ -797,11 +610,11 @@ def figure_predictor() -> None:
         ax.scatter(
             subset[column],
             subset["ratio_30"],
-            s=34,
+            s=26,
             color=C["green"] if free else C["iduedu"],
             alpha=0.55,
             edgecolor="white",
-            linewidth=0.8,
+            linewidth=HAIRLINE,
             zorder=3,
         )
 
@@ -815,38 +628,43 @@ def figure_predictor() -> None:
             trend["x"],
             trend["y"],
             color=C["dark"],
-            linewidth=2.2,
+            linewidth=HEAVY,
             marker="o",
-            markersize=5,
+            markersize=pt(3.0),
             markerfacecolor="white",
-            markeredgewidth=1.6,
+            markeredgewidth=RULE,
             zorder=6,
         )
 
-        ax.axhline(1.0, color=C["red"], linestyle="--", linewidth=1.3, zorder=4)
+        ax.axhline(1.0, color=C["red"], linestyle="--", linewidth=RULE, zorder=4)
         ax.set_yscale("log")
-        ax.set_xlabel(label, fontsize=11)
+        ax.set_yticks([0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0])
+        ax.get_yaxis().set_major_formatter(ScalarFormatter())
+        ax.get_yaxis().set_minor_formatter(NullFormatter())
+        ax.set_xlabel(label, fontsize=LABEL)
         significance = "p < 0.001" if p < 0.001 else f"p = {p:.3f}"
-        ax.set_title(
-            f"Spearman ρ = {rho:+.3f}   {significance}   n = {len(subset)}\n{provenance}",
-            fontsize=11.5,
-            fontweight="bold",
-            loc="left",
+        ax.set_title(f"({letter}) {provenance}", fontsize=PANEL, loc="left", color=C["dark"])
+
+        ax.text(
+            0.04,
+            0.04,
+            f"ρ = {rho:+.2f}\n{significance}\nn = {len(subset)}",
+            transform=ax.transAxes,
+            fontsize=BODY,
+            color=C["dark"],
+            va="bottom",
+            ha="left",
+            linespacing=1.25,
+            path_effects=STROKE,
+            zorder=7,
         )
 
-    np.atleast_1d(axes)[0].set_ylabel("OSM estimate ÷ schedule reference, 30 min", fontsize=11)
-    fig.suptitle(
-        "The error follows which source is more complete; the free proxy beats the conventional measure",
-        fontsize=13.5,
-        fontweight="bold",
-        x=0.005,
-        ha="left",
-    )
+    np.atleast_1d(axes)[0].set_ylabel("OSM estimate ÷\nschedule reference, 30 min", fontsize=LABEL)
     save(fig, "wide_predictor.png")
 
 
 # ---------------------------------------------------------------------------
-# 10. Where the sample is
+# Figure 3. Where the sample is
 # ---------------------------------------------------------------------------
 #: Countries at 1:110m from Natural Earth (public domain), copied into the
 #: repository. Returns ``None`` rather than failing: a missing basemap should cost
@@ -883,7 +701,7 @@ def figure_world_map() -> None:
         .dropna(subset=["centre_lat", "centre_lon"])
     )
 
-    fig, ax = plt.subplots(figsize=(15.0, 7.4), dpi=DPI)
+    fig, ax = plt.subplots(figsize=canvas(0.56), dpi=DPI)
     ax.set_facecolor("white")
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -893,12 +711,12 @@ def figure_world_map() -> None:
     # figure does not depend on a plotting library shipping its own basemap.
     land = _basemap()
     if land is not None:
-        land.plot(ax=ax, color="#d7dde5", edgecolor="white", linewidth=0.6, zorder=1)
+        land.plot(ax=ax, color="#d7dde5", edgecolor="white", linewidth=HAIRLINE, zorder=1)
 
     for longitude in range(-180, 181, 30):
-        ax.axvline(longitude, color="black", alpha=0.05, linewidth=0.7, zorder=2)
+        ax.axvline(longitude, color="black", alpha=0.05, linewidth=HAIRLINE, zorder=2)
     for latitude in range(-60, 91, 30):
-        ax.axhline(latitude, color="black", alpha=0.05, linewidth=0.7, zorder=2)
+        ax.axhline(latitude, color="black", alpha=0.05, linewidth=HAIRLINE, zorder=2)
 
     measured = frame.dropna(subset=["ratio_30"])
     unmeasured = frame.loc[frame["ratio_30"].isna()]
@@ -921,13 +739,13 @@ def figure_world_map() -> None:
     ax.scatter(
         unmeasured["centre_lon"],
         unmeasured["centre_lat"],
-        s=46,
+        s=22,
         facecolor="none",
         edgecolor="#111111",
-        linewidth=1.3,
+        linewidth=RULE,
         marker="s",
         zorder=6,
-        label=f"in the cohort, no comparison possible ({len(unmeasured)})",
+        label=f"no comparison ({len(unmeasured)})",
     )
     if unreachable is not None and not unreachable.empty:
         # An "x" draws with its edge colour, so facecolor="none" left the legend
@@ -935,12 +753,12 @@ def figure_world_map() -> None:
         ax.scatter(
             unreachable["lon"],
             unreachable["lat"],
-            s=90,
+            s=34,
             c="#1a1a1a",
-            linewidths=2.0,
+            linewidths=RULE,
             marker="x",
             zorder=7,
-            label=f"transit mapped, schedule unretrievable ({len(unreachable)})",
+            label=f"no schedule ({len(unreachable)})",
         )
     scatter = ax.scatter(
         measured["centre_lon"],
@@ -951,73 +769,137 @@ def figure_world_map() -> None:
         # the middle to yellow, which no part of the map uses; it is also the
         # colour-blind-safe choice of the two.
         c=np.log2(measured["ratio_30"].clip(0.2, 3.0)),
-        s=68,
+        s=26,
         cmap="RdYlBu_r",
         vmin=-1.4,
         vmax=1.4,
         alpha=0.95,
         edgecolor="#3a3a3a",
-        linewidth=0.5,
+        linewidth=HAIRLINE,
         zorder=4,
     )
-    bar = fig.colorbar(scatter, ax=ax, fraction=0.026, pad=0.01)
+    bar = fig.colorbar(scatter, ax=ax, orientation="horizontal", fraction=0.055, pad=0.09, aspect=45)
     bar.set_ticks([-1, -0.5, 0, 0.5, 1])
     bar.set_ticklabels(["half", "0.7×", "same", "1.4×", "double"])
+    bar.ax.tick_params(labelsize=BODY)
     # "OSM estimate / schedule, 30 min" told a reader nothing about what was
     # divided by what, or what the number means.
-    bar.set_label("places reachable in 30 min:" + chr(10) + "OSM network vs schedule network", fontsize=10)
+    bar.set_label("places reachable in 30 min: OSM network vs schedule network", fontsize=LABEL)
     bar.outline.set_visible(False)
 
     ax.set_xlim(-180, 180)
     ax.set_ylim(-58, 78)
     ax.set_xticks(range(-180, 181, 60))
     ax.set_yticks(range(-45, 76, 30))
-    ax.tick_params(colors=C["gray"], labelsize=9)
-    reached = len(unreachable) if unreachable is not None else 0
-    ax.set_title(
-        f"{len(frame)} cities in the cohort, {len(measured)} with both a schedule and OSM transit"
-        + (f"; {reached} more the catalogues promised and could not deliver" if reached else ""),
-        fontsize=13,
-        fontweight="bold",
-        loc="left",
-    )
-    ax.legend(frameon=False, fontsize=9, loc="lower left")
+    ax.tick_params(colors=C["dark"], labelsize=BODY)
+    ax.legend(frameon=False, fontsize=BODY, loc="lower left", labelcolor=C["dark"], handletextpad=0.5, borderpad=0.2)
     save(fig, "wide_world_map.png")
+
+
+# --------------------------------------------------------------------------
+# Data and methods: the design, the sample, the spread between cities.
+# --------------------------------------------------------------------------
+
+
+def figure_overview() -> None:
+    """The introduction's figure: drawn in TikZ, not measured.
+
+    Kept as LaTeX rather than matplotlib because it has to sit beside the
+    library paper's workflow diagram and share its palette and its shapes; a
+    reader who meets both should see one hand. The source is
+    ``overview_figure.tex``, and this only drives the two conversions the
+    manuscript needs: a PNG for the local build and vector EPS for the journal.
+    """
+    source = HERE / "overview_figure.tex"
+    if not source.exists():
+        print("[skip] overview_figure.tex not found")
+        return
+
+    binaries = Path.home() / "AppData/Local/Programs/MiKTeX/miktex/bin/x64"
+    pdflatex = binaries / "pdflatex.exe"
+    pdftops = binaries / "pdftops.exe"
+    if not pdflatex.exists():
+        print("[skip] no LaTeX to draw the overview figure")
+        return
+
+    subprocess.run([str(pdflatex), "-interaction=nonstopmode", source.name], cwd=HERE, check=True, capture_output=True)
+    pdf = HERE / "overview_figure.pdf"
+
+    import pymupdf
+
+    # 400 dpi: the figure runs the full width of the page and its smallest type
+    # is 6 pt, which at 300 dpi starts to break up.
+    pymupdf.open(pdf)[0].get_pixmap(dpi=400).save(HERE / "wide_overview.png")
+    print("saved wide_overview.png")
+
+    if VECTOR and pdftops.exists():
+        subprocess.run(
+            [str(pdftops), "-eps", str(pdf), str(HERE / "wide_overview.eps")], check=True, capture_output=True
+        )
+        print("saved wide_overview.eps")
+
+
+def figure_two_sources(city_key: str = "delhi", title: str = "Delhi") -> None:
+    """One city, both sources, side by side and to the same scale.
+
+    Section 3 described the two networks for five pages without showing either.
+    Delhi is the ordinary case rather than a pathology: the feed covers the city
+    densely, OpenStreetMap holds a part of it, and the part is not a random
+    sample of the whole -- which is the asymmetry the rest of the paper measures.
+    """
+    walk = read_urban_graph(osm_graph_path(city_key, "walk"))
+    osm = read_urban_graph(osm_graph_path(city_key, "pt", ALL_OSM_MODES))
+    gtfs = read_urban_graph(gtfs_graph_path(city_key))
+    crs = walk.nodes_gdf.crs
+
+    fig, axes = plt.subplots(1, 2, figsize=canvas(0.55), dpi=DPI)
+    minx, miny, maxx, maxy = walk.edges_gdf.total_bounds
+
+    # Stops, not graph vertices: the graph keeps a vertex per boarding, and
+    # len(nodes_gdf) gave Delhi 110,091 against 4,993 stops in the coverage table.
+    counts = city_coverage()
+    counts = counts.loc[counts["city_key"].astype(str).eq(city_key)]
+    feed_stops = int(counts["n_feed_stops"].iloc[0]) if len(counts) else len(gtfs.nodes_gdf)
+    osm_stops = int(counts["n_osm_stops"].iloc[0]) if len(counts) else len(osm.nodes_gdf)
+
+    panels = [
+        (gtfs, MAP["gtfs"], "published timetable", feed_stops),
+        (osm, MAP["osm"], "OpenStreetMap", osm_stops),
+    ]
+    for letter, (ax, (graph, colour, label, stops)) in zip("ab", zip(axes, panels)):
+        style_map(ax)
+        # Background walk network in the thinnest line the journal accepts: 0.3 pt printed.
+        walk.edges_gdf.plot(ax=ax, color="#e2e2e6", linewidth=pt(0.3), zorder=1)
+        draw_transit(
+            ax, graph.to_crs(crs) if hasattr(graph, "to_crs") else graph, colour, linewidth=pt(0.45), alpha=0.8
+        )
+        ax.set_xlim(minx, maxx)
+        ax.set_ylim(miny, maxy)
+        ax.set_title(f"({letter}) {label}\n{stops:,} stops", fontsize=PANEL, loc="left", color=colour, linespacing=1.3)
+
+    scale_bar(axes[0], 10000)
+    save(fig, "wide_two_sources.png", dpi=RASTER_DPI)
 
 
 # --------------------------------------------------------------------------
 # City maps: the cases worth looking at one by one.
 # --------------------------------------------------------------------------
 
-CASES = [
-    ("bogota", "Bogotá", "OSM has the trunk BRT and little else"),
-    ("nairobi", "Nairobi", "a matatu network the feed knows and OSM does not"),
-    ("ljubljana", "Ljubljana", "both sources complete"),
-    ("tokyo", "Tokyo", "OSM richer than the operator's feed"),
-]
-#: Lagos was a weak second case -- 169 feed stops against 17 in OSM is too
-#: little geometry to read on a map. Pune carries the same phenomenon at a
-#: scale that shows: 6,648 scheduled stops, 262 in OSM, and a median 8.7 km
-#: between a stop and its nearest counterpart. The two cities are also
-#: opposite in direction -- Redland City has more in OSM than in its feed,
-#: Pune far less -- so the pair shows the displacement is not a property of
-#: whichever source happens to be poorer.
-#: Один город, а не два. Смещение сетей по территории оказалось редким: после
-#: добавления второго признака в классификацию таких городов восемь из 126, и
-#: только Редленд-Сити сочетает всё нужное для карты — обе сети существенны,
-#: облака не пересекаются, а граница правдоподобна как один город. Пуна
-#: (облака вложены) и Труки (112 км внутри одной выпуклой оболочки) были
-#: пробами и отвергнуты по карте, а не по числам.
+#: One city. Displacement is rare -- eight of 126 cities once the second criterion
+#: is in the classification -- and only Redland City has what a map needs: both
+#: networks substantial, clouds that do not overlap, a boundary that reads as one
+#: city. Pune (nested clouds) and Truckee (112 km inside one convex hull) were
+#: tried and rejected on the map.
 DISPLACED = [("redland_city", "Redland City")]
 
 
-#: Граница города по её отношению в OSM. Кладётся рядом с рисунками, чтобы
-#: перевыпуск не зависел от Overpass; файла нет — рисуем без границы.
+#: City boundaries from their OSM relations, kept beside the figures so a rerun
+#: does not depend on Overpass; without the file the map is drawn without one.
 BOUNDARY_CACHE = Path(__file__).resolve().parent / "data" / "city_boundaries"
 
 
 def city_boundary(city_key: str):
-    """Полигон границы в проекции города, или None, если достать не удалось."""
+    """City boundary in EPSG:4326, or None if it could not be fetched."""
     import geopandas as gpd
 
     BOUNDARY_CACHE.mkdir(parents=True, exist_ok=True)
@@ -1041,26 +923,31 @@ def city_boundary(city_key: str):
     return frame
 
 
-def scale_bar(ax, length_m: float = 5000.0) -> None:
-    """Отрезок известной длины: без него читатель не знает, город это или район."""
+def scale_bar(ax, length_m: float = 5000.0, height: float = 0.05) -> None:
+    """Scale bar: without it a reader cannot tell a city from a district.
+
+    ``height`` is the fraction of the axes height the bar sits at; the Redland City
+    panel has its legend at the bottom.
+    """
     (x0, x1), (y0, y1) = ax.get_xlim(), ax.get_ylim()
     x = x0 + (x1 - x0) * 0.04
-    y = y0 + (y1 - y0) * 0.05
-    ax.plot([x, x + length_m], [y, y], color=MAP["dark"], linewidth=2.4, solid_capstyle="butt", zorder=8)
+    y = y0 + (y1 - y0) * height
+    ax.plot([x, x + length_m], [y, y], color=MAP["dark"], linewidth=HEAVY, solid_capstyle="butt", zorder=8)
     ax.text(
         x + length_m / 2,
         y + (y1 - y0) * 0.012,
         f"{length_m / 1000:.0f} km",
         ha="center",
         va="bottom",
-        fontsize=9,
+        fontsize=BODY,
         color=MAP["dark"],
+        path_effects=STROKE,
         zorder=8,
     )
 
 
 def locator_inset(ax, lon: float, lat: float) -> None:
-    """Врезка с мировой картой: ответ на вопрос «а это вообще где»."""
+    """World map inset showing where the city is."""
     land_path = Path(__file__).resolve().parent / "data" / "naturalearth_lowres" / "naturalearth_lowres.shp"
     if not land_path.exists():
         return
@@ -1071,8 +958,8 @@ def locator_inset(ax, lon: float, lat: float) -> None:
     except Exception:  # noqa: BLE001
         return
     inset = ax.inset_axes([0.72, 0.02, 0.26, 0.26])
-    land.plot(ax=inset, color="#e4e8ee", edgecolor="white", linewidth=0.3)
-    inset.plot([lon], [lat], marker="o", markersize=5, color=MAP["osm"], zorder=5)
+    land.plot(ax=inset, color="#e4e8ee", edgecolor="white", linewidth=pt(0.3))
+    inset.plot([lon], [lat], marker="o", markersize=pt(3.0), color=MAP["osm"], zorder=5)
     inset.set_xlim(-180, 180)
     inset.set_ylim(-58, 80)
     inset.set_xticks([])
@@ -1080,11 +967,11 @@ def locator_inset(ax, lon: float, lat: float) -> None:
     inset.set_facecolor("white")
     for spine in inset.spines.values():
         spine.set_color(MAP["gray"])
-        spine.set_linewidth(0.6)
+        spine.set_linewidth(HAIRLINE)
 
 
 def separation_km(city_key: str) -> float | None:
-    """Расстояние между центроидами из таблицы классификации, в километрах."""
+    """Distance between the cloud centroids from the classification table, in km."""
     path = Path(__file__).resolve().parents[1] / "results" / "wide_tier" / "displacement.csv"
     if not path.exists():
         return None
@@ -1101,31 +988,6 @@ def style_map(ax) -> None:
     ax.set_facecolor("white")
 
 
-def load_city(city_key: str):
-    walk = read_urban_graph(osm_graph_path(city_key, "walk"))
-    osm_pt = read_urban_graph(osm_graph_path(city_key, "pt", ALL_OSM_MODES))
-    gtfs_pt = read_urban_graph(gtfs_graph_path(city_key))
-    return walk, osm_pt, gtfs_pt
-
-
-def per_origin_ratio(city_key: str, threshold: int = 30) -> tuple[np.ndarray, np.ndarray, dict]:
-    """Reachability from each origin under both variants, and the two transit graphs."""
-    walk, osm_pt, gtfs_pt = load_city(city_key)
-    points = _sample_points(walk.nodes_gdf, N_DESTINATIONS, SEED)
-    origins = points[:N_ORIGINS]
-
-    reach = {}
-    for name, transit in (("A", osm_pt), ("D", gtfs_pt)):
-        joined = join_pt_walk_graph(transit, walk, keep_largest_subgraph=False)
-        reach[name] = np.array(
-            _reach(joined, _nearest_nodes(joined, origins), _nearest_nodes(joined, points))[threshold]
-        )
-
-    with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where(reach["D"] > 0, reach["A"] / np.maximum(reach["D"], 1), np.nan)
-    return origins, ratio, {"osm": osm_pt, "gtfs": gtfs_pt, "walk": walk, "reach": reach}
-
-
 def draw_transit(ax, graph, colour: str, linewidth: float = 0.9, alpha: float = 0.75) -> None:
     edges = graph.edges_gdf
     if edges.empty or "type" not in edges:
@@ -1134,76 +996,6 @@ def draw_transit(ax, graph, colour: str, linewidth: float = 0.9, alpha: float = 
     if travel.empty:
         return
     travel.plot(ax=ax, color=colour, linewidth=linewidth, alpha=alpha, zorder=3)
-
-
-def figure_cases() -> None:
-    fig, axes = plt.subplots(1, 4, figsize=(19.0, 6.4), dpi=DPI)
-    scatter = None
-    for ax, (city_key, title, note) in zip(axes.ravel(), CASES):
-        style_map(ax)
-        try:
-            origins, ratio, extra = per_origin_ratio(city_key)
-        except Exception as error:  # noqa: BLE001 - a missing city must not lose the figure
-            ax.text(0.5, 0.5, f"{title}: {type(error).__name__}", transform=ax.transAxes, ha="center")
-            continue
-
-        # OSM underneath and thicker, the feed on top and thinner: in cities where
-        # the feed is the denser source, drawing it first hides it completely.
-        draw_transit(ax, extra["osm"], MAP["osm"], linewidth=1.3, alpha=0.45)
-        draw_transit(ax, extra["gtfs"], MAP["gtfs"], linewidth=0.6, alpha=0.9)
-
-        finite = np.isfinite(ratio)
-        scatter = ax.scatter(
-            origins[finite, 0],
-            origins[finite, 1],
-            c=np.log2(np.clip(ratio[finite], 0.25, 4.0)),
-            cmap="coolwarm",
-            vmin=-2,
-            vmax=2,
-            s=46,
-            edgecolor="white",
-            linewidth=0.7,
-            zorder=6,
-        )
-        # Headline uses the same aggregation as the sweep -- a ratio of means -- so
-        # the panel and the table cannot quietly disagree.
-        headline = extra["reach"]["A"].mean() / max(extra["reach"]["D"].mean(), 1e-9)
-        ax.set_title(
-            f"{title}\n{headline:.2f}× the schedule's reach\n{note}",
-            fontsize=11.5,
-            fontweight="bold",
-            loc="left",
-            color=MAP["dark"],
-            pad=10,
-        )
-
-    if scatter is not None:
-        bar = fig.colorbar(scatter, ax=axes, orientation="horizontal", fraction=0.045, pad=0.03, aspect=55)
-        bar.set_ticks([-2, -1, 0, 1, 2])
-        bar.set_ticklabels(["¼×", "½×", "equal", "2×", "4×"])
-        bar.set_label("places reachable in 30 minutes: OSM estimate ÷ schedule reference", fontsize=10.5)
-        bar.outline.set_visible(False)
-
-    fig.legend(
-        handles=[
-            Line2D([], [], color=MAP["osm"], linewidth=2.6, alpha=0.7, label="transit mapped in OSM"),
-            Line2D([], [], color=MAP["gtfs"], linewidth=2.0, label="transit in the city's GTFS feed"),
-        ],
-        frameon=False,
-        fontsize=10.5,
-        loc="lower right",
-        bbox_to_anchor=(0.99, -0.02),
-        ncol=2,
-    )
-    fig.suptitle(
-        "Where an OSM-only estimate misleads you, and in which direction",
-        fontsize=15,
-        fontweight="bold",
-        x=0.008,
-        ha="left",
-        y=1.02,
-    )
-    save(fig, "wide_case_accessibility_maps.png")
 
 
 def figure_displacement() -> None:
@@ -1219,25 +1011,26 @@ def figure_displacement() -> None:
     # One row per city instead of side by side: two cities of different shape in one
     # row forced both into a strip a few centimetres tall, and the point of the
     # figure -- that the two sets of dots occupy different ground -- was invisible.
-    fig, axes = plt.subplots(len(loaded), 1, figsize=(10.5, 6.4 * len(loaded)), dpi=DPI)
+    fig, axes = plt.subplots(len(loaded), 1, figsize=canvas(0.66 * len(loaded)), dpi=DPI)
     for ax, (city_key, title, walk, _) in zip(np.atleast_1d(axes), loaded):
         style_map(ax)
         osm_pt = read_urban_graph(osm_graph_path(city_key, "pt", ALL_OSM_MODES))
         gtfs_pt = read_urban_graph(gtfs_graph_path(city_key))
 
-        # Граница под всем остальным: без неё на панели два облака точек в
-        # пустоте, и утверждение «оба внутри одной границы» приходится брать на
-        # веру. Улицы заодно потемнее — застроенная часть должна читаться.
+        # Boundary beneath everything: without it the claim that both clouds lie in
+        # one city has to be taken on trust. Streets are darker so the built-up area reads.
         outline = city_boundary(city_key)
         if outline is not None:
             outline.to_crs(walk.nodes_gdf.crs).plot(
-                ax=ax, facecolor="#f2f4f7", edgecolor=MAP["gray"], linewidth=1.1, linestyle="--", alpha=0.9, zorder=0
+                ax=ax, facecolor="#f2f4f7", edgecolor=MAP["gray"], linewidth=RULE, linestyle="--", alpha=0.9, zorder=0
             )
-        walk.edges_gdf.plot(ax=ax, color="#c2c2c7", linewidth=0.35, alpha=0.95, zorder=1)
+        walk.edges_gdf.plot(ax=ax, color="#c2c2c7", linewidth=pt(0.3), alpha=0.95, zorder=1)
         gtfs_nodes = gtfs_pt.nodes_gdf.to_crs(walk.nodes_gdf.crs)
-        gtfs_nodes.plot(ax=ax, color=MAP["gtfs"], markersize=26, alpha=0.85, edgecolor="white", linewidth=0.5, zorder=4)
+        gtfs_nodes.plot(
+            ax=ax, color=MAP["gtfs"], markersize=12, alpha=0.85, edgecolor="white", linewidth=pt(0.3), zorder=4
+        )
         osm_pt.nodes_gdf.plot(
-            ax=ax, color=MAP["osm"], markersize=26, alpha=0.85, edgecolor="white", linewidth=0.5, zorder=5
+            ax=ax, color=MAP["osm"], markersize=12, alpha=0.85, edgecolor="white", linewidth=pt(0.3), zorder=5
         )
 
         # How far apart the two clouds actually are, stated on the panel rather than
@@ -1252,41 +1045,50 @@ def figure_displacement() -> None:
                 gtfs_nodes.geometry.union_all().centroid.distance(osm_pt.nodes_gdf.geometry.union_all().centroid)
                 / 1000.0
             )
-        ax.set_title(
-            f"{title} — {gap_km:.0f} km between what the schedule serves and what OSM maps",
-            fontsize=14,
-            fontweight="bold",
-            loc="left",
+        # The distance is a measurement and stays on the panel; the city name goes in the caption.
+        ax.text(
+            0.015,
+            0.975,
+            f"{gap_km:.0f} km between what the schedule serves and what OSM maps",
+            transform=ax.transAxes,
+            fontsize=BODY,
             color=MAP["dark"],
+            va="top",
+            ha="left",
+            path_effects=STROKE,
+            zorder=8,
         )
-        scale_bar(ax)
+        scale_bar(ax, height=0.80)
         centre = walk.nodes_gdf.to_crs(4326).geometry.union_all().centroid
         locator_inset(ax, centre.x, centre.y)
 
     fig.legend(
         handles=[
-            Line2D([], [], marker="o", linestyle="none", color=MAP["osm"], markersize=8, label="stops mapped in OSM"),
             Line2D(
-                [], [], marker="o", linestyle="none", color=MAP["gtfs"], markersize=8, label="stops in the GTFS feed"
+                [], [], marker="o", linestyle="none", color=MAP["osm"], markersize=pt(4), label="stops mapped in OSM"
             ),
-            Line2D([], [], color="#c2c2c7", linewidth=2.5, label="pedestrian network"),
-            Line2D([], [], color=MAP["gray"], linewidth=1.4, linestyle="--", label="city boundary"),
+            Line2D(
+                [],
+                [],
+                marker="o",
+                linestyle="none",
+                color=MAP["gtfs"],
+                markersize=pt(4),
+                label="stops in the GTFS feed",
+            ),
+            Line2D([], [], color="#c2c2c7", linewidth=HEAVY, label="pedestrian network"),
+            Line2D([], [], color=MAP["gray"], linewidth=RULE, linestyle="--", label="city boundary"),
         ],
         frameon=False,
-        fontsize=11,
+        fontsize=BODY,
+        labelcolor=MAP["dark"],
         loc="lower left",
         bbox_to_anchor=(0.01, -0.01),
-        ncol=4,
+        ncol=2,
+        handletextpad=0.5,
+        columnspacing=1.4,
     )
-    fig.suptitle(
-        "A coverage of zero that is not absence:\nthe two sources describe different parts of the same city",
-        fontsize=15,
-        fontweight="bold",
-        x=0.01,
-        ha="left",
-        y=1.0,
-    )
-    save(fig, "wide_case_displacement_maps.png")
+    save(fig, "wide_case_displacement_maps.png", dpi=RASTER_DPI)
 
 
 # --------------------------------------------------------------------------
@@ -1324,6 +1126,10 @@ def regenerate() -> None:
 
 def collect(names: list[str]) -> None:
     OUTPUT_DIR.mkdir(exist_ok=True)
+    # Clear the whole directory: stale Fig11 and Fig12 from a longer figure list
+    # would otherwise go into the submission.
+    for stale in OUTPUT_DIR.glob("Fig*"):
+        stale.unlink()
     for index, name in enumerate(names, start=1):
         if name in RASTER:
             source = HERE / name
@@ -1332,7 +1138,10 @@ def collect(names: list[str]) -> None:
                 continue
             destination = OUTPUT_DIR / f"Fig{index}.tif"
             with Image.open(source) as image:
-                image.convert("RGB").save(destination, format="TIFF", compression="tiff_lzw", dpi=(TIFF_DPI, TIFF_DPI))
+                # Resolution at printed size: pixels over the text width.
+                printed = round(image.width / COLUMN_IN)
+                image.convert("RGB").save(destination, format="TIFF", compression="tiff_lzw", dpi=(printed, printed))
+                print(f"Fig{index}: {printed} dpi at final size")
         else:
             source = HERE / (Path(name).stem + ".eps")
             if not source.exists():
@@ -1340,18 +1149,26 @@ def collect(names: list[str]) -> None:
                 continue
             destination = OUTPUT_DIR / f"Fig{index}.eps"
             shutil.copy2(source, destination)
+            # A PDF goes beside the EPS for the journal's LaTeX build; the TikZ figure
+            # has its own from pdflatex.
+            beside = HERE / (Path(name).stem + ".pdf")
+            if "overview" in name and (HERE / "overview_figure.pdf").exists():
+                beside = HERE / "overview_figure.pdf"
+            if beside.exists():
+                shutil.copy2(beside, OUTPUT_DIR / f"Fig{index}.pdf")
         print(f"{destination.name}  <-  {name}  ({destination.stat().st_size / 1e6:.1f} MB)")
 
     # The intermediate vector files sit beside the PNGs the manuscript reads; leaving
     # them there means the next figure run has to skip past a hundred megabytes
     # of stale art.
-    for leftover in HERE.glob("*.eps"):
-        leftover.unlink()
+    for pattern in ("wide_*.eps", "wide_*.pdf"):
+        for leftover in HERE.glob(pattern):
+            leftover.unlink()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--charts", action="store_true", help="only the charts, skipping the two city plates")
+    parser.add_argument("--charts", action="store_true", help="only the charts, skipping the city plate")
     parser.add_argument("--journal", action="store_true", help="collect numbered EPS and TIFF for submission")
     parser.add_argument("--run", action="store_true", help="with --journal: actually write the files")
     arguments = parser.parse_args()
@@ -1371,18 +1188,17 @@ def main() -> None:
         print("Captions stay in the manuscript: the journal wants them out of the image files.")
         return
 
+    figure_overview()
+    figure_two_sources()
     figure_coverage_scatter()
     figure_coverage_by_mode()
     figure_coverage_cases()
-    figure_waits()
     figure_speed_by_length()
-    figure_calibration()
     figure_provenance()
     figure_accessibility_spread()
     figure_predictor()
     figure_world_map()
     if not arguments.charts:
-        figure_cases()
         figure_displacement()
 
 

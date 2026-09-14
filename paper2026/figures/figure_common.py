@@ -24,6 +24,55 @@ RESULTS = Path(__file__).resolve().parents[1] / "results" / "wide_tier"
 FIGURES = Path(__file__).resolve().parent
 DPI = 300
 
+COLUMN_IN = 372 / 72.27
+
+OVERSIZE = 1.35
+FIG_W = COLUMN_IN * OVERSIZE
+
+
+def pt(printed: float) -> float:
+    """Canvas size that prints as ``printed`` points."""
+    return printed * OVERSIZE
+
+
+def canvas(height_ratio: float) -> tuple[float, float]:
+    """Full-width canvas of the given aspect ratio.
+
+    Printed height is the text width times the ratio, and that alone decides how
+    much of the page the figure takes.
+    """
+    return FIG_W, FIG_W * height_ratio
+
+
+BODY = pt(8.5)
+LABEL = pt(9.0)
+PANEL = pt(9.5)
+
+
+HAIRLINE = pt(0.5)
+RULE = pt(0.9)
+HEAVY = pt(1.6)
+
+plt.rcParams.update(
+    {
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+        "font.size": BODY,
+        "axes.labelsize": LABEL,
+        "axes.titlesize": PANEL,
+        "xtick.labelsize": BODY,
+        "ytick.labelsize": BODY,
+        "legend.fontsize": BODY,
+        "axes.linewidth": HAIRLINE,
+        "xtick.major.width": HAIRLINE,
+        "ytick.major.width": HAIRLINE,
+        "lines.linewidth": RULE,
+        "patch.linewidth": HAIRLINE,
+        "ps.fonttype": 42,
+        "pdf.fonttype": 42,
+    }
+)
+
 #: The result tables record every city ever measured; the paper reports the study
 #: cohort. Filtering here, once, is what keeps a figure from quoting a different
 #: population than the table beside it -- which has now happened twice.
@@ -62,7 +111,7 @@ CASE_COLORS = {
     NO_NETWORK: "#FF375F",
 }
 
-STROKE = [pe.Stroke(linewidth=2.0, foreground="white"), pe.Normal()]
+STROKE = [pe.Stroke(linewidth=pt(1.5), foreground="white"), pe.Normal()]
 
 #: Modes the OSM builder can be asked for, so the only ones completeness applies to.
 MODE_ORDER = ["bus", "tram", "trolleybus", "subway", "train"]
@@ -112,14 +161,14 @@ def city_coverage() -> pd.DataFrame:
     return frame.loc[frame["mode"].eq("*") & frame["status"].eq("ok")].copy()
 
 
-#: Разнос центроидов двух облаков остановок, делённый на их собственный разброс.
-#: Больше единицы — облака стоят порознь; меньше — одно вложено в другое.
-#: Считается ``benchmarks/wide_displacement.py``.
+#: Distance between the centroids of the two stop clouds, divided by their own spread.
+#: Above one the clouds sit apart; below one, one lies inside the other.
+#: Computed by ``benchmarks/wide_displacement.py``.
 DISPLACED_RATIO = 1.0
 
 
 def _displacement() -> pd.DataFrame:
-    """Признак разноса облаков, если он посчитан."""
+    """Cloud separation ratio per city, if it has been computed."""
     path = RESULTS / "displacement.csv"
     if not path.exists():
         return pd.DataFrame(columns=["city_key", "ratio"])
@@ -150,9 +199,8 @@ def classify_bus(frame: pd.DataFrame) -> pd.DataFrame:
         if row["feed_to_osm_100"] >= COVERED_SHARE:
             return COVERED
         if row.get("share_elsewhere", 0) >= ELSEWHERE_SHARE:
-            # Города без измеренного признака остаются там, куда их клало прежнее
-            # правило: молча переносить их в другую группу было бы хуже, чем
-            # оставить и сказать об этом.
+            # Cities without a measured ratio stay where the old rule put them:
+            # silently moving them to another group would be worse.
             ratio = ratios.get(row["city_key"])
             if ratio is None or ratio > DISPLACED_RATIO:
                 return ELSEWHERE
@@ -167,11 +215,14 @@ def style_ax(ax, ygrid_only: bool = True) -> None:
     for spine in ax.spines.values():
         spine.set_visible(False)
     if ygrid_only:
-        ax.yaxis.grid(True, color="black", alpha=0.10, linewidth=0.8, zorder=1)
+        ax.yaxis.grid(True, color="black", alpha=0.10, linewidth=HAIRLINE, zorder=1)
     else:
-        ax.grid(True, which="both", color="black", alpha=0.10, linewidth=0.8, zorder=1)
-    ax.tick_params(axis="both", colors="black", labelsize=10)
+        ax.grid(True, which="both", color="black", alpha=0.10, linewidth=HAIRLINE, zorder=1)
+    ax.tick_params(axis="both", colors="black", labelsize=BODY)
     ax.tick_params(which="minor", length=0)
+
+
+RASTER_DPI = 560
 
 
 #: With ``PAPER_VECTOR=1`` every figure is also written as EPS, which is what the
@@ -181,15 +232,23 @@ def style_ax(ax, ygrid_only: bool = True) -> None:
 VECTOR = os.environ.get("PAPER_VECTOR") == "1"
 
 
-def save(fig, name: str) -> None:
+def save(fig, name: str, dpi: int = DPI) -> None:
     fig.patch.set_facecolor("white")
-    fig.tight_layout()
-    fig.savefig(FIGURES / name, dpi=DPI, bbox_inches="tight", facecolor="white")
+    if fig.get_layout_engine() is None:
+        fig.tight_layout()
+    fig.savefig(FIGURES / name, dpi=dpi, bbox_inches="tight", facecolor="white")
     if VECTOR:
         # Straight from the figure object, so the result is real vector art. A
         # first version re-wrapped the PNG into EPS and produced 535 MB of
         # bitmap in a vector container.
-        vector = FIGURES / (Path(name).stem + ".eps")
-        fig.savefig(vector, format="eps", bbox_inches="tight", facecolor="white")
+        #
+        # Both formats, because they answer to different readers. The journal
+        # asks for EPS in production; the journal's build server, handed the
+        # LaTeX source, needs PDF -- pdflatex includes it without a converter.
+        # Going EPS -> PDF through Ghostscript instead lost the font tables and
+        # printed the charts with every label missing.
+        stem = Path(name).stem
+        for suffix in ("eps", "pdf"):
+            fig.savefig(FIGURES / f"{stem}.{suffix}", format=suffix, bbox_inches="tight", facecolor="white")
     plt.close(fig)
-    print(f"saved {name}" + (" and .eps" if VECTOR else ""))
+    print(f"saved {name}" + (" and .eps/.pdf" if VECTOR else ""))

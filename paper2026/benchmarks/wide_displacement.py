@@ -1,21 +1,13 @@
-"""Лежат ли две сети в разных местах или одна внутри другой.
+"""Do the two networks sit in different places, or does one lie inside the other?
 
-Четыре случая низкого покрытия различаются по расстоянию от остановки до
-ближайшей остановки другого источника, и на этом расстоянии два разных явления
-неразличимы. Если OpenStreetMap описывает центр города, а фид — весь ареал, то
-периферийные остановки фида тоже оказываются дальше километра от любой
-остановки OpenStreetMap, и город попадает в группу «источники описывают разные
-части города», хотя описывают они одну и ту же часть, просто с разным охватом.
+Distance to the nearest stop of the other source cannot tell these apart: if OSM
+maps the city centre and the feed the whole agglomeration, the feed's outer stops
+are also over a kilometre from any OSM stop. Pune shows it -- 6,648 feed stops,
+262 in OSM, a median 8.7 km -- while its OSM cloud sits inside the feed's.
 
-Пуна — наглядный пример: 6648 остановок фида, 262 в OpenStreetMap, медианное
-расстояние 8.7 км, доля удалённых 0.89 — по всем признакам смещение, а на карте
-облако OpenStreetMap лежит ровно в середине облака фида.
-
-Здесь считается признак, который эти случаи разводит: расстояние между
-центроидами двух облаков остановок, делённое на их собственный разброс.
-Отношение меньше единицы означает, что центры совпадают в пределах размера
-самих облаков, то есть одно вложено в другое; больше единицы — что облака
-разъехались.
+The criterion computed here is the distance between the centroids of the two stop
+clouds divided by their spread: below one, one cloud lies inside the other; above
+one, they sit apart.
 
     python wide_displacement.py --run
 """
@@ -35,17 +27,15 @@ logger = logging.getLogger(__name__)
 
 REPORT_CSV = WIDE_DIR / "displacement.csv"
 
-#: Ниже этого числа остановок центроид и разброс считать не по чему.
+#: Too few stops for a centroid and spread below this.
 MIN_STOPS = 3
 
-#: Граница между «вложены» и «разъехались». Единица означает, что центры облаков
-#: разнесены ровно на характерный размер облака; всё, что больше, — это уже два
-#: отдельных скопления.
+#: Between nested and apart: at one the centres are exactly one cloud size apart.
 DISPLACED_RATIO = 1.0
 
 
 def _cloud(nodes, mode: str = "bus"):
-    """Точки остановок одного вида транспорта в проекции графа."""
+    """Stop points of one mode, in the graph's projection."""
     if "type" in nodes.columns:
         nodes = nodes.loc[nodes["type"].astype(str).eq(mode)]
     if len(nodes) < MIN_STOPS:
@@ -69,8 +59,7 @@ def measure_city(city_key: str) -> dict:
 
     osm_centre, gtfs_centre = osm.mean(axis=0), gtfs.mean(axis=0)
     separation = float(np.linalg.norm(osm_centre - gtfs_centre))
-    # Среднеквадратичный радиус облака вокруг своего центра, усреднённый по двум
-    # источникам: масштаб, с которым осмысленно сравнивать разнос центров.
+    # RMS radius of each cloud about its centre, averaged over both sources.
     spread = float(
         np.mean(
             [
@@ -96,7 +85,7 @@ def measure_city(city_key: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cities", nargs="*")
-    parser.add_argument("--run", action="store_true", help="без него печатается только план")
+    parser.add_argument("--run", action="store_true", help="without it only the plan is printed")
     parser.add_argument("--force", action="store_true")
     arguments = parser.parse_args()
     logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")

@@ -84,8 +84,7 @@ def measure_city(city_key: str) -> list[dict]:
     for mode, group in boarding.groupby("mode"):
         keep = ~fallback.loc[group.index] & ~irregular.loc[group.index]
         measured = group.loc[keep, "time_min"]
-        # Значение без порога сохраняется рядом: разница между двумя столбцами и
-        # есть вклад нерегулярных рейсов, и её надо видеть, а не выводить заново.
+        # Kept alongside: the difference between the two columns is what irregular trips add.
         all_measured = group.loc[~fallback.loc[group.index], "time_min"]
         rows.append(
             {
