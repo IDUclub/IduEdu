@@ -193,7 +193,28 @@ def test_get_routes_by_poly_multiple_types_use_regex(monkeypatch):
     get_routes_by_poly(SQUARE, ["bus", "tram"])
 
     query = calls["data"]["data"]
-    assert '["route"~"^(bus|tram)$"]' in query
+    assert '["route"~"^(bus|light_rail|tram)$"]' in query
+
+
+def test_get_routes_by_poly_asks_for_the_tags_osm_actually_uses(monkeypatch):
+    """A request for a mode must fetch the other tags OSM uses for it.
+
+    Fourteen cities in the paper sample tag their trams ``light_rail`` and nine tag
+    shared taxis ``share_taxi``; asking for the registry name alone left both out
+    of the graph entirely.
+    """
+    calls = _mock_request(monkeypatch, {"elements": []})
+
+    get_routes_by_poly(SQUARE, ["tram"])
+    assert '["route"~"^(light_rail|tram)$"]' in calls["data"]["data"]
+
+    calls = _mock_request(monkeypatch, {"elements": []})
+    get_routes_by_poly(SQUARE, ["taxi"])
+    assert '["route"~"^(share_taxi|taxi)$"]' in calls["data"]["data"]
+
+    calls = _mock_request(monkeypatch, {"elements": []})
+    get_routes_by_poly(SQUARE, ["bus"])
+    assert '["route"="bus"]' in calls["data"]["data"], "a mode without synonyms keeps the simple filter"
 
 
 def test_get_routes_by_poly_subway_adds_station_details(monkeypatch):

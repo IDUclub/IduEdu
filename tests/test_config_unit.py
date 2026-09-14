@@ -263,7 +263,6 @@ def test_to_dict_roundtrip_structure():
     cfg.set_overpass_cache(enabled=False, cache_dir="/tmp/overpass_cache")
 
     d = cfg.to_dict()
-    # keys present
     for key in (
         "overpass_url",
         "timeout",
@@ -283,7 +282,6 @@ def test_to_dict_roundtrip_structure():
         "overpass_cache_enabled",
     ):
         assert key in d
-    # values are as expected
     assert d["overpass_url"] == "https://mirror.test/api/interpreter"
     assert d["timeout"] == 15
     assert d["enable_tqdm_bar"] is False

@@ -403,6 +403,28 @@ class UrbanGraph:
             dtype=dtype,
         )
 
+    def single_source_dijkstra_path(
+        self,
+        source_node: Any,
+        target_node: Any,
+        *,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        cutoff: float | None = None,
+        reverse: bool = False,
+    ) -> list[Any]:
+        """Return one shortest path as an ordered list of graph node ids."""
+
+        from iduedu.graph.shortest_paths import single_source_dijkstra_path
+
+        return single_source_dijkstra_path(
+            self,
+            source_node,
+            target_node,
+            weight=weight,
+            cutoff=cutoff,
+            reverse=reverse,
+        )
+
     def multi_source_dijkstra_path_length(
         self,
         *,
@@ -431,6 +453,36 @@ class UrbanGraph:
             cutoff=cutoff,
             reverse=reverse,
             dtype=dtype,
+        )
+
+    def multi_source_dijkstra_path(
+        self,
+        *,
+        gdf_origins: pd.DataFrame | None = None,
+        gdf_destinations: pd.DataFrame | None = None,
+        origins_nodes: Iterable[Any] | None = None,
+        destination_nodes: Iterable[Any] | None = None,
+        graph_node_column: str = "graph_node_id",
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        mode: Literal["all_to_all", "pairwise"] = "all_to_all",
+        threshold: float | None = None,
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Return shortest node paths between origin and destination inputs."""
+
+        from iduedu.graph.shortest_paths import multi_source_dijkstra_path
+
+        return multi_source_dijkstra_path(
+            self,
+            gdf_origins=gdf_origins,
+            gdf_destinations=gdf_destinations,
+            origins_nodes=origins_nodes,
+            destination_nodes=destination_nodes,
+            graph_node_column=graph_node_column,
+            weight=weight,
+            mode=mode,
+            threshold=threshold,
+            max_workers=max_workers,
         )
 
     def multi_source_dijkstra_nearest_source(
@@ -528,6 +580,18 @@ class UrbanGraph:
             threshold=threshold,
             max_workers=max_workers,
         )
+
+    def path_to_edges(
+        self,
+        path: Iterable[Any],
+        *,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+    ) -> gpd.GeoDataFrame:
+        """Convert an ordered node path to ordered graph edges."""
+
+        from iduedu.graph.shortest_paths import path_to_edges
+
+        return path_to_edges(self, path, weight=weight)
 
     @classmethod
     def from_nx_graph(

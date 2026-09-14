@@ -98,11 +98,7 @@ def _get_highway_properties(highway) -> tuple[str, float]:
 
 
 def _build_edges_from_overpass(
-    polygon: Polygon,
-    way_filter: str,
-    needed_tags: set[str],
-    local_crs: CRS,
-    simplify: bool = True,
+    polygon: Polygon, way_filter: str, needed_tags: set[str], local_crs: CRS, simplify: bool = True
 ) -> gpd.GeoDataFrame:
     """
     Download OSM ways by filter, segment into edges, and project to a local CRS.
@@ -144,7 +140,6 @@ def _build_edges_from_overpass(
         return gpd.GeoDataFrame()
     way_indices, coords_list = zip(*coord_entries)
 
-    # segmentation into segments
     starts = np.concatenate([a[:-1] for a in coords_list], axis=0)
     ends = np.concatenate([a[1:] for a in coords_list], axis=0)
 
@@ -236,11 +231,7 @@ def get_drive_graph(
     """
     polygon4326 = get_4326_boundary(osm_id=osm_id, territory=territory)
 
-    filters = {
-        "drive": Network.DRIVE.filter,
-        "drive_service": Network.DRIVE_SERVICE.filter,
-        "custom": custom_filter,
-    }
+    filters = {"drive": Network.DRIVE.filter, "drive_service": Network.DRIVE_SERVICE.filter, "custom": custom_filter}
     try:
         road_filter = filters[network_type]
     except KeyError:
@@ -266,11 +257,7 @@ def get_drive_graph(
     if len(edges_gdf) == 0:
         logger.warning("No edges found, returning empty graph")
         return UrbanGraph.empty(
-            crs=local_crs,
-            is_multigraph=True,
-            is_directed=True,
-            edge_direction_column="oneway",
-            graph_type=network_type,
+            crs=local_crs, is_multigraph=True, is_directed=True, edge_direction_column="oneway", graph_type=network_type
         )
 
     if clip_by_territory:
@@ -318,16 +305,7 @@ def get_drive_graph(
 
     edges_gdf = _assign_edge_keys(edges_gdf)
 
-    edge_attr_cols = set(needed_tags) | {
-        "u",
-        "v",
-        "k",
-        "geometry",
-        "length_meter",
-        "time_min",
-        "type",
-        "oneway",
-    }
+    edge_attr_cols = set(needed_tags) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type", "oneway"}
     if add_road_category:
         edge_attr_cols.add("category")
     edges_gdf = edges_gdf[[col for col in edges_gdf.columns if col in edge_attr_cols]].copy()

@@ -2,7 +2,13 @@ import geopandas as gpd
 import pytest
 from shapely.geometry import Point, box
 
-from iduedu import nearest_nodes, validate_graph
+from iduedu import (
+    multi_source_dijkstra_path,
+    nearest_nodes,
+    path_to_edges,
+    single_source_dijkstra_path,
+    validate_graph,
+)
 from iduedu.graph.urban_graph import UrbanGraph
 from tests.factories import (
     CRS,
@@ -183,3 +189,27 @@ def test_to_csr_does_not_mutate_cached_adjacency_state():
     assert matrix.shape == (4, 4)
     assert graph.adjacency_matrix is None  # to_csr is side-effect free
     assert graph.adjacency_nodelist == []
+
+
+def test_path_routing_is_available_through_methods_and_public_api():
+    graph = undirected_line_graph()
+
+    method_path = graph.single_source_dijkstra_path(0, 3)
+    function_path = single_source_dijkstra_path(graph, 0, 3)
+    method_matrix = graph.multi_source_dijkstra_path(
+        origins_nodes=[0],
+        destination_nodes=[3],
+        max_workers=1,
+    )
+    function_matrix = multi_source_dijkstra_path(
+        graph,
+        origins_nodes=[0],
+        destination_nodes=[3],
+        max_workers=1,
+    )
+    method_edges = graph.path_to_edges(method_path)
+    function_edges = path_to_edges(graph, function_path)
+
+    assert method_path == function_path == [0, 1, 2, 3]
+    assert method_matrix.loc[0, 3] == function_matrix.loc[0, 3] == [0, 1, 2, 3]
+    assert method_edges["path_order"].tolist() == function_edges["path_order"].tolist() == [0, 1, 2]

@@ -1,4 +1,11 @@
-# Benchmark environment for the IduEdu paper.
+# Benchmark environment for the IduEdu paper — pip route, WITHOUT pyrosm.
+#
+# ⚠ pyrosm cannot be installed this way on any platform: its dependency cykhash
+# publishes no wheels at all, so pip always compiles it and needs a C toolchain.
+# Use ../environment-bench.yml (conda-forge) to get every arm in one environment;
+# this file is the fallback when only pip is available and the pyrosm arm is
+# knowingly skipped.
+#
 # Install into a dedicated venv, NOT the main project venv:
 #   cd paper
 #   uv venv .venv-bench --python 3.11
@@ -9,15 +16,15 @@
 
 # graph-construction competitors
 osmnx>=2.0
-pyrosm>=0.6.2          # NOTE: stagnant since 2023; if it conflicts with pandas 3.x,
-                       # create a second venv with pandas<3 just for pyrosm runs —
-                       # resume-safe CSVs merge fine across environments.
+# pyrosm intentionally absent here — see the note above and environment-bench.yml
+cityseer               # pedestrian networks from a polygon; walk arm of B1
 osmium>=3.7            # PBF header bbox extraction
 
 # OD / shortest-path competitors
 networkx>=3.3
 networkit>=11.0
 igraph>=0.11
+rustworkx>=0.15        # Rust core; one Dijkstra per source, no batched OD API
 
 # harness + figures
 psutil>=5.9

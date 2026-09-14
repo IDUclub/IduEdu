@@ -1,9 +1,14 @@
-%% Workflow figure for IduEdu / Smart Cities manuscript (Figure 1).
+%% Workflow figure for the IduEdu manuscript (Figure 1).
 %% Standalone TikZ -> workflow_figure.pdf, included via \includegraphics.
-%% Pipeline: open urban data -> GeoDataFrame-native UrbanGraph ->
-%% routing primitives (IduEdu) + ObjectNat/custom algorithms ->
-%% travel-time outputs -> indicators & maps -> planning; scenario edits
-%% close the loop back to the graph tables.
+%%
+%% Pipeline: either open source (OSM route relations or a GTFS feed) ->
+%% one GeoDataFrame-native UrbanGraph -> routing primitives (IduEdu) +
+%% domain models over the same tables -> travel-time outputs -> indicators & maps;
+%% scenario edits close the loop back to the graph tables.
+%%
+%% The two converging sources are the point of the figure: the paper's first
+%% claim is that the transit layer comes from whichever source a city has,
+%% into the same representation. An earlier version drew OSM only.
 \documentclass[border=8pt]{standalone}
 \usepackage[T1]{fontenc}
 \usepackage{helvet}
@@ -32,57 +37,69 @@
   stage/.style={rounded corners=3pt, draw, line width=0.9pt,
                 text width=3.05cm, minimum height=2.75cm, align=left,
                 inner sep=6pt, anchor=north},
+  src/.style={rounded corners=3pt, draw, line width=0.9pt,
+              text width=3.05cm, minimum height=1.25cm, align=left,
+              inner sep=6pt, anchor=north},
   flow/.style={->, line width=1.2pt, draw=dataBd!85},
 ]
 
-% ---------- pipeline stages ----------
-\node[stage, draw=dataBd, fill=dataFl] (data) at (0,0)
-  {{\hd Open urban data}\\[3pt]
-   $\cdot$ OSM streets \& PT\\
-   $\cdot$ building footprints\\
-   $\cdot$ service locations};
+% ---------- the two open sources ----------
+\node[src, draw=dataBd, fill=dataFl] (osm) at (0,0)
+  {{\hd OpenStreetMap}\\[2pt]
+   {\scriptsize route relations, streets,\\ stops \& platforms}};
 
-\node[stage, draw=graphBd, fill=graphFl, right=1.15cm of data] (graph)
+\node[src, draw=dataBd, fill=dataFl] (gtfs) at (0,-1.5cm)
+  {{\hd GTFS feed}\\[2pt]
+   {\scriptsize published timetable,\\ one archive or several}};
+
+% ---------- pipeline stages ----------
+\node[stage, draw=graphBd, fill=graphFl] (graph) at (5.1cm,0)
   {{\hd\texttt{UrbanGraph}}\\[1pt]
    {\itshape GeoDataFrame-native}\\[3pt]
    $\cdot$ node \& edge tables\\
    $\cdot$ geometry, time, length\\
    $\cdot$ lazy cached matrix};
 
-\node[stage, draw=algoBd, fill=algoFl, right=1.15cm of graph] (algo)
+\node[stage, draw=algoBd, fill=algoFl] (algo) at (9.3cm,0)
   {{\hd Algorithms}\\[3pt]
    $\cdot$ \textcolor{iduClr}{\textbf{IduEdu} routing}\\
    \hspace*{1.5mm}{\scriptsize multi/nearest-source,}\\
    \hspace*{1.5mm}{\scriptsize OD, cutoff}\\
-   $\cdot$ \textcolor{downClr}{ObjectNat}\\
-   $\cdot$ \textcolor{downClr}{custom} models};
+   $\cdot$ \textcolor{downClr}{domain models}\\
+   \hspace*{1.5mm}{\scriptsize over the same tables}};
 
-\node[stage, draw=outBd, fill=outFl, right=1.15cm of algo] (out)
+\node[stage, draw=outBd, fill=outFl] (out) at (13.5cm,0)
   {{\hd Travel-time outputs}\\[3pt]
    $\cdot$ OD \& nearest-source\\
    $\cdot$ isochrones\\
    $\cdot$ coverage zones};
 
-\node[stage, draw=planBd, fill=planFl, right=1.15cm of out] (plan)
+\node[stage, draw=planBd, fill=planFl] (plan) at (17.7cm,0)
   {{\hd Indicators \& maps}\\[3pt]
-   $\cdot$ accessibility gain\\
-   $\cdot$ coverage, criticality\\[3pt]
+   $\cdot$ \textcolor{downClr}{service accessibility}\\
+   $\cdot$ \textcolor{downClr}{coverage, criticality}\\[3pt]
    $\Rightarrow$ {\itshape planning\\ \hspace*{2mm}interpretation}};
 
-% ---------- forward flow ----------
-\draw[flow] (data) -- (graph);
+% ---------- forward flow: both sources converge on one representation ----------
+\draw[flow] (osm.east)  -- ++(0.30cm,0) |- (graph.west);
+\draw[flow] (gtfs.east) -- ++(0.30cm,0) |- (graph.west);
 \draw[flow] (graph) -- (algo);
 \draw[flow] (algo) -- (out);
 \draw[flow] (out) -- (plan);
 
-% ---------- IduEdu span band (behind data..algo) ----------
+\node[anchor=south, font=\scriptsize\itshape, graphBd, align=center,
+      text width=1.9cm, inner sep=1pt]
+  at ($(osm.east)!0.5!(graph.west)+(0,0.45cm)$)
+  {either source,\\ one graph};
+
+% ---------- IduEdu span band (behind the sources .. algorithms) ----------
 \begin{scope}[on background layer]
   \node[rounded corners=5pt, fill=bandFl, draw=bandBd, line width=0.7pt,
-        fit=(data)(graph)(algo), inner sep=8pt] (band) {};
+        fit=(osm)(gtfs)(graph)(algo), inner sep=8pt] (band) {};
 \end{scope}
 \node[anchor=north west, iduClr, font=\scriptsize\bfseries]
   at ($(band.north west)+(2pt,10pt)$)
-  {IduEdu — open-source OSM builders $\cdot$ graph model $\cdot$ routing primitives};
+  {IduEdu — open-source OSM and GTFS builders $\cdot$ graph model $\cdot$ routing primitives};
 
 % ---------- scenario feedback loop ----------
 \coordinate (pb) at (plan.south);

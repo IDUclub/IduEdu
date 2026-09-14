@@ -10,9 +10,8 @@ Design goals (same as the v1 scripts, generalized):
 - Deterministic representation-size helpers for graph objects.
 """
 
-from __future__ import annotations
-
 import json
+import os
 import platform
 import time
 from dataclasses import dataclass
@@ -26,6 +25,12 @@ RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 PYROSM_CACHE_DIR = str(Path(__file__).resolve().parents[1] / "pbf_cache")
+
+#: Where the cityseer arm keeps its raw Overpass responses. cityseer has no cache
+#: of its own, so without this its measured build would include a network fetch on
+#: every attempt while IduEdu and OSMnx read theirs from disk -- the comparison
+#: would then be of our network link, not of the three libraries.
+CITYSEER_CACHE_DIR = Path(__file__).resolve().parents[1] / "cityseer_cache"
 
 
 # ----------------------------
@@ -55,7 +60,22 @@ def append_row(csv_path: Path, row: dict) -> None:
     Rows are dicts; if an existing CSV lacks some of the row's keys (e.g. a newly
     added metric column), the whole file is rewritten once with the union header
     so old rows keep aligning and resume/merge across environments stays safe.
+
+    Writes are retried: on Windows a manifest opened in a spreadsheet, an indexer
+    or a scanner denies the append, and losing a multi-hour sweep to a file the
+    author happened to be reading is not an acceptable failure mode.
     """
+    for attempt in range(6):
+        try:
+            _append_row_once(csv_path, row)
+            return
+        except PermissionError:
+            if attempt == 5:
+                raise
+            time.sleep(0.5 * (attempt + 1))
+
+
+def _append_row_once(csv_path: Path, row: dict) -> None:
     if not csv_path.exists():
         pd.DataFrame([row]).to_csv(csv_path, index=False)
         return
@@ -71,6 +91,75 @@ def append_row(csv_path: Path, row: dict) -> None:
 
     aligned = {column: row.get(column, "") for column in header}
     pd.DataFrame([aligned]).to_csv(csv_path, mode="a", header=False, index=False)
+
+
+# ----------------------------
+# Per-city sweeps
+# ----------------------------
+
+
+def already_done(csv_path: Path, column: str = "city_key") -> set[str]:
+    """Keys a resume-safe sweep has already written."""
+    if not csv_path.exists():
+        return set()
+    return {str(value) for value in pd.read_csv(csv_path)[column]}
+
+
+def sweep(
+    keys: list[str],
+    work: Callable[[str], dict | list[dict]],
+    csv_path: Path,
+    *,
+    force: bool = False,
+    logger: Any = None,
+    describe: Callable[[list[dict]], str] | None = None,
+    failure_extra: dict | None = None,
+    done_keys: set[str] | None = None,
+    key_column: str = "city_key",
+) -> None:
+    """Run ``work`` for every key, appending rows as they are produced.
+
+    Six modules had grown their own copy of this loop, each with its own wording
+    for the same log line and its own decision about what a failure looks like.
+    The behaviour they shared, and which this keeps:
+
+    * a key already present in the CSV is skipped unless ``force``;
+    * an exception from one key is recorded as a ``failed`` row and the sweep
+      continues -- one unreadable feed must not end a sweep of a hundred cities;
+    * every row is appended immediately, so an interrupted run resumes.
+
+    ``work`` may return one row or several (one per mode, say). ``done_keys``
+    overrides what counts as finished, which is how a build stage retries the
+    cities that failed last time while a measuring stage does not.
+    """
+    if force:
+        done: set[str] = set()
+    elif done_keys is not None:
+        done = done_keys
+    else:
+        done = already_done(csv_path, key_column)
+    pending = [key for key in keys if key not in done]
+    if logger is not None:
+        logger.info(f"{len(keys)} cities, {len(done)} already recorded, {len(pending)} to do")
+
+    for index, key in enumerate(pending, start=1):
+        try:
+            produced = work(key)
+        except Exception as error:  # noqa: BLE001 - one bad city must not end the sweep
+            produced = {
+                key_column: key,
+                **(failure_extra or {}),
+                "status": "failed",
+                "reason": f"{type(error).__name__}: {error}"[:300],
+            }
+            if logger is not None:
+                logger.warning(f"{key}: {produced['reason']}")
+        rows = produced if isinstance(produced, list) else [produced]
+        for row in rows:
+            append_row(csv_path, row)
+        if logger is not None:
+            headline = describe(rows) if describe else str(rows[0].get("status"))
+            logger.info(f"[{index}/{len(pending)}] {key}: {headline}")
 
 
 # ----------------------------
@@ -130,7 +219,8 @@ def bbox_from_pbf(pbf_path: str) -> BoundsInfo:
 BBBIKE_CITIES: dict[str, str] = {
     "Helsinki": "Helsinki",
     "Saint Petersburg": "SanktPetersburg",
-    "Moscow": "Moskau",
+    # bbbike renamed this extract: "Moskau" now answers 404, "Moscow" answers 200.
+    "Moscow": "Moscow",
     "London": "London",
     "Seoul": "Seoul",
     "New York": "NewYork",
@@ -367,6 +457,22 @@ def nx_to_igraph(nx_graph, weight: str = "weight"):
     return graph, node_to_pos
 
 
+def nx_to_rustworkx(nx_graph, weight: str = "weight"):
+    """Rust-backed graph, added as a third competitor alongside NetworKit and igraph.
+
+    Worth having because it is the one that installs anywhere: a wheel on every
+    platform, no compiler and no conda channel, which is exactly the constraint
+    that keeps pyrosm out of this benchmark on Windows.
+    """
+    import rustworkx as rx
+
+    n, node_to_pos, src, dst, w = nx_min_edges_relabel(nx_graph, weight)
+    graph = rx.PyDiGraph(multigraph=False)
+    graph.add_nodes_from(range(n))
+    graph.add_edges_from(list(zip(src.tolist(), dst.tolist(), w.tolist())))
+    return graph, node_to_pos
+
+
 def node_coords(nx_graph):
     """Node id array + Nx2 coordinate array from a competitor NetworkX graph."""
     ids = np.fromiter((int(n) for n in nx_graph.nodes()), dtype=np.int64, count=nx_graph.number_of_nodes())
@@ -419,6 +525,10 @@ def dump_environment(tag: str) -> None:
     info = {
         "tag": tag,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        # Which Overpass instance answered. Empty means the library default. A
+        # mirror serves the same planet with its own replication lag, so a table
+        # built from several stages should be able to say where its data came from.
+        "overpass_url": os.getenv("OVERPASS_URL", ""),
         "platform": platform.platform(),
         "processor": platform.processor(),
         "python": platform.python_version(),

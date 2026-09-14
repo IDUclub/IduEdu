@@ -22,9 +22,12 @@ from .components import (
 )
 from .shortest_paths import (
     dijkstra_path_length_parallel,
+    multi_source_dijkstra_path,
     multi_source_dijkstra_nearest_source,
     multi_source_dijkstra_path_length,
     od_matrix,
+    path_to_edges,
+    single_source_dijkstra_path,
     single_source_dijkstra_path_length,
 )
 from .urban_graph import UrbanGraph

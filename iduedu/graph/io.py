@@ -25,6 +25,30 @@ ADJACENCY_FILE = "adjacency.npz"
 ADJACENCY_NODELIST_FILE = "adjacency_nodelist.parquet"
 
 
+def _stringify_mixed_columns(frame):
+    """Make object columns writable to parquet.
+
+    OSM tags arrive untyped: ``depth`` is ``32`` on one station and ``"32"`` on
+    the next, and Arrow refuses a column holding both, failing the whole write
+    after the graph has already been built. Columns that mix scalar types are
+    written as text -- the alternative, guessing a numeric type, would silently
+    drop values such as ``"~15"`` or ``"32;40"`` that OSM genuinely contains.
+    """
+    geometry_column = getattr(frame, "_geometry_column_name", None)
+    for column in frame.columns:
+        if column == geometry_column or frame[column].dtype != object:
+            continue
+        values = frame[column].dropna()
+        if values.empty:
+            continue
+        types = {type(value) for value in values.head(1000)}
+        scalar_types = {int, float, str, bool}
+        if len(types) > 1 and types <= scalar_types:
+            frame = frame.copy()
+            frame[column] = frame[column].map(lambda value: value if value is None else str(value))
+    return frame
+
+
 def write_urban_graph(
     graph: UrbanGraph,
     path: str | Path,
@@ -67,6 +91,9 @@ def write_urban_graph(
     # are JSON-encoded before writing and decoded back on read.
     nodes_to_write, metadata["nodes_encoded_columns"] = _encode_object_columns(graph.nodes_gdf)
     edges_to_write, metadata["edges_encoded_columns"] = _encode_object_columns(graph.edges_gdf)
+
+    nodes_to_write = _stringify_mixed_columns(nodes_to_write)
+    edges_to_write = _stringify_mixed_columns(edges_to_write)
 
     try:
         with TemporaryDirectory() as tmp_dir:

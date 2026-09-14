@@ -6,17 +6,18 @@ High-level functions
 Graph builders
 ==============
 
-The high-level builders download OpenStreetMap data, normalize it into the
-``UrbanGraph`` data model, estimate a local metric CRS, and compute standard edge
-weights:
+The OSM high-level builders download OpenStreetMap data, while the GTFS builder
+reads a local Schedule feed. Both normalize their inputs into the ``UrbanGraph``
+data model, use a local metric CRS, and compute standard edge weights:
 
 ``length_meter``
     Edge geometry length in meters.
 
 ``time_min``
     Traversal time in minutes. For walk graphs this is based on ``walk_speed``;
-    for drive graphs it is based on road class and speed tags; for public
-    transport it is based on the active :class:`TransportRegistry`.
+    for drive graphs it is based on road class and speed tags. OSM-based public
+    transport uses the active :class:`TransportRegistry`; GTFS graphs derive
+    in-vehicle and boarding times from the selected schedule.
 
 Most examples use ``osm_id=1114252`` and can be run directly from the notebooks.
 See :doc:`../examples/get_any_graph` for end-to-end examples of all builders.
@@ -41,8 +42,8 @@ Use :func:`get_drive_graph` for car-accessible street networks and
 The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and
 ``simplify=False`` side by side and highlights edges affected by clipping.
 
-Public-transport and intermodal graphs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+OSM public-transport and intermodal graphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use :func:`get_public_transport_graph` to build bus, tram, trolleybus, subway,
 or train graphs. Pass ``transport_types`` to restrict modes and
@@ -57,6 +58,18 @@ See :doc:`../examples/get_any_graph` for intermodal construction and
 :doc:`../examples/objects_and_nearest_nodes` for the lower-level projection
 workflow used during joining.
 
+GTFS public-transport graphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use :func:`get_gtfs_public_transport_graph` to build a static graph from a
+local GTFS Schedule directory or ZIP archive. Service-date and time-window
+filters select the departures used to estimate boarding waits. GTFS graphs do
+not use :class:`TransportRegistry` waiting-time defaults.
+
+To make a GTFS graph intermodal, first build a walk graph, pass its CRS to the
+GTFS builder, and combine the two with :func:`join_pt_walk_graph`. See
+:doc:`gtfs` for the complete workflow and modeling details.
+
 .. autosummary::
     :toctree: generated
     :nosignatures:
@@ -64,5 +77,6 @@ workflow used during joining.
     get_drive_graph
     get_walk_graph
     get_public_transport_graph
+    get_gtfs_public_transport_graph
     get_intermodal_graph
     join_pt_walk_graph

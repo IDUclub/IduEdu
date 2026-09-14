@@ -3,7 +3,9 @@
 import pytest
 
 from iduedu import (
+    DEFAULT_REGISTRY,
     DEFAULT_REGISTRY_W_TRAIN,
+    TransportRegistry,
     config,
     get_drive_graph,
     get_public_transport_graph,
@@ -151,14 +153,16 @@ def test_get_public_transport_graph_multiple_types(ground_pt_graph):
     assert "boarding" in edge_types
 
 
-def test_get_public_transport_graph_boarding_time_penalty(bounds):
-    g_default = get_public_transport_graph(transport_types="bus", territory=bounds, avg_boarding_time_min=1.0)
-    g_slow_boarding = get_public_transport_graph(transport_types="bus", territory=bounds, avg_boarding_time_min=5.0)
+def test_get_public_transport_graph_uses_registry_wait_time(bounds):
+    registry = TransportRegistry({"bus": DEFAULT_REGISTRY.get("bus")})
+    registry.update("bus", avg_wait_time_min=5.0)
+    g_default = get_public_transport_graph(transport_types="bus", territory=bounds)
+    g_slow_boarding = get_public_transport_graph(transport_types="bus", territory=bounds, transport_registry=registry)
 
     boarding_default = g_default.edges_gdf.loc[g_default.edges_gdf["type"] == "boarding", "time_min"]
     boarding_slow = g_slow_boarding.edges_gdf.loc[g_slow_boarding.edges_gdf["type"] == "boarding", "time_min"]
 
-    assert (boarding_default == 1.0).all()
+    assert (boarding_default == DEFAULT_REGISTRY.get("bus").avg_wait_time_min).all()
     assert (boarding_slow == 5.0).all()
 
 

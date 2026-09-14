@@ -33,13 +33,18 @@ from .graph import (
 from .graph.shortest_paths import (
     dijkstra_path_length_parallel,
     multi_source_dijkstra_nearest_source,
+    multi_source_dijkstra_path,
     multi_source_dijkstra_path_length,
     od_matrix,
+    path_to_edges,
+    single_source_dijkstra_path,
     single_source_dijkstra_path_length,
 )
 from .graph_builders.drive_walk_builders import get_drive_graph, get_walk_graph
+from .graph_builders.gtfs_builders import get_gtfs_public_transport_graph
 from .graph_builders.intermodal_builders import get_intermodal_graph, join_pt_walk_graph
 from .graph_builders.public_transport_builders import get_public_transport_graph
+from .gtfs.merge import merge_gtfs_feeds
 from .overpass.downloaders import get_4326_boundary
 
 

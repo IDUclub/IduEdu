@@ -23,7 +23,7 @@ help:
 	@echo "  test-network      - run opt-in network tests only"
 	@echo "  test-all          - run all tests, including network tests"
 	@echo "  coverage          - run fast tests with terminal coverage report"
-	@echo "  coverage-xml      - run all tests (incl. network) and write coverage.xml for CI/Codecov"
+	@echo "  coverage-xml      - run all tests (incl. network) and write coverage.xml for CI"
 	@echo "  coverage-html     - run fast tests and write HTML coverage report"
 	@echo "  coverage-numba    - run Numba tests and show Numba coverage only"
 	@echo "  docs              - build documentation"

@@ -26,6 +26,7 @@ import json
 import numpy as np
 from bench_common import RESULTS_DIR, dump_environment, measure, urban_to_networkx
 from bench_od import load_or_build_graph
+from wide_paths import use_paper_cache
 
 OUT_JSON = RESULTS_DIR / "validity_report.json"
 
@@ -128,6 +129,7 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true")
     args = parser.parse_args()
 
+    use_paper_cache()  # one Overpass cache for the paper; see bench_build
     dump_environment("validity")
 
     from iduedu import get_4326_boundary

@@ -17,7 +17,8 @@ OSMnx.
 - `UrbanGraph`: a tabular graph representation backed by `GeoDataFrame` node and edge tables.
 - Lazy CSR adjacency built directly from edge tables and reused by shortest-path routines.
 - Street-graph builders for drive and walk networks from OSM with metric projection and optional simplification.
-- Static public-transport graph construction directly from OSM relations, without requiring GTFS.
+- Static public-transport graph construction directly from OSM relations, without requiring GTFS. A separate
+  GTFS builder is available, but it is not part of the reported benchmark workload.
 - Intermodal graph construction by projecting stops, platforms and subway access points onto the walking graph.
 - OD-matrix computation on Numba-backed CSR kernels with cutoff thresholds and adaptive graph reversal.
 - Optional NetworkX adapters for interoperability without using NetworkX as the internal graph representation.
@@ -243,9 +244,9 @@ accelerated kernel versus the `float64` reference.
 
 ## Limitations
 
-The public-transport graph is static. It uses route topology and stop infrastructure from OSM and does not
-model schedules, headways or time-dependent waiting. This is appropriate for structural accessibility and
-network-coverage studies, but not for exact timetable routing.
+The public-transport graph used in these benchmarks is static and OSM-based. It does not model schedules,
+headways or time-dependent waiting. The optional GTFS builder estimates static boarding waits from a selected
+schedule window, but it is still not an exact time-dependent timetable router.
 
 The benchmark advantages are strongest for large city graphs and batch computations such as OD matrices,
 many-source accessibility and repeated spatial analysis. For one-off route queries, specialized routing

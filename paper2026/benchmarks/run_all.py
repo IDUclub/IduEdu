@@ -17,7 +17,6 @@ Usage (from this directory, with the benchmark venv's python):
     ../.venv-bench/Scripts/python.exe run_all.py --step-timeout-hours 6
 """
 
-from __future__ import annotations
 
 import argparse
 import subprocess
@@ -34,6 +33,8 @@ LOG_DIR = HERE.parent / "results" / "logs"
 STEPS: list[tuple[str, str, list[str]]] = [
     ("build", "bench_build.py", []),
     ("intermodal", "bench_intermodal.py", []),
+    # Independent of the others: builds the transit layer from feeds in bench_feeds/.
+    ("gtfs", "bench_gtfs.py", []),
     ("od_rect", "bench_od.py", ["--mode", "rect"]),
     ("od_square", "bench_od.py", ["--mode", "square"]),
     ("validity", "bench_validity.py", []),
@@ -51,12 +52,26 @@ def fmt_duration(seconds: float) -> str:
 def run_step(name: str, script: str, extra: list[str], *, smoke: bool, timeout: float | None) -> dict:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log_path = LOG_DIR / f"{name}.log"
-    cmd = [sys.executable, str(HERE / script), *extra]
+    # -X utf8 rather than PYTHONIOENCODING: that one only fixes stdio, and the
+    # failure it does not fix is a file write. cityseer caches its Overpass
+    # response with Path.write_text() and no encoding, so on a console-cp1251
+    # Windows the first Finnish street name with an "a-umlaut" ends the city's
+    # whole arm. Every other locale-encoded read or write in the stack is covered
+    # by the same switch.
+    cmd = [sys.executable, "-X", "utf8", str(HERE / script), *extra]
     if smoke:
         cmd.append("--smoke")
 
     header = f"\n{'=' * 70}\n[{datetime.now():%Y-%m-%d %H:%M:%S}] START {name}: {' '.join(cmd)}\n{'=' * 70}"
     print(header, flush=True)
+
+    # Child output is decoded with errors="replace", which yields U+FFFD. Writing
+    # that to a Windows console encoded cp1251 raises, and the runner died on a
+    # route name while the step's own log had recorded everything correctly. Make
+    # the console tolerate what the decoder produced.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
 
     start = time.perf_counter()
     status = "ok"

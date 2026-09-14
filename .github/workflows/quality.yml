@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
@@ -17,10 +16,17 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      # Pull requests from forks get these downgraded to read-only by GitHub; their
+      # comment is posted by coverage.yml instead.
+      contents: write # push coverage data and the badge to python-coverage-comment-action-data
+      pull-requests: write # post or update the coverage comment on pull requests from this repository
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -45,11 +51,17 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Coverage comment and badge
+        id: coverage_comment
+        uses: py-cov-action/python-coverage-comment-action@a05be3d2e8a6272d3ef5fb2840ab20368bb2eb71 # v4.3
         with:
-          use_oidc: true
-          files: coverage.xml
-          disable_search: true
-          fail_ci_if_error: true
-          verbose: true
+          GITHUB_TOKEN: ${{ github.token }}
+          MINIMUM_GREEN: 80
+          MINIMUM_ORANGE: 60
+
+      - name: Store the pull request comment for coverage.yml
+        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt

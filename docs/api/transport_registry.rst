@@ -4,8 +4,9 @@ Transport registry
 The transport registry defines how different public-transport modes are represented and how
 travel time is computed on graph edges.
 
-It is used by all public-transport graph builders to validate transport types and to estimate
-per-edge travel time based on segment length, speed limits, and mode-specific parameters.
+It is used by the OSM public-transport builder to validate transport types and to estimate per-edge
+travel time based on segment length, speed limits, and mode-specific parameters. GTFS graph weights
+are derived from the feed schedule and do not use the registry.
 
 Overview
 --------
@@ -18,7 +19,8 @@ Each transport specification describes:
 - the transport mode identifier (e.g. ``"bus"``, ``"tram"``, ``"subway"``);
 - technical maximum speed;
 - typical acceleration and braking distances;
-- a traffic slowdown coefficient.
+- a traffic slowdown coefficient;
+- average passenger waiting time before boarding.
 
 The registry is consulted during graph construction to compute the ``time_min`` attribute
 for each edge.
@@ -36,11 +38,12 @@ The library provides a predefined registry:
 
     from iduedu import DEFAULT_REGISTRY
 
-The default registry includes common public-transport modes such as buses, trams, trolleybuses,
-subways, and trains. These defaults are suitable for most use cases and require no configuration.
+The default registry includes buses, trams, trolleybuses, and subways. Their OSM boarding waits are
+8, 6, 8, and 2 minutes respectively. ``DEFAULT_REGISTRY_W_TRAIN`` additionally includes trains with a
+1-minute default wait.
 
-If no registry is explicitly provided, all public-transport graph builders automatically fall back
-to ``DEFAULT_REGISTRY``.
+If no registry is explicitly provided, the OSM public-transport builder automatically falls back to
+``DEFAULT_REGISTRY``.
 
 TransportSpec
 -------------
@@ -56,7 +59,9 @@ A single transport mode is described by :class:`iduedu.TransportSpec`.
         vmax_tech_kmh=90,
         accel_dist_m=220,
         brake_dist_m=140,
-        traffic_coef=0.75,
+        base_speed_kmh=37.0,
+        dwell_min=0.45,
+        avg_wait_time_min=8.0,
     )
 
 The parameters have the following meaning:
@@ -65,7 +70,13 @@ The parameters have the following meaning:
 - ``vmax_tech_kmh`` – technical maximum speed in kilometers per hour;
 - ``accel_dist_m`` – typical distance required to accelerate to cruising speed (meters);
 - ``brake_dist_m`` – typical distance required to decelerate from cruising speed (meters);
-- ``traffic_coef`` – traffic slowdown coefficient (values below 1.0 reduce effective speed).
+- ``base_speed_kmh`` – free-flow speed of the mode between stops. A posted road limit
+  does **not** scale it; the limit is honoured only where it is lower, so a motorway
+  does not make a bus faster. Fitting free speed as ``base + coef * limit`` against
+  published timetables showed the two terms are not separately identifiable, and
+  dropping the limit term improved accuracy for every mode measured;
+- ``dwell_min`` – time lost standing at a stop, added once per segment;
+- ``avg_wait_time_min`` – average waiting time assigned to boarding edges in OSM-based graphs.
 
 Creating a custom registry
 --------------------------
@@ -84,7 +95,8 @@ You can create your own registry and fully control how travel time is computed.
             vmax_tech_kmh=80,
             accel_dist_m=200,
             brake_dist_m=120,
-            traffic_coef=0.7,
+            base_speed_kmh=34.0,
+            avg_wait_time_min=8.0,
         )
     )
 
@@ -94,7 +106,8 @@ You can create your own registry and fully control how travel time is computed.
             vmax_tech_kmh=70,
             accel_dist_m=180,
             brake_dist_m=110,
-            traffic_coef=0.85,
+            base_speed_kmh=40.0,
+            avg_wait_time_min=6.0,
         )
     )
 
@@ -107,8 +120,9 @@ Existing transport specifications can be updated:
 
 .. code-block:: python
 
-    registry.update("bus", traffic_coef=0.6)
+    registry.update("bus", base_speed_kmh=32.0)
     registry.update("tram", vmax_tech_kmh=75)
+    registry.update("bus", avg_wait_time_min=5.0)
 
 Transport types can also be renamed:
 
@@ -128,7 +142,8 @@ This is useful when working with less common OSM transport modes.
 Using the registry in graph builders
 ------------------------------------
 
-All public-transport graph builders accept a registry via the ``transport_registry`` parameter.
+The OSM :func:`get_public_transport_graph` builder accepts a registry via the
+``transport_registry`` parameter. :func:`get_intermodal_graph` forwards it through ``pt_kwargs``.
 
 For example:
 
@@ -144,11 +159,30 @@ For example:
 
 If ``transport_registry`` is not provided, ``DEFAULT_REGISTRY`` is used automatically.
 
-The registry controls:
+The former ``avg_boarding_time_min`` builder argument has been removed. To apply one waiting-time
+value to selected modes, create a registry and update those specifications instead:
+
+.. code-block:: python
+
+    from iduedu import DEFAULT_REGISTRY, TransportRegistry
+
+    registry = TransportRegistry({mode: DEFAULT_REGISTRY.get(mode) for mode in DEFAULT_REGISTRY.list_types()})
+    for mode in registry.list_types():
+        registry.update(mode, avg_wait_time_min=1.0)
+
+    graph = get_public_transport_graph(
+        osm_id=123456,
+        transport_registry=registry,
+    )
+
+For OSM-based public-transport graphs, the registry controls:
 
 - which transport types are considered valid;
 - how per-edge travel time (``time_min``) is computed;
-- how short segments are handled (acceleration and braking effects).
+- how short segments are handled (acceleration and braking effects);
+- the mode-specific ``time_min`` of boarding edges.
+
+GTFS graph boarding weights remain timetable-derived and do not use this fallback.
 
 API reference
 -------------
@@ -161,4 +195,3 @@ API reference
 
     TransportSpec
     TransportRegistry
-

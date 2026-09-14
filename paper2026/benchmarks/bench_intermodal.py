@@ -14,8 +14,6 @@ Usage:
     python bench_intermodal.py --areas "Helsinki,Saint Petersburg"
 """
 
-from __future__ import annotations
-
 import argparse
 import time
 
@@ -31,6 +29,7 @@ from bench_common import (
     measure,
     resolve_area_pbf,
 )
+from wide_paths import use_paper_cache
 
 OUT_CSV = RESULTS_DIR / "intermodal_benchmark.csv"
 KEY_COLUMNS = ["area", "attempt"]
@@ -102,6 +101,7 @@ def main() -> None:
     parser.add_argument("--areas", default=None)
     args = parser.parse_args()
 
+    use_paper_cache()  # one Overpass cache for the paper; see bench_build
     dump_environment("intermodal")
     existing = load_existing_keys(OUT_CSV, KEY_COLUMNS)
     if existing:
@@ -117,24 +117,32 @@ def main() -> None:
 
     areas = [a.strip() for a in args.areas.split(",")] if args.areas else AREAS
     for area in areas:
-        # Fully-recorded area needs neither a PBF download nor a warm-up.
-        if not has_pending(existing, area):
-            print(f"\n=== {area}: all attempts already recorded, skipping ===")
-            continue
+        try:
+            # Fully-recorded area needs neither a PBF download nor a warm-up.
+            if not has_pending(existing, area):
+                print(f"\n=== {area}: all attempts already recorded, skipping ===")
+                continue
 
-        pbf_path = resolve_area_pbf(area)
-        bounds = bbox_from_pbf(pbf_path)
-        print(f"\n=== {area} | bbox={bounds.bbox} ===")
+            pbf_path = resolve_area_pbf(area)
+            bounds = bbox_from_pbf(pbf_path)
+            print(f"\n=== {area} | bbox={bounds.bbox} ===")
 
-        # Warm-up: populate Overpass caches (not recorded). Only reached when the
-        # area still has pending attempts.
-        from iduedu import get_public_transport_graph, get_walk_graph
+            # Warm-up: populate Overpass caches (not recorded). Only reached when the
+            # area still has pending attempts.
+            from iduedu import get_public_transport_graph, get_walk_graph
 
-        print("  [warm] walk + pt")
-        force_cleanup(get_walk_graph(territory=bounds.polygon_4326, simplify=True, keep_largest_subgraph=False))
-        force_cleanup(get_public_transport_graph(territory=bounds.polygon_4326))
+            print("  [warm] walk + pt")
+            force_cleanup(get_walk_graph(territory=bounds.polygon_4326, simplify=True, keep_largest_subgraph=False))
+            force_cleanup(get_public_transport_graph(territory=bounds.polygon_4326))
 
-        run_area(existing, area, bounds.polygon_4326)
+            run_area(existing, area, bounds.polygon_4326)
+
+        except Exception as error:  # noqa: BLE001 - one city must not end the sweep
+            # Overpass answers 504 under load and its retries can run out, and a
+            # mirror can refuse a PBF. Every stage here is resume-safe, so the
+            # honest response is to name the city that failed and go on to the
+            # next one rather than lose the cities that would have followed.
+            print(f"[fail] {area}: {type(error).__name__}: {error}", flush=True)
 
     print(f"\n[done] results -> {OUT_CSV}")
 

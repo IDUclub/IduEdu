@@ -13,7 +13,7 @@ try:
 except PackageNotFoundError:
     release = "0.0.0"
 
-version = ".".join(release.split(".")[:2])  # короткая X.Y
+version = ".".join(release.split(".")[:2])  # short X.Y
 
 copyright = f"{datetime.now():%Y}, {author}"
 
