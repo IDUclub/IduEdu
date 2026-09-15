@@ -1,0 +1,259 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "transport-registry-01",
+   "metadata": {},
+   "source": [
+    "# Transport registry\n",
+    "\n",
+    "Transport registries define public-transport mode parameters used to estimate edge travel time.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "transport-registry-02",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:18:31.466081Z",
+     "start_time": "2026-07-07T12:18:31.461322Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# To install IduEdu in a clean environment:\n",
+    "# !pip install IduEdu\n",
+    "\n",
+    "OSM_ID = 1114252\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "transport-registry-03",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:18:40.311347Z",
+     "start_time": "2026-07-07T12:18:31.469599Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['bus', 'trolleybus', 'tram', 'subway', 'monorail', 'taxi']\n",
+      "['bus', 'trolleybus', 'tram', 'subway', 'monorail', 'taxi', 'train']\n"
+     ]
+    }
+   ],
+   "source": [
+    "from iduedu import DEFAULT_REGISTRY, DEFAULT_REGISTRY_W_TRAIN\n",
+    "\n",
+    "print(DEFAULT_REGISTRY.list_types())\n",
+    "print(DEFAULT_REGISTRY_W_TRAIN.list_types())\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "transport-registry-04",
+   "metadata": {},
+   "source": [
+    "## Inspect a transport specification\n",
+    "\n",
+    "Each `TransportSpec` stores the speed, acceleration, braking, dwell and waiting-time parameters of one mode.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "transport-registry-05",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:18:40.364802Z",
+     "start_time": "2026-07-07T12:18:40.361777Z"
+    }
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "TransportSpec(name='bus', vmax_tech_kmh=90, accel_dist_m=25.9, brake_dist_m=24.1, base_speed_kmh=41.0, avg_wait_time_min=8.2, dwell_min=0.475)\n",
+      "Travel time for 800 m: 1.72 min\n"
+     ]
+    }
+   ],
+   "source": [
+    "bus = DEFAULT_REGISTRY.get(\"bus\")\n",
+    "print(bus)\n",
+    "print(\"Travel time for 800 m:\", round(bus.travel_time_min(800), 2), \"min\")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "transport-registry-06",
+   "metadata": {},
+   "source": [
+    "## Create a custom registry\n",
+    "\n",
+    "Use a custom registry when you need project-specific speed assumptions or additional transport modes.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "transport-registry-07",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:18:40.396434Z",
+     "start_time": "2026-07-07T12:18:40.372797Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['bus', 'tram']"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from iduedu import TransportRegistry, TransportSpec\n",
+    "\n",
+    "registry = TransportRegistry()\n",
+    "registry.add(\n",
+    "    TransportSpec(\n",
+    "        name=\"bus\",\n",
+    "        vmax_tech_kmh=80,\n",
+    "        accel_dist_m=220,\n",
+    "        brake_dist_m=160,\n",
+    "        base_speed_kmh=34.0,\n",
+    "    )\n",
+    ")\n",
+    "registry.add(\n",
+    "    TransportSpec(\n",
+    "        name=\"tram\",\n",
+    "        vmax_tech_kmh=70,\n",
+    "        accel_dist_m=180,\n",
+    "        brake_dist_m=140,\n",
+    "        base_speed_kmh=40.0,\n",
+    "    )\n",
+    ")\n",
+    "\n",
+    "registry.list_types()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "transport-registry-08",
+   "metadata": {},
+   "source": [
+    "## Update, ensure, and remove specs\n",
+    "\n",
+    "Names are normalized internally. `ensure` creates a missing mode from defaults when needed.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "transport-registry-09",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:18:40.410480Z",
+     "start_time": "2026-07-07T12:18:40.402267Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "TransportSpec(name='bus', vmax_tech_kmh=80, accel_dist_m=220, brake_dist_m=160, base_speed_kmh=32.0, avg_wait_time_min=1.0, dwell_min=0.0)"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "registry.update(\"bus\", base_speed_kmh=32.0)\n",
+    "registry.ensure(\"ferry\")\n",
+    "registry.remove(\"ferry\")\n",
+    "\n",
+    "registry.get(\"bus\")\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "transport-registry-10",
+   "metadata": {},
+   "source": [
+    "## Use a registry in graph construction\n",
+    "\n",
+    "Pass the registry to public-transport builders through `transport_registry`.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "transport-registry-11",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:18:42.127202Z",
+     "start_time": "2026-07-07T12:18:40.420281Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "UrbanGraph(nodes=935, edges=2056, is_multigraph=True, is_directed=True, edge_direction_column='oneway', crs='EPSG:32636', type='public_transport')"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from iduedu import get_public_transport_graph\n",
+    "\n",
+    "G_pt_custom = get_public_transport_graph(\n",
+    "    osm_id=OSM_ID,\n",
+    "    transport_types=[\"bus\", \"tram\"],\n",
+    "    transport_registry=registry,\n",
+    "    clip_by_territory=True,\n",
+    ")\n",
+    "\n",
+    "G_pt_custom\n"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

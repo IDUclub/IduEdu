@@ -1,0 +1,6 @@
+﻿iduedu.dijkstra\_path\_length\_parallel
+=======================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: dijkstra_path_length_parallel

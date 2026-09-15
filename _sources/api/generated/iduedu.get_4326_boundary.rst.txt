@@ -1,0 +1,6 @@
+﻿iduedu.get\_4326\_boundary
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_4326_boundary

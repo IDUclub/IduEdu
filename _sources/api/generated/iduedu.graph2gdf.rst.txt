@@ -1,0 +1,6 @@
+﻿iduedu.graph2gdf
+================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: graph2gdf

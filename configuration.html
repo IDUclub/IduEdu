@@ -1,0 +1,829 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Graph data model" href="api/graph_data_model.html"><link rel="prev" title="iduedu.join_pt_walk_graph" href="api/generated/iduedu.join_pt_walk_graph.html">
+        <link rel="prefetch" href="_static/iduedulogo.svg" as="image">
+
+    <link rel="shortcut icon" href="_static/iduedufavicon.svg"><!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>Configuration - IduEdu 2.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">IduEdu 2.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="_static/iduedulogo.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">IduEdu 2.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/high_level.html">High-level functions</a><input aria-label="Toggle navigation of High-level functions" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.get_drive_graph.html">iduedu.get_drive_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.get_walk_graph.html">iduedu.get_walk_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.get_public_transport_graph.html">iduedu.get_public_transport_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.get_gtfs_public_transport_graph.html">iduedu.get_gtfs_public_transport_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.get_intermodal_graph.html">iduedu.get_intermodal_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.join_pt_walk_graph.html">iduedu.join_pt_walk_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/graph_data_model.html">Graph data model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration_to_urban_graph.html">Migrating to UrbanGraph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Benchmarks and design notes</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/transport_registry.html">Transport registry</a><input aria-label="Toggle navigation of Transport registry" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.TransportSpec.html">iduedu.TransportSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.TransportRegistry.html">iduedu.TransportRegistry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/gtfs.html">GTFS public transport</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/utilities.html">Graph utilities</a><input aria-label="Toggle navigation of Graph utilities" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.connected_components.html">iduedu.connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.weakly_connected_components.html">iduedu.weakly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.strongly_connected_components.html">iduedu.strongly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.number_connected_components.html">iduedu.number_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.number_weakly_connected_components.html">iduedu.number_weakly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.number_strongly_connected_components.html">iduedu.number_strongly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.largest_connected_component.html">iduedu.largest_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.largest_weakly_connected_component.html">iduedu.largest_weakly_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.largest_strongly_connected_component.html">iduedu.largest_strongly_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.largest_component.html">iduedu.largest_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.keep_largest_connected_component.html">iduedu.keep_largest_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.relabel_urban_graph.html">iduedu.relabel_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.subgraph_by_nodes.html">iduedu.subgraph_by_nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.clip_urban_graph.html">iduedu.clip_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.join_urban_graphs.html">iduedu.join_urban_graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.simplify_multiedges.html">iduedu.simplify_multiedges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.to_directed.html">iduedu.to_directed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.to_undirected.html">iduedu.to_undirected</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.nearest_nodes.html">iduedu.nearest_nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.project_objects2urban_graph.html">iduedu.project_objects2urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.apply_urban_graph_changes.html">iduedu.apply_urban_graph_changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.UrbanGraphChanges.html">iduedu.UrbanGraphChanges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.read_urban_graph.html">iduedu.read_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.write_urban_graph.html">iduedu.write_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.validate_graph.html">iduedu.validate_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/utilities.html#optional-networkx-utilities">Optional NetworkX utilities</a><input aria-label="Toggle navigation of Optional NetworkX utilities" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.urban_graph2nx_graph.html">iduedu.urban_graph2nx_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.nx_graph2urban_graph.html">iduedu.nx_graph2urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.graph2gdf.html">iduedu.graph2gdf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.gdf2graph.html">iduedu.gdf2graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.keep_largest_nx_component.html">iduedu.keep_largest_nx_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.clip_nx_graph.html">iduedu.clip_nx_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.read_gml.html">iduedu.read_gml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.write_gml.html">iduedu.write_gml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.reproject_graph.html">iduedu.reproject_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/matrices.html">Matrices</a><input aria-label="Toggle navigation of Matrices" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.single_source_dijkstra_path_length.html">iduedu.single_source_dijkstra_path_length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.multi_source_dijkstra_path_length.html">iduedu.multi_source_dijkstra_path_length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.multi_source_dijkstra_nearest_source.html">iduedu.multi_source_dijkstra_nearest_source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.dijkstra_path_length_parallel.html">iduedu.dijkstra_path_length_parallel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.od_matrix.html">iduedu.od_matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.single_source_dijkstra_path.html">iduedu.single_source_dijkstra_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.multi_source_dijkstra_path.html">iduedu.multi_source_dijkstra_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.path_to_edges.html">iduedu.path_to_edges</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/overpass.html">Overpass helpers</a><input aria-label="Toggle navigation of Overpass helpers" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/generated/iduedu.get_4326_boundary.html">iduedu.get_4326_boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/get_any_graph.html">Build transport graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/urban_graph_basics.html">UrbanGraph basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/graph_operations.html">Graph operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/connectivity.html">Connectivity diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/objects_and_nearest_nodes.html">Objects, nearest nodes, and graph projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/shortest_paths.html">Shortest paths and OD matrices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/transport_registry.html">Transport registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/gtfs_public_transport.html">GTFS public transport</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="configuration">
+<h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h1>
+<p>IduEdu keeps its runtime settings in one global object, <code class="docutils literal notranslate"><span class="pre">iduedu.config</span></code>. Downloaders and builders read it on
+every call, so a change applies to everything that runs after it in the same process. Most settings can also
+be given as environment variables, which are read once when <code class="docutils literal notranslate"><span class="pre">iduedu</span></code> is imported.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>  <span class="c1"># a snapshot of every current setting</span>
+</pre></div>
+</div>
+<section id="overpass-endpoint-and-requests">
+<h2>Overpass endpoint and requests<a class="headerlink" href="#overpass-endpoint-and-requests" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_url</span><span class="p">(</span><span class="s2">"https://overpass-api.de/api/interpreter"</span><span class="p">)</span>
+<span class="n">config</span><span class="o">.</span><span class="n">set_timeout</span><span class="p">(</span><span class="mi">120</span><span class="p">)</span>
+<span class="n">config</span><span class="o">.</span><span class="n">set_rate_limit</span><span class="p">(</span><span class="n">min_interval</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">max_retries</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">backoff_base</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_url</span></code> accepts any <code class="docutils literal notranslate"><span class="pre">http://</span></code> or <code class="docutils literal notranslate"><span class="pre">https://</span></code> Overpass interpreter, for example a self-hosted
+instance or a mirror.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_timeout</span></code> sets the request timeout in seconds. The same value is sent to Overpass as <code class="docutils literal notranslate"><span class="pre">[timeout:...]</span></code>
+in every query.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_rate_limit</span></code> spaces requests at least <code class="docutils literal notranslate"><span class="pre">min_interval</span></code> seconds apart. Before each attempt IduEdu asks the
+instance’s <code class="docutils literal notranslate"><span class="pre">/status</span></code> endpoint for a free slot and waits for it. Network errors and HTTP 429, 502, 503 and
+504 responses are retried up to <code class="docutils literal notranslate"><span class="pre">max_retries</span></code> times with an exponentially growing delay based on
+<code class="docutils literal notranslate"><span class="pre">backoff_base</span></code>; a 429 response honours the server’s <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> header.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.user_agent</span></code> is sent with every request. Set it to something that identifies your project:
+<code class="docutils literal notranslate"><span class="pre">config.user_agent</span> <span class="pre">=</span> <span class="pre">&quot;my-project/1.0</span> <span class="pre">(me&#64;example.org)&quot;</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.proxies</span></code> (a <code class="docutils literal notranslate"><span class="pre">requests</span></code>-style mapping such as <code class="docutils literal notranslate"><span class="pre">{&quot;https&quot;:</span> <span class="pre">&quot;http://proxy:3128&quot;}</span></code>) and
+<code class="docutils literal notranslate"><span class="pre">config.verify_ssl</span></code> are passed to every request.</p></li>
+</ul>
+<p>The public Overpass instance is shared by many users. Keep the default pacing unless you run your own
+instance.</p>
+</section>
+<section id="overpass-cache">
+<h2>Overpass cache<a class="headerlink" href="#overpass-cache" title="Link to this heading">¶</a></h2>
+<p>IduEdu caches raw Overpass JSON responses on disk: boundaries, street-network queries, route relations and
+their members. The cache is enabled by default and lives in <code class="docutils literal notranslate"><span class="pre">.iduedu_cache</span></code> relative to the current working
+directory.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_cache</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># ignore the cache completely</span>
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_cache</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="s2">"/tmp/overpass_cache"</span><span class="p">,</span> <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The cache stores responses only, never processed graphs. Clear the directory or disable the cache to force
+fresh downloads, for example after OSM data you depend on has been edited.</p>
+</section>
+<section id="historical-snapshots">
+<h2>Historical snapshots<a class="headerlink" href="#historical-snapshots" title="Link to this heading">¶</a></h2>
+<p>Overpass can answer a query as OpenStreetMap stood at a given moment:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_date</span><span class="p">(</span><span class="n">date</span><span class="o">=</span><span class="s2">"2020-01-01"</span><span class="p">)</span>                <span class="c1"># 2020-01-01T00:00:00Z</span>
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_date</span><span class="p">(</span><span class="n">date</span><span class="o">=</span><span class="s2">"2020-01-01T12:34:56Z"</span><span class="p">)</span>
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_date</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>               <span class="c1"># 2020-05-01T00:00:00Z</span>
+<span class="n">config</span><span class="o">.</span><span class="n">set_overpass_date</span><span class="p">()</span>                                 <span class="c1"># back to current data</span>
+</pre></div>
+</div>
+<p>While a date is set, subway routes are queried as plain route relations: stop areas, stations and entrances
+are skipped because Overpass does not reliably support those queries at arbitrary timestamps, and a warning is
+logged.</p>
+</section>
+<section id="osm-tags-kept-on-edges">
+<h2>OSM tags kept on edges<a class="headerlink" href="#osm-tags-kept-on-edges" title="Link to this heading">¶</a></h2>
+<p>Street and public-transport edges keep only a small set of OSM tags:</p>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Graph</p></th>
+<th class="head"><p>Default tags</p></th>
+<th class="head"><p>Global setter</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Drive</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">highway</span></code>, <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">lanes</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config.set_drive_useful_edges_attr(...)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Walk</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">highway</span></code>, <code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config.set_walk_useful_edges_attr(...)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Public transport</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config.set_transport_useful_edges_attr(...)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The builders’ <code class="docutils literal notranslate"><span class="pre">osm_edge_tags</span></code> argument replaces the global set for a single call:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_drive_graph</span>
+
+<span class="n">graph</span> <span class="o">=</span> <span class="n">get_drive_graph</span><span class="p">(</span><span class="n">osm_id</span><span class="o">=</span><span class="mi">1114252</span><span class="p">,</span> <span class="n">osm_edge_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"highway"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="s2">"maxspeed"</span><span class="p">,</span> <span class="s2">"surface"</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="progress-bars-and-logging">
+<h2>Progress bars and logging<a class="headerlink" href="#progress-bars-and-logging" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="n">config</span><span class="o">.</span><span class="n">set_enable_tqdm</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># hide progress bars while public-transport routes are parsed</span>
+<span class="n">config</span><span class="o">.</span><span class="n">configure_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">"INFO"</span><span class="p">)</span>
+<span class="n">config</span><span class="o">.</span><span class="n">configure_logging</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">"DEBUG"</span><span class="p">,</span> <span class="n">to_file</span><span class="o">=</span><span class="s2">"iduedu.log"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>IduEdu logs through <a class="reference external" href="https://loguru.readthedocs.io/">loguru</a>, available as <code class="docutils literal notranslate"><span class="pre">config.logger</span></code>. The default level
+is <code class="docutils literal notranslate"><span class="pre">WARNING</span></code>. <code class="docutils literal notranslate"><span class="pre">configure_logging</span></code> replaces every sink of the shared loguru logger, including sinks your own
+application added, then writes to standard error and, with <code class="docutils literal notranslate"><span class="pre">to_file</span></code>, to a file rotated at 20 MB and kept for
+14 days. <code class="docutils literal notranslate"><span class="pre">json=True</span></code> writes the bare message without time and level, for collectors that add their own.</p>
+</section>
+<section id="environment-variables">
+<h2>Environment variables<a class="headerlink" href="#environment-variables" title="Link to this heading">¶</a></h2>
+<div class="table-wrapper colwidths-auto docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Equivalent setting</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_URL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://overpass-api.de/api/interpreter</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_overpass_url</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_USER_AGENT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">iduedu/&lt;version&gt;</span> <span class="pre">(+https://github.com/IDUclub/IduEdu)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">config.user_agent</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_TIMEOUT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">120</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_timeout</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_MIN_INTERVAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_rate_limit(min_interval=...)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_MAX_RETRIES</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_rate_limit(max_retries=...)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_BACKOFF_BASE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_rate_limit(backoff_base=...)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_DATE</span></code></p></td>
+<td><p>unset</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_CACHE_DIR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.iduedu_cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_overpass_cache(cache_dir=...)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OVERPASS_CACHE_ENABLED</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code>; <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> disables</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_overpass_cache(enabled=...)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ENABLE_TQDM</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code>; <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> disables</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">set_enable_tqdm</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LOG_LEVEL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">WARNING</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">configure_logging(level=...)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">OVERPASS_URL</span><span class="o">=</span><span class="s2">"https://overpass.example.org/api/interpreter"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OVERPASS_CACHE_DIR</span><span class="o">=</span><span class="s2">"/tmp/overpass_cache"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LOG_LEVEL</span><span class="o">=</span><span class="s2">"INFO"</span>
+</pre></div>
+</div>
+<p>An invalid <code class="docutils literal notranslate"><span class="pre">OVERPASS_DATE</span></code> is ignored with a warning rather than failing the import.</p>
+</section>
+<section id="api-reference">
+<h2>API reference<a class="headerlink" href="#api-reference" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="iduedu.config.Config">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iduedu.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference internal" href="_modules/iduedu/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config" title="Link to this definition">¶</a></dt>
+<dd><p>Global runtime settings for Overpass, caching, logging and graph builders.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.configure_logging">
+<span class="sig-name descname"><span class="pre">configure_logging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'INFO'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.configure_logging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.configure_logging" title="Link to this definition">¶</a></dt>
+<dd><p>Configure Loguru: stderr sink (+optional file sink), level, formatting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>level</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'TRACE'</em><em>, </em><em>'DEBUG'</em><em>, </em><em>'INFO'</em><em>, </em><em>'WARNING'</em><em>, </em><em>'ERROR'</em><em>, </em><em>'CRITICAL'</em><em>]</em>)</p></li>
+<li><p><strong>to_file</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>json</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_overpass_url">
+<span class="sig-name descname"><span class="pre">set_overpass_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_overpass_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_overpass_url" title="Link to this definition">¶</a></dt>
+<dd><p>Set active Overpass URL (validated), keeps the pool intact.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>url</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_overpass_cache">
+<span class="sig-name descname"><span class="pre">set_overpass_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_overpass_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_overpass_cache" title="Link to this definition">¶</a></dt>
+<dd><p>Managing the file cache of Overpass requests.
+enabled=True -&gt; read/write cache
+enabled=False -&gt; ignore cache completely</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enabled</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>cache_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_timeout">
+<span class="sig-name descname"><span class="pre">set_timeout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_timeout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_timeout" title="Link to this definition">¶</a></dt>
+<dd><p>Set the default Overpass request timeout in seconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>timeout</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Positive timeout value in seconds.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">timeout</span></code> is not positive.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_overpass_date">
+<span class="sig-name descname"><span class="pre">set_overpass_date</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">year</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">month</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_overpass_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_overpass_date" title="Link to this definition">¶</a></dt>
+<dd><p>Set the snapshot date for Overpass queries.</p>
+<p>The date is stored in ISO 8601 UTC format: <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DDTHH:MM:SSZ</span></code> and
+used in the Overpass header as <code class="docutils literal notranslate"><span class="pre">[date:&quot;...&quot;]</span></code>. Calling this method
+allows you to fix the OSM data to a specific historical snapshot or
+reset back to the “current” data.</p>
+<dl class="simple">
+<dt>Usage examples:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date()</span></code> or <code class="docutils literal notranslate"><span class="pre">set_overpass_date(None)</span></code> -
+reset the date (no <code class="docutils literal notranslate"><span class="pre">[date:...]</span></code> in queries).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date(date=&quot;2020-01-01&quot;)</span></code> -&gt;
+<code class="docutils literal notranslate"><span class="pre">2020-01-01T00:00:00Z</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date(date=&quot;2020-01-01T12:34:56Z&quot;)</span></code> -&gt;
+stores the normalized value of this timestamp.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date(year=2020)</span></code> -&gt;
+<code class="docutils literal notranslate"><span class="pre">2020-01-01T00:00:00Z</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date(year=2020,</span> <span class="pre">month=5)</span></code> -&gt;
+<code class="docutils literal notranslate"><span class="pre">2020-05-01T00:00:00Z</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_overpass_date(year=2020,</span> <span class="pre">month=5,</span> <span class="pre">day=10)</span></code> -&gt;
+<code class="docutils literal notranslate"><span class="pre">2020-05-10T00:00:00Z</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – A date string in <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DD</span></code> or <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DDTHH:MM:SSZ</span></code>
+format. If provided, <code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code> and <code class="docutils literal notranslate"><span class="pre">day</span></code> must all
+be <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>year</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Year component of the date. If provided without <code class="docutils literal notranslate"><span class="pre">date</span></code>,
+at least the year must be set; <code class="docutils literal notranslate"><span class="pre">month</span></code> and <code class="docutils literal notranslate"><span class="pre">day</span></code> are
+optional and default to January 1 if omitted.</p></li>
+<li><p><strong>month</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Month component of the date (1-12). Optional when used
+with <code class="docutils literal notranslate"><span class="pre">year</span></code>. Defaults to 1 (January) if not provided.</p></li>
+<li><p><strong>day</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Day component of the date (1-31). Optional when used with
+<code class="docutils literal notranslate"><span class="pre">year</span></code> and <code class="docutils literal notranslate"><span class="pre">month</span></code>. Defaults to 1 if not provided.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If both <code class="docutils literal notranslate"><span class="pre">date</span></code> and any of <code class="docutils literal notranslate"><span class="pre">year</span></code>, <code class="docutils literal notranslate"><span class="pre">month</span></code>,
+    <code class="docutils literal notranslate"><span class="pre">day</span></code> are provided, if the date string is not in a supported
+    format, or if the constructed date is invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.build_overpass_header">
+<span class="sig-name descname"><span class="pre">build_overpass_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.build_overpass_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.build_overpass_header" title="Link to this definition">¶</a></dt>
+<dd><p>Build the Overpass query header for JSON requests.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeout</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Optional timeout override in seconds. If omitted, the
+configured default timeout is used.</p></li>
+<li><p><strong>date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Optional Overpass snapshot date override in ISO UTC format.
+If omitted, <code class="docutils literal notranslate"><span class="pre">self.overpass_date</span></code> is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Header string such as <code class="docutils literal notranslate"><span class="pre">[out:json][timeout:120];</span></code> or
+<code class="docutils literal notranslate"><span class="pre">[out:json][timeout:120][date:&quot;2020-01-01T00:00:00Z&quot;];</span></code>.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the effective timeout is not positive.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="iduedu.config.Config.overpass_header">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">overpass_header</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#iduedu.config.Config.overpass_header" title="Link to this definition">¶</a></dt>
+<dd><p>Current default Overpass query header.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_enable_tqdm">
+<span class="sig-name descname"><span class="pre">set_enable_tqdm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_enable_tqdm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_enable_tqdm" title="Link to this definition">¶</a></dt>
+<dd><p>Enable or disable progress bars for long-running operations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>enable</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_drive_useful_edges_attr">
+<span class="sig-name descname"><span class="pre">set_drive_useful_edges_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_drive_useful_edges_attr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_drive_useful_edges_attr" title="Link to this definition">¶</a></dt>
+<dd><p>Set OSM edge tags retained by drive graph builders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>attr</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_walk_useful_edges_attr">
+<span class="sig-name descname"><span class="pre">set_walk_useful_edges_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_walk_useful_edges_attr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_walk_useful_edges_attr" title="Link to this definition">¶</a></dt>
+<dd><p>Set OSM edge tags retained by walk graph builders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>attr</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_transport_useful_edges_attr">
+<span class="sig-name descname"><span class="pre">set_transport_useful_edges_attr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_transport_useful_edges_attr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_transport_useful_edges_attr" title="Link to this definition">¶</a></dt>
+<dd><p>Set OSM edge tags retained by public-transport graph builders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>attr</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.set_rate_limit">
+<span class="sig-name descname"><span class="pre">set_rate_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backoff_base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.set_rate_limit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.set_rate_limit" title="Link to this definition">¶</a></dt>
+<dd><p>Configure Overpass request pacing and retry behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min_interval</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Minimum delay between Overpass requests in seconds.</p></li>
+<li><p><strong>max_retries</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Maximum number of retry attempts for retryable HTTP
+statuses.</p></li>
+<li><p><strong>backoff_base</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Base multiplier for exponential retry backoff.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If any provided value is outside its accepted range.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.to_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Return a serializable snapshot of the current configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="iduedu.config.Config.from_env">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_env</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/iduedu/config.html#Config.from_env"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#iduedu.config.Config.from_env" title="Link to this definition">¶</a></dt>
+<dd><p>Construct Config using environment variables where available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#iduedu.config.Config" title="iduedu.config.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">Config</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="api/graph_data_model.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Graph data model</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="api/generated/iduedu.join_pt_walk_graph.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">iduedu.join_pt_walk_graph</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Donny
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Configuration</a><ul>
+<li><a class="reference internal" href="#overpass-endpoint-and-requests">Overpass endpoint and requests</a></li>
+<li><a class="reference internal" href="#overpass-cache">Overpass cache</a></li>
+<li><a class="reference internal" href="#historical-snapshots">Historical snapshots</a></li>
+<li><a class="reference internal" href="#osm-tags-kept-on-edges">OSM tags kept on edges</a></li>
+<li><a class="reference internal" href="#progress-bars-and-logging">Progress bars and logging</a></li>
+<li><a class="reference internal" href="#environment-variables">Environment variables</a></li>
+<li><a class="reference internal" href="#api-reference">API reference</a><ul>
+<li><a class="reference internal" href="#iduedu.config.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a><ul>
+<li><a class="reference internal" href="#iduedu.config.Config.configure_logging"><code class="docutils literal notranslate"><span class="pre">Config.configure_logging()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_overpass_url"><code class="docutils literal notranslate"><span class="pre">Config.set_overpass_url()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_overpass_cache"><code class="docutils literal notranslate"><span class="pre">Config.set_overpass_cache()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_timeout"><code class="docutils literal notranslate"><span class="pre">Config.set_timeout()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_overpass_date"><code class="docutils literal notranslate"><span class="pre">Config.set_overpass_date()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.build_overpass_header"><code class="docutils literal notranslate"><span class="pre">Config.build_overpass_header()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.overpass_header"><code class="docutils literal notranslate"><span class="pre">Config.overpass_header</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_enable_tqdm"><code class="docutils literal notranslate"><span class="pre">Config.set_enable_tqdm()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_drive_useful_edges_attr"><code class="docutils literal notranslate"><span class="pre">Config.set_drive_useful_edges_attr()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_walk_useful_edges_attr"><code class="docutils literal notranslate"><span class="pre">Config.set_walk_useful_edges_attr()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_transport_useful_edges_attr"><code class="docutils literal notranslate"><span class="pre">Config.set_transport_useful_edges_attr()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.set_rate_limit"><code class="docutils literal notranslate"><span class="pre">Config.set_rate_limit()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.to_dict"><code class="docutils literal notranslate"><span class="pre">Config.to_dict()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.config.Config.from_env"><code class="docutils literal notranslate"><span class="pre">Config.from_env()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=20623aea"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    </body>
+</html>

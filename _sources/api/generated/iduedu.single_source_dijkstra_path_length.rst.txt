@@ -1,0 +1,6 @@
+﻿iduedu.single\_source\_dijkstra\_path\_length
+=============================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: single_source_dijkstra_path_length

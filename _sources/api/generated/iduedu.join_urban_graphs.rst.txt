@@ -1,0 +1,6 @@
+﻿iduedu.join\_urban\_graphs
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: join_urban_graphs

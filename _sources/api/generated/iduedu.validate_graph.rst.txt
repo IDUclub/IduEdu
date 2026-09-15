@@ -1,0 +1,6 @@
+﻿iduedu.validate\_graph
+======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: validate_graph

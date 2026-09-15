@@ -1,0 +1,20 @@
+﻿iduedu.TransportSpec
+====================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: TransportSpec
+   :members:
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~TransportSpec.travel_time_min
+      ~TransportSpec.validate
+   
+   

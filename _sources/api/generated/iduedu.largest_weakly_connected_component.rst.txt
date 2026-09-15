@@ -1,0 +1,6 @@
+﻿iduedu.largest\_weakly\_connected\_component
+============================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: largest_weakly_connected_component

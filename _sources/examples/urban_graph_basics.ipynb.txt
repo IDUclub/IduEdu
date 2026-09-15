@@ -1,0 +1,431 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": "# UrbanGraph basics\n\n`UrbanGraph` is the core IduEdu data model. It stores topology and geometry in two tables and builds SciPy CSR adjacency matrices for routing.\n",
+   "id": "urban-graph-basics-01"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:28.138500Z",
+     "start_time": "2026-07-07T12:19:28.133912Z"
+    }
+   },
+   "source": [
+    "# To install IduEdu in a clean environment:\n",
+    "# !pip install IduEdu\n",
+    "\n",
+    "OSM_ID = 1114252\n"
+   ],
+   "id": "urban-graph-basics-02",
+   "outputs": [],
+   "execution_count": 1
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:37.788078Z",
+     "start_time": "2026-07-07T12:19:28.140505Z"
+    }
+   },
+   "source": "from iduedu import UrbanGraph, get_walk_graph\n\nG = get_walk_graph(osm_id=OSM_ID, simplify=True, keep_largest_subgraph=True)\nG\n",
+   "id": "urban-graph-basics-03",
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "2026-07-07 15:19:37.764 | WARNING  | Removing 332 nodes outside the largest connected component. Retaining 19588 of 19920 nodes.\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "UrbanGraph(nodes=19588, edges=26384, is_multigraph=True, is_directed=False, edge_direction_column=None, crs='EPSG:32636', type='walk')"
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "execution_count": 2
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": "## Nodes and edges\n\nThe node index is the graph node id. Edges reference node ids through `u` and `v`; multigraph edges also use `k`.\n",
+   "id": "urban-graph-basics-04"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:37.842800Z",
+     "start_time": "2026-07-07T12:19:37.836292Z"
+    }
+   },
+   "source": "G.nodes_gdf.head()\n",
+   "id": "urban-graph-basics-05",
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "                         geometry\n",
+       "0   POINT (342445.98 6648580.728)\n",
+       "1  POINT (342446.941 6648576.639)\n",
+       "2   POINT (342462.306 6648574.49)\n",
+       "3  POINT (342478.126 6648582.111)\n",
+       "4  POINT (342485.496 6648566.956)"
+      ],
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>geometry</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>POINT (342445.98 6648580.728)</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>POINT (342446.941 6648576.639)</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>POINT (342462.306 6648574.49)</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>POINT (342478.126 6648582.111)</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>POINT (342485.496 6648566.956)</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ]
+     },
+     "execution_count": 3,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "execution_count": 3
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:37.966501Z",
+     "start_time": "2026-07-07T12:19:37.957839Z"
+    }
+   },
+   "source": "G.edges_gdf.head()\n",
+   "id": "urban-graph-basics-06",
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "                                            geometry  highway name  u      v  \\\n",
+       "0  LINESTRING (342445.98 6648580.728, 342451.109 ...  service  NaN  0  17080   \n",
+       "1  LINESTRING (342445.98 6648580.728, 342419.381 ...  service  NaN  0  17081   \n",
+       "2  LINESTRING (342446.941 6648576.639, 342418.099...  footway  NaN  1  17082   \n",
+       "3  LINESTRING (342462.306 6648574.49, 342445.98 6...  service  NaN  2      0   \n",
+       "4  LINESTRING (342462.306 6648574.49, 342462.084 ...  service  NaN  2      4   \n",
+       "\n",
+       "   length_meter  time_min  type  k  \n",
+       "0        26.935     0.323  walk  0  \n",
+       "1        28.181     0.338  walk  0  \n",
+       "2        30.602     0.367  walk  0  \n",
+       "3        17.477     0.210  walk  0  \n",
+       "4        37.423     0.449  walk  0  "
+      ],
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>geometry</th>\n",
+       "      <th>highway</th>\n",
+       "      <th>name</th>\n",
+       "      <th>u</th>\n",
+       "      <th>v</th>\n",
+       "      <th>length_meter</th>\n",
+       "      <th>time_min</th>\n",
+       "      <th>type</th>\n",
+       "      <th>k</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>LINESTRING (342445.98 6648580.728, 342451.109 ...</td>\n",
+       "      <td>service</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0</td>\n",
+       "      <td>17080</td>\n",
+       "      <td>26.935</td>\n",
+       "      <td>0.323</td>\n",
+       "      <td>walk</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>LINESTRING (342445.98 6648580.728, 342419.381 ...</td>\n",
+       "      <td>service</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>0</td>\n",
+       "      <td>17081</td>\n",
+       "      <td>28.181</td>\n",
+       "      <td>0.338</td>\n",
+       "      <td>walk</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>LINESTRING (342446.941 6648576.639, 342418.099...</td>\n",
+       "      <td>footway</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>1</td>\n",
+       "      <td>17082</td>\n",
+       "      <td>30.602</td>\n",
+       "      <td>0.367</td>\n",
+       "      <td>walk</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>LINESTRING (342462.306 6648574.49, 342445.98 6...</td>\n",
+       "      <td>service</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "      <td>17.477</td>\n",
+       "      <td>0.210</td>\n",
+       "      <td>walk</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>LINESTRING (342462.306 6648574.49, 342462.084 ...</td>\n",
+       "      <td>service</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>2</td>\n",
+       "      <td>4</td>\n",
+       "      <td>37.423</td>\n",
+       "      <td>0.449</td>\n",
+       "      <td>walk</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "execution_count": 4
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:37.999407Z",
+     "start_time": "2026-07-07T12:19:37.995469Z"
+    }
+   },
+   "source": "print(\"crs:\", G.crs)\nprint(\"graph type:\", G.type)\nprint(\"directed:\", G.is_directed)\nprint(\"multigraph:\", G.is_multigraph)\nprint(\"edge direction column:\", G.edge_direction_column)\n",
+   "id": "urban-graph-basics-07",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "crs: EPSG:32636\n",
+      "graph type: walk\n",
+      "directed: False\n",
+      "multigraph: True\n",
+      "edge direction column: None\n"
+     ]
+    }
+   ],
+   "execution_count": 5
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": "## Validation and copying\n\n`validate` checks table contracts. `copy` returns an independent graph object and preserves adjacency cache state when it exists.\n",
+   "id": "urban-graph-basics-08"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:38.094654Z",
+     "start_time": "2026-07-07T12:19:38.068015Z"
+    }
+   },
+   "source": "G.validate()\nG_copy = G.copy()\nprint(G_copy)\n",
+   "id": "urban-graph-basics-09",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "UrbanGraph(nodes=19588, edges=26384, is_multigraph=True, is_directed=False, edge_direction_column=None, crs='EPSG:32636', type='walk')\n"
+     ]
+    }
+   ],
+   "execution_count": 6
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": "## Adjacency matrix cache\n\n`to_csr` builds a matrix without changing the graph cache. `update_adjacency_matrix` stores the matrix on the graph and records the node order.\n",
+   "id": "urban-graph-basics-10"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:38.174809Z",
+     "start_time": "2026-07-07T12:19:38.138030Z"
+    }
+   },
+   "source": "csr = G.to_csr(weight=\"time_min\")\nprint(csr.shape, csr.nnz)\nprint(G.adjacency_matrix is None)\n\ncached = G.update_adjacency_matrix(weight=\"time_min\")\nprint(cached.shape, cached.nnz)\nprint(G.adjacency_weight)\nprint(G.adjacency_nodelist[:5])\n",
+   "id": "urban-graph-basics-11",
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(19588, 19588) 52372\n",
+      "True\n",
+      "(19588, 19588) 52372\n",
+      "time_min\n",
+      "[0, 1, 2, 3, 4]\n"
+     ]
+    }
+   ],
+   "execution_count": 7
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": "## Empty graph\n\nUse `UrbanGraph.empty` when a workflow needs to return a graph object even when no edges were found.\n",
+   "id": "urban-graph-basics-12"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:38.212638Z",
+     "start_time": "2026-07-07T12:19:38.206318Z"
+    }
+   },
+   "source": [
+    "empty_graph = UrbanGraph.empty(crs=G.crs, is_multigraph=True, is_directed=False, graph_type=\"walk\")\n",
+    "empty_graph"
+   ],
+   "id": "urban-graph-basics-13",
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "UrbanGraph(nodes=0, edges=0, is_multigraph=True, is_directed=False, edge_direction_column=None, crs='EPSG:32636', type='walk')"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "execution_count": 8
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": "## Read and write `.urbangraph` archives\n\nThe archive stores node and edge tables. It can also store the adjacency cache if it has been built.\n",
+   "id": "urban-graph-basics-14"
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2026-07-07T12:19:38.652561Z",
+     "start_time": "2026-07-07T12:19:38.241394Z"
+    }
+   },
+   "source": "from pathlib import Path\nfrom tempfile import TemporaryDirectory\nfrom iduedu import read_urban_graph, write_urban_graph\n\nwith TemporaryDirectory() as tmp_dir:\n    path = Path(tmp_dir) / \"walk.urbangraph\"\n    write_urban_graph(G, path, include_adjacency=True)\n    restored = read_urban_graph(path)\n\nrestored\n",
+   "id": "urban-graph-basics-15",
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "UrbanGraph(nodes=19588, edges=26384, is_multigraph=True, is_directed=False, edge_direction_column=None, crs='EPSG:32636', type='walk')"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "execution_count": 9
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "pygments_lexer": "ipython3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
