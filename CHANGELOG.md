@@ -1,61 +1,119 @@
 # CHANGELOG
 
+<!-- version list -->
 
 ## v2.1.0 (2026-09-14)
 
-### Continuous Integration
+IduEdu 2.1.0 builds public transport graphs from GTFS Schedule feeds, reconstructs shortest paths as actual routes, and fixes how public transport routes are assembled from OpenStreetMap. The public transport travel-time model is recalibrated against published timetables, so travel times and waits differ from 2.0; see **Upgrading from 2.0** below.
 
-- Chain release and docs workflows
-  ([`ed61e4a`](https://github.com/IDUclub/IduEdu/commit/ed61e4a7d5aca18f1fc7bd969538dd026f890e30))
+### Highlights
 
-- rename the main CI workflow to Tests and Coverage - run release only in the official
-  IDUclub/IduEdu repository after successful main-branch quality checks - keep semantic-release as
-  the release gate, but allow no-op releases for non-release commits - rebuild and publish
-  documentation only after the Release workflow completes - restrict official documentation
-  deployment to IDUclub/IduEdu gh-pages - update README, docs badges and contributor notes for the
-  official workflow chain - remove the stale src path from docs configuration
+- **Public transport from GTFS.** `get_gtfs_public_transport_graph` builds a static graph from a GTFS directory, a ZIP archive or several feeds at once, with waiting times taken from the timetable.
+- **Routes, not only distances.** `single_source_dijkstra_path`, `multi_source_dijkstra_path` and `path_to_edges` return the nodes and edges a shortest path actually follows.
+- **OSM routes without teleports.** Route relations are stitched in the right order and direction and cut at holes, instead of being bridged by straight lines across the city.
+- **Recalibrated travel times.** Per-mode free-flow speed, dwell and waiting time in `TransportSpec`, fitted against published timetables.
 
-### Documentation
+### Upgrading from 2.0
 
-- **paper**: Add Smart Cities manuscript and reproducibility materials
-  ([`3546d3e`](https://github.com/IDUclub/IduEdu/commit/3546d3e6eececea01852f88d5180e92a16b2eb8c))
+- `TransportSpec` no longer has `traffic_coef`, and `base_speed_kmh` is required. A call such as `TransportSpec("bus", ..., traffic_coef=0.7)` now raises `TypeError`. A road speed limit still caps the speed where it is lower than the mode's own.
+- `get_public_transport_graph` no longer takes `avg_boarding_time_min`. The wait is set per mode through `TransportSpec.avg_wait_time_min`. To keep the flat one-minute wait of 2.0:
 
-- **paper**: Restructure related work top-down, prepare submission
-  ([`6b57acd`](https://github.com/IDUclub/IduEdu/commit/6b57acd140fc6641803316cb3137202cc9c34ecc))
+```python
+from dataclasses import replace
+
+from iduedu import DEFAULT_REGISTRY, TransportRegistry, get_public_transport_graph
+
+one_minute_wait = TransportRegistry(
+    {name: replace(DEFAULT_REGISTRY.get(name), avg_wait_time_min=1.0) for name in DEFAULT_REGISTRY.list_types()}
+)
+graph = get_public_transport_graph(osm_id=1114252, transport_registry=one_minute_wait)
+```
+
+- Travel times change with default settings too: OSM boarding edges now cost 3-8.2 minutes depending on the mode instead of 1 minute, and in-vehicle times follow the new speed model. Rebuild matrices and accessibility results computed with 2.0.
+- With `transport_types=None` the OSM builder also fetches `monorail` and share taxi (`taxi`) routes, and `tram` includes OSM `light_rail` routes. Pass `transport_types` explicitly to limit the modes.
+- OSM route relations with a gap over 1 km are split into parts, and routes without stops or platforms are left out, so node and edge counts differ from 2.0.
+- In intermodal graphs `subway_platform` nodes are no longer attached to the walk network directly; they are reached through stations and entrances.
 
 ### Features
 
-- Add GTFS public transport graphs and shortest path reconstruction
-  ([#23](https://github.com/IDUclub/IduEdu/pull/23),
-  [`eff0172`](https://github.com/IDUclub/IduEdu/commit/eff01729936067773277f2dfa7c116fbdc1fd005))
+#### GTFS Schedule graphs
 
-Adds:
+- `get_gtfs_public_transport_graph(feed, *, service_date, start_time, end_time, crs, single_departure_wait_min, walk_speed_m_per_min)` accepts a GTFS directory, a ZIP archive, a `GTFSFeed` or a list of them.
+- `service_date` applies `calendar.txt` and `calendar_dates.txt`; `start_time` and `end_time` select a time window, overnight windows included.
+- Trips with the same route, direction, shape and stop order form a route pattern; a segment's time is the median scheduled time.
+- Boarding waits come from the timetable: half the mean gap between departures, or `headway_secs / 120` for `frequencies.txt`. A stop with a single departure gets no boarding edge unless `single_departure_wait_min` is set.
+- Segment geometry is cut from `shapes.txt`; without shapes it is a straight line whose length is multiplied by `sqrt(2)`.
+- `pathways.txt` becomes `pathway` edges inside stations, and `parent_station` becomes zero-cost `station_link` edges, so a metro is not dropped as a separate component.
+- GTFS route types 0-7, 11 and 12 and Google's extended route types are mapped by explicit ranges (for example 200-209 -> `coach`, 405 -> `monorail`); unknown codes stay `public_transport`.
+- New `iduedu.gtfs` module with `read_gtfs_feed`, `GTFSFeed`, `validate_gtfs_feed`, `GTFSValidationError` and `merge_gtfs_feeds`.
+- `merge_gtfs_feeds` combines several feeds of one city (New York publishes nine) and qualifies identifiers by source, so routes, trips and stops of different feeds do not collide. `merge_stops_within` optionally fuses stops across feeds within a radius.
+- A GTFS graph joins an OSM walk graph through `join_pt_walk_graph` when both use the same CRS. See the [GTFS guide](https://iduclub.github.io/IduEdu/api/gtfs.html).
+- Not supported yet: `transfers.txt` and time-dependent routing.
 
-GTFS Schedule support: get_gtfs_public_transport_graph builds a route-pattern graph from a feed,
-  directory or ZIP, filtered by service date and time window, with waits from scheduled headways,
-  GTFS shapes, extended route types and the station hierarchy; iduedu.gtfs adds read_gtfs_feed,
-  validate_gtfs_feed and merge_gtfs_feeds, which combines several feeds without identifier
-  collisions; shortest path reconstruction: single_source_dijkstra_path, multi_source_dijkstra_path
-  (all-to-all or pairwise, with cutoff, reverse routing and parallel Numba kernels) and
-  path_to_edges, also available as UrbanGraph methods; OSM route aliases: a request for tram also
-  fetches light_rail routes, and monorail and share taxi routes now reach the graph; a recalibrated
-  travel-time model: per-mode free-flow speed (base_speed_kmh), dwell and waiting time
-  (avg_wait_time_min) in TransportSpec, fitted against published timetables; peak speed on short
-  segments scales with sqrt(L / span). Fixes:
+#### Shortest path reconstruction
 
-OSM public transport routes no longer teleport across cities: pieces are ordered by cheapest
-  insertion, cut at holes over 1 km and follow the direction of their stops; routes without stops
-  are left out; graphs build for cities with a metro, subway routes without stop areas, and
-  relations with no members or refs; projected objects that coincide with the graph stay connected,
-  nearest-edge ties are resolved deterministically, and subway platforms are reached only through
-  stations and entrances in the intermodal graph; graph tables with mixed scalar types can be
-  written to parquet; the Docs workflow installs its dependencies from the pyproject docs group.
-  Also: the paper's study pipeline, benchmarks and figures under paper2026, coverage comments with
-  an in-repo badge instead of Codecov, and a manual Docs run.
+- `single_source_dijkstra_path(graph, source_node, target_node, *, weight, cutoff, reverse)` returns one shortest path as a list of node ids.
+- `multi_source_dijkstra_path` takes node ids or GeoDataFrames of origins and destinations, `mode="all_to_all"` or `mode="pairwise"`, a `threshold` and `max_workers`, and reconstructs paths in parallel Numba kernels.
+- `path_to_edges` turns a node path into an ordered GeoDataFrame of graph edges, taking the lightest of parallel edges, ready for mapping.
+- All three are also available as `UrbanGraph` methods.
 
-Migration: TransportSpec no longer has traffic_coef and needs base_speed_kmh;
-  get_public_transport_graph no longer takes avg_boarding_time_min, set the wait per mode through
-  TransportSpec.avg_wait_time_min instead. Travel times change with the recalibration.
+#### Transport modes and travel time
+
+- `TransportSpec` gains `base_speed_kmh` (free-flow speed of the mode), `dwell_min` (time standing at a stop, added per segment) and `avg_wait_time_min` (wait on OSM boarding edges).
+- On segments too short to reach full speed, the peak speed scales as `sqrt(L / span)`, so short hops no longer all take the same time.
+- Default specs are fitted against GTFS timetables matched to OSM. Default waits are medians across cities of timetable waits over regular services (bus 8.2 min over 115 cities, tram 4.95, subway 3.02, train 7.71). Monorail and share taxi borrow the subway and bus profiles, because no calibration city publishes a timetable for them.
+
+| Mode | Base speed, km/h | Wait, min | Dwell, min |
+|---|---|---|---|
+| bus | 41.0 | 8.2 | 0.475 |
+| trolleybus | 20.0 | 5.92 | 0.325 |
+| tram | 41.5 | 4.95 | 1.2 |
+| subway | 49.0 | 3.02 | 0.35 |
+| monorail | 49.0 | 3.0 | 0.35 |
+| taxi (share taxi) | 41.0 | 8.0 | 0.475 |
+| train (`DEFAULT_REGISTRY_W_TRAIN`) | 50.5 | 7.71 | 0.375 |
+
+- `OSM_ROUTE_ALIASES` in `iduedu.constants.transport_specs` maps OSM route tags to registry modes: `light_rail` -> `tram`, `share_taxi` -> `taxi`, while `monorail` keeps its own mode.
+- Every mode except the subway is parsed from OSM the same way, so any mode in the registry reaches the graph.
+
+### Bug fixes
+
+#### OSM public transport routes
+
+- Route pieces are ordered by cheapest insertion with local search. The old chain growing from both ends could glue a mid-route detour onto the far end and draw a straight line across the city (14.4 km in Delhi); this dated back to v1.1.0.
+- A route is cut into parts at gaps over 1 km instead of bridging a hole in the relation with a straight line.
+- Direction follows the stop order when at least three stops near the path agree by a clear majority, otherwise the ways. A first way drawn backwards no longer reverses the whole route. Share of one-way streets driven the legal way: Delhi 91.2% -> 97.5%, Saint Petersburg 84.1% -> 99.8%, Moscow 80.3% -> 99.3%.
+- Speeds stay aligned with segments when pieces are reversed or joined.
+- Across the 124 study cities with a public transport graph all graphs build, road edges with a straight segment over 1.5 km fall from 1,866 to 558 (the rest is OSM way geometry), and 1,037 routes lose their teleports.
+- Subway routes parse in territories without stop area data.
+- Route relations with no members, or with members lacking a ref, no longer abort the city's graph.
+
+#### Graph editing and intermodal graphs
+
+- An object that coincides with the graph is mapped onto the existing node instead of getting an isolated node with a zero-length connector, and connector edges are returned when every object snaps to an existing node.
+- Equally distant nearest edges are resolved deterministically (an endpoint wins, then the lower node id) instead of raising `ValueError`.
+- Intermodal graphs are composed with `join_urban_graphs`, and edge keys `(u, v, k)` stay unique across walk and public transport edges.
+- Platforms out of reach of the walk network are logged, and a warning names the public transport node types dropped by the largest-component filter.
+- `write_urban_graph` writes tables whose object columns mix numbers and strings, as OSM tags often do, instead of failing with `ArrowInvalid`.
+
+### Documentation
+
+- New [GTFS guide](https://iduclub.github.io/IduEdu/api/gtfs.html) and API reference for shortest path reconstruction; the shortest path notebook maps intermodal routes by transport type.
+- README, high-level API and transport registry pages describe GTFS graphs and the new speed model.
+- Documentation is published at https://iduclub.github.io/IduEdu/.
+
+### Project
+
+- The repository moved to [IDUclub/IduEdu](https://github.com/IDUclub/IduEdu); old GitHub links redirect.
+- Releases run only in the official repository after Tests and Coverage pass on `main`, and the documentation is rebuilt after each release.
+- Coverage is reported in pull request comments with an in-repo badge instead of Codecov.
+- Added `CITATION.cff`.
+- `paper2026/` holds the reproducibility pipeline, benchmarks and figures of the accompanying paper; it is not shipped in the wheel or sdist.
+- No new runtime dependencies; Python 3.11-3.12 as before.
+
+---
+
+**Full diff**: [v2.0.0...v2.1.0](https://github.com/IDUclub/IduEdu/compare/v2.0.0...v2.1.0)
 
 
 ## v2.0.0 (2026-07-07)

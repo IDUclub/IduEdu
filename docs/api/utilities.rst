@@ -71,13 +71,18 @@ optionally include the cached adjacency matrix. See
     largest_weakly_connected_component
     largest_strongly_connected_component
     largest_component
+    keep_largest_connected_component
     relabel_urban_graph
     subgraph_by_nodes
     clip_urban_graph
     join_urban_graphs
+    simplify_multiedges
+    to_directed
+    to_undirected
     nearest_nodes
     project_objects2urban_graph
     apply_urban_graph_changes
+    UrbanGraphChanges
     read_urban_graph
     write_urban_graph
     validate_graph
@@ -85,12 +90,15 @@ optionally include the cached adjacency matrix. See
 Optional NetworkX utilities
 ---------------------------
 
-The following helpers are available when NetworkX support is installed.
+NetworkX is not installed with IduEdu. Install it separately (``pip install networkx``) to use the
+helpers below; without it they raise ``ImportError`` when called.
 
 .. autosummary::
     :toctree: generated
     :nosignatures:
 
+    urban_graph2nx_graph
+    nx_graph2urban_graph
     graph2gdf
     gdf2graph
     keep_largest_nx_component

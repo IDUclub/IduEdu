@@ -793,7 +793,7 @@ def get_gtfs_public_transport_graph(
 
     Args:
         feed: Directory containing GTFS text files, a GTFS ZIP archive, an
-            already-read :class:`GTFSFeed`, or a sequence of any of those. A
+            already-read :class:`iduedu.gtfs.GTFSFeed`, or a sequence of any of those. A
             sequence is merged with :func:`iduedu.merge_gtfs_feeds` first, which
             qualifies identifiers by source; pass the merged feed yourself when
             you need to control prefixes or fuse stops across feeds.

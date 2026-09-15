@@ -607,7 +607,7 @@ class UrbanGraph:
         This constructor is useful for graphs received from external libraries when
         they already contain node coordinates, CRS metadata and edge attributes such as
         ``length_meter`` and ``time_min``. The conversion itself is performed by
-        :func:`iduedu.graph.adapters.nx_graph2urban_graph`.
+        :func:`iduedu.nx_graph2urban_graph`.
 
         Args:
             nx_graph: NetworkX graph, directed graph, multigraph or multidigraph.
@@ -633,7 +633,7 @@ class UrbanGraph:
     def to_nx_graph(self):
         """Convert this graph to a NetworkX graph.
 
-        The method delegates to :func:`iduedu.graph.adapters.urban_graph2nx_graph` and
+        The method delegates to :func:`iduedu.urban_graph2nx_graph` and
         preserves node and edge attributes where possible.
 
         Returns:
@@ -651,7 +651,7 @@ class UrbanGraph:
 
         For each node pair, one edge is selected by the ``weight`` column. ``rule="min"``
         keeps the smallest weight and ``rule="max"`` keeps the largest weight.
-        Functional equivalent: :func:`iduedu.graph.transformers.simplify_multiedges`.
+        Functional equivalent: :func:`iduedu.simplify_multiedges`.
 
         Args:
             weight: Edge column used to choose the representative edge.
@@ -679,7 +679,7 @@ class UrbanGraph:
     def relabel(self, *, inplace: bool = False) -> "UrbanGraph":
         """Relabel graph nodes to a dense ``RangeIndex``.
 
-        Functional equivalent: :func:`iduedu.graph.editors.relabel_urban_graph`.
+        Functional equivalent: :func:`iduedu.relabel_urban_graph`.
 
         Args:
             inplace: If ``True``, replace this object with the relabeled graph.
@@ -706,7 +706,7 @@ class UrbanGraph:
 
         Edges are retained only when both endpoints remain in the graph. Node ids are
         preserved; call :meth:`relabel` if dense labels are needed. Functional
-        equivalent: :func:`iduedu.graph.editors.clip_urban_graph`.
+        equivalent: :func:`iduedu.clip_urban_graph`.
 
         Args:
             polygon: Shapely geometry in the graph CRS.
@@ -776,7 +776,7 @@ class UrbanGraph:
     ) -> "UrbanGraph":
         """Return a directed version of the graph with an edge direction column.
 
-        Functional equivalent: :func:`iduedu.graph.transformers.to_directed`.
+        Functional equivalent: :func:`iduedu.to_directed`.
 
         Args:
             edge_direction_column: Name of the boolean one-way edge column.
@@ -808,7 +808,7 @@ class UrbanGraph:
     def to_undirected(self, *, inplace: bool = False) -> "UrbanGraph":
         """Return an undirected version of the graph.
 
-        Functional equivalent: :func:`iduedu.graph.transformers.to_undirected`.
+        Functional equivalent: :func:`iduedu.to_undirected`.
 
         Args:
             inplace: If ``True``, replace this object with the undirected graph.
@@ -838,7 +838,7 @@ class UrbanGraph:
     ) -> pd.Series:
         """Return nearest graph node ids for object geometries.
 
-        Functional equivalent: :func:`iduedu.graph.graph_inputs.nearest_nodes`.
+        Functional equivalent: :func:`iduedu.nearest_nodes`.
 
         Args:
             objects_gdf: GeoDataFrame with geometries to match to graph nodes.
@@ -870,7 +870,7 @@ class UrbanGraph:
         onto nearest edges, splits those edges when needed and adds connector edges. It
         is convenient for in-memory preparation of buildings, services or other objects
         before OD-matrix calculations. For backend workflows where graph changes should
-        be persisted separately, use :func:`iduedu.graph.editors.project_objects2urban_graph`.
+        be persisted separately, use :func:`iduedu.project_objects2urban_graph`.
 
         Args:
             objects_gdf: Objects with a unique index and geometry. The index becomes the

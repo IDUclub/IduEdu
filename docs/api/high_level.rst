@@ -45,9 +45,13 @@ The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and
 OSM public-transport and intermodal graphs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use :func:`get_public_transport_graph` to build bus, tram, trolleybus, subway,
-or train graphs. Pass ``transport_types`` to restrict modes and
-``transport_registry`` to customize time calculation.
+Use :func:`get_public_transport_graph` to build bus, trolleybus, tram, subway,
+monorail, or share-taxi (``taxi``) graphs. Pass ``transport_types`` to restrict
+modes and ``transport_registry`` to customize time calculation. A requested type
+must exist in the registry, otherwise the builder raises ``ValueError``: trains
+need a registry that defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. OSM
+``light_rail`` routes are fetched as ``tram`` and ``share_taxi`` routes as
+``taxi``. See :doc:`transport_registry`.
 
 Use :func:`join_pt_walk_graph` when you already have public-transport and walk
 graphs. Use :func:`get_intermodal_graph` to build both networks and join them in
@@ -62,9 +66,10 @@ GTFS public-transport graphs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use :func:`get_gtfs_public_transport_graph` to build a static graph from a
-local GTFS Schedule directory or ZIP archive. Service-date and time-window
-filters select the departures used to estimate boarding waits. GTFS graphs do
-not use :class:`TransportRegistry` waiting-time defaults.
+local GTFS Schedule directory or ZIP archive. A list of feeds is merged with
+:func:`merge_gtfs_feeds` first. Service-date and time-window filters select the
+departures used to estimate boarding waits. GTFS graphs do not use
+:class:`TransportRegistry` waiting-time defaults.
 
 To make a GTFS graph intermodal, first build a walk graph, pass its CRS to the
 GTFS builder, and combine the two with :func:`join_pt_walk_graph`. See

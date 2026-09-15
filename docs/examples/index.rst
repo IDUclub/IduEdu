@@ -3,7 +3,7 @@ Examples
 
 The notebooks below cover the main IduEdu workflows: graph construction,
 graph inspection, graph editing, object projection, connectivity diagnostics,
-shortest-path calculations, and public-transport registry configuration.
+shortest-path calculations, public-transport registry configuration, and GTFS feeds.
 
 
 .. toctree::
@@ -16,4 +16,5 @@ shortest-path calculations, and public-transport registry configuration.
     objects_and_nearest_nodes
     shortest_paths
     transport_registry
+    gtfs_public_transport
 

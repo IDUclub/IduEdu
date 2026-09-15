@@ -3,8 +3,10 @@ GTFS public transport
 
 IduEdu can build a static public-transport :class:`iduedu.UrbanGraph` from a
 local `GTFS Schedule <https://gtfs.org/documentation/schedule/reference/>`_
-feed. The source may be either a directory containing ``*.txt`` tables or a
-ZIP archive.
+feed. The source may be a directory containing ``*.txt`` tables, a ZIP archive,
+an already-read :class:`iduedu.gtfs.GTFSFeed`, or a list of those merged into
+one feed (see `Merging several feeds`_). The :doc:`../examples/gtfs_public_transport`
+notebook walks through every step below on small synthetic feeds.
 
 Building a graph
 ----------------
@@ -37,15 +39,19 @@ The builder requires ``agency.txt``, ``stops.txt``, ``routes.txt``,
 ``trips.txt``, and ``stop_times.txt``. At least one of ``calendar.txt`` and
 ``calendar_dates.txt`` must also be present.
 
-The first implementation additionally reads ``frequencies.txt``,
-``shapes.txt``, ``pathways.txt``, ``levels.txt``, and ``feed_info.txt`` when
-available. ``transfers.txt`` and exact time-dependent transfer routing are not
-implemented yet.
+The builder also reads ``frequencies.txt``, ``shapes.txt``, ``pathways.txt``,
+``levels.txt``, and ``feed_info.txt`` when available. ``transfers.txt`` and
+exact time-dependent transfer routing are not implemented yet.
 
-Standard route types are represented as ``tram`` (0), ``subway`` (1),
-``train`` (2), ``bus`` (3), ``trolleybus`` (11), and ``monorail`` (12).
-Common extended route-type ranges for rail, subway, bus, and tram are also
-normalized; unknown types remain ``public_transport``.
+Base route types are represented as ``tram`` (0), ``subway`` (1), ``train`` (2),
+``bus`` (3), ``ferry`` (4), ``cable_tram`` (5), ``aerial_lift`` (6),
+``funicular`` (7), ``trolleybus`` (11), and ``monorail`` (12). Google's extended
+route types are mapped by explicit ranges: 100-117 ``train``, 200-209 ``coach``
+(kept apart from city buses), 400-404 and 406-499 ``subway``, 405 ``monorail``,
+700-716 ``bus``, 800-899 ``trolleybus``, 900-906 ``tram``, 1000 and 1200
+``ferry``, 1300 ``aerial_lift``, 1400 ``funicular``, and 1500 ``taxi``. Any
+other code, including the miscellaneous 300, 500, 600, 1600 and 1700 ranges,
+remains ``public_transport`` rather than a guess from neighbouring codes.
 
 Static time model
 -----------------
@@ -81,6 +87,38 @@ as ``bus``, ``tram``, or ``subway``; it never applies to boarding or alighting.
 The graph CRS must be projected in metres. If ``crs`` is omitted, IduEdu
 estimates a local UTM CRS from the feed stops.
 
+Merging several feeds
+---------------------
+
+A city is often published as several feeds, and every feed numbers its own
+routes, trips, and stops. Pass a list of sources to merge them before the graph
+is built:
+
+.. code-block:: python
+
+    public_transport = get_gtfs_public_transport_graph(
+        ["subway.zip", "bus.zip"],
+        service_date="2026-08-04",
+        start_time="07:00:00",
+        end_time="10:00:00",
+    )
+
+A list is merged with :func:`iduedu.merge_gtfs_feeds`, which qualifies every
+identifier by its source, so route ``1`` of one feed and route ``1`` of another
+stay distinct. Call it directly to choose the prefixes or to fuse stops that
+different agencies publish for the same place:
+
+.. code-block:: python
+
+    from iduedu import get_gtfs_public_transport_graph, merge_gtfs_feeds
+
+    feed = merge_gtfs_feeds(["subway.zip", "bus.zip"], merge_stops_within=20)
+    public_transport = get_gtfs_public_transport_graph(feed, service_date="2026-08-04")
+
+Stops are kept distinct by default: fusing them changes the network topology,
+and an inferred transfer would look like a published one. Distances of about
+15-25 m suit feeds from different agencies.
+
 Stations, pathways, and intermodal joining
 ------------------------------------------
 
@@ -89,6 +127,12 @@ Stations, pathways, and intermodal joining
 estimated from pathway length and ``walk_speed_m_per_min``. Station entrances,
 nodes, boarding areas, and platforms are retained when referenced by the
 served stops or pathways.
+
+A stop that names a ``parent_station`` is linked to it with a zero-cost,
+bidirectional ``station_link`` edge. Only stops already present in the graph
+are linked. Without these edges, a station described down to boarding areas
+would leave its platforms in a separate component that ``keep_largest_subgraph``
+removes.
 
 To join GTFS public transport to an OSM walking graph, build the walk layer
 first and use the same CRS:
@@ -114,3 +158,16 @@ API reference
 
 .. autofunction:: get_gtfs_public_transport_graph
     :no-index:
+
+.. autofunction:: merge_gtfs_feeds
+
+.. currentmodule:: iduedu.gtfs
+
+.. autofunction:: read_gtfs_feed
+
+.. autofunction:: validate_gtfs_feed
+
+.. autoclass:: GTFSFeed
+    :members:
+
+.. autoexception:: GTFSValidationError
