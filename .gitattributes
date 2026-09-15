@@ -19,3 +19,6 @@
 *.pdf binary
 *.parquet binary
 *.urbangraph binary
+
+# Notebook outputs are megabytes of JSON; keep them out of the GitHub language bar.
+*.ipynb linguist-detectable=false
