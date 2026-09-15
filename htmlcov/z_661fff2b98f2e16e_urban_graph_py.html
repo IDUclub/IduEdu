@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_661fff2b98f2e16e_validation_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-09-15 09:39 +0000
+            created at 2026-09-15 13:06 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -691,7 +691,7 @@
     <p class="pln"><span class="n"><a id="t607" href="#t607">607</a></span><span class="t"><span class="str">        This constructor is useful for graphs received from external libraries when</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t608" href="#t608">608</a></span><span class="t"><span class="str">        they already contain node coordinates, CRS metadata and edge attributes such as</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t609" href="#t609">609</a></span><span class="t"><span class="str">        ``length_meter`` and ``time_min``. The conversion itself is performed by</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t610" href="#t610">610</a></span><span class="t"><span class="str">        :func:`iduedu.graph.adapters.nx_graph2urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t610" href="#t610">610</a></span><span class="t"><span class="str">        :func:`iduedu.nx_graph2urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t611" href="#t611">611</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t612" href="#t612">612</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t613" href="#t613">613</a></span><span class="t"><span class="str">            nx_graph: NetworkX graph, directed graph, multigraph or multidigraph.</span>&nbsp;</span><span class="r"></span></p>
@@ -717,7 +717,7 @@
     <p class="run"><span class="n"><a id="t633" href="#t633">633</a></span><span class="t">    <span class="key">def</span> <span class="nam">to_nx_graph</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t634" href="#t634">634</a></span><span class="t">        <span class="str">&quot;&quot;&quot;Convert this graph to a NetworkX graph.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t635" href="#t635">635</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t636" href="#t636">636</a></span><span class="t"><span class="str">        The method delegates to :func:`iduedu.graph.adapters.urban_graph2nx_graph` and</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t636" href="#t636">636</a></span><span class="t"><span class="str">        The method delegates to :func:`iduedu.urban_graph2nx_graph` and</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t637" href="#t637">637</a></span><span class="t"><span class="str">        preserves node and edge attributes where possible.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t638" href="#t638">638</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t639" href="#t639">639</a></span><span class="t"><span class="str">        Returns:</span>&nbsp;</span><span class="r"></span></p>
@@ -735,7 +735,7 @@
     <p class="pln"><span class="n"><a id="t651" href="#t651">651</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t652" href="#t652">652</a></span><span class="t"><span class="str">        For each node pair, one edge is selected by the ``weight`` column. ``rule=&quot;min&quot;``</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t653" href="#t653">653</a></span><span class="t"><span class="str">        keeps the smallest weight and ``rule=&quot;max&quot;`` keeps the largest weight.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t654" href="#t654">654</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.graph.transformers.simplify_multiedges`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t654" href="#t654">654</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.simplify_multiedges`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t655" href="#t655">655</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t656" href="#t656">656</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t657" href="#t657">657</a></span><span class="t"><span class="str">            weight: Edge column used to choose the representative edge.</span>&nbsp;</span><span class="r"></span></p>
@@ -763,7 +763,7 @@
     <p class="run"><span class="n"><a id="t679" href="#t679">679</a></span><span class="t">    <span class="key">def</span> <span class="nam">relabel</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="op">*</span><span class="op">,</span> <span class="nam">inplace</span><span class="op">:</span> <span class="nam">bool</span> <span class="op">=</span> <span class="key">False</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="str">&quot;UrbanGraph&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t680" href="#t680">680</a></span><span class="t">        <span class="str">&quot;&quot;&quot;Relabel graph nodes to a dense ``RangeIndex``.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t681" href="#t681">681</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t682" href="#t682">682</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.graph.editors.relabel_urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t682" href="#t682">682</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.relabel_urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t683" href="#t683">683</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t684" href="#t684">684</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t685" href="#t685">685</a></span><span class="t"><span class="str">            inplace: If ``True``, replace this object with the relabeled graph.</span>&nbsp;</span><span class="r"></span></p>
@@ -790,7 +790,7 @@
     <p class="pln"><span class="n"><a id="t706" href="#t706">706</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t707" href="#t707">707</a></span><span class="t"><span class="str">        Edges are retained only when both endpoints remain in the graph. Node ids are</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t708" href="#t708">708</a></span><span class="t"><span class="str">        preserved; call :meth:`relabel` if dense labels are needed. Functional</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t709" href="#t709">709</a></span><span class="t"><span class="str">        equivalent: :func:`iduedu.graph.editors.clip_urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t709" href="#t709">709</a></span><span class="t"><span class="str">        equivalent: :func:`iduedu.clip_urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t710" href="#t710">710</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t711" href="#t711">711</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t712" href="#t712">712</a></span><span class="t"><span class="str">            polygon: Shapely geometry in the graph CRS.</span>&nbsp;</span><span class="r"></span></p>
@@ -860,7 +860,7 @@
     <p class="run run2"><span class="n"><a id="t776" href="#t776">776</a></span><span class="t">    <span class="op">)</span> <span class="op">-&gt;</span> <span class="str">&quot;UrbanGraph&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t777" href="#t777">777</a></span><span class="t">        <span class="str">&quot;&quot;&quot;Return a directed version of the graph with an edge direction column.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t778" href="#t778">778</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t779" href="#t779">779</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.graph.transformers.to_directed`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t779" href="#t779">779</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.to_directed`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t780" href="#t780">780</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t781" href="#t781">781</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t782" href="#t782">782</a></span><span class="t"><span class="str">            edge_direction_column: Name of the boolean one-way edge column.</span>&nbsp;</span><span class="r"></span></p>
@@ -892,7 +892,7 @@
     <p class="run"><span class="n"><a id="t808" href="#t808">808</a></span><span class="t">    <span class="key">def</span> <span class="nam">to_undirected</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="op">*</span><span class="op">,</span> <span class="nam">inplace</span><span class="op">:</span> <span class="nam">bool</span> <span class="op">=</span> <span class="key">False</span><span class="op">)</span> <span class="op">-&gt;</span> <span class="str">&quot;UrbanGraph&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t809" href="#t809">809</a></span><span class="t">        <span class="str">&quot;&quot;&quot;Return an undirected version of the graph.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t810" href="#t810">810</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t811" href="#t811">811</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.graph.transformers.to_undirected`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t811" href="#t811">811</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.to_undirected`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t812" href="#t812">812</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t813" href="#t813">813</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t814" href="#t814">814</a></span><span class="t"><span class="str">            inplace: If ``True``, replace this object with the undirected graph.</span>&nbsp;</span><span class="r"></span></p>
@@ -922,7 +922,7 @@
     <p class="run run2"><span class="n"><a id="t838" href="#t838">838</a></span><span class="t">    <span class="op">)</span> <span class="op">-&gt;</span> <span class="nam">pd</span><span class="op">.</span><span class="nam">Series</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t839" href="#t839">839</a></span><span class="t">        <span class="str">&quot;&quot;&quot;Return nearest graph node ids for object geometries.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t840" href="#t840">840</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t841" href="#t841">841</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.graph.graph_inputs.nearest_nodes`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t841" href="#t841">841</a></span><span class="t"><span class="str">        Functional equivalent: :func:`iduedu.nearest_nodes`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t842" href="#t842">842</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t843" href="#t843">843</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t844" href="#t844">844</a></span><span class="t"><span class="str">            objects_gdf: GeoDataFrame with geometries to match to graph nodes.</span>&nbsp;</span><span class="r"></span></p>
@@ -954,7 +954,7 @@
     <p class="pln"><span class="n"><a id="t870" href="#t870">870</a></span><span class="t"><span class="str">        onto nearest edges, splits those edges when needed and adds connector edges. It</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t871" href="#t871">871</a></span><span class="t"><span class="str">        is convenient for in-memory preparation of buildings, services or other objects</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t872" href="#t872">872</a></span><span class="t"><span class="str">        before OD-matrix calculations. For backend workflows where graph changes should</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t873" href="#t873">873</a></span><span class="t"><span class="str">        be persisted separately, use :func:`iduedu.graph.editors.project_objects2urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t873" href="#t873">873</a></span><span class="t"><span class="str">        be persisted separately, use :func:`iduedu.project_objects2urban_graph`.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t874" href="#t874">874</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t875" href="#t875">875</a></span><span class="t"><span class="str">        Args:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t876" href="#t876">876</a></span><span class="t"><span class="str">            objects_gdf: Objects with a unique index and geometry. The index becomes the</span>&nbsp;</span><span class="r"></span></p>
@@ -1003,7 +1003,7 @@
             <a class="nav" href="z_661fff2b98f2e16e_validation_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-09-15 09:39 +0000
+            created at 2026-09-15 13:06 +0000
         </p>
     </div>
 </footer>
