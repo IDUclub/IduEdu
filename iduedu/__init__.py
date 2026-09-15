@@ -4,7 +4,7 @@ IduEdu
 
 IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap.
 
-Homepage https://github.com/DDonnyy/IduEdu.
+Homepage https://github.com/IDUclub/IduEdu.
 """
 
 from .config import config

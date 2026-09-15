@@ -21,7 +21,7 @@ class Config:
         self.overpass_url: str = os.getenv("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
         self.user_agent: str = os.getenv(
-            "OVERPASS_USER_AGENT", f"iduedu/{VERSION} (+https://github.com/DDonnyy/IduEdu)"
+            "OVERPASS_USER_AGENT", f"iduedu/{VERSION} (+https://github.com/IDUclub/IduEdu)"
         )
 
         self.proxies: Optional[dict[str, str]] = None

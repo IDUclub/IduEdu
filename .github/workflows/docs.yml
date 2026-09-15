@@ -55,7 +55,7 @@ jobs:
       - name: Build Sphinx HTML
         env:
           IDUEDU_DOCS_CI: "1"
-        run: uv run sphinx-build -E -b html docs docs/_build/html --keep-going
+        run: uv run sphinx-build -E -b html -d docs/_build/doctrees docs docs/_build/html --keep-going
 
       - name: Upload docs artifact (for PR preview)
         if: ${{ github.event_name == 'pull_request' }}
