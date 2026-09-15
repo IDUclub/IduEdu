@@ -27,8 +27,8 @@ sources["graph_node_id"] = nearest_nodes(graph, sources)
 
 matrix = od_matrix(
     graph,
-    gdf_sources=sources,
-    gdf_targets=targets,
+    gdf_origins=sources,
+    gdf_destinations=targets,
     weight="time_min",
 )
 ```

@@ -1,4 +1,4 @@
-"""Shortest-path helpers for :class:`iduedu.graph.urban_graph.UrbanGraph`.
+"""Shortest-path helpers for :class:`iduedu.UrbanGraph`.
 
 The module provides public wrappers around numba implementations from
 ``iduedu._numba``. It handles graph validation, input normalization, adjacency

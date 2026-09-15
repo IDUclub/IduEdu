@@ -5,8 +5,12 @@ repository. All commands below are plain shell/CLI and assume no specific agent 
 
 ## graphify
 
-This project ships a prebuilt knowledge graph at `graphify-out/` with god nodes, community structure, and
+graphify builds a knowledge graph of the codebase in `graphify-out/` with god nodes, community structure, and
 cross-file relationships. Prefer it over blind grep/file-walking when answering questions about the codebase.
+
+`graphify-out/` is git-ignored and is not shipped with the repository. Generate it manually when you start working
+with an agent: use the `/graphify .` command or skill if your runtime has one, or run
+`uv tool run --from graphifyy graphify update .` (AST-only, no API cost). The rules below apply once it exists.
 
 If your runtime exposes a `/graphify` command or a graphify skill, use it first. Otherwise run the CLI through
 uv tool as `uv tool run --from graphifyy graphify <command>` (the PyPI package is `graphifyy`, while the executable
@@ -37,7 +41,8 @@ GTFS Schedule data. It downloads OSM data via Overpass API, reads local GTFS fee
 `public transport` graphs, joins them into intermodal networks, and computes OD-matrices with Numba-accelerated
 Dijkstra.
 
-Python 3.11–3.12 only. Package manager: **uv** (lockfile: `uv.lock`). Build backend: hatchling.
+Python 3.11–3.12 only. Package manager: **uv** (`uv.lock` is generated locally and not committed). Build
+backend: hatchling.
 
 ## Commands
 
@@ -108,7 +113,8 @@ iduedu/
     adapters.py      — UrbanGraph ↔ NetworkX conversion
     nx_utils.py      — legacy NetworkX helpers (optional dep, soft-imported)
     validation.py    — node/edge schema validation, CRS sync
-    graph_inputs.py  — resolve_graph_nodes_input() helper
+    graph_inputs.py  — nearest_nodes(), resolve_graph_nodes_input() helpers
+    io.py            — .urbangraph archive read/write
   _numba/
     csr.py           — CSR builder (Numba-compiled)
     components.py    — BFS/DFS traversal (Numba-compiled)
@@ -121,6 +127,7 @@ iduedu/
   gtfs/
     reader.py        — local GTFS directory/ZIP loading
     validation.py    — GTFS table and reference validation
+    merge.py         — merge_gtfs_feeds(): several feeds into one, identifiers qualified by source
   overpass/
     downloaders.py   — Overpass HTTP requests with retry/rate-limit
     parsers.py       — JSON → GeoDataFrame (nodes/edges)
@@ -152,9 +159,10 @@ UrbanGraph layers
 ### Public transport speed model
 
 `TransportSpec` (frozen dataclass) encodes per-mode physics and OSM boarding waits: `vmax_tech_kmh`, `accel_dist_m`,
-`brake_dist_m`, `base_speed_kmh`, `dwell_min`, `avg_wait_time_min`. `DEFAULT_REGISTRY` covers bus/tram/trolleybus/subway;
-`DEFAULT_REGISTRY_W_TRAIN` adds train. Pass a custom `TransportRegistry` to `get_public_transport_graph()` to
-override speeds or waiting times. GTFS boarding waits are schedule-derived and do not use the registry.
+`brake_dist_m`, `base_speed_kmh`, `dwell_min`, `avg_wait_time_min`. `DEFAULT_REGISTRY` covers
+bus/trolleybus/tram/subway/monorail/taxi; `DEFAULT_REGISTRY_W_TRAIN` adds train. `OSM_ROUTE_ALIASES` maps OSM
+`light_rail` to `tram` and `share_taxi` to `taxi`. Pass a custom `TransportRegistry` to
+`get_public_transport_graph()` to override speeds or waiting times. GTFS boarding waits are schedule-derived and do not use the registry.
 
 ### Test organization
 

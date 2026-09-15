@@ -7,7 +7,6 @@
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/)
 [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)
-[![Research artifacts DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21610964.svg)](https://doi.org/10.5281/zenodo.21610964)
 
 <p align="center">
 <img src="./docs/_static/iduedu_header.svg" alt="IduEdu logo banner" width="100%">
@@ -27,8 +26,8 @@ between graph-construction time and the size of the resulting graph.
 
 ![Pedestrian graph construction benchmark](./docs/_static/benchmark_walk_summary.png)
 
-Across these repeated B1 runs, IduEdu built pedestrian graphs in about **5.8-9.3x less time** without
-simplification and **3.3-6.0x less time** with simplification enabled. The resulting geospatial graph
+Across these repeated B1 runs, IduEdu built pedestrian graphs in about **6.6-10.0x less time** without
+simplification and **3.9-6.7x less time** with simplification enabled. The resulting geospatial graph
 object had a **10-12x lower deterministic representation-size estimate**. Edge-row counts are shown as
 a representation detail:
 `UrbanGraph` can keep bidirectional walking edges as one row with a direction flag, while NetworkX-style
@@ -46,15 +45,22 @@ Runnable examples are available for
 [graph construction](https://iduclub.github.io/IduEdu/examples/get_any_graph.html),
 [UrbanGraph basics](https://iduclub.github.io/IduEdu/examples/urban_graph_basics.html),
 [object projection](https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html), and
-[shortest paths](https://iduclub.github.io/IduEdu/examples/shortest_paths.html).
+[shortest paths](https://iduclub.github.io/IduEdu/examples/shortest_paths.html). GTFS feeds are covered in
+the [GTFS guide](https://iduclub.github.io/IduEdu/api/gtfs.html) and the
+[GTFS example](https://iduclub.github.io/IduEdu/examples/gtfs_public_transport.html), public-transport speeds
+and waits in the [transport registry guide](https://iduclub.github.io/IduEdu/api/transport_registry.html), and
+every setting in the [configuration guide](https://iduclub.github.io/IduEdu/configuration.html).
 
 ## Features
 
 - Store graph topology, geometry, CRS and edge weights in `UrbanGraph`, a GeoDataFrame-native graph model.
 - Build drive and walk graphs from OpenStreetMap with local metric projection and optional simplification.
-- Build static public-transport graphs directly from OSM relations for bus, trolleybus, tram and subway.
+- Build static public-transport graphs directly from OSM relations for bus, trolleybus, tram, subway,
+  monorail and share taxi, with trains available through `DEFAULT_REGISTRY_W_TRAIN`.
 - Build static public-transport graphs from local GTFS Schedule directories or ZIP archives, using timetable
-  headways for boarding weights and shapes or straight-line fallbacks for route geometry.
+  headways for boarding weights and shapes or straight-line fallbacks for route geometry. Several feeds of
+  one city can be merged with `merge_gtfs_feeds`.
+- Reconstruct shortest routes as ordered nodes and edge geometries for mapping.
 - Combine pedestrian and public-transport layers into one intermodal graph by projecting stops, platforms
   and station access points onto the walking network.
 - Compute shortest paths and OD matrices with Numba-backed CSR routines, cutoff thresholds and adaptive
@@ -112,7 +118,7 @@ pt_graph = get_gtfs_public_transport_graph(
 )
 ```
 
-The source can be a GTFS directory or ZIP archive. See the
+The source can be a GTFS directory, a ZIP archive, or a list of feeds to merge. See the
 [GTFS guide](https://iduclub.github.io/IduEdu/api/gtfs.html) for schedule aggregation, geometry fallbacks,
 single-departure handling and intermodal joining.
 
@@ -137,6 +143,20 @@ print(matrix)
 Use `weight="time_min"` for travel time in minutes or `weight="length_meter"` for distance in meters.
 Pairs without a path, or outside `threshold`, are returned as `inf`.
 
+### Reconstruct a route
+
+```python
+from iduedu import path_to_edges, single_source_dijkstra_path
+
+path = single_source_dijkstra_path(graph, nodes[0], nodes[-1], weight="time_min")
+route = path_to_edges(graph, path)
+
+print(route[["type", "length_meter", "time_min"]])
+```
+
+`single_source_dijkstra_path` returns node ids in travel order, or an empty list when the destination cannot be
+reached. `path_to_edges` turns them into the traversed edges with their geometry, type and travel time, ready to plot.
+
 ### Work with graph components
 
 ```python
@@ -151,10 +171,13 @@ main_graph = subgraph_by_nodes(graph, component_nodes)
 Common entry points are available directly from `iduedu`:
 
 - Builders: `get_drive_graph`, `get_walk_graph`, `get_public_transport_graph`,
-  `get_gtfs_public_transport_graph`, `get_intermodal_graph`.
+  `get_gtfs_public_transport_graph`, `get_intermodal_graph`, `join_pt_walk_graph`, `get_4326_boundary`.
+- GTFS: `merge_gtfs_feeds`; `read_gtfs_feed`, `validate_gtfs_feed` and `GTFSFeed` live in `iduedu.gtfs`.
+- Transport modes: `TransportSpec`, `TransportRegistry`, `DEFAULT_REGISTRY`, `DEFAULT_REGISTRY_W_TRAIN`.
 - Graph model: `UrbanGraph`, `UrbanGraphChanges`.
 - Editing and transforms: `clip_urban_graph`, `join_urban_graphs`, `project_objects2urban_graph`,
-  `relabel_urban_graph`, `simplify_multiedges`, `to_directed`, `to_undirected`.
+  `apply_urban_graph_changes`, `subgraph_by_nodes`, `relabel_urban_graph`, `simplify_multiedges`,
+  `to_directed`, `to_undirected`.
 - Graph utilities: `nearest_nodes`, `validate_graph`, `UrbanGraph.nearest_nodes`,
   `UrbanGraph.validate`.
 - Graph IO: `read_urban_graph`, `write_urban_graph`, `UrbanGraph.read`, `UrbanGraph.write`.
@@ -163,51 +186,27 @@ Common entry points are available directly from `iduedu`:
 - Shortest paths and matrices: `single_source_dijkstra_path`, `multi_source_dijkstra_path`, `path_to_edges`,
   `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`,
   `multi_source_dijkstra_nearest_source`, `dijkstra_path_length_parallel`, `od_matrix`.
-- Optional NetworkX helpers: `graph2gdf`, `gdf2graph`, `read_gml`, `write_gml`, `clip_nx_graph`,
-  `reproject_graph`.
+- Optional NetworkX helpers (install `networkx` separately): `urban_graph2nx_graph`, `nx_graph2urban_graph`,
+  `graph2gdf`, `gdf2graph`, `read_gml`, `write_gml`, `clip_nx_graph`, `reproject_graph`.
 
 ## Configuration
+
+IduEdu reads its settings from the global `config` object, and most of them also from environment variables. Use it
+to point requests at another Overpass instance, pace them, cache responses, query a historical OSM snapshot, choose
+the OSM tags kept on edges, or set up logging:
 
 ```python
 from iduedu import config
 
 config.set_overpass_url("https://overpass-api.de/api/interpreter")
-config.set_timeout(120)
-config.set_rate_limit(min_interval=1.0, max_retries=3, backoff_base=0.5)
-config.set_enable_tqdm(True)
+config.set_rate_limit(min_interval=2.0, max_retries=5)
+config.set_overpass_cache(cache_dir=".iduedu_cache", enabled=True)
+config.set_overpass_date(date="2020-01-01")  # query OSM as it stood on this date
 config.configure_logging(level="INFO")
 ```
 
-### Overpass cache
-
-Overpass caching is enabled by default and uses `.iduedu_cache` in the current working directory.
-
-```python
-from iduedu import config
-
-config.set_overpass_cache(enabled=False)
-config.set_overpass_cache(cache_dir="/tmp/overpass_cache", enabled=True)
-```
-
-Environment variables:
-
-```bash
-export OVERPASS_CACHE_DIR="/tmp/overpass_cache"
-export OVERPASS_CACHE_ENABLED="1"
-```
-
-### Historical snapshots
-
-```python
-from iduedu import config
-
-config.set_overpass_date(date="2020-01-01")
-config.set_overpass_date(year=2020, month=5)
-config.set_overpass_date()  # reset to current OSM data
-```
-
-When a historical date is set, detailed subway stop-area queries may be skipped because Overpass does
-not always support those relation patterns at arbitrary timestamps.
+See the [configuration guide](https://iduclub.github.io/IduEdu/configuration.html) for every setting and its
+environment variable.
 
 ## Development
 
@@ -264,6 +263,12 @@ Intelligence for the period up to 2030 (agreement 70-2021-00187)
 IduEdu is distributed under the BSD 3-Clause License. See [LICENSE.txt](LICENSE.txt) for details.
 
 ---
+
+## Citing IduEdu
+
+If you use IduEdu in research, please cite it. Citation metadata is kept in [`CITATION.cff`](CITATION.cff); on
+GitHub, **Cite this repository** in the repository sidebar copies it as APA or BibTeX. Publications describing
+IduEdu will be listed below.
 
 ## Publications
 

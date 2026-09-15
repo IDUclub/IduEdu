@@ -31,9 +31,9 @@ node and edge `GeoDataFrame` tables plus Shapely geometry coordinate buffers. Fo
 covers the returned `networkx.MultiDiGraph` dictionaries, attributes, geometry and coordinate buffers.
 It is not peak process RSS during construction.
 
-Without simplification, IduEdu's time ratio is highest in this workload: OSMnx takes **5.8-9.3x** longer
-across the tested cities, with a median ratio of **8.9x**. With simplification enabled, the ratio is
-**3.3-6.0x** with a median of **5.7x**. In both modes, the final graph representation has a roughly
+Without simplification, IduEdu's time ratio is highest in this workload: OSMnx takes **6.6-10.0x** longer
+across the tested cities, with a median ratio of **9.7x**. With simplification enabled, the ratio is
+**3.9-6.7x** with a median of **6.5x**. In both modes, the final graph representation has a roughly
 **10-12x** lower deterministic object-size estimate.
 
 Rows are lightly shaded by simplify mode. Ratios are `OSMnx / IduEdu`.
@@ -63,64 +63,64 @@ Rows are lightly shaded by simplify mode. Ratios are `OSMnx / IduEdu`.
     <tr style="background: #f1faff;">
       <td rowspan="6"><strong>false</strong></td>
       <td>Helsinki</td>
-      <td align="right">10.3 s</td>
-      <td align="right">89.5 s</td>
-      <td align="right"><strong>8.7x</strong></td>
-      <td align="right">128 MB</td>
+      <td align="right">11.0 s</td>
+      <td align="right">104.8 s</td>
+      <td align="right"><strong>9.5x</strong></td>
+      <td align="right">129 MB</td>
       <td align="right">1.6 GB</td>
       <td align="right"><strong>12.4x</strong></td>
-      <td align="right">911.4k</td>
+      <td align="right">913.9k</td>
       <td align="right">1.82M</td>
     </tr>
     <tr style="background: #f1faff;">
       <td>Saint Petersburg</td>
-      <td align="right">10.0 s</td>
-      <td align="right">90.3 s</td>
-      <td align="right"><strong>9.0x</strong></td>
-      <td align="right">137 MB</td>
+      <td align="right">10.3 s</td>
+      <td align="right">100.1 s</td>
+      <td align="right"><strong>9.7x</strong></td>
+      <td align="right">138 MB</td>
       <td align="right">1.6 GB</td>
       <td align="right"><strong>11.8x</strong></td>
-      <td align="right">1.00M</td>
-      <td align="right">1.99M</td>
+      <td align="right">1.01M</td>
+      <td align="right">2.01M</td>
     </tr>
     <tr style="background: #f1faff;">
       <td>New York</td>
-      <td align="right">25.0 s</td>
-      <td align="right">144.6 s</td>
-      <td align="right"><strong>5.8x</strong></td>
-      <td align="right">163 MB</td>
+      <td align="right">24.6 s</td>
+      <td align="right">162.8 s</td>
+      <td align="right"><strong>6.6x</strong></td>
+      <td align="right">164 MB</td>
       <td align="right">1.8 GB</td>
       <td align="right"><strong>11.6x</strong></td>
-      <td align="right">1.17M</td>
-      <td align="right">2.34M</td>
+      <td align="right">1.18M</td>
+      <td align="right">2.35M</td>
     </tr>
     <tr style="background: #f1faff;">
       <td>Seoul</td>
-      <td align="right">13.4 s</td>
-      <td align="right">121.6 s</td>
-      <td align="right"><strong>9.1x</strong></td>
-      <td align="right">207 MB</td>
+      <td align="right">13.5 s</td>
+      <td align="right">134.9 s</td>
+      <td align="right"><strong>10.0x</strong></td>
+      <td align="right">209 MB</td>
       <td align="right">2.3 GB</td>
       <td align="right"><strong>11.5x</strong></td>
-      <td align="right">1.44M</td>
-      <td align="right">2.85M</td>
+      <td align="right">1.46M</td>
+      <td align="right">2.89M</td>
     </tr>
     <tr style="background: #f1faff;">
       <td>Moscow</td>
-      <td align="right">16.0 s</td>
-      <td align="right">148.1 s</td>
-      <td align="right"><strong>9.3x</strong></td>
-      <td align="right">217 MB</td>
+      <td align="right">16.1 s</td>
+      <td align="right">159.0 s</td>
+      <td align="right"><strong>9.9x</strong></td>
+      <td align="right">218 MB</td>
       <td align="right">2.4 GB</td>
       <td align="right"><strong>11.4x</strong></td>
-      <td align="right">1.56M</td>
-      <td align="right">3.11M</td>
+      <td align="right">1.57M</td>
+      <td align="right">3.12M</td>
     </tr>
     <tr style="background: #f1faff;">
       <td>London</td>
-      <td align="right">31.0 s</td>
-      <td align="right">259.8 s</td>
-      <td align="right"><strong>8.4x</strong></td>
+      <td align="right">30.2 s</td>
+      <td align="right">290.5 s</td>
+      <td align="right"><strong>9.6x</strong></td>
       <td align="right">394 MB</td>
       <td align="right">4.5 GB</td>
       <td align="right"><strong>11.8x</strong></td>
@@ -130,68 +130,68 @@ Rows are lightly shaded by simplify mode. Ratios are `OSMnx / IduEdu`.
     <tr style="background: #fbf6ff;">
       <td rowspan="6"><strong>true</strong></td>
       <td>Helsinki</td>
-      <td align="right">18.0 s</td>
-      <td align="right">108.2 s</td>
-      <td align="right"><strong>6.0x</strong></td>
+      <td align="right">19.9 s</td>
+      <td align="right">131.6 s</td>
+      <td align="right"><strong>6.6x</strong></td>
       <td align="right">59 MB</td>
-      <td align="right">666 MB</td>
+      <td align="right">669 MB</td>
       <td align="right"><strong>11.3x</strong></td>
-      <td align="right">369.6k</td>
-      <td align="right">720.8k</td>
+      <td align="right">370.9k</td>
+      <td align="right">723.1k</td>
     </tr>
     <tr style="background: #fbf6ff;">
       <td>Saint Petersburg</td>
-      <td align="right">20.0 s</td>
-      <td align="right">114.7 s</td>
-      <td align="right"><strong>5.7x</strong></td>
-      <td align="right">76 MB</td>
-      <td align="right">865 MB</td>
+      <td align="right">20.3 s</td>
+      <td align="right">133.2 s</td>
+      <td align="right"><strong>6.5x</strong></td>
+      <td align="right">77 MB</td>
+      <td align="right">873 MB</td>
       <td align="right"><strong>11.3x</strong></td>
-      <td align="right">516.9k</td>
-      <td align="right">1.01M</td>
+      <td align="right">522.1k</td>
+      <td align="right">1.02M</td>
     </tr>
     <tr style="background: #fbf6ff;">
       <td>New York</td>
-      <td align="right">52.6 s</td>
-      <td align="right">171.6 s</td>
-      <td align="right"><strong>3.3x</strong></td>
+      <td align="right">48.5 s</td>
+      <td align="right">189.7 s</td>
+      <td align="right"><strong>3.9x</strong></td>
       <td align="right">86 MB</td>
-      <td align="right">879 MB</td>
+      <td align="right">881 MB</td>
       <td align="right"><strong>10.3x</strong></td>
-      <td align="right">570.3k</td>
-      <td align="right">1.04M</td>
+      <td align="right">571.3k</td>
+      <td align="right">1.05M</td>
     </tr>
     <tr style="background: #fbf6ff;">
       <td>Seoul</td>
-      <td align="right">25.6 s</td>
-      <td align="right">146.7 s</td>
-      <td align="right"><strong>5.7x</strong></td>
-      <td align="right">85 MB</td>
-      <td align="right">908 MB</td>
+      <td align="right">24.3 s</td>
+      <td align="right">158.9 s</td>
+      <td align="right"><strong>6.6x</strong></td>
+      <td align="right">86 MB</td>
+      <td align="right">915 MB</td>
       <td align="right"><strong>10.6x</strong></td>
-      <td align="right">510.4k</td>
+      <td align="right">514.3k</td>
       <td align="right">1.01M</td>
     </tr>
     <tr style="background: #fbf6ff;">
       <td>Moscow</td>
-      <td align="right">32.4 s</td>
-      <td align="right">184.5 s</td>
-      <td align="right"><strong>5.7x</strong></td>
-      <td align="right">119 MB</td>
+      <td align="right">32.8 s</td>
+      <td align="right">203.8 s</td>
+      <td align="right"><strong>6.2x</strong></td>
+      <td align="right">120 MB</td>
       <td align="right">1.3 GB</td>
       <td align="right"><strong>10.9x</strong></td>
-      <td align="right">800.0k</td>
-      <td align="right">1.56M</td>
+      <td align="right">804.1k</td>
+      <td align="right">1.57M</td>
     </tr>
     <tr style="background: #fbf6ff;">
       <td>London</td>
-      <td align="right">56.6 s</td>
-      <td align="right">319.7 s</td>
-      <td align="right"><strong>5.6x</strong></td>
+      <td align="right">52.0 s</td>
+      <td align="right">348.9 s</td>
+      <td align="right"><strong>6.7x</strong></td>
       <td align="right">161 MB</td>
       <td align="right">1.7 GB</td>
       <td align="right"><strong>11.0x</strong></td>
-      <td align="right">958.9k</td>
+      <td align="right">956.5k</td>
       <td align="right">1.85M</td>
     </tr>
   </tbody>
@@ -214,7 +214,7 @@ Environment recorded for the B1 run:
 - Platform: Windows 10 / Windows 11 family.
 - Python: 3.11.9.
 - IduEdu: 2.0.0.
-- OSMnx: 2.1.0.
+- OSMnx: 2.1.1.
 - NetworkX: 3.6.1.
 - GeoPandas: 1.1.4.
 - Shapely: 2.1.2.

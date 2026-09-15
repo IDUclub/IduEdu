@@ -267,7 +267,7 @@ def get_intermodal_graph(
 
     The function resolves a boundary polygon (by ``osm_id`` or ``territory``),
     runs pedestrian graph construction (:func:`get_walk_graph`) and public
-    transport graph construction (:func:`get_public_transport_graph`) in
+    transport graph construction (:func:`iduedu.get_public_transport_graph`) in
     parallel, then connects public-transport platforms to nearby walk edges via
     :func:`join_pt_walk_graph` using the ``max_dist`` snapping radius. Edge
     lengths (meters) and travel times (minutes) come from the underlying
@@ -284,7 +284,7 @@ def get_intermodal_graph(
         walk_kwargs (dict[str, Any] | None): Extra keyword args for :func:`get_walk_graph` (e.g., ``walk_speed``,
             ``simplify``, ``osm_edge_tags``, ``keep_largest_subgraph``). Walk graph keep_largest_subgraph defaults to
             False unless explicitly set here.
-        pt_kwargs (dict[str, Any] | None): Extra keyword args for :func:`get_public_transport_graph`
+        pt_kwargs (dict[str, Any] | None): Extra keyword args for :func:`iduedu.get_public_transport_graph`
             (e.g., ``transport_types``, ``osm_edge_tags``, ``transport_registry``).
 
     Returns:

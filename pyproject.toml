@@ -1,7 +1,7 @@
 [project]
 name = "iduedu"
 dynamic = ["version"]
-description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap."
+description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap and GTFS feeds."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = "BSD-3-Clause"
@@ -151,7 +151,7 @@ markers = [
 # tags vX.Y.Z, and publishes. See CONTRIBUTING.md.
 # ---------------------------------------------------------------------------
 [tool.semantic_release]
-version_variables = ["iduedu/_version.py:VERSION"]
+version_variables = ["iduedu/_version.py:VERSION", "CITATION.cff:version"]
 tag_format = "v{version}"
 commit_message = "chore(release): v{version} [skip ci]\n\nAutomated release, see CHANGELOG.md."
 build_command = "python -m pip install uv && uv build"
@@ -180,4 +180,5 @@ minor_tags = ["feat"]
 patch_tags = ["fix", "perf"]
 
 [tool.semantic_release.changelog]
+mode = "update"
 exclude_commit_patterns = ['''^chore\(release\):.*''']

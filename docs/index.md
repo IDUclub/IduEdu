@@ -4,6 +4,7 @@
 :maxdepth: 2
 
 High-level functions <api/high_level>
+Configuration <configuration>
 Graph data model <api/graph_data_model>
 Migrating to UrbanGraph <migration_to_urban_graph>
 Benchmarks and design notes <benchmarks>
@@ -32,10 +33,12 @@ Examples <examples/index>
   `GeoDataFrame` node and edge tables, with lazy CSR adjacency for numerical routines.
 - **Street graph builders**: `get_drive_graph` and `get_walk_graph` build OSM-based networks with
   local metric projection, travel-time weights and optional simplification.
-- **Public transport from OSM**: `get_public_transport_graph` builds static bus, tram, trolleybus and
-  subway graphs directly from OSM route relations.
+- **Public transport from OSM**: `get_public_transport_graph` builds static bus, trolleybus, tram, subway,
+  monorail and share-taxi graphs directly from OSM route relations; trains are available through
+  `DEFAULT_REGISTRY_W_TRAIN`.
 - **Public transport from GTFS**: `get_gtfs_public_transport_graph` reads a local GTFS Schedule directory
-  or ZIP archive and builds a static graph with timetable-derived boarding waits.
+  or ZIP archive, or several feeds merged with `merge_gtfs_feeds`, and builds a static graph with
+  timetable-derived boarding waits.
 - **Intermodal graphs**: `get_intermodal_graph` combines public transport and walk networks by projecting
   stops, platforms and subway access points onto pedestrian edges.
 - **Matrices and shortest paths**: `od_matrix` and Dijkstra helpers use Numba-backed CSR kernels, cutoff
@@ -55,7 +58,9 @@ locations and limitations of the static public-transport model.
 pip install iduedu
 ```
 
-> Requires Python 3.11+ and common geospatial stack (GeoPandas, Shapely, PyProj, NetworkX, NumPy, Pandas).
+> Requires Python 3.11 or 3.12 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy,
+> Numba). Install `iduedu[io]` to read and write `.urbangraph` archives. NetworkX is not installed with
+> IduEdu; install it separately to use the optional NetworkX helpers.
 
 ---
 
@@ -76,90 +81,51 @@ G = get_intermodal_graph(osm_id=1114252)  # e.g., Saint Petersburg, Vasileostrov
 import geopandas as gpd
 from iduedu import od_matrix
 
-# origins/destinations contain projected points already attached to graph nodes
+# A "graph_node_id" column is used as is; without it, each geometry is matched to its nearest graph node
 origins = gpd.GeoDataFrame({"graph_node_id": [...]}, geometry=[...], crs=G.crs)
 destinations = gpd.GeoDataFrame({"graph_node_id": [...]}, geometry=[...], crs=G.crs)
 
 M = od_matrix(
     G,
-    gdf_sources=origins,
-    gdf_targets=destinations,
+    gdf_origins=origins,
+    gdf_destinations=destinations,
     weight="time_min",
-    dtype="float32",
+    threshold=30,  # pairs without a path or beyond 30 minutes are inf
 )
 print(M.head())
+```
+
+### 3) Reconstruct a route
+
+```python
+from iduedu import path_to_edges, single_source_dijkstra_path
+
+nodes = G.nodes_gdf.index
+path = single_source_dijkstra_path(G, nodes[0], nodes[-1], weight="time_min")  # [] if unreachable
+route = path_to_edges(G, path)  # traversed edges in order, with geometry, type and time_min
+
+print(route[["type", "length_meter", "time_min"]])
 ```
 
 ---
 
 ## Configuration
 
-Tweak Overpass endpoint, timeouts, and rate limits globally:
+IduEdu reads its settings from the global `config` object, and most of them also from environment variables. Use it
+to point requests at another Overpass instance, pace them, cache responses, query a historical OSM snapshot, choose
+the OSM tags kept on edges, or set up logging:
 
 ```python
 from iduedu import config
 
 config.set_overpass_url("https://overpass-api.de/api/interpreter")
-config.set_timeout(120)
-config.set_rate_limit(min_interval=1.0, max_retries=3, backoff_base=0.5)
-
-# Optional progress bars and logging
-config.set_enable_tqdm(True)
+config.set_rate_limit(min_interval=2.0, max_retries=5)
+config.set_overpass_cache(cache_dir=".iduedu_cache", enabled=True)
+config.set_overpass_date(date="2020-01-01")  # query OSM as it stood on this date
 config.configure_logging(level="INFO")
 ```
 
-### Overpass caching
-IduEdu provides optional file-based caching of Overpass JSON responses to speed repeated queries. This cache is used for boundaries, network queries, route relation queries and member fetches.
-
-- Runtime API:
-
-```python
-from iduedu import config
-
-# Disable cache for this session
-config.set_overpass_cache(enabled=False)
-
-# Enable cache and change cache directory
-config.set_overpass_cache(cache_dir="/tmp/overpass_cache", enabled=True)
-```
-
-- Environment variables:
-
-```bash
-export OVERPASS_CACHE_DIR="/tmp/overpass_cache"
-export OVERPASS_CACHE_ENABLED="1"  # "0" or "false" disables cache
-```
-
-- Behavior notes:
-  - Cache is enabled by default and uses ".iduedu_cache" as the default directory.
-  - The cache stores raw Overpass JSON responses; it does not cache processed graphs or derived data.
-  - To force fresh downloads, clear the cache directory or disable caching for that run.
-
-### Historical snapshots
-
-You can fix queries to a specific OSM snapshot using the Overpass `date` parameter.
-This allows retrieving map data as it existed at a given moment in time.
-
-```python
-from iduedu import config
-
-# Specific day
-config.set_overpass_date(date="2020-01-01")
-
-# Or build from components
-config.set_overpass_date(year=2020)            # → 2020-01-01T00:00:00Z
-config.set_overpass_date(year=2020, month=5)   # → 2020-05-01T00:00:00Z
-
-
-# To reset and use the latest data again:
-
-config.set_overpass_date()  # or config.set_overpass_date(None)
-```
-
->When a historical date is set, complex subway stop-area relations are skipped automatically
-> (as Overpass may not support those at arbitrary timestamps). A warning is logged in such cases.
-
-> IduEdu respects Overpass API etiquette. Please keep sensible rate limits.
+See the [configuration guide](configuration.md) for every setting and its environment variable.
 
 ---
 
@@ -184,6 +150,13 @@ config.set_overpass_date()  # or config.set_overpass_date(None)
 
 This research is financially supported by the Foundation for National Technology Initiative's Projects Support as a part of the roadmap implementation for the development of the high-tech field of Artificial Intelligence for the period up to 2030 (agreement 70-2021-00187)
 
+
+## Citing IduEdu
+
+If you use IduEdu in research, please cite it. Citation metadata is kept in
+[`CITATION.cff`](https://github.com/IDUclub/IduEdu/blob/main/CITATION.cff); on GitHub,
+**Cite this repository** in the repository sidebar copies it as APA or BibTeX. Publications describing
+IduEdu will be listed below.
 
 ## Publications
 

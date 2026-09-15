@@ -19,7 +19,8 @@ Each transport specification describes:
 - the transport mode identifier (e.g. ``"bus"``, ``"tram"``, ``"subway"``);
 - technical maximum speed;
 - typical acceleration and braking distances;
-- a traffic slowdown coefficient;
+- free-flow speed between stops;
+- time lost standing at a stop;
 - average passenger waiting time before boarding.
 
 The registry is consulted during graph construction to compute the ``time_min`` attribute
@@ -38,9 +39,53 @@ The library provides a predefined registry:
 
     from iduedu import DEFAULT_REGISTRY
 
-The default registry includes buses, trams, trolleybuses, and subways. Their OSM boarding waits are
-8, 6, 8, and 2 minutes respectively. ``DEFAULT_REGISTRY_W_TRAIN`` additionally includes trains with a
-1-minute default wait.
+The default registry includes buses, trolleybuses, trams, subways, monorails, and share taxis
+(``taxi``). ``DEFAULT_REGISTRY_W_TRAIN`` additionally includes trains.
+
+.. list-table::
+    :header-rows: 1
+
+    * - Mode
+      - ``base_speed_kmh``
+      - ``avg_wait_time_min``
+      - ``dwell_min``
+    * - ``bus``
+      - 41.0
+      - 8.2
+      - 0.475
+    * - ``trolleybus``
+      - 20.0
+      - 5.92
+      - 0.325
+    * - ``tram``
+      - 41.5
+      - 4.95
+      - 1.2
+    * - ``subway``
+      - 49.0
+      - 3.02
+      - 0.35
+    * - ``monorail``
+      - 49.0
+      - 3.0
+      - 0.35
+    * - ``taxi``
+      - 41.0
+      - 8.0
+      - 0.475
+    * - ``train`` (``DEFAULT_REGISTRY_W_TRAIN`` only)
+      - 50.5
+      - 7.71
+      - 0.375
+
+Speeds and dwell times are fitted against published GTFS timetables matched to OSM routes. Waiting
+times are medians across cities of the timetable wait over regular services. No city in the
+calibration sample publishes a timetable for monorail or share taxi, so these two borrow the subway
+and bus profiles.
+
+OpenStreetMap tags some services under names the registry does not use. A request for ``tram`` also
+fetches ``route=light_rail`` relations, and ``taxi`` fetches ``route=share_taxi``. The mapping is
+``OSM_ROUTE_ALIASES`` in ``iduedu.constants.transport_specs``.
 
 If no registry is explicitly provided, the OSM public-transport builder automatically falls back to
 ``DEFAULT_REGISTRY``.
@@ -77,6 +122,18 @@ The parameters have the following meaning:
   dropping the limit term improved accuracy for every mode measured;
 - ``dwell_min`` – time lost standing at a stop, added once per segment;
 - ``avg_wait_time_min`` – average waiting time assigned to boarding edges in OSM-based graphs.
+
+Travel time
+~~~~~~~~~~~
+
+For a segment of length ``L``, the cruising speed ``v`` is ``base_speed_kmh``, capped by
+``vmax_tech_kmh`` and by the road speed limit where that is lower, and
+``span = accel_dist_m + brake_dist_m``:
+
+- if ``L >= span``, the time is ``dwell_min + (L + span) / v``: accelerating and braking cost as much
+  as covering ``span`` twice at cruising speed;
+- if ``L < span``, the vehicle never reaches ``v``. Its peak speed is ``v * sqrt(L / span)`` and the
+  time is ``dwell_min + 2 * L / v_peak``. Both cases give the same time at ``L == span``.
 
 Creating a custom registry
 --------------------------
@@ -142,8 +199,8 @@ This is useful when working with less common OSM transport modes.
 Using the registry in graph builders
 ------------------------------------
 
-The OSM :func:`get_public_transport_graph` builder accepts a registry via the
-``transport_registry`` parameter. :func:`get_intermodal_graph` forwards it through ``pt_kwargs``.
+The OSM :func:`iduedu.get_public_transport_graph` builder accepts a registry via the
+``transport_registry`` parameter. :func:`iduedu.get_intermodal_graph` forwards it through ``pt_kwargs``.
 
 For example:
 

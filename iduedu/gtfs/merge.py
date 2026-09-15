@@ -243,11 +243,11 @@ def merge_gtfs_feeds(
             same kerb independently.
         crs: Projected CRS in metres used for the distance test. Estimated from
             the stops when omitted.
-        validate: Run :func:`validate_gtfs_feed` on the result. Leave this on:
+        validate: Run :func:`iduedu.gtfs.validate_gtfs_feed` on the result. Leave this on:
             it is what makes the merge verifiable rather than merely plausible.
 
     Returns:
-        A :class:`GTFSFeed` whose ``source`` names the merged inputs.
+        A :class:`iduedu.gtfs.GTFSFeed` whose ``source`` names the merged inputs.
 
     Raises:
         ValueError: If no sources are given, or the number of prefixes does not
