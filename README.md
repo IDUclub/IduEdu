@@ -77,7 +77,7 @@ every setting in the [configuration guide](https://iduclub.github.io/IduEdu/conf
 pip install iduedu
 ```
 
-IduEdu requires Python 3.11 or 3.12. The core package uses the standard geospatial stack
+IduEdu supports Python 3.11 through 3.14. The core package uses the standard geospatial stack
 including GeoPandas, Shapely, PyProj, NumPy, Pandas and SciPy. NetworkX utilities are optional
 compatibility helpers.
 
