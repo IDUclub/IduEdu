@@ -1,0 +1,25 @@
+﻿iduedu.TransportRegistry
+========================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: TransportRegistry
+   :members:
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~TransportRegistry.add
+      ~TransportRegistry.ensure
+      ~TransportRegistry.get
+      ~TransportRegistry.list_types
+      ~TransportRegistry.remove
+      ~TransportRegistry.try_get
+      ~TransportRegistry.update
+   
+   

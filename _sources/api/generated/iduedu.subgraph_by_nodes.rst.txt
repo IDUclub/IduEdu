@@ -1,0 +1,6 @@
+﻿iduedu.subgraph\_by\_nodes
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: subgraph_by_nodes

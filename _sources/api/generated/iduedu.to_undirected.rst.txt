@@ -1,0 +1,6 @@
+﻿iduedu.to\_undirected
+=====================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: to_undirected

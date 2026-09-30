@@ -1,0 +1,6 @@
+﻿iduedu.apply\_urban\_graph\_changes
+===================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: apply_urban_graph_changes

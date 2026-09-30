@@ -1,0 +1,6 @@
+﻿iduedu.project\_objects2urban\_graph
+====================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: project_objects2urban_graph

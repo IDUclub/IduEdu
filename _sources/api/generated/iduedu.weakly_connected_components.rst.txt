@@ -1,0 +1,6 @@
+﻿iduedu.weakly\_connected\_components
+====================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: weakly_connected_components

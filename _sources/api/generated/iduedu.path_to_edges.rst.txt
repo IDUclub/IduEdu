@@ -1,0 +1,6 @@
+﻿iduedu.path\_to\_edges
+======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: path_to_edges

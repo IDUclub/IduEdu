@@ -1,0 +1,6 @@
+﻿iduedu.od\_matrix
+=================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: od_matrix

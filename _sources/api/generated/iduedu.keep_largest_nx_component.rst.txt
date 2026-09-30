@@ -1,0 +1,6 @@
+﻿iduedu.keep\_largest\_nx\_component
+===================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: keep_largest_nx_component

@@ -1,0 +1,6 @@
+﻿iduedu.strongly\_connected\_components
+======================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: strongly_connected_components
