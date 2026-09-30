@@ -2,6 +2,38 @@
 
 <!-- version list -->
 
+## v2.2.0 (2026-09-30)
+
+### Chores
+
+- Hide notebooks from language stats and point links to IDUclub
+  ([`10c251b`](https://github.com/IDUclub/IduEdu/commit/10c251b0989c314cac822ecb672303a2bf4e0868))
+
+### Documentation
+
+- Bring documentation in line with 2.1.0 and add GTFS, configuration and graph type guides
+  ([`0153bcf`](https://github.com/IDUclub/IduEdu/commit/0153bcf82da1c086aa9f1350fdbee1ee44beaa3e))
+
+- fix stale examples, transport defaults, benchmark numbers and API references
+
+- add a GTFS example notebook, a configuration page and node and edge type tables
+
+- document class methods through an autosummary template and add a citing section
+
+- keep the changelog editable and bump CITATION.cff with each release
+
+### Features
+
+- Support Python 3.13 and 3.14
+  ([`39404a5`](https://github.com/IDUclub/IduEdu/commit/39404a581a6806c0a31f57102ab4ef51305b5c88))
+
+- expand the supported Python range to 3.11-3.14 - preserve compatibility with the preinstalled
+  Google Colab stack - use Python-specific dependency floors for 3.14 wheel availability - update
+  PyArrow constraints for Python 3.14 - declare NetworkX explicitly as a test dependency - add
+  Linux, Windows, and macOS compatibility CI jobs - make the Numba coverage test compatible with
+  Numba 0.60 - update installation documentation
+
+
 ## v2.1.0 (2026-09-14)
 
 IduEdu 2.1.0 builds public transport graphs from GTFS Schedule feeds, reconstructs shortest paths as actual routes, and fixes how public transport routes are assembled from OpenStreetMap. The public transport travel-time model is recalibrated against published timetables, so travel times and waits differ from 2.0; see **Upgrading from 2.0** below.
