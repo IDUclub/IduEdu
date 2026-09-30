@@ -58,7 +58,7 @@ locations and limitations of the static public-transport model.
 pip install iduedu
 ```
 
-> Requires Python 3.11 or 3.12 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy,
+> Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy,
 > Numba). Install `iduedu[io]` to read and write `.urbangraph` archives. NetworkX is not installed with
 > IduEdu; install it separately to use the optional NetworkX helpers.
 
