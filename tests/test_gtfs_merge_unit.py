@@ -1,10 +1,11 @@
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from iduedu import get_gtfs_public_transport_graph, merge_gtfs_feeds
 from iduedu.gtfs.reader import read_gtfs_feed
-from iduedu.gtfs.validation import GTFSValidationError
+from tests.factories import write_gtfs_feed
 
 pytestmark = pytest.mark.unit
 
@@ -27,7 +28,6 @@ def _feed(directory: Path, *, lon_offset: float = 0.0, location_type: str = "0",
     """A minimal one-route feed. Every feed uses the same identifiers on purpose:
     that collision is what merging has to survive. ``short_name`` is the one field
     left distinguishable, because the built graph labels edges with it."""
-    directory.mkdir(parents=True, exist_ok=True)
     tables = {
         **BASE_TABLES,
         "stops.txt": (
@@ -45,9 +45,7 @@ def _feed(directory: Path, *, lon_offset: float = 0.0, location_type: str = "0",
             "t2,08:40:00,08:40:00,s2,2\n"
         ),
     }
-    for name, contents in tables.items():
-        (directory / name).write_text(contents, encoding="utf-8")
-    return directory
+    return write_gtfs_feed(directory, tables)
 
 
 def test_single_feed_is_returned_unchanged(tmp_path):
@@ -191,3 +189,119 @@ def test_builder_still_accepts_one_feed(tmp_path):
 
     assert len(from_path.nodes_gdf) == len(from_list.nodes_gdf)
     assert len(from_path.edges_gdf) == len(from_list.edges_gdf)
+
+
+# ---------------------------------------------------------------------------
+# deduplicate: the same service published by two sources, counted once
+# ---------------------------------------------------------------------------
+
+
+def _timed_feed(directory: Path, *, times: tuple[str, str, str, str], lon_offset: float = 0.0) -> Path:
+    """``_feed`` with its four stop times replaced (t1 at s1, s2; t2 at s1, s2)."""
+    _feed(directory, lon_offset=lon_offset)
+    a, b, c, d = times
+    (directory / "stop_times.txt").write_text(
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        f"t1,{a},{a},s1,1\nt1,{b},{b},s2,2\nt2,{c},{c},s1,1\nt2,{d},{d},s2,2\n",
+        encoding="utf-8",
+    )
+    return directory
+
+
+def test_identical_feeds_are_counted_once(tmp_path):
+    """A feed and its mirror: one set of platforms, one set of trips, a valid feed."""
+    merged = merge_gtfs_feeds(
+        [_feed(tmp_path / "original"), _feed(tmp_path / "mirror")], prefixes=["a", "b"], deduplicate=True
+    )
+    assert sorted(merged["stops"]["stop_id"]) == ["a:s1", "a:s2"]
+    assert sorted(merged["trips"]["trip_id"]) == ["a:t1", "a:t2"]
+    assert set(merged["stop_times"]["stop_id"]) <= set(merged["stops"]["stop_id"])
+    graph = get_gtfs_public_transport_graph(merged)
+    assert len(graph.edges_gdf) > 0
+
+
+def test_deduplication_is_off_by_default(tmp_path):
+    merged = merge_gtfs_feeds([_feed(tmp_path / "original"), _feed(tmp_path / "mirror")], prefixes=["a", "b"])
+    assert len(merged["stops"]) == 4 and len(merged["trips"]) == 4
+
+
+def test_same_platforms_different_timetable_keeps_every_trip(tmp_path):
+    """Two operators calling at the same kerb at other times: one platform, all trips."""
+    merged = merge_gtfs_feeds(
+        [
+            _feed(tmp_path / "day"),
+            _timed_feed(tmp_path / "night", times=("23:00:00", "23:10:00", "23:30:00", "23:40:00")),
+        ],
+        prefixes=["day", "night"],
+        deduplicate=True,
+    )
+    assert len(merged["stops"]) == 2
+    assert len(merged["trips"]) == 4
+
+
+def test_platforms_ten_metres_apart_stay_distinct(tmp_path):
+    """Beyond the 0.5 m tolerance two platforms are two places, and trips calling
+    at them are different trips even at identical times."""
+    merged = merge_gtfs_feeds(
+        [_feed(tmp_path / "a"), _feed(tmp_path / "b", lon_offset=TEN_METRES_LON)],
+        prefixes=["a", "b"],
+        deduplicate=True,
+    )
+    assert len(merged["stops"]) == 4
+    assert len(merged["trips"]) == 4
+
+
+def test_time_notation_does_not_hide_a_copy(tmp_path):
+    """8:00:00 and 08:00:00 are one departure."""
+    merged = merge_gtfs_feeds(
+        [
+            _feed(tmp_path / "padded"),
+            _timed_feed(tmp_path / "unpadded", times=("8:00:00", "8:10:00", "8:30:00", "8:40:00")),
+        ],
+        prefixes=["a", "b"],
+        deduplicate=True,
+    )
+    assert sorted(merged["trips"]["trip_id"]) == ["a:t1", "a:t2"]
+
+
+def test_deduplication_is_independent_of_source_order(tmp_path):
+    first, second = _feed(tmp_path / "first"), _feed(tmp_path / "second")
+    forward = merge_gtfs_feeds([first, second], prefixes=["a", "b"], deduplicate=True)
+    backward = merge_gtfs_feeds([second, first], prefixes=["b", "a"], deduplicate=True)
+    assert sorted(forward["trips"]["trip_id"]) == sorted(backward["trips"]["trip_id"])
+    assert sorted(forward["stops"]["stop_id"]) == sorted(backward["stops"]["stop_id"])
+
+
+def test_one_source_is_never_deduplicated_against_itself(tmp_path):
+    """Two platforms or two identical trips inside one feed are that feed's decision."""
+    from iduedu import deduplicate_across_feeds
+
+    feed = read_gtfs_feed(_feed(tmp_path / "only"))
+    tables = {name: frame.copy() for name, frame in feed.tables.items()}
+    for name, columns in (("stops", ["stop_id"]), ("stop_times", ["stop_id", "trip_id"]), ("trips", ["trip_id"])):
+        for column in columns:
+            tables[name][column] = "a:" + tables[name][column].astype(str)
+    # a second platform on top of s1 and a second, identical run of t1
+    stops = tables["stops"]
+    tables["stops"] = pd.concat([stops, stops.iloc[[0]].assign(stop_id="a:s1bis")], ignore_index=True)
+    trips = tables["trips"]
+    tables["trips"] = pd.concat([trips, trips.iloc[[0]].assign(trip_id="a:t1bis")], ignore_index=True)
+    times = tables["stop_times"]
+    tables["stop_times"] = pd.concat(
+        [times, times[times["trip_id"] == "a:t1"].assign(trip_id="a:t1bis")], ignore_index=True
+    )
+
+    counts = deduplicate_across_feeds(tables, ["a"])
+
+    assert counts == {"platforms_fused": 0, "trips_dropped": 0}
+    assert len(tables["stops"]) == 3 and len(tables["trips"]) == 3
+
+
+def test_stations_are_not_fused_by_deduplication(tmp_path):
+    merged = merge_gtfs_feeds(
+        [_feed(tmp_path / "a", location_type="1"), _feed(tmp_path / "b", location_type="1")],
+        prefixes=["a", "b"],
+        deduplicate=True,
+        validate=False,
+    )
+    assert len(merged["stops"]) == 4

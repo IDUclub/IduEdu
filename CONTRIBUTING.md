@@ -8,7 +8,7 @@ Never bump the version or create a tag by hand.
 
 ## Requirements
 
-- Python 3.11 or 3.12
+- Python 3.11 through 3.14
 - [uv](https://docs.astral.sh/uv/) (package manager; `uv.lock` is generated locally and is not committed)
 - `make` (optional but every command below has a `make` shortcut)
 
@@ -34,6 +34,22 @@ uv sync --all-groups     # or: make install-dev
 | Build docs              | `make docs`         | Sphinx → `docs/_build/html`                       |
 
 Line length is 120. Imports are isort-sorted (`__init__.py` files are skipped).
+
+Tests are grouped by behavior: graph data/adjacency/methods, routing,
+NetworkX compatibility, OSM builders, Overpass, GTFS, and optional PBF support.
+Keep a distinct test for a regression or public contract; avoid repeating the
+same search across every combination of unrelated options. Shared graph and
+GTFS factories live in `tests/factories.py`. Optional-dependency tests stay
+separate so missing an extra cannot skip core graph tests.
+
+Ordinary pytest runs execute actual Numba kernels and reuse a versioned cache
+under `.pytest_cache/numba`. Small synthetic graphs default to two worker threads;
+set `NUMBA_NUM_THREADS` to override this for a run. Coverage runs disable JIT for
+line/branch measurements. The early pytest plugin in `tests/__init__.py` loads
+third-party numerical extensions before coverage tracing starts, including on
+Windows; imports and execution of `iduedu` remain measured.
+Branch coverage is explicitly enabled in pytest options so subprocesses inherit
+the same measurement mode even when their working directory has no project config.
 
 ## Commit messages (Conventional Commits)
 

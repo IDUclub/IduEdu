@@ -1,6 +1,5 @@
 # pylint: disable=protected-access
 
-import inspect
 
 import geopandas as gpd
 import pandas as pd
@@ -9,9 +8,7 @@ from pyproj import CRS as PyprojCRS
 from shapely import LineString
 from shapely.geometry import Polygon
 
-from iduedu import DEFAULT_REGISTRY_W_TRAIN
-from iduedu.graph.urban_graph import UrbanGraph
-from iduedu.graph_builders import drive_walk_builders, public_transport_builders
+from iduedu.graph_builders import drive_walk_builders
 from iduedu.graph_builders.drive_walk_builders import (
     _assign_edge_keys,
     _build_nodes_and_uv,
@@ -19,9 +16,7 @@ from iduedu.graph_builders.drive_walk_builders import (
     get_drive_graph,
     get_walk_graph,
 )
-from iduedu.graph_builders.intermodal_builders import join_pt_walk_graph
-from iduedu.graph_builders.public_transport_builders import get_public_transport_graph
-from tests.factories import CRS, tiny_public_transport_graph_with_sequence_attrs, tiny_walk_graph
+from tests.factories import CRS
 
 pytestmark = pytest.mark.unit
 
@@ -132,15 +127,6 @@ def test_get_walk_graph_rejects_unknown_network_type():
 def test_get_walk_graph_custom_requires_filter():
     with pytest.raises(ValueError, match="custom_filter"):
         get_walk_graph(territory=TERRITORY, network_type="custom")
-
-
-def test_get_public_transport_graph_rejects_unknown_transport_type():
-    with pytest.raises(ValueError, match="Unknown transport type"):
-        get_public_transport_graph(transport_types=["bus", "not_a_mode"])
-
-
-def test_get_public_transport_graph_has_no_global_boarding_time_parameter():
-    assert "avg_boarding_time_min" not in inspect.signature(get_public_transport_graph).parameters
 
 
 # ---------------------------------------------------------------------------
@@ -321,100 +307,3 @@ def test_get_walk_graph_returns_empty_graph_when_clip_removes_everything(monkeyp
 
     assert graph.nodes_gdf.empty
     assert graph.edges_gdf.empty
-
-
-# ---------------------------------------------------------------------------
-# get_public_transport_graph pipeline (Overpass response mocked)
-# ---------------------------------------------------------------------------
-
-
-def test_get_public_transport_graph_returns_empty_graph_when_no_routes(monkeypatch):
-    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [])
-
-    graph = get_public_transport_graph(transport_types="bus", territory=TERRITORY)
-
-    assert graph.nodes_gdf.empty
-    assert graph.edges_gdf.empty
-    assert graph.is_directed is True
-    assert graph.edge_direction_column == "oneway"
-    assert graph.type == "public_transport"
-
-
-def test_get_public_transport_graph_accepts_train_with_custom_registry(monkeypatch):
-    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [])
-
-    graph = get_public_transport_graph(
-        transport_types="train", territory=TERRITORY, transport_registry=DEFAULT_REGISTRY_W_TRAIN
-    )
-
-    assert graph.nodes_gdf.empty
-    assert graph.edges_gdf.empty
-
-
-def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypatch):
-    # The subway station-context query can pull in unrelated route relations (e.g.
-    # route=train sharing nodes with a metro station). Such leaked types must not
-    # reach the parser / travel-time registry when they were not requested.
-    parsed_types = []
-
-    def fake_routes_to_df(response, enable_subway_details):
-        return pd.DataFrame(
-            {
-                "transport_type": ["bus", "train"],
-                "is_way_data": [False, False],
-                "members": [[], []],
-            }
-        )
-
-    def fake_ground_parser(row, local_crs, ref2speed, needed_tags):
-        parsed_types.append(row.transport_type)
-        return gpd.GeoDataFrame(), gpd.GeoDataFrame()
-
-    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [object()])
-    monkeypatch.setattr(public_transport_builders, "overpass_routes_to_df", fake_routes_to_df)
-    monkeypatch.setattr(public_transport_builders, "overpass_ground_transport2edgenode", fake_ground_parser)
-
-    # 'train' is present in the Overpass response but was not requested and is not
-    # in the default registry: it must be filtered out (no KeyError, no train edges).
-    graph = get_public_transport_graph(transport_types="bus", territory=TERRITORY)
-
-    assert "bus" in parsed_types
-    assert "train" not in parsed_types
-    assert graph.edges_gdf.empty
-
-
-# ---------------------------------------------------------------------------
-# join_pt_walk_graph edge cases (no network needed)
-# ---------------------------------------------------------------------------
-
-
-def test_join_pt_walk_graph_raises_on_crs_mismatch():
-    walk_graph = tiny_walk_graph()
-    pt_graph = tiny_public_transport_graph_with_sequence_attrs()
-    mismatched_walk = walk_graph.copy()
-    mismatched_walk.crs = "EPSG:4326"
-    mismatched_walk.nodes_gdf = mismatched_walk.nodes_gdf.set_crs("EPSG:4326", allow_override=True)
-    mismatched_walk.edges_gdf = mismatched_walk.edges_gdf.set_crs("EPSG:4326", allow_override=True)
-
-    with pytest.raises(ValueError, match="CRS mismatch"):
-        join_pt_walk_graph(pt_graph, mismatched_walk)
-
-
-def test_join_pt_walk_graph_returns_walk_graph_when_pt_graph_empty():
-    walk_graph = tiny_walk_graph()
-    empty_pt = UrbanGraph.empty(
-        crs=walk_graph.crs, is_multigraph=True, is_directed=True, edge_direction_column="oneway"
-    )
-
-    result = join_pt_walk_graph(empty_pt, walk_graph)
-
-    assert result is walk_graph
-
-
-def test_join_pt_walk_graph_returns_pt_graph_when_walk_graph_empty():
-    pt_graph = tiny_public_transport_graph_with_sequence_attrs()
-    empty_walk = UrbanGraph.empty(crs=pt_graph.crs, is_multigraph=True, is_directed=False)
-
-    result = join_pt_walk_graph(pt_graph, empty_walk)
-
-    assert result is pt_graph

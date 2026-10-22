@@ -15,6 +15,7 @@ from iduedu.graph.transformers import estimate_crs_for_bounds
 from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.gtfs.merge import merge_gtfs_feeds
 from iduedu.gtfs.reader import GTFSFeed, read_gtfs_feed
+from iduedu.gtfs.service_days import day_types as _day_types
 from iduedu.gtfs.validation import GTFSValidationError, validate_gtfs_feed
 
 logger = config.logger
@@ -246,27 +247,59 @@ def _scheduled_wait_times(
     frequency_trip_ids: set[str],
     start: float | None,
     end: float | None,
+    trips: pd.DataFrame | None = None,
 ) -> tuple[pd.Series, pd.MultiIndex]:
+    """Half the mean gap between departures a rider at the stop can take, per pattern-stop.
+
+    The gap is taken between the departures of one **line leaving the stop for the same
+    next stop**: every pattern of the route that goes on to that stop, wherever it began
+    or ends. The patterns of a route split its trips by every difference -- branches
+    beyond a shared section, short workings, an express, a slightly different shape --
+    and a gap within one pattern is the wait as if the others did not run: at Auber the
+    westbound RER A runs about 20 trains an hour over 6 patterns, and per pattern the
+    wait came out at 4-12 minutes against about 1.5. The next stop, not ``direction_id``,
+    decides the direction: some feeds put both directions under one ``direction_id``.
+    Beyond a branching point the next stops differ and the branches separate again.
+    Each pattern-stop gets the wait of its line there; without ``trips`` (no route
+    ids), a pattern is its own line.
+    """
+    names = ["pattern_id", "stop_position"]
     boardable = ~stop_times["pickup_type"].eq("1")
     if frequency_trip_ids:
         boardable &= ~stop_times["trip_id"].isin(frequency_trip_ids)
     boardable &= _window_mask(stop_times["departure_seconds"], start, end)
-    departures = stop_times.loc[boardable, ["pattern_id", "stop_position", "departure_seconds"]].drop_duplicates()
+    columns = ["trip_id", "pattern_id", "stop_position", "stop_id", "departure_seconds"]
+    departures = stop_times.loc[boardable, columns].copy()
     if departures.empty:
-        empty_index = pd.MultiIndex.from_arrays([[], []], names=["pattern_id", "stop_position"])
+        empty_index = pd.MultiIndex.from_arrays([[], []], names=names)
         return pd.Series(index=empty_index, dtype=float), empty_index
-    departures = departures.sort_values(["pattern_id", "stop_position", "departure_seconds"])
-    groups = departures.groupby(["pattern_id", "stop_position"], sort=False)["departure_seconds"]
-    counts = groups.size()
-    single = counts[counts == 1].index
-    gaps = groups.diff()
-    waits = (
-        departures.assign(gap=gaps)
-        .dropna(subset=["gap"])
-        .groupby(["pattern_id", "stop_position"], sort=False)["gap"]
-        .mean()
-        / 120
-    )
+
+    # the next stop of every pattern-stop, from the pattern's own sequence
+    sequence = stop_times[["pattern_id", "stop_position", "stop_id"]].drop_duplicates(subset=names)
+    following = sequence.assign(stop_position=sequence["stop_position"] - 1).rename(columns={"stop_id": "next_stop"})
+    departures = departures.merge(following[names + ["next_stop"]], on=names, how="left")
+    departures["next_stop"] = departures["next_stop"].fillna("")
+    if trips is not None and "route_id" in trips:
+        route_of = trips.drop_duplicates("trip_id").set_index("trip_id")["route_id"].astype(str)
+        departures["line"] = departures["trip_id"].map(route_of).fillna("")
+        missing = departures["line"].eq("")
+        departures.loc[missing, "line"] = "pattern:" + departures.loc[missing, "pattern_id"].astype(str)
+    else:
+        departures["line"] = "pattern:" + departures["pattern_id"].astype(str)
+
+    line_key = ["line", "stop_id", "next_stop"]
+    times = departures[line_key + ["departure_seconds"]].drop_duplicates().sort_values(line_key + ["departure_seconds"])
+    groups = times.groupby(line_key, sort=False)["departure_seconds"]
+    counts = groups.size().rename("count")
+    gaps = times.assign(gap=groups.diff()).dropna(subset=["gap"])
+    line_wait = (gaps.groupby(line_key, sort=False)["gap"].mean() / 120).rename("wait")
+
+    pattern_stops = departures[names + line_key].drop_duplicates(subset=names)
+    pattern_stops = pattern_stops.merge(counts, left_on=line_key, right_index=True, how="left")
+    pattern_stops = pattern_stops.merge(line_wait, left_on=line_key, right_index=True, how="left")
+    indexed = pattern_stops.set_index(names)
+    waits = indexed["wait"].dropna().astype(float)
+    single = indexed.index[indexed["count"].eq(1)]
     return waits, single
 
 
@@ -313,16 +346,12 @@ def _frequency_wait_times(
     return waits, frequency_trip_ids
 
 
-def _boarding_wait_times(
-    feed: GTFSFeed,
-    trips: pd.DataFrame,
-    stop_times: pd.DataFrame,
-    start: float | None,
-    end: float | None,
-    single_departure_wait_min: float | None,
-) -> pd.Series:
+def _one_day_wait_times(
+    feed: GTFSFeed, trips: pd.DataFrame, stop_times: pd.DataFrame, start: float | None, end: float | None
+) -> tuple[pd.Series, pd.MultiIndex]:
+    """Waits of the trips of one service day (or of a set of trips taken as one day)."""
     frequency_wait, frequency_trip_ids = _frequency_wait_times(feed, trips, start, end)
-    scheduled_wait, single = _scheduled_wait_times(stop_times, frequency_trip_ids, start, end)
+    scheduled_wait, single = _scheduled_wait_times(stop_times, frequency_trip_ids, start, end, trips)
     waits = scheduled_wait.copy()
 
     if not frequency_wait.empty:
@@ -335,6 +364,75 @@ def _boarding_wait_times(
             freq_index.get_level_values("pattern_id").map(frequency_wait), index=freq_index, dtype=float
         )
         waits = pd.concat([waits.loc[~waits.index.isin(freq_index)], freq_values])
+    if not isinstance(waits.index, pd.MultiIndex):
+        waits.index = pd.MultiIndex.from_tuples(list(waits.index), names=["pattern_id", "stop_position"])
+    return waits, single
+
+
+def _average_day_waits(
+    feed: GTFSFeed,
+    trips: pd.DataFrame,
+    stop_times: pd.DataFrame,
+    start: float | None,
+    end: float | None,
+    day_types: list[tuple[frozenset[str], int]],
+) -> tuple[pd.Series, pd.MultiIndex]:
+    """Each service day's waits on its own trips, averaged with every day weighing the same.
+
+    A pattern-stop is averaged over the days it runs; one with a single departure on
+    every such day is returned in the second element, as for one day.
+    """
+    service_of_trip = trips.set_index("trip_id")["service_id"].astype(str)
+    stop_service = stop_times["trip_id"].map(service_of_trip)
+    columns, weights, singles = [], [], []
+    for services, count in day_types:
+        day_trips = trips.loc[trips["service_id"].astype(str).isin(services)]
+        if day_trips.empty:
+            continue
+        day_waits, day_single = _one_day_wait_times(
+            feed, day_trips, stop_times.loc[stop_service.isin(services)], start, end
+        )
+        columns.append(day_waits)
+        weights.append(count)
+        singles.extend(day_single)
+    names = ["pattern_id", "stop_position"]
+    if not columns:
+        empty = pd.MultiIndex.from_arrays([[], []], names=names)
+        return pd.Series(dtype=float, index=empty), empty
+    table = pd.concat(columns, axis=1)
+    weight = np.array(weights, dtype=float)
+    values = table.to_numpy(dtype=float)
+    known = ~np.isnan(values)
+    denominator = (known * weight).sum(axis=1)
+    numerator = np.where(known, values, 0.0) @ weight
+    waits = pd.Series(numerator / np.where(denominator > 0, denominator, np.nan), index=table.index).dropna()
+    waits.index = waits.index.set_names(names)
+    single = pd.MultiIndex.from_tuples(sorted(set(singles)), names=names) if singles else None
+    if single is None:
+        single = pd.MultiIndex.from_arrays([[], []], names=names)
+    return waits, single.difference(waits.index)
+
+
+def _boarding_wait_times(
+    feed: GTFSFeed,
+    trips: pd.DataFrame,
+    stop_times: pd.DataFrame,
+    start: float | None,
+    end: float | None,
+    single_departure_wait_min: float | None,
+    day_types: list[tuple[frozenset[str], int]] | None = None,
+) -> pd.Series:
+    """Boarding wait per pattern-stop: of one day, or of the average day (``day_types``).
+
+    A gap is only a gap between departures of the same day. With ``day_types`` each
+    distinct service day is computed on its own trips and the waits are averaged with
+    every calendar day weighing the same; without them every given trip is taken as one
+    day (a ``service_date`` filter, or a feed without a calendar).
+    """
+    if day_types:
+        waits, single = _average_day_waits(feed, trips, stop_times, start, end, day_types)
+    else:
+        waits, single = _one_day_wait_times(feed, trips, stop_times, start, end)
 
     if single_departure_wait_min is not None and len(single) > 0:
         fallback = pd.Series(float(single_departure_wait_min), index=single)
@@ -441,22 +539,22 @@ def _shape_geometries(feed: GTFSFeed, shape_ids: set[str], crs: CRS) -> dict[str
 def _canonical_pattern_stops(trips: pd.DataFrame, stop_times: pd.DataFrame) -> pd.DataFrame:
     canonical = trips.groupby("pattern_id", sort=False)["trip_id"].first()
     rows = stop_times.loc[stop_times["trip_id"].isin(canonical)].copy()
-    # Some producers add a non-standard shape_id to stop_times.txt. The trip-level
-    # shapes reference is authoritative for pattern geometry and avoids merge suffixes.
-    rows = rows.drop(columns=["shape_id"], errors="ignore")
+    trip_columns = [
+        "trip_id",
+        "pattern_id",
+        "route_id",
+        "direction_id",
+        "shape_id",
+        "type",
+        "route_short_name",
+        "route_long_name",
+    ]
+    # Some producers repeat trip-level fields in stop_times.txt (a non-standard shape_id,
+    # or route_id and direction_id as in Kuala Lumpur's feeds). trips.txt is authoritative
+    # for them; dropping the copies avoids merge suffixes that hide the real column.
+    rows = rows.drop(columns=[column for column in trip_columns[2:] if column in rows.columns])
     rows = rows.merge(
-        trips[
-            [
-                "trip_id",
-                "pattern_id",
-                "route_id",
-                "direction_id",
-                "shape_id",
-                "type",
-                "route_short_name",
-                "route_long_name",
-            ]
-        ],
+        trips[trip_columns],
         on=["trip_id", "pattern_id"],
         how="left",
         validate="many_to_one",
@@ -774,6 +872,8 @@ def get_gtfs_public_transport_graph(
     feed: str | Path | GTFSFeed | Sequence[str | Path | GTFSFeed],
     *,
     service_date: date | datetime | str | None = None,
+    service_period: tuple[date | datetime | str, date | datetime | str] | None = None,
+    service_dates: Sequence[date | datetime | str] | None = None,
     start_time: time | str | int | float | None = None,
     end_time: time | str | int | float | None = None,
     crs: Any | None = None,
@@ -787,9 +887,16 @@ def get_gtfs_public_transport_graph(
     route pattern at the same stop. ``frequencies.txt`` uses
     ``headway_secs / 120``.
 
-    ``None`` date/time values are intentionally unbounded: with all three
-    filters omitted, every trip in the feed participates. This is an aggregate
-    all-service graph, not the timetable for a particular real-world day.
+    A gap is a gap between departures of the same day. With ``service_date`` the
+    graph is that day's timetable. Without it each pattern-stop gets the **average
+    day's** wait: the wait of every service day of ``service_period`` -- or of the
+    feed's own calendar, at most 366 days from its start -- computed
+    on that day's trips alone, then averaged with every calendar day weighing the same,
+    over the days the pattern-stop runs. Trips running on none of those days are left
+    out. A feed without ``calendar``/``calendar_dates`` is taken as a single day.
+
+    ``start_time``/``end_time`` bound the departures within each day; ``None`` means
+    unbounded.
 
     Args:
         feed: Directory containing GTFS text files, a GTFS ZIP archive, an
@@ -800,6 +907,13 @@ def get_gtfs_public_transport_graph(
         service_date: Optional service date used with ``calendar.txt`` and
             ``calendar_dates.txt``. Accepts ``date``, ``YYYY-MM-DD`` or
             ``YYYYMMDD``.
+        service_period: Optional ``(first, last)`` dates, both inclusive, to average
+            the waits over instead of the feed's own calendar (for example a reference
+            week). Cannot be combined with ``service_date``.
+        service_dates: Optional explicit days to average the waits over, e.g. a
+            reference week plus the own weeks of merged sources not in service then.
+            Every day still holds only its own trips, so days of different years do
+            not mix. Cannot be combined with ``service_date`` or ``service_period``.
         start_time: Inclusive departure-time bound. ``None`` means unbounded.
         end_time: Exclusive departure-time bound. ``None`` means unbounded.
         crs: Projected target CRS. If omitted, a local UTM CRS is estimated.
@@ -816,13 +930,40 @@ def get_gtfs_public_transport_graph(
         raise ValueError("walk_speed_m_per_min must be positive")
 
     parsed_date = _parse_service_date(service_date)
+    period = None
+    dates = None
+    if sum(value is not None for value in (service_date, service_period, service_dates)) > 1:
+        raise ValueError("service_date, service_period and service_dates cannot be combined")
+    if service_dates is not None:
+        dates = [_parse_service_date(day) for day in service_dates]
+        if not dates:
+            raise ValueError("service_dates must not be empty")
+    if service_period is not None:
+        period = (_parse_service_date(service_period[0]), _parse_service_date(service_period[1]))
+        if period[1] < period[0]:
+            raise ValueError("service_period must run forwards: (first, last)")
     parsed_start = _parse_time_bound(start_time, "start_time")
     parsed_end = _parse_time_bound(end_time, "end_time")
     source = _resolve_feed(feed)
     validate_gtfs_feed(source)
     trips = _prepare_trips(source, parsed_date)
+    day_types = None
+    if parsed_date is None and not trips.empty:
+        day_types = _day_types(source, trips, period, dates)
+        if day_types == [] and period is None and dates is None:
+            # a calendar that switches every day off (all weekday flags 0, no exceptions)
+            # describes no day at all; its trips are kept as one day rather than dropped
+            logger.warning("The feed's calendar gives no service day; all its trips are taken as one service day")
+            day_types = None
+        elif day_types is None:
+            if period is not None or dates is not None:
+                raise ValueError("service_period/service_dates need calendar.txt or calendar_dates.txt in the feed")
+            logger.warning("The feed has no calendar; all its trips are taken as one service day")
+        else:
+            running = set().union(*(services for services, _ in day_types))
+            trips = trips.loc[trips["service_id"].astype(str).isin(running)].copy()
     if trips.empty:
-        logger.warning("No GTFS trips match the requested service date")
+        logger.warning("No GTFS trips match the requested service date or period")
         return _empty_gtfs_graph(crs)
     stop_times = _prepare_stop_times(source, trips)
     if stop_times.empty:
@@ -830,5 +971,7 @@ def get_gtfs_public_transport_graph(
         return _empty_gtfs_graph(crs)
     trips, stop_times = _assign_patterns(trips, stop_times)
     segment_times = _segment_times(stop_times)
-    waits = _boarding_wait_times(source, trips, stop_times, parsed_start, parsed_end, single_departure_wait_min)
+    waits = _boarding_wait_times(
+        source, trips, stop_times, parsed_start, parsed_end, single_departure_wait_min, day_types
+    )
     return _build_graph_tables(source, trips, stop_times, waits, segment_times, crs, walk_speed_m_per_min)

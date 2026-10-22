@@ -26,6 +26,8 @@ def _clean_env(monkeypatch):
         "CI",
         "OVERPASS_CACHE_DIR",
         "OVERPASS_CACHE_ENABLED",
+        "IDUEDU_OSM_SOURCE",
+        "IDUEDU_PBF_PATH",
     ]:
         monkeypatch.delenv(k, raising=False)
     yield
@@ -292,3 +294,64 @@ def test_to_dict_roundtrip_structure():
     assert d["overpass_date"] == "2020-01-01T00:00:00Z"
     assert d["overpass_cache_dir"] == "/tmp/overpass_cache"
     assert d["overpass_cache_enabled"] is False
+
+
+# ---------- OSM data source ----------
+
+
+def test_osm_source_defaults_to_overpass():
+    cfg = Config()
+    assert cfg.osm_source == "overpass"
+    assert cfg.pbf_path is None
+    d = cfg.to_dict()
+    assert d["osm_source"] == "overpass" and d["pbf_path"] is None
+
+
+def test_osm_source_from_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("IDUEDU_OSM_SOURCE", "PBF")
+    monkeypatch.setenv("IDUEDU_PBF_PATH", str(tmp_path / "city.osm.pbf"))
+    cfg = Config.from_env()
+    assert cfg.osm_source == "pbf"
+    assert cfg.pbf_path == str(tmp_path / "city.osm.pbf")
+    assert cfg.to_dict()["osm_source"] == "pbf"
+
+
+def test_invalid_osm_source_env_keeps_overpass(monkeypatch):
+    monkeypatch.setenv("IDUEDU_OSM_SOURCE", "planet")
+    assert Config().osm_source == "overpass"
+
+
+def test_set_osm_source_validates(tmp_path):
+    cfg = Config()
+    with pytest.raises(ValueError):
+        cfg.set_osm_source("planet")
+    with pytest.raises(ValueError):
+        cfg.set_osm_source("pbf")  # no path
+    with pytest.raises(FileNotFoundError):
+        cfg.set_osm_source("pbf", path=tmp_path / "missing.osm.pbf")
+    assert cfg.osm_source == "overpass"
+
+
+def test_set_osm_source_and_use_pbf(tmp_path):
+    pytest.importorskip("osmium")
+    first, second = tmp_path / "a.osm.pbf", tmp_path / "b.osm.pbf"
+    first.write_bytes(b"")
+    second.write_bytes(b"")
+    cfg = Config()
+    cfg.set_osm_source("pbf", path=first)
+    assert (cfg.osm_source, cfg.pbf_path) == ("pbf", str(first))
+    cfg.set_osm_source("overpass")
+    assert (cfg.osm_source, cfg.pbf_path) == ("overpass", str(first))
+    cfg.set_osm_source("pbf")  # reuses the stored path
+    assert cfg.osm_source == "pbf"
+
+    cfg.set_osm_source("overpass")
+    with cfg.use_pbf(second) as inside:
+        assert inside is cfg
+        assert (cfg.osm_source, cfg.pbf_path) == ("pbf", str(second))
+    assert (cfg.osm_source, cfg.pbf_path) == ("overpass", str(first))
+
+    with pytest.raises(RuntimeError):
+        with cfg.use_pbf(second):
+            raise RuntimeError("boom")
+    assert cfg.osm_source == "overpass"

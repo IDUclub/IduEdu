@@ -83,6 +83,10 @@ compatibility helpers.
 
 Use `pip install "iduedu[io]"` to enable `.urbangraph` parquet archive read/write helpers.
 
+Use `pip install "iduedu[pbf]"` to build the same OSM graphs offline from local `.osm.pbf` extracts (for example
+Geofabrik downloads) instead of the Overpass API; see the
+[configuration guide](https://iduclub.github.io/IduEdu/configuration.html).
+
 ## Quickstart
 
 ### Build an intermodal graph
@@ -134,28 +138,53 @@ matrix = od_matrix(
     origins_nodes=nodes[:5],
     destination_nodes=nodes[5:15],
     weight="time_min",
-    threshold=30,
+    cutoff=30,
 )
 
 print(matrix)
 ```
 
 Use `weight="time_min"` for travel time in minutes or `weight="length_meter"` for distance in meters.
-Pairs without a path, or outside `threshold`, are returned as `inf`.
+Pairs without a path, or outside `cutoff`, are returned as `inf`; `threshold` remains a compatible alias.
+
+To calculate distances and routes together, use `output="both"`. Lazy storage reconstructs individual routes
+without rerunning Dijkstra:
+
+```python
+result = graph.od_matrix(
+    origins_nodes=nodes[:5],
+    destination_nodes=nodes[5:15],
+    cutoff=30,  # inclusive; threshold remains a compatible alias
+    output="both",
+    path_storage="lazy",
+)
+distances = result.distances
+path = result.get_path(nodes[0], nodes[5])  # node list, or None when unreachable
+paths = result.paths  # materialize and cache all requested routes
+```
+
+Use `output="paths"` for routes alone, `mode="pairwise"` to match inputs by position, and `iter_od_matrix`
+to process origin rows in blocks. The general `single_source_dijkstra`, `multi_source_dijkstra` (nearest source),
+and `dijkstra_parallel` (independent source rows) helpers also support selecting distances, paths, or both.
+See the [routing API](https://iduclub.github.io/IduEdu/api/matrices.html) for shapes, lazy storage, and memory limits.
 
 ### Reconstruct a route
 
 ```python
-from iduedu import path_to_edges, single_source_dijkstra_path
+from iduedu import path_to_edges
 
-path = single_source_dijkstra_path(graph, nodes[0], nodes[-1], weight="time_min")
-route = path_to_edges(graph, path)
+paths = graph.single_source_dijkstra(
+    nodes[0], target_nodes=[nodes[-1]], weight="time_min", output="paths",
+)
+path = paths.loc[nodes[-1]]
+route = path_to_edges(graph, path or [])
 
 print(route[["type", "length_meter", "time_min"]])
 ```
 
-`single_source_dijkstra_path` returns node ids in travel order, or an empty list when the destination cannot be
-reached. `path_to_edges` turns them into the traversed edges with their geometry, type and travel time, ready to plot.
+Path results contain node ids in travel order, or `None` when the destination cannot be reached.
+`path_to_edges` turns them into the traversed edges with their geometry, type and travel time, ready to plot.
+The specialised `single_source_dijkstra_path` helper remains available and returns `[]` for an unreachable target.
 
 ### Work with graph components
 
@@ -183,7 +212,8 @@ Common entry points are available directly from `iduedu`:
 - Graph IO: `read_urban_graph`, `write_urban_graph`, `UrbanGraph.read`, `UrbanGraph.write`.
 - Components: `connected_components`, `weakly_connected_components`, `strongly_connected_components`,
   `largest_component`.
-- Shortest paths and matrices: `single_source_dijkstra_path`, `multi_source_dijkstra_path`, `path_to_edges`,
+- Shortest paths and matrices: `single_source_dijkstra`, `multi_source_dijkstra`, `dijkstra_parallel`,
+  `ShortestPathResult`, `iter_od_matrix`, `single_source_dijkstra_path`, `multi_source_dijkstra_path`, `path_to_edges`,
   `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`,
   `multi_source_dijkstra_nearest_source`, `dijkstra_path_length_parallel`, `od_matrix`.
 - Optional NetworkX helpers (install `networkx` separately): `urban_graph2nx_graph`, `nx_graph2urban_graph`,

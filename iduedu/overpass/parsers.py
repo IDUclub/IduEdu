@@ -795,8 +795,28 @@ def overpass_ground_transport2edgenode(
     return edges_gdf, nodes_gdf
 
 
-def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Convert subway Overpass route and stop-area data into edge and node tables."""
+def merge_on_ids(left: pd.DataFrame, right: pd.DataFrame, on: list[str]) -> pd.DataFrame:
+    """Outer merge on node-id keys that mix OSM ids (int) and synthetic ids (str, ``"from_<id>"``).
+
+    When every key on one side happens to be a string, pandas infers a string dtype
+    and refuses to merge it with the integer keys of the other side; Turin's subway
+    hit this. The keys are compared as Python objects, so ``123`` and ``"123"`` stay distinct.
+    """
+    left, right = left.copy(), right.copy()
+    for frame in (left, right):
+        for column in on:
+            frame[column] = frame[column].astype(object)
+    return pd.merge(left, right, how="outer", on=on)
+
+
+def overpass_subway2edgenode(
+    subway_data: pd.DataFrame, local_crs, known_members: dict | None = None
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Convert subway Overpass route and stop-area data into edge and node tables.
+
+    ``known_members``: stop-area member tags and coordinates that arrived with the
+    route response; see :func:`patch_members_roles_inplace`.
+    """
 
     nodes_data: list[dict] = []
     edges_data: list[dict] = []
@@ -829,7 +849,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs) -> tuple[gpd.
         edges_data.append(payload)
 
     add_edges, add_nodes = parse_overpass_subway_data(
-        stop_areas, stop_areas_group, stations_data, local_crs
+        stop_areas, stop_areas_group, stations_data, local_crs, known_members=known_members
     )  # Entrances, exits, transfers and similar edges.
     add_edges = add_edges.rename(columns={"u_ref": "u", "v_ref": "v"})
     add_nodes = add_nodes.rename(columns={"ref_id": "node_id"})
@@ -980,7 +1000,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs) -> tuple[gpd.
         nodes_data, columns=["node_id", "geometry", "type", "route"], geometry="geometry", crs=local_crs
     ).drop_duplicates(subset=["node_id", "route", "type"])
 
-    merged_nodes = pd.merge(add_nodes, nodes_gdf, how="outer", on="node_id")
+    merged_nodes = merge_on_ids(add_nodes, nodes_gdf, ["node_id"])
 
     base_cols = {c[:-2] for c in merged_nodes.columns if c.endswith("_x")}
     for base in base_cols:
@@ -1003,7 +1023,7 @@ def overpass_subway2edgenode(subway_data: pd.DataFrame, local_crs) -> tuple[gpd.
         crs=local_crs,
     )
 
-    merged_edges = pd.merge(add_edges, edges_gdf, how="outer", on=["u", "v", "type"])
+    merged_edges = merge_on_ids(add_edges, edges_gdf, ["u", "v", "type"])
     base_cols = {c[:-2] for c in merged_edges.columns if c.endswith("_x")}
     for base in base_cols:
         col_x = f"{base}_x"
@@ -1077,8 +1097,15 @@ def infer_role_from_tags(tags: dict) -> str:
     return ""
 
 
-def patch_members_roles_inplace(stop_areas_df):
-    """Fill missing subway stop-area member roles and geometry in place."""
+def patch_members_roles_inplace(stop_areas_df, known_members: dict | None = None):
+    """Fill missing subway stop-area member roles and geometry in place.
+
+    ``known_members`` are the member tags and coordinates that arrived with the
+    route response (see ``split_stop_area_members``). Only members absent from it
+    are fetched with a separate request; with ``None`` -- a response that carried no
+    member section -- every member needing a role or a position is fetched, as
+    before.
+    """
     missing = []
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
@@ -1094,7 +1121,11 @@ def patch_members_roles_inplace(stop_areas_df):
     if not missing:
         return
 
-    tags_map = fetch_member_tags(missing)
+    known = known_members or {}
+    unknown = [m for m in missing if (m["type"], m["ref"]) not in known]
+    tags_map = dict(known)
+    if unknown:
+        tags_map.update(fetch_member_tags(unknown))
 
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
@@ -1122,7 +1153,7 @@ def patch_members_roles_inplace(stop_areas_df):
 
 
 def parse_overpass_subway_data(
-    stop_areas, stop_areas_group, stations_data, to_crs
+    stop_areas, stop_areas_group, stations_data, to_crs, known_members: dict | None = None
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Parse detailed subway stop-area data into edge and node tables."""
     graph_nodes = []
@@ -1182,7 +1213,7 @@ def parse_overpass_subway_data(
         """Add a graph edge record to the local accumulator."""
         graph_edges.append({"u_ref": int(u), "v_ref": int(v), "type": edge_type, "oneway": bool(oneway)})
 
-    patch_members_roles_inplace(stop_areas)
+    patch_members_roles_inplace(stop_areas, known_members)
 
     for _, stop_area in stop_areas.iterrows():
 

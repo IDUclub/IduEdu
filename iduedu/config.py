@@ -1,19 +1,24 @@
+import importlib.util
 import os
 import sys
 import threading
+from contextlib import contextmanager
 from datetime import date as _date
 from datetime import datetime as _datetime
-from typing import Iterable, Literal, Optional
+from typing import Iterable, Iterator, Literal, Optional
 
 from loguru import logger
 
 from ._version import VERSION
 
 LogLevel = Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+OsmSource = Literal["overpass", "pbf"]
+OSM_SOURCES = ("overpass", "pbf")
+PBF_INSTALL_HINT = "osm_source='pbf' needs the optional dependency pyosmium. Install it with: pip install 'iduedu[pbf]'"
 
 
 class Config:
-    """Global runtime settings for Overpass, caching, logging and graph builders."""
+    """Global runtime settings for the OSM data source, Overpass, caching, logging and graph builders."""
 
     def __init__(self):
         """Initialize runtime settings from environment variables."""
@@ -42,6 +47,17 @@ class Config:
                 self.set_overpass_date(date=env_date)
             except ValueError as exc:
                 logger.warning(f"Invalid OVERPASS_DATE env value {env_date!r}: {exc}")
+
+        # --- OSM data source ---
+        self.osm_source: OsmSource = "overpass"
+        self.pbf_path: str | None = os.getenv("IDUEDU_PBF_PATH") or None
+        env_source = os.getenv("IDUEDU_OSM_SOURCE")
+        if env_source:
+            source = env_source.strip().lower()
+            if source in OSM_SOURCES:
+                self.osm_source = source
+            else:
+                logger.warning(f"Invalid IDUEDU_OSM_SOURCE env value {env_source!r}; expected one of {OSM_SOURCES}")
 
         # --- Caching ---
         self.overpass_cache_dir: str = os.getenv("OVERPASS_CACHE_DIR", ".iduedu_cache")
@@ -203,6 +219,56 @@ class Config:
 
         self.overpass_date = f"{d.isoformat()}T00:00:00Z"
 
+    # ------------- OSM data source -------------
+    def set_osm_source(self, source: OsmSource, *, path: str | os.PathLike | None = None):
+        """Choose where OpenStreetMap data comes from.
+
+        ``"overpass"`` (the default) sends queries to the Overpass API. ``"pbf"`` answers the same
+        queries from a local OSM file (``.osm.pbf``, ``.osm``, ``.opl``) through the optional
+        dependency pyosmium (``pip install 'iduedu[pbf]'``); the Overpass cache and
+        ``overpass_date`` are not used then.
+
+        Args:
+            source: ``"overpass"`` or ``"pbf"``.
+            path: The OSM file for ``"pbf"``. May be omitted when ``pbf_path`` is already set.
+                Ignored by ``"overpass"`` apart from being stored.
+
+        Raises:
+            ValueError: For an unknown source, or ``"pbf"`` without a file.
+            FileNotFoundError: If the file does not exist.
+            ImportError: If ``"pbf"`` is chosen and pyosmium is not installed.
+        """
+        normalized = str(source).strip().lower()
+        if normalized not in OSM_SOURCES:
+            raise ValueError(f"Unknown osm_source {source!r}; expected one of {OSM_SOURCES}")
+        new_path = os.fspath(path) if path is not None else self.pbf_path
+        if normalized == "pbf":
+            if new_path is None:
+                raise ValueError("osm_source='pbf' requires a path to an OSM file")
+            if not os.path.isfile(new_path):
+                raise FileNotFoundError(f"OSM file not found: {new_path}")
+            if importlib.util.find_spec("osmium") is None:
+                raise ImportError(PBF_INSTALL_HINT)
+        with self._lock:
+            self.osm_source = normalized
+            self.pbf_path = new_path
+
+    @contextmanager
+    def use_pbf(self, path: str | os.PathLike) -> Iterator["Config"]:
+        """Temporarily read OSM data from a local file; the previous source is restored on exit.
+
+        Example:
+            >>> with config.use_pbf("berlin.osm.pbf"):
+            ...     walk = get_walk_graph(territory=polygon)
+        """
+        previous = (self.osm_source, self.pbf_path)
+        self.set_osm_source("pbf", path=path)
+        try:
+            yield self
+        finally:
+            with self._lock:
+                self.osm_source, self.pbf_path = previous
+
     def build_overpass_header(self, *, timeout: int | None = None, date: str | None = None) -> str:
         """Build the Overpass query header for JSON requests.
 
@@ -297,12 +363,17 @@ class Config:
             "verify_ssl": self.verify_ssl,
             "overpass_cache_dir": self.overpass_cache_dir,
             "overpass_cache_enabled": self.overpass_cache_enabled,
+            "osm_source": self.osm_source,
+            "pbf_path": self.pbf_path,
         }
 
     @classmethod
     def from_env(cls) -> "Config":
         """
         Construct Config using environment variables where available.
+
+        Besides the ``OVERPASS_*`` variables, ``IDUEDU_OSM_SOURCE`` (``overpass`` or ``pbf``) and
+        ``IDUEDU_PBF_PATH`` select the OSM data source.
         """
         cfg = cls()
         return cfg

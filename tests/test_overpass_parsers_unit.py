@@ -488,3 +488,93 @@ def test_overpass_ground_transport2edgenode_leaves_out_a_route_without_stops():
 
     assert len(edges) == 0
     assert len(nodes) == 0
+
+
+# ---------------------------------------------------------------------------
+# patch_members_roles_inplace: members from the route response vs a second request
+# ---------------------------------------------------------------------------
+
+
+def _unroled_stop_area():
+    # member 2 has no role and member 3 no position: both need the member's own data
+    members = [
+        {"type": "node", "ref": 2, "role": "", "lat": 59.9001, "lon": 30.3001},
+        {"type": "way", "ref": 3, "role": "platform"},
+    ]
+    return pd.DataFrame([_stop_area_row(10, members)])
+
+
+_KNOWN = {
+    ("node", 2): {"tags": {"railway": "subway_entrance"}, "__latlon__": (30.3001, 59.9001)},
+    ("way", 3): {"tags": {"public_transport": "platform"}, "__center__": (30.3002, 59.9002)},
+}
+
+
+def test_known_members_need_no_second_request(monkeypatch):
+    from iduedu.overpass import parsers
+
+    def _forbidden(missing):
+        raise AssertionError("a member section was given; no second request may be made")
+
+    monkeypatch.setattr(parsers, "fetch_member_tags", _forbidden)
+    stop_areas = _unroled_stop_area()
+
+    parsers.patch_members_roles_inplace(stop_areas, _KNOWN)
+
+    members = stop_areas.iloc[0]["members"]
+    assert members[0]["role"] == "entrance"
+    assert (members[1]["lon"], members[1]["lat"]) == (30.3002, 59.9002)
+
+
+def test_without_member_section_the_second_request_fills_the_same(monkeypatch):
+    from iduedu.overpass import parsers
+
+    asked = []
+
+    def _fetch(missing):
+        asked.extend((m["type"], m["ref"]) for m in missing)
+        return dict(_KNOWN)
+
+    monkeypatch.setattr(parsers, "fetch_member_tags", _fetch)
+    stop_areas = _unroled_stop_area()
+
+    parsers.patch_members_roles_inplace(stop_areas, None)
+
+    assert sorted(asked) == [("node", 2), ("way", 3)]
+    members = stop_areas.iloc[0]["members"]
+    assert members[0]["role"] == "entrance"
+    assert (members[1]["lon"], members[1]["lat"]) == (30.3002, 59.9002)
+
+
+def test_only_members_missing_from_the_section_are_fetched(monkeypatch):
+    from iduedu.overpass import parsers
+
+    asked = []
+
+    def _fetch(missing):
+        asked.extend((m["type"], m["ref"]) for m in missing)
+        return {("way", 3): _KNOWN[("way", 3)]}
+
+    monkeypatch.setattr(parsers, "fetch_member_tags", _fetch)
+    parsers.patch_members_roles_inplace(_unroled_stop_area(), {("node", 2): _KNOWN[("node", 2)]})
+
+    assert asked == [("way", 3)]
+
+
+def test_merge_on_ids_accepts_all_string_keys_against_integer_keys():
+    from iduedu.overpass.parsers import merge_on_ids
+
+    left = pd.DataFrame({"u": [1, 2], "v": [2, 3], "type": ["subway_entrance", "subway_exit"], "a": [1, 2]})
+    right = pd.DataFrame(
+        {
+            "u": pd.Series(["from_1", "from_2"], dtype="str"),
+            "v": [1, "from_2"],
+            "type": ["boarding", "subway"],
+            "b": [3, 4],
+        }
+    )
+
+    merged = merge_on_ids(left, right, ["u", "v", "type"])
+
+    assert len(merged) == 4
+    assert set(merged["u"]) == {1, 2, "from_1", "from_2"}

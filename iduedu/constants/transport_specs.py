@@ -39,6 +39,21 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
             faster than the road allows.
         dwell_min (float):
             Time lost standing at a stop, in minutes. Added once per segment. Defaults to ``0``.
+        long_speed_kmh (float | None):
+            Free speed approached on long segments, in km/h. With ``speed_half_length_m``
+            the free speed grows with the segment length ``L`` from ``base_speed_kmh``
+            towards it::
+
+                v(L) = base_speed_kmh + (long_speed_kmh - base_speed_kmh) * L / (L + speed_half_length_m)
+
+            Timetables show it for every mode: a long stretch between stops runs on roads
+            and tracks built for speed, which a single free speed cannot express -- buses
+            make about 22 km/h over 500-950 m and 36 km/h over 5-10 km, of which
+            acceleration and dwell explain only part. Both ``None`` (default): one free
+            speed, ``base_speed_kmh``, on every segment.
+        speed_half_length_m (float | None):
+            Segment length at which the free speed is halfway from ``base_speed_kmh`` to
+            ``long_speed_kmh``, in metres. Set together with ``long_speed_kmh``.
         avg_wait_time_min (float):
             Average passenger waiting time in minutes. It is assigned to directed
             ``boarding`` edges built from OSM data.
@@ -54,6 +69,8 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
     base_speed_kmh: float
     avg_wait_time_min: float = 1.0
     dwell_min: float = 0.0
+    long_speed_kmh: float | None = None
+    speed_half_length_m: float | None = None
 
     def validate(self) -> None:
         """Validate transport specification fields.
@@ -89,6 +106,25 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
             raise ValueError("base_speed_kmh must be > 0")
         if self.dwell_min < 0:
             raise ValueError("dwell_min must be >= 0")
+        if (self.long_speed_kmh is None) != (self.speed_half_length_m is None):
+            raise ValueError("long_speed_kmh and speed_half_length_m must be set together")
+        if self.long_speed_kmh is not None:
+            for field in ("long_speed_kmh", "speed_half_length_m"):
+                if not isinstance(getattr(self, field), (float, int)):
+                    raise ValueError(f"{field} must be numeric, got {type(getattr(self, field))}")
+            if self.long_speed_kmh <= 0:
+                raise ValueError("long_speed_kmh must be > 0")
+            if self.speed_half_length_m <= 0:
+                raise ValueError("speed_half_length_m must be > 0")
+
+    def free_speed_kmh(self, segment_len_m: float) -> float:
+        """Free speed on a segment of this length: ``base_speed_kmh``, or growing with
+        the length towards ``long_speed_kmh`` when that is set."""
+        base = float(self.base_speed_kmh)
+        if self.long_speed_kmh is None or segment_len_m <= 0:
+            return base
+        share = float(segment_len_m) / (float(segment_len_m) + float(self.speed_half_length_m))
+        return base + (float(self.long_speed_kmh) - base) * share
 
     def travel_time_min(
         self,
@@ -102,6 +138,7 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
 
         The method estimates traversal time using a simplified kinematic model that accounts for:
         - the transport mode technical maximum speed;
+        - a free speed that may grow with the segment length (``long_speed_kmh``);
         - an optional road speed limit, entering the free-flow speed affinely;
         - time lost standing at a stop (``dwell_min``);
         - time lost on acceleration and braking.
@@ -135,7 +172,7 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
         # Free speed is a property of the mode, not of the road: see ``base_speed_kmh``.
         # A posted limit only matters where it is *below* what the mode would do
         # anyway, which is rare on transit routes and never on rail.
-        velocity = min(float(self.base_speed_kmh) * 1000.0 / 60.0, vmax)
+        velocity = min(self.free_speed_kmh(segment_len_m) * 1000.0 / 60.0, vmax)
         if speed_limit_mpm is not None and float(speed_limit_mpm) > 0:
             velocity = min(velocity, float(speed_limit_mpm))
         velocity = max(velocity, float(min_speed_mpm))  # avoid zero speed
@@ -319,81 +356,61 @@ def canonical_transport_type(osm_route_value: str) -> str:
 
 
 _DEFAULT_TRANSPORT_SPECS = {
-    # Refitted on 43 surveyed feeds (675k matched segments). The change was adopted
-    # because it survives leave-one-city-out: scored on a city held out of the fit
-    # the refit gives 0.270, below the 0.272 the previous constants score on the
-    # cities they were fitted to. The bus is the only mode where the gain transfers;
-    # every other mode keeps its constants, whose refits do not.
     "bus": TransportSpec(
         "bus",
         vmax_tech_kmh=90,
         accel_dist_m=25.9,
         brake_dist_m=24.1,
-        avg_wait_time_min=8.2,
-        base_speed_kmh=41.0,
-        dwell_min=0.475,
+        avg_wait_time_min=12.24,
+        base_speed_kmh=29.5,
+        dwell_min=0.387,
     ),
     "trolleybus": TransportSpec(
         "trolleybus",
         vmax_tech_kmh=70,
         accel_dist_m=25.9,
         brake_dist_m=24.1,
-        avg_wait_time_min=5.92,
+        avg_wait_time_min=8.02,
         base_speed_kmh=20.0,
-        dwell_min=0.325,
+        dwell_min=0.159,
     ),
     "tram": TransportSpec(
         "tram",
         vmax_tech_kmh=75,
         accel_dist_m=52.6,
         brake_dist_m=47.4,
-        avg_wait_time_min=4.95,
-        base_speed_kmh=41.5,
-        dwell_min=1.2,
+        avg_wait_time_min=5.22,
+        base_speed_kmh=11.5,
+        long_speed_kmh=74.1,
+        speed_half_length_m=3506.0,
+        dwell_min=0.0,
     ),
     "subway": TransportSpec(
         "subway",
         vmax_tech_kmh=80,
         accel_dist_m=25.0,
         brake_dist_m=25.0,
-        avg_wait_time_min=3.02,
-        base_speed_kmh=49.0,
-        dwell_min=0.35,
+        avg_wait_time_min=3.26,
+        base_speed_kmh=56.7,
+        dwell_min=0.694,
     ),
-    # Waiting constants are medians across cities of the harmonic-mean wait
-    # measured on graphs built from the cities' own timetables, over regular
-    # services only -- those whose headway does not exceed an hour: bus 8.2
-    # minutes over 115 cities, trolleybus 5.92 over 4, tram 4.95 over 17, subway
-    # 3.02 over 12, commuter rail 7.71 over 15. Without that restriction the bus
-    # comes out at 10.3, inflated by the sparse services it alone runs; the tram
-    # and trolleybus barely move, having few irregular services to exclude. The
-    # trolleybus rests on four cities and should be read as describing them.
-    #
-    # The two below are **inherited, not fitted**: no city in the calibration
-    # sample publishes a schedule for them, so there are no observed run times to
-    # fit against. Monorail borrows the subway's profile, being grade-separated
-    # and stopping on the same scale; a shared taxi borrows the bus's, running the
-    # same streets with the same stops. They are declared so that OSM's monorail
-    # and share-taxi routes enter a graph at all -- with a plausible speed rather
-    # than none -- and any result that leans on them has to say where the numbers
-    # came from.
     "monorail": TransportSpec(
         "monorail",
         vmax_tech_kmh=80,
         accel_dist_m=25.0,
         brake_dist_m=25.0,
-        avg_wait_time_min=3.0,
-        base_speed_kmh=49.0,
-        dwell_min=0.35,
+        avg_wait_time_min=3.26,
+        base_speed_kmh=56.7,
+        dwell_min=0.694,
     ),
     "taxi": TransportSpec(
         "taxi",
         vmax_tech_kmh=90,
         accel_dist_m=25.9,
         brake_dist_m=24.1,
-        avg_wait_time_min=8.0,
-        base_speed_kmh=41.0,
-        dwell_min=0.475,
+        avg_wait_time_min=12.24,
+        base_speed_kmh=29.5,
+        dwell_min=0.387,
     ),
 }
 _TRAIN_SPEC = TransportSpec(
@@ -401,9 +418,11 @@ _TRAIN_SPEC = TransportSpec(
     vmax_tech_kmh=140,
     accel_dist_m=114.3,
     brake_dist_m=85.7,
-    avg_wait_time_min=7.71,
-    base_speed_kmh=50.5,
-    dwell_min=0.375,
+    avg_wait_time_min=21.5,
+    base_speed_kmh=33.5,
+    long_speed_kmh=78.9,
+    speed_half_length_m=5270.0,
+    dwell_min=0.365,
 )
 
 DEFAULT_REGISTRY = TransportRegistry(_DEFAULT_TRANSPORT_SPECS)

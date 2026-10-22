@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Iterator, Literal
 
 import geopandas as gpd
 import numpy as np
@@ -7,6 +7,7 @@ import pandas as pd
 from scipy import sparse
 
 from iduedu.graph.adjacency import build_adjacency_matrix
+from iduedu.graph.routing_result import ShortestPathResult
 from iduedu.graph.validation import gdf_crs, sync_graph_crs, validate_graph
 
 
@@ -377,6 +378,99 @@ class UrbanGraph:
         self._replace_state_from(filtered)
         return self
 
+    def single_source_dijkstra(
+        self,
+        source_node: Any,
+        *,
+        target_nodes: Iterable[Any] | None = None,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        cutoff: float | None = None,
+        reverse: bool = False,
+        output: Literal["distances", "paths", "both"] = "both",
+        path_storage: Literal["eager", "lazy"] = "eager",
+        dtype: np.dtype = np.float32,
+    ) -> pd.Series | ShortestPathResult:
+        """Search once for distances and/or routes. See :func:`iduedu.single_source_dijkstra`."""
+        from iduedu.graph.routing import single_source_dijkstra
+
+        return single_source_dijkstra(
+            self,
+            source_node,
+            target_nodes=target_nodes,
+            weight=weight,
+            cutoff=cutoff,
+            reverse=reverse,
+            output=output,
+            path_storage=path_storage,
+            dtype=dtype,
+        )
+
+    def multi_source_dijkstra(
+        self,
+        *,
+        source_nodes: Iterable[Any] | None = None,
+        gdf_sources: pd.DataFrame | None = None,
+        graph_node_column: str = "graph_node_id",
+        target_nodes: Iterable[Any] | None = None,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        cutoff: float | None = None,
+        reverse: bool = False,
+        output: Literal["distances", "paths", "both"] = "both",
+        path_storage: Literal["eager", "lazy"] = "eager",
+        dtype: np.dtype = np.float32,
+    ) -> pd.Series | ShortestPathResult:
+        """Search from the nearest source. See :func:`iduedu.multi_source_dijkstra`."""
+        from iduedu.graph.routing import multi_source_dijkstra
+
+        return multi_source_dijkstra(
+            self,
+            source_nodes=source_nodes,
+            gdf_sources=gdf_sources,
+            graph_node_column=graph_node_column,
+            target_nodes=target_nodes,
+            weight=weight,
+            cutoff=cutoff,
+            reverse=reverse,
+            output=output,
+            path_storage=path_storage,
+            dtype=dtype,
+        )
+
+    def dijkstra_parallel(
+        self,
+        *,
+        source_nodes: Iterable[Any] | None = None,
+        gdf_sources: pd.DataFrame | None = None,
+        graph_node_column: str = "graph_node_id",
+        target_nodes: Iterable[Any] | None = None,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        cutoff: float | None = None,
+        reverse: bool = False,
+        output: Literal["distances", "paths", "both"] = "both",
+        path_storage: Literal["eager", "lazy"] = "eager",
+        dtype: np.dtype = np.float32,
+        max_workers: int | None = None,
+        batch_size: int | None = None,
+    ) -> pd.DataFrame | ShortestPathResult:
+        """Run independent source searches. See :func:`iduedu.dijkstra_parallel`."""
+        from iduedu.graph.routing import dijkstra_parallel
+
+        return dijkstra_parallel(
+            self,
+            source_nodes=source_nodes,
+            gdf_sources=gdf_sources,
+            graph_node_column=graph_node_column,
+            target_nodes=target_nodes,
+            weight=weight,
+            cutoff=cutoff,
+            reverse=reverse,
+            output=output,
+            path_storage=path_storage,
+            dtype=dtype,
+            max_workers=max_workers,
+            batch_size=batch_size,
+        )
+
     def single_source_dijkstra_path_length(
         self,
         source_node: Any,
@@ -467,6 +561,7 @@ class UrbanGraph:
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         threshold: float | None = None,
         max_workers: int | None = None,
+        cutoff: float | None = None,
     ) -> pd.DataFrame:
         """Return shortest node paths between origin and destination inputs."""
 
@@ -483,6 +578,7 @@ class UrbanGraph:
             mode=mode,
             threshold=threshold,
             max_workers=max_workers,
+            cutoff=cutoff,
         )
 
     def multi_source_dijkstra_nearest_source(
@@ -559,7 +655,12 @@ class UrbanGraph:
         dtype: np.dtype = np.float32,
         threshold: float | None = None,
         max_workers: int | None = None,
-    ) -> pd.DataFrame:
+        cutoff: float | None = None,
+        output: Literal["distances", "paths", "both"] = "distances",
+        path_storage: Literal["eager", "lazy"] = "eager",
+        mode: Literal["all_to_all", "pairwise"] = "all_to_all",
+        batch_size: int | None = None,
+    ) -> pd.DataFrame | ShortestPathResult:
         """Calculate an OD matrix of shortest paths on this graph.
 
         See also:
@@ -579,6 +680,50 @@ class UrbanGraph:
             dtype=dtype,
             threshold=threshold,
             max_workers=max_workers,
+            cutoff=cutoff,
+            output=output,
+            path_storage=path_storage,
+            mode=mode,
+            batch_size=batch_size,
+        )
+
+    def iter_od_matrix(
+        self,
+        *,
+        gdf_origins: pd.DataFrame | None = None,
+        gdf_destinations: pd.DataFrame | None = None,
+        origins_nodes: Iterable[Any] | None = None,
+        destination_nodes: Iterable[Any] | None = None,
+        graph_node_column: str = "graph_node_id",
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        dtype: np.dtype = np.float32,
+        threshold: float | None = None,
+        max_workers: int | None = None,
+        cutoff: float | None = None,
+        output: Literal["distances", "paths", "both"] = "distances",
+        path_storage: Literal["eager", "lazy"] = "eager",
+        mode: Literal["all_to_all", "pairwise"] = "all_to_all",
+        batch_size: int = 256,
+    ) -> Iterator[pd.DataFrame | ShortestPathResult]:
+        """Yield OD origin-row blocks. See :func:`iduedu.iter_od_matrix`."""
+        from iduedu.graph.routing import iter_od_matrix
+
+        return iter_od_matrix(
+            self,
+            gdf_origins=gdf_origins,
+            gdf_destinations=gdf_destinations,
+            origins_nodes=origins_nodes,
+            destination_nodes=destination_nodes,
+            graph_node_column=graph_node_column,
+            weight=weight,
+            dtype=dtype,
+            threshold=threshold,
+            max_workers=max_workers,
+            cutoff=cutoff,
+            output=output,
+            path_storage=path_storage,
+            mode=mode,
+            batch_size=batch_size,
         )
 
     def path_to_edges(

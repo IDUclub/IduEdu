@@ -12,7 +12,7 @@ from iduedu.constants.highway_enums import HighwayType
 from iduedu.constants.network_enums import Network
 from iduedu.graph.transformers import estimate_crs_for_bounds, keep_largest_connected_component
 from iduedu.graph.urban_graph import UrbanGraph
-from iduedu.overpass.downloaders import get_4326_boundary, get_network_by_filters
+from iduedu.overpass.downloaders import get_4326_boundary, get_network_by_filters, osm_source_label
 
 logger = config.logger
 
@@ -199,7 +199,8 @@ def get_drive_graph(
     """
     Build a drivable UrbanGraph from OpenStreetMap within a given territory.
 
-    The function downloads OSM ways via Overpass, segments them into directed edges, optionally merges
+    The function downloads OSM ways via Overpass (or reads them from a local OSM file in pbf mode, see
+    ``config.set_osm_source``), segments them into directed edges, optionally merges
     contiguous segments, normalizes OSM one-way semantics into a bool ``oneway`` edge column, and computes
     per-edge length (meters) and travel time (minutes). Node coordinates are unique line endpoints in a
     local projected CRS. Edge attributes can include selected OSM tags and a derived road category/speed.
@@ -249,7 +250,7 @@ def get_drive_graph(
 
     local_crs = estimate_crs_for_bounds(*polygon4326.bounds)
 
-    logger.info("Retrieving drive network via Overpass...")
+    logger.info(f"Retrieving drive network via {osm_source_label()}...")
     edges_gdf = _build_edges_from_overpass(
         polygon4326, road_filter, needed_tags=tags_to_retrieve, local_crs=local_crs, simplify=simplify
     )
@@ -340,7 +341,8 @@ def get_walk_graph(
     """
     Build a pedestrian UrbanGraph from OpenStreetMap within a given territory.
 
-    The function fetches OSM ways via Overpass using a walking filter, splits each way into line segments,
+    The function fetches OSM ways via Overpass (or a local OSM file in pbf mode) using a walking filter, splits
+    each way into line segments,
     and computes per-edge length (meters) and traversal time (minutes) using a given walking speed (m/min).
     The graph is stored as an undirected multigraph because pedestrian movement is treated as bidirectional.
 
@@ -391,7 +393,7 @@ def get_walk_graph(
 
     local_crs = estimate_crs_for_bounds(*polygon4326.bounds)
 
-    logger.info("Downloading walk network via Overpass ...")
+    logger.info(f"Downloading walk network via {osm_source_label()} ...")
     edges_gdf = _build_edges_from_overpass(
         polygon4326, road_filter, needed_tags=needed_tags, local_crs=local_crs, simplify=simplify
     )

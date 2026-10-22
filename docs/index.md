@@ -13,6 +13,7 @@ GTFS public transport <api/gtfs>
 Graph utilities <api/utilities>
 Matrices <api/matrices>
 Overpass helpers <api/overpass>
+Local OSM files <api/osm_pbf>
 Examples <examples/index>
 ```
 # **IduEdu** is an open-source Python library for building and analyzing multimodal city networks from [OpenStreetMap](https://www.openstreetmap.org) and GTFS Schedule feeds.
@@ -59,7 +60,8 @@ pip install iduedu
 ```
 
 > Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy,
-> Numba). Install `iduedu[io]` to read and write `.urbangraph` archives. NetworkX is not installed with
+> Numba). Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from
+> local `.osm.pbf` files instead of Overpass (see [Configuration](configuration.md)). NetworkX is not installed with
 > IduEdu; install it separately to use the optional NetworkX helpers.
 
 ---
@@ -90,7 +92,7 @@ M = od_matrix(
     gdf_origins=origins,
     gdf_destinations=destinations,
     weight="time_min",
-    threshold=30,  # pairs without a path or beyond 30 minutes are inf
+    cutoff=30,  # pairs without a path or beyond 30 minutes are inf
 )
 print(M.head())
 ```
@@ -98,12 +100,17 @@ print(M.head())
 ### 3) Reconstruct a route
 
 ```python
-from iduedu import path_to_edges, single_source_dijkstra_path
+from iduedu import path_to_edges
 
 nodes = G.nodes_gdf.index
-path = single_source_dijkstra_path(G, nodes[0], nodes[-1], weight="time_min")  # [] if unreachable
-route = path_to_edges(G, path)  # traversed edges in order, with geometry, type and time_min
+result = G.single_source_dijkstra(
+    nodes[0], target_nodes=[nodes[-1]], weight="time_min",
+    output="both", path_storage="lazy",
+)
+path = result.get_path(nodes[-1])  # None if unreachable; no second search
+route = path_to_edges(G, path or [])
 
+print(result.distances)
 print(route[["type", "length_meter", "time_min"]])
 ```
 

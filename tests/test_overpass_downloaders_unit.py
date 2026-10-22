@@ -1,10 +1,9 @@
-# pylint: disable=protected-access, redefined-outer-name, unused-argument, too-few-public-methods
-
 import geopandas as gpd
 import pytest
 from shapely.geometry import MultiPolygon, Polygon
 
-from iduedu.overpass import downloaders
+from iduedu.overpass import cache, downloaders
+from iduedu.overpass.cache import cache_load, cache_save, get_cache_dir
 from iduedu.overpass.downloaders import (
     _poly_to_overpass,
     get_4326_boundary,
@@ -14,6 +13,7 @@ from iduedu.overpass.downloaders import (
 )
 
 pytestmark = pytest.mark.unit
+
 
 SQUARE = Polygon([(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
 
@@ -46,20 +46,10 @@ def _mock_request(monkeypatch, payload):
     return calls
 
 
-# ---------------------------------------------------------------------------
-# _poly_to_overpass
-# ---------------------------------------------------------------------------
-
-
 def test_poly_to_overpass_emits_lat_lon_pairs_without_closing_vertex():
     result = _poly_to_overpass(SQUARE)
     # exterior has 5 coords (closed ring); the closing vertex is dropped -> 4 "lat lon" pairs
     assert result == "0.0 0.0 0.0 1.0 1.0 1.0 1.0 0.0"
-
-
-# ---------------------------------------------------------------------------
-# get_4326_boundary
-# ---------------------------------------------------------------------------
 
 
 def test_get_4326_boundary_requires_input():
@@ -102,11 +92,6 @@ def test_get_4326_boundary_fetches_from_osm_id(monkeypatch):
     assert get_4326_boundary(osm_id=42) is SQUARE
 
 
-# ---------------------------------------------------------------------------
-# get_boundary_by_osm_id
-# ---------------------------------------------------------------------------
-
-
 def test_get_boundary_by_osm_id_builds_polygon_with_hole(monkeypatch):
     payload = {
         "elements": [
@@ -145,11 +130,6 @@ def test_get_boundary_by_osm_id_builds_polygon_with_hole(monkeypatch):
     assert not boundary.contains(Polygon([(4.5, 4.5), (5.5, 4.5), (5.5, 5.5), (4.5, 5.5)]).centroid)
 
 
-# ---------------------------------------------------------------------------
-# get_network_by_filters
-# ---------------------------------------------------------------------------
-
-
 def test_get_network_by_filters_returns_elements_dataframe(monkeypatch):
     payload = {"elements": [{"type": "way", "id": 1}, {"type": "way", "id": 2}]}
     calls = _mock_request(monkeypatch, payload)
@@ -165,11 +145,6 @@ def test_get_network_by_filters_handles_empty_elements(monkeypatch):
     _mock_request(monkeypatch, {"elements": []})
     df = get_network_by_filters(SQUARE, '["highway"]')
     assert df.empty
-
-
-# ---------------------------------------------------------------------------
-# get_routes_by_poly
-# ---------------------------------------------------------------------------
 
 
 def test_get_routes_by_poly_returns_empty_for_no_types():
@@ -226,3 +201,87 @@ def test_get_routes_by_poly_subway_adds_station_details(monkeypatch):
     query = calls["data"]["data"]
     assert '["route"="subway"]' in query
     assert "stop_area" in query
+
+
+def test_subway_query_carries_stop_area_members_after_a_marker(monkeypatch):
+    monkeypatch.setattr(downloaders.config, "overpass_date", None, raising=False)
+    calls = _mock_request(monkeypatch, {"elements": []})
+
+    get_routes_by_poly(SQUARE, ["subway"])
+
+    query = calls["data"]["data"]
+    assert "nwr(r.stop_areas)->.stop_area_members;" in query
+    marker = f'make section name="{downloaders.STOP_AREA_MEMBERS_SECTION}";'
+    assert marker in query
+    # members are printed after the marker, so nothing before it is mistaken for one
+    assert query.index(marker) < query.index(".stop_area_members out center qt;")
+
+
+def test_ground_only_query_has_no_member_section(monkeypatch):
+    calls = _mock_request(monkeypatch, {"elements": []})
+    get_routes_by_poly(SQUARE, ["bus"])
+    assert "stop_area_members" not in calls["data"]["data"]
+
+
+def test_split_stop_area_members_separates_the_section():
+    route = {"type": "relation", "id": 7, "tags": {"route": "subway"}}
+    marker = {"type": "section", "id": 1, "tags": {"name": downloaders.STOP_AREA_MEMBERS_SECTION}}
+    platform = {"type": "node", "id": 5, "lat": 1.5, "lon": 2.5, "tags": {"public_transport": "platform"}}
+    entrance = {"type": "way", "id": 6, "center": {"lat": 3.0, "lon": 4.0}, "tags": {"entrance": "yes"}}
+
+    routes, members = downloaders.split_stop_area_members([route, marker, platform, entrance])
+
+    assert routes == [route]
+    assert members[("node", 5)]["__latlon__"] == (2.5, 1.5)
+    assert members[("way", 6)]["__center__"] == (4.0, 3.0)
+    assert members[("way", 6)]["tags"] == {"entrance": "yes"}
+
+
+def test_split_stop_area_members_without_section_returns_none():
+    elements = [{"type": "relation", "id": 7}, object()]
+    routes, members = downloaders.split_stop_area_members(elements)
+    assert routes == elements
+    assert members is None
+
+
+def test_request_does_not_probe_status_before_an_attempt(monkeypatch):
+    """``/status`` is asked only after a 429; a plain request is one HTTP call."""
+
+    class _Ok:
+        status_code = 200
+
+    probes = []
+    monkeypatch.setattr(downloaders, "_get_overpass_pause", lambda *a, **k: probes.append(1) or 0)
+    monkeypatch.setattr(downloaders, "_overpass_http", lambda *a, **k: _Ok())
+
+    downloaders._overpass_request("POST", "https://example.org/api/interpreter", data={"data": "x"})
+
+    assert probes == []
+
+
+@pytest.fixture
+def cache_config(monkeypatch, tmp_path):
+    monkeypatch.setattr(cache.config, "overpass_cache_enabled", True, raising=False)
+    monkeypatch.setattr(cache.config, "overpass_cache_dir", str(tmp_path), raising=False)
+    return tmp_path
+
+
+def test_get_cache_dir_none_when_disabled(monkeypatch, tmp_path):
+    monkeypatch.setattr(cache.config, "overpass_cache_enabled", False, raising=False)
+    monkeypatch.setattr(cache.config, "overpass_cache_dir", str(tmp_path), raising=False)
+    assert get_cache_dir() is None
+
+
+def test_get_cache_dir_none_when_dir_empty(monkeypatch):
+    monkeypatch.setattr(cache.config, "overpass_cache_enabled", True, raising=False)
+    monkeypatch.setattr(cache.config, "overpass_cache_dir", "", raising=False)
+    assert get_cache_dir() is None
+
+
+def test_cache_roundtrip_miss_and_disabling(monkeypatch, cache_config):
+    assert cache_load("routes", "missing") is None
+    payload = {"elements": [{"type": "way", "id": 1}], "meta": "ok"}
+    cache_save("network", "key", payload)
+    assert cache_load("network", "key") == payload
+    monkeypatch.setattr(cache.config, "overpass_cache_enabled", False)
+    assert cache_load("network", "key") is None

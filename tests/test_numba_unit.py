@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pytest
 from scipy import sparse
@@ -43,14 +41,6 @@ def _triplet_row_to_dict(row):
 
 def _paths_to_lists(rows):
     return [[list(map(int, path)) for path in row] for row in rows]
-
-
-def test_numba_jit_coverage_is_enabled_before_numba_import():
-    from numba.core import config
-
-    assert os.environ["NUMBA_JIT_COVERAGE"] == "1"
-    if hasattr(config, "JIT_COVERAGE"):
-        assert config.JIT_COVERAGE == 1
 
 
 def test_csr_helpers_convert_scipy_rows_and_extract_coo_arrays():

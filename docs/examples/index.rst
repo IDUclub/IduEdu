@@ -4,6 +4,9 @@ Examples
 The notebooks below cover the main IduEdu workflows: graph construction,
 graph inspection, graph editing, object projection, connectivity diagnostics,
 shortest-path calculations, public-transport registry configuration, and GTFS feeds.
+The shortest-path notebook includes separate and combined distance/route outputs,
+nearest-source versus independent searches, lazy paths, pairwise OD queries,
+and processing OD matrices in blocks.
 
 
 .. toctree::

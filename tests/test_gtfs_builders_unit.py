@@ -11,6 +11,7 @@ from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.graph_builders.gtfs_builders import _transport_type
 from iduedu.graph_builders.intermodal_builders import join_pt_walk_graph
 from iduedu.gtfs.reader import read_gtfs_feed
+from tests.factories import write_gtfs_feed
 
 pytestmark = pytest.mark.unit
 CRS = "EPSG:32636"
@@ -26,11 +27,7 @@ BASE_TABLES = {
 
 
 def _feed(tmp_path: Path, tables: dict[str, str]) -> Path:
-    feed = tmp_path / "feed"
-    feed.mkdir()
-    for name, contents in {**BASE_TABLES, **tables}.items():
-        (feed / name).write_text(contents, encoding="utf-8")
-    return feed
+    return write_gtfs_feed(tmp_path / "feed", {**BASE_TABLES, **tables})
 
 
 def test_gtfs_builder_keeps_platforms_and_patterns_separate_and_uses_half_headway(tmp_path):
@@ -113,6 +110,26 @@ def test_gtfs_builder_none_filters_mean_all_services_and_unbounded_time(tmp_path
     assert inactive_day.nodes_gdf.empty
     overnight = get_gtfs_public_transport_graph(feed, start_time="24:30", end_time="26:00", crs=CRS)
     assert not overnight.edges_gdf.empty
+
+
+def test_gtfs_builder_ignores_trip_fields_repeated_in_stop_times(tmp_path):
+    feed = _feed(
+        tmp_path,
+        {
+            "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nA,A,59.93,30.30\nB,B,59.94,30.30\n",
+            "routes.txt": "route_id,route_short_name,route_type\nR,1,3\n",
+            "trips.txt": "route_id,service_id,trip_id,direction_id\nR,svc,t1,0\n",
+            "stop_times.txt": (
+                "trip_id,arrival_time,departure_time,stop_id,stop_sequence,route_id,direction_id,shape_id\n"
+                "t1,08:00:00,08:00:00,A,1,stale,1,S\nt1,08:10:00,08:10:00,B,2,stale,1,S\n"
+            ),
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, crs=CRS)
+
+    transport = graph.edges_gdf[graph.edges_gdf["type"] == "bus"]
+    assert set(transport["route_id"]) == {"R"}
 
 
 def test_gtfs_builder_uses_frequency_half_headway(tmp_path):
@@ -455,3 +472,363 @@ def test_read_gtfs_feed_preserves_directory_source(tmp_path):
 
     assert feed.source == directory
     assert set(feed.tables) == {"stops"}
+
+
+AGENCY = "agency_id,agency_name,agency_url,agency_timezone\na,Agency,https://example.com,Europe/Moscow\n"
+
+
+STOPS = "stop_id,stop_name,stop_lat,stop_lon\nA,A,59.93,30.30\nB,B,59.94,30.30\n"
+
+
+WEEK = ("2026-10-12", "2026-10-18")
+
+
+CALENDAR = (
+    "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+    "wk,1,1,1,1,1,0,0,20261012,20261018\n"
+    "we,0,0,0,0,0,1,1,20261012,20261018\n"
+)
+
+
+def _daily_feed(tmp_path: Path, tables: dict[str, str]) -> Path:
+    return write_gtfs_feed(tmp_path / "feed", {"agency.txt": AGENCY, "stops.txt": STOPS, **tables})
+
+
+def _trips(departures: dict[str, list[str]], route: str = "R") -> tuple[str, str]:
+    """trips.txt and stop_times.txt: one trip per departure, A -> B in 10 minutes."""
+    trips, times = ["route_id,service_id,trip_id"], ["trip_id,arrival_time,departure_time,stop_id,stop_sequence"]
+    for service, clock in departures.items():
+        for index, hhmm in enumerate(clock):
+            trip = f"{route}_{service}_{index}"
+            hour, minute = map(int, hhmm.split(":"))
+            arrive = f"{hour + (minute + 10) // 60:02d}:{(minute + 10) % 60:02d}:00"
+            trips.append(f"{route},{service},{trip}")
+            times += [f"{trip},{hhmm}:00,{hhmm}:00,A,1", f"{trip},{arrive},{arrive},B,2"]
+    return "\n".join(trips) + "\n", "\n".join(times) + "\n"
+
+
+def _waits(graph) -> set[float]:
+    edges = graph.edges_gdf
+    return {round(value, 4) for value in edges.loc[edges["type"] == "boarding", "time_min"]}
+
+
+def test_interleaved_weekday_and_weekend_departures_keep_each_days_gap(tmp_path):
+    trips, times = _trips({"wk": ["08:00", "08:20", "08:40"], "we": ["08:10", "08:30", "08:50"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, crs=CRS)
+
+    # 20-minute gaps on every day: half of it, not half of the 10-minute overlay
+    assert _waits(graph) == {10.0}
+
+
+def test_days_weigh_the_same(tmp_path):
+    trips, times = _trips({"wk": ["08:00", "08:20", "08:40"], "we": ["08:00", "08:30", "09:00"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, service_period=WEEK, crs=CRS)
+
+    # five weekdays at 10 min and two weekend days at 15 min
+    assert _waits(graph) == {round((5 * 10 + 2 * 15) / 7, 4)}
+
+
+def test_a_pattern_is_averaged_over_the_days_it_runs(tmp_path):
+    weekday, weekday_times = _trips({"wk": ["08:00", "08:20", "08:40"]}, route="R")
+    weekend, weekend_times = _trips({"we": ["09:00", "09:30", "10:00"]}, route="S")
+    # the weekend route runs from B, so it is a pattern of its own
+    weekend_times = weekend_times.replace(",A,1", ",X,1").replace(",B,2", ",A,2").replace(",X,1", ",B,1")
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR,
+            "routes.txt": "route_id,route_type\nR,3\nS,3\n",
+            "trips.txt": weekday + "".join(weekend.splitlines(True)[1:]),
+            "stop_times.txt": weekday_times + "".join(weekend_times.splitlines(True)[1:]),
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, service_period=WEEK, crs=CRS)
+
+    edges = graph.edges_gdf
+    waits = edges.loc[edges["type"] == "boarding"].set_index("route_id")["time_min"].to_dict()
+    assert waits == pytest.approx({"R": 10.0, "S": 15.0})
+
+
+def test_calendar_dates_alone_define_the_days(tmp_path):
+    trips, times = _trips({"d1": ["08:00", "08:20"], "d2": ["08:10", "08:50"]})
+    exceptions = "service_id,date,exception_type\nd1,20261014,1\nd2,20261015,1\n"
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar_dates.txt": exceptions,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, crs=CRS)
+
+    # one day at a 20-minute gap (10), the other at 40 (20)
+    assert _waits(graph) == {15.0}
+
+
+def test_trips_outside_the_period_are_left_out(tmp_path):
+    calendar = CALENDAR + "old,1,1,1,1,1,1,1,20250101,20250131\n"
+    trips, times = _trips({"wk": ["08:00", "08:20"], "old": ["08:05", "08:10"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": calendar,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, service_period=WEEK, crs=CRS)
+
+    assert _waits(graph) == {10.0}
+
+
+def test_frequencies_are_weighted_by_days(tmp_path):
+    trips = "route_id,service_id,trip_id\nR,wk,f_wk\nR,we,f_we\n"
+    times = (
+        "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+        "f_wk,00:00:00,00:00:00,A,1\nf_wk,00:10:00,00:10:00,B,2\n"
+        "f_we,00:00:00,00:00:00,A,1\nf_we,00:10:00,00:10:00,B,2\n"
+    )
+    frequencies = (
+        "trip_id,start_time,end_time,headway_secs,exact_times\n"
+        "f_wk,06:00:00,10:00:00,600,0\nf_we,06:00:00,10:00:00,1800,0\n"
+    )
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+            "frequencies.txt": frequencies,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, service_period=WEEK, crs=CRS)
+
+    assert _waits(graph) == {round((5 * 5 + 2 * 15) / 7, 4)}
+
+
+def test_a_service_date_is_still_one_day(tmp_path):
+    trips, times = _trips({"wk": ["08:00", "08:20", "08:40"], "we": ["08:10", "08:30", "08:50"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    saturday = get_gtfs_public_transport_graph(feed, service_date="2026-10-17", crs=CRS)
+
+    assert _waits(saturday) == {10.0}
+    with pytest.raises(ValueError):
+        get_gtfs_public_transport_graph(feed, service_date="2026-10-17", service_period=WEEK, crs=CRS)
+
+
+def test_the_time_window_applies_within_each_day(tmp_path):
+    trips, times = _trips({"wk": ["05:00", "06:00", "06:20", "06:40"], "we": ["06:00", "06:30", "07:00"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, service_period=WEEK, start_time="06:00", end_time="22:00", crs=CRS)
+
+    assert _waits(graph) == {round((5 * 10 + 2 * 15) / 7, 4)}
+
+
+def test_explicit_service_dates_keep_sources_of_different_years_apart(tmp_path):
+    calendar = (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "new,1,1,1,1,1,1,1,20261012,20261018\n"
+        "old,1,1,1,1,1,1,1,20190107,20190113\n"
+    )
+    # the same pattern, an old timetable every 20 minutes and a new one every 30
+    trips, times = _trips({"new": ["08:00", "08:30", "09:00"], "old": ["08:05", "08:25", "08:45"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": calendar,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+    days = [f"2026-10-{d}" for d in range(12, 19)] + [f"2019-01-{d:02d}" for d in range(7, 14)]
+
+    graph = get_gtfs_public_transport_graph(feed, service_dates=days, crs=CRS)
+
+    # seven days at 15 and seven at 10: never the 5-minute overlay of the two
+    assert _waits(graph) == {12.5}
+    with pytest.raises(ValueError):
+        get_gtfs_public_transport_graph(feed, service_dates=days, service_period=WEEK, crs=CRS)
+
+
+def test_calendar_and_calendar_dates_together_use_the_requested_days(tmp_path):
+    trips, times = _trips({"wk": ["08:00", "08:20", "08:40"], "we": ["08:00", "08:30", "09:00"]})
+    # a holiday far outside the week removes weekday service; it must not become "the days"
+    exceptions = "service_id,date,exception_type\nwk,20261225,2\n"
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": CALENDAR.replace("20261018", "20261231"),
+            "calendar_dates.txt": exceptions,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    by_period = get_gtfs_public_transport_graph(feed, service_period=WEEK, crs=CRS)
+    by_dates = get_gtfs_public_transport_graph(feed, service_dates=[f"2026-10-{d}" for d in range(12, 19)], crs=CRS)
+
+    expected = {round((5 * 10 + 2 * 15) / 7, 4)}
+    assert _waits(by_period) == expected
+    assert _waits(by_dates) == expected
+
+
+def test_a_calendar_without_any_service_day_keeps_its_trips_as_one_day(tmp_path):
+    calendar = (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "off,0,0,0,0,0,0,0,20261012,20261111\n"
+    )
+    trips, times = _trips({"off": ["08:00", "08:20"]})
+    feed = _daily_feed(
+        tmp_path,
+        {
+            "calendar.txt": calendar,
+            "routes.txt": "route_id,route_type\nR,3\n",
+            "trips.txt": trips,
+            "stop_times.txt": times,
+        },
+    )
+
+    graph = get_gtfs_public_transport_graph(feed, crs=CRS)
+
+    assert _waits(graph) == {10.0}
+
+
+def _line_feed(tmp_path: Path, trips_rows: list[tuple[str, str, str, list[tuple[str, str]]]]) -> Path:
+    """trips as (trip_id, route_id, direction_id, [(stop, hh:mm), ...]) on the weekday calendar."""
+    stops = (
+        "stop_id,stop_name,stop_lat,stop_lon\nA,A,59.930,30.30\nB,B,59.935,30.30\nC,C,59.940,30.30\nD,D,59.935,30.31\n"
+    )
+    trips = ["route_id,service_id,trip_id,direction_id"]
+    times = ["trip_id,arrival_time,departure_time,stop_id,stop_sequence"]
+    for trip, route, direction, calls in trips_rows:
+        trips.append(f"{route},wk,{trip},{direction}")
+        times += [f"{trip},{hhmm}:00,{hhmm}:00,{stop},{index + 1}" for index, (stop, hhmm) in enumerate(calls)]
+    calendar = (
+        "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        "wk,1,1,1,1,1,1,1,20261012,20261018\n"
+    )
+    return _daily_feed(
+        tmp_path,
+        {
+            "stops.txt": stops,
+            "calendar.txt": calendar,
+            "routes.txt": "route_id,route_type\nR,3\nQ,3\n",
+            "trips.txt": "\n".join(trips) + "\n",
+            "stop_times.txt": "\n".join(times) + "\n",
+        },
+    )
+
+
+def _boarding_by_stop(graph) -> dict[tuple[str, int], float]:
+    edges, nodes = graph.edges_gdf, graph.nodes_gdf
+    board = edges[edges["type"] == "boarding"]
+    stop = board["u"].map(nodes["gtfs_stop_id"])
+    return {(s, int(p)): round(t, 4) for s, p, t in zip(stop, board["pattern_id"], board["time_min"])}
+
+
+def test_branches_of_a_line_share_the_wait_on_their_common_section(tmp_path):
+    # two branches of R: both A -> B, then one to C and one to D; every 20 minutes each, offset by 10
+    rows = []
+    for i, hh in enumerate(["08:00", "08:20", "08:40"]):
+        rows.append(
+            (
+                f"c{i}",
+                "R",
+                "0",
+                [
+                    ("A", hh),
+                    ("B", hh[:3] + str(int(hh[3:]) + 2).zfill(2)),
+                    ("C", hh[:3] + str(int(hh[3:]) + 4).zfill(2)),
+                ],
+            )
+        )
+    for i, hh in enumerate(["08:10", "08:30", "08:50"]):
+        rows.append(
+            (
+                f"d{i}",
+                "R",
+                "0",
+                [
+                    ("A", hh),
+                    ("B", hh[:3] + str(int(hh[3:]) + 2).zfill(2)),
+                    ("D", hh[:3] + str(int(hh[3:]) + 4).zfill(2)),
+                ],
+            )
+        )
+    graph = get_gtfs_public_transport_graph(_line_feed(tmp_path, rows), service_period=WEEK, crs=CRS)
+
+    waits = _boarding_by_stop(graph)
+    # at A both branches go on to B: one train every 10 minutes
+    assert {t for (s, _), t in waits.items() if s == "A"} == {5.0}
+    # at B they part (to C, to D): each branch on its own, every 20 minutes
+    assert {t for (s, _), t in waits.items() if s == "B"} == {10.0}
+
+
+def test_the_next_stop_separates_directions_a_feed_lumps_together(tmp_path):
+    # both directions of R under direction_id 0, passing B ten minutes apart
+    rows = [
+        (f"n{i}", "R", "0", [("A", f"08:{m:02d}"), ("B", f"08:{m + 2:02d}"), ("C", f"08:{m + 4:02d}")])
+        for i, m in enumerate((0, 20, 40))
+    ] + [
+        (f"s{i}", "R", "0", [("C", f"08:{m:02d}"), ("B", f"08:{m + 2:02d}"), ("A", f"08:{m + 4:02d}")])
+        for i, m in enumerate((8, 28, 48))
+    ]
+    graph = get_gtfs_public_transport_graph(_line_feed(tmp_path, rows), service_period=WEEK, crs=CRS)
+
+    assert {t for (s, _), t in _boarding_by_stop(graph).items() if s == "B"} == {10.0}
+
+
+def test_different_routes_never_share_a_wait(tmp_path):
+    rows = [(f"r{i}", "R", "0", [("A", f"08:{m:02d}"), ("B", f"08:{m + 2:02d}")]) for i, m in enumerate((0, 20, 40))]
+    rows += [(f"q{i}", "Q", "0", [("A", f"08:{m:02d}"), ("B", f"08:{m + 2:02d}")]) for i, m in enumerate((10, 30, 50))]
+    graph = get_gtfs_public_transport_graph(_line_feed(tmp_path, rows), service_period=WEEK, crs=CRS)
+
+    assert {t for (s, _), t in _boarding_by_stop(graph).items() if s == "A"} == {10.0}

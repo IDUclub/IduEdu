@@ -357,3 +357,35 @@ def test_get_intermodal_graph_respects_explicit_walk_keep_largest_subgraph(monke
     get_intermodal_graph(territory=fake_boundary(), walk_kwargs={"keep_largest_subgraph": True})
 
     assert calls["walk_kwargs"]["keep_largest_subgraph"] is True
+
+
+def test_join_pt_walk_graph_raises_on_crs_mismatch():
+    walk_graph = tiny_walk_graph()
+    pt_graph = tiny_public_transport_graph_with_sequence_attrs()
+    mismatched_walk = walk_graph.copy()
+    mismatched_walk.crs = "EPSG:4326"
+    mismatched_walk.nodes_gdf = mismatched_walk.nodes_gdf.set_crs("EPSG:4326", allow_override=True)
+    mismatched_walk.edges_gdf = mismatched_walk.edges_gdf.set_crs("EPSG:4326", allow_override=True)
+
+    with pytest.raises(ValueError, match="CRS mismatch"):
+        join_pt_walk_graph(pt_graph, mismatched_walk)
+
+
+def test_join_pt_walk_graph_returns_walk_graph_when_pt_graph_empty():
+    walk_graph = tiny_walk_graph()
+    empty_pt = UrbanGraph.empty(
+        crs=walk_graph.crs, is_multigraph=True, is_directed=True, edge_direction_column="oneway"
+    )
+
+    result = join_pt_walk_graph(empty_pt, walk_graph)
+
+    assert result is walk_graph
+
+
+def test_join_pt_walk_graph_returns_pt_graph_when_walk_graph_empty():
+    pt_graph = tiny_public_transport_graph_with_sequence_attrs()
+    empty_walk = UrbanGraph.empty(crs=pt_graph.crs, is_multigraph=True, is_directed=False)
+
+    result = join_pt_walk_graph(pt_graph, empty_walk)
+
+    assert result is pt_graph

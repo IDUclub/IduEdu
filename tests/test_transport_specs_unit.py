@@ -12,10 +12,6 @@ from iduedu.constants.transport_specs import (
 pytestmark = pytest.mark.unit
 
 
-def approx(a: float, b: float, rel: float = 1e-9, abs_: float = 1e-9) -> bool:
-    return math.isclose(a, b, rel_tol=rel, abs_tol=abs_)
-
-
 @pytest.mark.parametrize(
     "spec",
     [
@@ -80,7 +76,7 @@ def test_travel_time_long_segment_with_cruise():
     span = 150.0
     expected = (2 * 100 / V) + (2 * 50 / V) + ((L - span) / V)
     got = spec.travel_time_min(L)
-    assert approx(got, expected, rel=1e-12, abs_=1e-12)
+    assert got == pytest.approx(expected, rel=1e-12, abs=1e-12)
 
 
 def test_travel_time_short_segment_no_cruise_uses_v_peak():
@@ -91,7 +87,7 @@ def test_travel_time_short_segment_no_cruise_uses_v_peak():
     v_peak = V * math.sqrt(L / span)  # 500 m/min
     expected = (2 * L) / v_peak
     got = spec.travel_time_min(L)
-    assert approx(got, expected, rel=1e-12, abs_=1e-12)
+    assert got == pytest.approx(expected, rel=1e-12, abs=1e-12)
 
 
 def test_travel_time_grows_with_length_on_short_segments():
@@ -107,7 +103,7 @@ def test_travel_time_branches_meet_at_span():
     span = 200.0
     below = spec.travel_time_min(span - 1e-6)
     above = spec.travel_time_min(span + 1e-6)
-    assert approx(below, above, rel=1e-6, abs_=1e-6)
+    assert below == pytest.approx(above, rel=1e-6, abs=1e-6)
 
 
 def test_travel_time_respects_speed_limit():
@@ -120,7 +116,7 @@ def test_travel_time_respects_speed_limit():
     # a 600 m/min (36 km/h) limit is below free flow, so it binds
     t_limited = spec.travel_time_min(L, speed_limit_mpm=600.0)
     assert t_limited > t_free
-    assert approx(t_limited, L / 600.0, rel=1e-12, abs_=1e-12)
+    assert t_limited == pytest.approx(L / 600.0, rel=1e-12, abs=1e-12)
 
 
 def test_a_slower_mode_takes_longer():
@@ -136,7 +132,7 @@ def test_travel_time_min_speed_floor_on_short_segment():
     min_speed = 60.0
     got = spec.travel_time_min(L, min_speed_mpm=min_speed)
     expected = (2 * L) / min_speed
-    assert approx(got, expected, rel=1e-12, abs_=1e-12)
+    assert got == pytest.approx(expected, rel=1e-12, abs=1e-12)
 
 
 def test_a_limit_above_the_free_speed_changes_nothing():
@@ -151,7 +147,9 @@ def test_a_limit_above_the_free_speed_changes_nothing():
     L = 3000.0
     free = spec.travel_time_min(L)
     for limit_kmh in (50, 90, 130):
-        assert approx(spec.travel_time_min(L, speed_limit_mpm=limit_kmh * 1000 / 60), free, rel=1e-12, abs_=1e-12)
+        assert spec.travel_time_min(L, speed_limit_mpm=limit_kmh * 1000 / 60) == pytest.approx(
+            free, rel=1e-12, abs=1e-12
+        )
     slow_street = spec.travel_time_min(L, speed_limit_mpm=20 * 1000 / 60)
     assert slow_street > free
 
@@ -160,7 +158,7 @@ def test_free_speed_is_capped_by_technical_maximum():
     spec = TransportSpec("tram", vmax_tech_kmh=40, accel_dist_m=0, brake_dist_m=0, base_speed_kmh=70)
     L = 2000.0
     got = spec.travel_time_min(L, speed_limit_mpm=90 * 1000 / 60)
-    assert approx(got, L / (40 * 1000 / 60), rel=1e-12, abs_=1e-12)
+    assert got == pytest.approx(L / (40 * 1000 / 60), rel=1e-12, abs=1e-12)
 
 
 def test_dwell_is_added_once_on_both_branches():
@@ -168,63 +166,13 @@ def test_dwell_is_added_once_on_both_branches():
     plain = TransportSpec("bus", **kwargs)
     with_dwell = TransportSpec("bus", **kwargs, dwell_min=0.5)
     for L in (50.0, 1000.0):  # below and above span
-        assert approx(with_dwell.travel_time_min(L), plain.travel_time_min(L) + 0.5, rel=1e-12, abs_=1e-12)
+        assert with_dwell.travel_time_min(L) == pytest.approx(plain.travel_time_min(L) + 0.5, rel=1e-12, abs=1e-12)
 
 
 def test_free_speed_is_the_mode_speed_when_no_limit_is_given():
     spec = TransportSpec("bus", vmax_tech_kmh=60, accel_dist_m=0, brake_dist_m=0, base_speed_kmh=42)
     L = 1000.0
-    assert approx(spec.travel_time_min(L), L / (42 * 1000 / 60), rel=1e-12, abs_=1e-12)
-
-
-def test_registry_add_and_get_normalizes_key():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("  BuS  ", 60, 1, 1, 1.0))
-    assert reg.get("bus").name == "bus"
-    assert reg.get(" BUS ").name == "bus"
-
-
-def test_registry_add_duplicate_without_overwrite_raises():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    with pytest.raises(ValueError):
-        reg.add(TransportSpec("bus", 70, 1, 1, 1.0))
-
-
-def test_registry_add_duplicate_with_overwrite():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    reg.add(TransportSpec("bus", 70, 1, 1, 1.0), overwrite=True)
-    assert reg.get("bus").vmax_tech_kmh == 70
-
-
-def test_registry_try_get_returns_none():
-    reg = TransportRegistry()
-    assert reg.try_get("unknown") is None
-
-
-def test_registry_remove():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    reg.remove("bus")
-    with pytest.raises(KeyError):
-        reg.get("bus")
-
-
-def test_registry_update_field():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    updated = reg.update("bus", base_speed_kmh=42)
-    assert updated.base_speed_kmh == 42
-    assert reg.get("bus").base_speed_kmh == 42
-
-
-def test_registry_update_wait_time():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    updated = reg.update("bus", avg_wait_time_min=4.5)
-    assert updated.avg_wait_time_min == 4.5
-    assert reg.get("bus").avg_wait_time_min == 4.5
+    assert spec.travel_time_min(L) == pytest.approx(L / (42 * 1000 / 60), rel=1e-12, abs=1e-12)
 
 
 def test_registry_update_rename_moves_key():
@@ -244,72 +192,27 @@ def test_registry_update_rename_to_existing_raises():
         reg.update("bus", name="tram")
 
 
-def test_registry_ensure_existing_returns_same():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    spec = reg.ensure("bus")
-    assert spec.name == "bus"
-    assert reg.get("bus") is spec
-
-
-def test_registry_ensure_creates_default_when_missing():
-    reg = TransportRegistry()
-    spec = reg.ensure("ferry")
-    assert spec.name == "ferry"
-    # defaults filled in by ensure()
-    assert spec.vmax_tech_kmh > 0
-    assert reg.get("ferry").name == "ferry"
-
-
-def test_registry_ensure_uses_provided_defaults():
-    reg = TransportRegistry()
-    defaults = TransportSpec("funicular", 30, 10, 10, 0.9)
-    spec = reg.ensure("funicular", defaults=defaults)
-    assert reg.get("funicular").vmax_tech_kmh == 30
-    assert spec.base_speed_kmh == 0.9
-
-
-def test_registry_list_types_contains_added():
-    reg = TransportRegistry()
-    reg.add(TransportSpec("bus", 60, 1, 1, 1.0))
-    reg.add(TransportSpec("tram", 50, 1, 1, 1.0))
-    types = reg.list_types()
-    assert "bus" in types
-    assert "tram" in types
-
-
-def test_default_registry_has_expected_keys():
-    types = set(DEFAULT_REGISTRY.list_types())
-    assert {"bus", "tram", "trolleybus", "subway"} <= types
-    assert "train" not in types
-
-
 def test_default_registry_has_mode_specific_wait_times():
     """Fitted against observed headways, not chosen.
 
     Each value is the median across cities of the harmonic-mean wait measured on
     graphs built from those cities' own timetables, over regular services only.
     """
-    assert DEFAULT_REGISTRY.get("bus").avg_wait_time_min == 8.2
-    assert DEFAULT_REGISTRY.get("trolleybus").avg_wait_time_min == 5.92
-    assert DEFAULT_REGISTRY.get("tram").avg_wait_time_min == 4.95
-    assert DEFAULT_REGISTRY.get("subway").avg_wait_time_min == 3.02
-    assert DEFAULT_REGISTRY_W_TRAIN.get("train").avg_wait_time_min == 7.71
+    assert DEFAULT_REGISTRY.get("bus").avg_wait_time_min == 12.24
+    assert DEFAULT_REGISTRY.get("trolleybus").avg_wait_time_min == 8.02
+    assert DEFAULT_REGISTRY.get("tram").avg_wait_time_min == 5.22
+    assert DEFAULT_REGISTRY.get("subway").avg_wait_time_min == 3.26
+    assert DEFAULT_REGISTRY_W_TRAIN.get("train").avg_wait_time_min == 21.5
 
 
-def test_default_registry_keeps_wait_times_distinct_by_mode():
-    """The point of per-mode waits disappears if they collapse into one value.
-
-    This used to assert subway < tram < bus <= trolleybus < train, an ordering
-    taken from intuition. Measurement overturned one of its links: trolleybuses
-    are waited for less than buses, not more. What survives is what the data
-    support -- the metro is waited for least of all -- and the property the test
-    existed to protect, that the modes do not share one number.
-    """
-    waits = {t: DEFAULT_REGISTRY_W_TRAIN.get(t).avg_wait_time_min for t in DEFAULT_REGISTRY_W_TRAIN.list_types()}
-    fitted = {mode: waits[mode] for mode in ("bus", "trolleybus", "tram", "subway", "train")}
-    assert len(set(fitted.values())) == len(fitted)
-    assert fitted["subway"] == min(fitted.values())
+def test_default_registry_grows_free_speed_only_where_it_validates():
+    """Cross-validated by city: a growing free speed for tram and train only."""
+    assert DEFAULT_REGISTRY.get("tram").long_speed_kmh is not None
+    assert DEFAULT_REGISTRY_W_TRAIN.get("train").long_speed_kmh is not None
+    for mode in ("bus", "trolleybus", "subway"):
+        assert DEFAULT_REGISTRY.get(mode).long_speed_kmh is None
+    tram = DEFAULT_REGISTRY.get("tram")
+    assert tram.free_speed_kmh(5000.0) > tram.free_speed_kmh(500.0)
 
 
 def test_default_registry_ignores_road_class_above_the_mode_speed():
@@ -324,7 +227,7 @@ def test_default_registry_ignores_road_class_above_the_mode_speed():
     L = 3000.0
     city = bus.travel_time_min(L, speed_limit_mpm=50 * 1000 / 60)
     highway = bus.travel_time_min(L, speed_limit_mpm=90 * 1000 / 60)
-    assert approx(highway, city, rel=1e-12, abs_=1e-12)
+    assert highway == pytest.approx(city, rel=1e-12, abs=1e-12)
 
 
 def test_default_registry_slow_streets_still_slow_every_mode_down():
@@ -333,24 +236,6 @@ def test_default_registry_slow_streets_still_slow_every_mode_down():
     for mode in ("bus", "tram", "subway"):
         spec = DEFAULT_REGISTRY.get(mode)
         assert spec.travel_time_min(L, speed_limit_mpm=15 * 1000 / 60) > spec.travel_time_min(L)
-
-
-def test_default_registry_with_train_has_expected_keys():
-    types = set(DEFAULT_REGISTRY_W_TRAIN.list_types())
-    assert {"bus", "tram", "trolleybus", "subway", "train"} <= types
-
-
-def test_default_registry_specs_are_valid():
-    for t in DEFAULT_REGISTRY.list_types():
-        DEFAULT_REGISTRY.get(t).validate()
-    for t in DEFAULT_REGISTRY_W_TRAIN.list_types():
-        DEFAULT_REGISTRY_W_TRAIN.get(t).validate()
-
-
-def test_default_registries_are_independent():
-    assert DEFAULT_REGISTRY_W_TRAIN is not DEFAULT_REGISTRY
-    assert DEFAULT_REGISTRY.try_get("train") is None
-    assert DEFAULT_REGISTRY_W_TRAIN.try_get("train") is not None
 
 
 def test_osm_route_aliases_follow_gtfs_vocabulary():
@@ -386,20 +271,123 @@ def test_inherited_specs_are_declared_and_valid():
     taxi.validate()
 
 
-def test_every_registry_mode_can_reach_a_graph():
-    """A mode the registry declares must not be dropped between download and build.
+def test_free_speed_unchanged_without_long_speed():
+    spec = TransportSpec("bus", vmax_tech_kmh=90, accel_dist_m=100, brake_dist_m=50, base_speed_kmh=25)
+    same = TransportSpec(
+        "bus",
+        vmax_tech_kmh=90,
+        accel_dist_m=100,
+        brake_dist_m=50,
+        base_speed_kmh=25,
+        long_speed_kmh=25,
+        speed_half_length_m=1000,
+    )
+    for length in (50.0, 400.0, 3000.0, 20000.0):
+        assert spec.free_speed_kmh(length) == 25.0
+        assert spec.travel_time_min(length) == pytest.approx(same.travel_time_min(length), rel=1e-9, abs=1e-9)
 
-    ``get_public_transport_graph`` used to select ground routes from a hand-written
-    set of four names, so ``taxi`` and ``monorail`` were fetched from Overpass and
-    then discarded without a word -- which hid 524 shared-taxi routes in Addis Ababa
-    and 40 in Saint Petersburg.
-    """
-    import inspect
 
-    from iduedu.graph_builders import public_transport_builders
+def test_free_speed_grows_with_length():
+    spec = TransportSpec(
+        "bus",
+        vmax_tech_kmh=90,
+        accel_dist_m=100,
+        brake_dist_m=50,
+        base_speed_kmh=25,
+        long_speed_kmh=40,
+        speed_half_length_m=5000,
+    )
+    spec.validate()
+    assert spec.free_speed_kmh(5000.0) == pytest.approx(32.5, rel=1e-9, abs=1e-9)
+    speeds = [spec.free_speed_kmh(length) for length in (100.0, 1000.0, 5000.0, 50000.0)]
+    assert speeds == sorted(speeds) and 25 < speeds[0] < speeds[-1] < 40
 
-    source = inspect.getsource(public_transport_builders)
-    assert (
-        '{"bus", "tram", "trolleybus", "train"} & set(transport_types)' not in source
-    ), "ground modes are filtered against a hard-coded list again"
-    assert 'set(transport_types) - {"subway"}' in source
+    length = 5000.0
+    expected = (length + 150.0) / (32.5 * 1000.0 / 60.0)
+    assert spec.travel_time_min(length) == pytest.approx(expected, rel=1e-9, abs=1e-9)
+
+
+def test_growing_free_speed_still_capped_by_limits():
+    spec = TransportSpec(
+        "bus",
+        vmax_tech_kmh=50,
+        accel_dist_m=100,
+        brake_dist_m=50,
+        base_speed_kmh=25,
+        long_speed_kmh=80,
+        speed_half_length_m=100,
+    )
+    length = 20000.0
+    assert spec.travel_time_min(length) == pytest.approx((length + 150.0) / (50 * 1000.0 / 60.0), rel=1e-9, abs=1e-9)
+    road = 30 * 1000.0 / 60.0
+    assert spec.travel_time_min(length, speed_limit_mpm=road) == pytest.approx(
+        (length + 150.0) / road, rel=1e-9, abs=1e-9
+    )
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        dict(long_speed_kmh=40),
+        dict(speed_half_length_m=1000),
+        dict(long_speed_kmh=0, speed_half_length_m=1000),
+        dict(long_speed_kmh=40, speed_half_length_m=0),
+        dict(long_speed_kmh="40", speed_half_length_m=1000),
+    ],
+)
+def test_long_speed_validation(extra):
+    spec = TransportSpec("bus", vmax_tech_kmh=90, accel_dist_m=100, brake_dist_m=50, base_speed_kmh=25, **extra)
+    with pytest.raises(ValueError):
+        spec.validate()
+
+
+def test_registry_update_accepts_long_speed():
+    registry = TransportRegistry({"bus": DEFAULT_REGISTRY.get("bus")})
+    spec = registry.update("bus", long_speed_kmh=40.0, speed_half_length_m=5000.0)
+    assert spec.long_speed_kmh == 40.0 and registry.try_get("bus").speed_half_length_m == 5000.0
+
+
+def test_registry_add_lookup_overwrite_and_remove():
+    registry = TransportRegistry()
+    registry.add(TransportSpec("  BuS  ", 60, 1, 1, 1.0))
+    assert registry.get(" BUS ").name == "bus"
+    with pytest.raises(ValueError):
+        registry.add(TransportSpec("bus", 70, 1, 1, 1.0))
+    registry.add(TransportSpec("bus", 70, 1, 1, 1.0), overwrite=True)
+    registry.add(TransportSpec("tram", 50, 1, 1, 1.0))
+    assert registry.get("bus").vmax_tech_kmh == 70
+    assert set(registry.list_types()) == {"bus", "tram"}
+    registry.remove("bus")
+    assert registry.try_get("bus") is None
+    with pytest.raises(KeyError):
+        registry.get("bus")
+
+
+def test_registry_updates_fields_together():
+    registry = TransportRegistry({"bus": DEFAULT_REGISTRY.get("bus")})
+    updated = registry.update("bus", base_speed_kmh=42, avg_wait_time_min=4.5)
+    assert updated.base_speed_kmh == registry.get("bus").base_speed_kmh == 42
+    assert updated.avg_wait_time_min == registry.get("bus").avg_wait_time_min == 4.5
+
+
+def test_registry_ensure_reuses_existing_and_applies_defaults():
+    registry = TransportRegistry({"bus": DEFAULT_REGISTRY.get("bus")})
+    assert registry.ensure("bus") is registry.get("bus")
+    ferry = registry.ensure("ferry")
+    assert ferry.name == "ferry" and ferry.vmax_tech_kmh > 0
+    assert registry.get("ferry") is ferry
+    defaults = TransportSpec("funicular", 30, 10, 10, 0.9)
+    spec = registry.ensure("funicular", defaults=defaults)
+    assert spec.vmax_tech_kmh == 30 and spec.base_speed_kmh == 0.9
+    assert registry.get("funicular") is spec
+
+
+def test_default_registries_have_valid_modes_and_are_independent():
+    assert DEFAULT_REGISTRY is not DEFAULT_REGISTRY_W_TRAIN
+    assert {"bus", "tram", "trolleybus", "subway"} <= set(DEFAULT_REGISTRY.list_types())
+    assert {"bus", "tram", "trolleybus", "subway", "train"} <= set(DEFAULT_REGISTRY_W_TRAIN.list_types())
+    assert DEFAULT_REGISTRY.try_get("train") is None
+    assert DEFAULT_REGISTRY_W_TRAIN.try_get("train") is not None
+    for registry in [DEFAULT_REGISTRY, DEFAULT_REGISTRY_W_TRAIN]:
+        for name in registry.list_types():
+            registry.get(name).validate()

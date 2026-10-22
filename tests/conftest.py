@@ -1,5 +1,6 @@
 import os
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 import pytest
@@ -15,18 +16,21 @@ def _coverage_is_active() -> bool:
     return coverage.Coverage.current() is not None
 
 
-if _coverage_is_active():
+coverage_active = _coverage_is_active()
+if coverage_active:
     os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
 os.environ.setdefault("NUMBA_JIT_COVERAGE", "1")
-numba_cache_dir = Path(__file__).resolve().parents[1] / ".pytest_cache" / "numba" / str(os.getpid())
-numba_cache_dir.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("NUMBA_CACHE_DIR", str(numba_cache_dir))
+if "NUMBA_CACHE_DIR" not in os.environ:
+    # Numba invalidates entries when source/signatures change. A PID-specific
+    # directory discarded that cache on every pytest invocation.
+    cache_version = f"{sys.implementation.cache_tag}-numba-{version('numba')}"
+    numba_cache_dir = Path(__file__).resolve().parents[1] / ".pytest_cache" / "numba" / cache_version
+    numba_cache_dir.mkdir(parents=True, exist_ok=True)
+    os.environ["NUMBA_CACHE_DIR"] = str(numba_cache_dir)
 
-# Import numba (which imports numpy internals) before any test module imports geopandas.
-# Under coverage tracing, letting geopandas trigger the first numpy import causes numpy 2.x to
-# fail with "cannot load module more than once per process". Forcing numba's numpy import path
-# to run first — after the NUMBA_* env vars above are set — avoids that double-load crash.
-import numba  # noqa: E402,F401  pylint: disable=wrong-import-position,unused-import
+# The early plugin in tests/__init__.py preloads numerical extensions for
+# coverage runs. Ordinary runs import Numba here with JIT enabled.
+import numba  # noqa: E402  pylint: disable=wrong-import-position
 
 NETWORK_ONLY_TEST_MODULES = {
     "test_downloaders_network.py",
@@ -59,6 +63,16 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "network" in item.keywords:
             item.add_marker(skip_network)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _numba_threads():
+    """Tiny synthetic graphs need few workers; respect explicit user settings."""
+    previous = numba.get_num_threads()
+    if "NUMBA_NUM_THREADS" not in os.environ:
+        numba.set_num_threads(min(2, previous))
+    yield
+    numba.set_num_threads(previous)
 
 
 @pytest.fixture(scope="session")

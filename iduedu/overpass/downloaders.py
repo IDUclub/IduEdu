@@ -49,6 +49,39 @@ OVERPASS_MIN_INTERVAL = config.overpass_min_interval
 OVERPASS_RL = RateLimiter(OVERPASS_MIN_INTERVAL)
 
 
+def using_pbf() -> bool:
+    """True when ``config.osm_source`` is ``"pbf"``: queries are answered from a local OSM file."""
+    return config.osm_source == "pbf"
+
+
+def osm_source_label() -> str:
+    """Human-readable name of the active OSM data source, for log messages."""
+    if using_pbf():
+        return f"PBF file {config.pbf_path}"
+    return "Overpass"
+
+
+def active_overpass_date() -> str | None:
+    """The Overpass snapshot date in effect: ``config.overpass_date``, or ``None`` in pbf mode,
+    where the file itself is the snapshot."""
+    if using_pbf():
+        return None
+    return config.overpass_date
+
+
+def _pbf_source():
+    """The :class:`~iduedu.osm_pbf.PbfSource` for ``config.pbf_path``."""
+    if not config.pbf_path:
+        raise ValueError("config.osm_source is 'pbf' but config.pbf_path is not set; use config.set_osm_source")
+    try:
+        from iduedu.osm_pbf.reader import PbfSource  # pylint: disable=import-outside-toplevel
+    except ModuleNotFoundError as exc:  # pragma: no cover - the reader soft-imports osmium itself
+        if exc.name != "osmium":
+            raise
+        raise ImportError("osm_source='pbf' needs pyosmium. Install it with: pip install 'iduedu[pbf]'") from exc
+    return PbfSource(config.pbf_path)
+
+
 def _overpass_http(
     method: Literal["GET", "POST"], url: str, *, params=None, data=None, timeout=None
 ) -> requests.Response:
@@ -143,16 +176,6 @@ def _overpass_request(
     last_err_text = None
     for attempt in range(max_retries + 1):
         try:
-            pause = _get_overpass_pause(overpass_url)
-        except RequestError as e:  # pragma: no cover
-            pause = 0
-            logger.debug(f"Overpass /status check failed: {e}")
-
-        if pause > 0:
-            logger.warning(f"Waiting {pause} seconds for available Overpass API slot")
-            time.sleep(pause)
-
-        try:
             resp = _overpass_http(method, overpass_url, params=params, data=data, timeout=timeout or config.timeout)
         except requests.RequestException as e:  # pragma: no cover
             last_err_text = str(e)
@@ -211,7 +234,14 @@ def _overpass_request(
 
 
 def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
-    """Download an OSM relation boundary and convert it to a Shapely geometry."""
+    """Download an OSM relation boundary and convert it to a Shapely geometry.
+
+    In pbf mode (``config.osm_source == "pbf"``) the relation is read from ``config.pbf_path``.
+    """
+    if using_pbf():
+        logger.debug(f"Reading territory bounds with osm_id <{osm_id}> from {osm_source_label()} ...")
+        return _boundary_from_elements(_pbf_source().boundary(osm_id))
+
     header = config.overpass_header
     overpass_query = f"""
                     {header}
@@ -232,8 +262,12 @@ def get_boundary_by_osm_id(osm_id) -> MultiPolygon | Polygon:
         cache_save_async("boundary", cache_key_src, json_result)
     else:
         logger.debug(f"Using cached territory bounds with osm_id <{osm_id}>")
+    return _boundary_from_elements(json_result["elements"])
+
+
+def _boundary_from_elements(elements: list) -> MultiPolygon | Polygon:
     geoms = []
-    for element in json_result["elements"]:
+    for element in elements:
         geometries_inners = []
         geometries_outers = []
         for member in element["members"]:
@@ -263,7 +297,8 @@ def get_4326_boundary(
     For `MultiPolygon`, the function returns its **convex hull** as a Polygon.
 
     Parameters:
-        osm_id (int | None): OSM relation id. If provided, boundary is fetched via Overpass.
+        osm_id (int | None): OSM relation id. If provided, boundary is fetched via Overpass (or read from
+            the local OSM file in pbf mode, see ``config.set_osm_source``).
         territory (Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None): Existing boundary geometry
             or a GeoDataFrame containing it. If GeoDataFrame is given, it is reprojected to 4326
             and unioned (`.union_all()`).
@@ -311,12 +346,59 @@ def _poly_to_overpass(poly: Polygon) -> str:
     return " ".join(f"{y} {x}" for x, y in poly.exterior.coords[:-1])
 
 
+#: Name of the marker element (``make section name=...``) that separates the
+#: stop-area members from the rest of a route response.
+STOP_AREA_MEMBERS_SECTION = "stop_area_members"
+
+
+def split_stop_area_members(elements: list) -> tuple[list, dict | None]:
+    """Split a route response into its route elements and its stop-area members.
+
+    Returns ``(elements_before_the_marker, member_payloads)``. ``member_payloads``
+    maps ``(type, id)`` to tags and coordinates, as :func:`fetch_member_tags`
+    returns them, or is ``None`` when the response carries no member section -- a
+    response cached before the section existed, or one without subway details.
+    """
+    for index, element in enumerate(elements):
+        if (
+            isinstance(element, dict)
+            and element.get("type") == "section"
+            and (element.get("tags") or {}).get("name") == STOP_AREA_MEMBERS_SECTION
+        ):
+            return list(elements[:index]), member_payloads(elements[index + 1 :])
+    return list(elements), None
+
+
+def member_payloads(elements: list) -> dict:
+    """Tags and coordinates of OSM elements, keyed by ``(type, id)``."""
+    result = {}
+    for e in elements or []:
+        if not isinstance(e, dict) or "id" not in e or e.get("type") not in {"node", "way", "relation"}:
+            continue
+        payload = {"tags": e.get("tags", {}) or {}}
+        if e.get("type") == "node" and ("lon" in e and "lat" in e):
+            payload["__latlon__"] = (e["lon"], e["lat"])
+        if e.get("type") != "node" and "center" in e:
+            payload["__center__"] = (e["center"]["lon"], e["center"]["lat"])
+        if "geometry" in e and e["geometry"]:
+            payload["__geometry__"] = e["geometry"]
+        result[(e["type"], int(e["id"]))] = payload
+    return result
+
+
 def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> list[dict]:
-    """Download public-transport route elements intersecting a polygon."""
+    """Download public-transport route elements intersecting a polygon.
+
+    In pbf mode the same elements are read from ``config.pbf_path`` (see :class:`~iduedu.osm_pbf.PbfSource`).
+    """
     public_transport_types = sorted(set(public_transport_types))
 
     if not public_transport_types:
         return pd.DataFrame()
+
+    if using_pbf():
+        logger.info(f"Reading routes with types {public_transport_types} from {osm_source_label()} ...")
+        return _pbf_source().routes_by_poly(polygon, public_transport_types)
 
     has_subway = "subway" in public_transport_types
     non_subway_types = [t for t in public_transport_types if t != "subway"]
@@ -364,6 +446,7 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
             rel(bn.route_nodes)->.stop_areas;
             rel(br.stop_areas)["public_transport"="stop_area_group"]["type"="public_transport"]->.groups;
             nwr(r.stop_areas)["public_transport"="station"]->.stations;
+            nwr(r.stop_areas)->.stop_area_members;
             """.strip()
         )
 
@@ -372,10 +455,13 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
 
     if enable_subway_details:
         query_parts.append(
-            """
+            f"""
             .stop_areas out geom qt;
             .groups     out body qt;
             .stations   out tags qt;
+            make section name="{STOP_AREA_MEMBERS_SECTION}";
+            out;
+            .stop_area_members out center qt;
             """.strip()
         )
 
@@ -401,7 +487,16 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
 
 
 def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
-    """Download OSM way elements matching an Overpass filter inside a polygon."""
+    """Download OSM way elements matching an Overpass filter inside a polygon.
+
+    In pbf mode the ways are read from ``config.pbf_path`` with the same filter and ``poly:`` semantics.
+    """
+    if using_pbf():
+        logger.debug(f"Reading network with filters <{way_filter}> from {osm_source_label()} ...")
+        elements = _pbf_source().ways_by_filter(polygon, way_filter)
+        logger.info("Network successfully read!")
+        return pd.DataFrame(elements)
+
     polygon_coords = _poly_to_overpass(polygon)
     header = config.overpass_header
     overpass_query = f"""
@@ -450,6 +545,9 @@ def fetch_member_tags(members_missing):
     if not any(ids.values()):
         return {}
 
+    if using_pbf():
+        return _pbf_source().member_tags([{"type": t, "ref": ref} for t, refs in ids.items() for ref in refs])
+
     def _build_query(all_ids: dict) -> str:
         parts = []
         if all_ids.get("node"):
@@ -475,20 +573,4 @@ def fetch_member_tags(members_missing):
     else:
         logger.debug("Using cached fetch_member_tags")
 
-    result = {}
-    for e in json_root.get("elements", []) or []:
-        key = (e["type"], int(e["id"]))
-        payload = {"tags": e.get("tags", {}) or {}}
-
-        if e.get("type") == "node" and ("lon" in e and "lat" in e):
-            payload["__latlon__"] = (e["lon"], e["lat"])
-
-        if e.get("type") != "node" and "center" in e:
-            payload["__center__"] = (e["center"]["lon"], e["center"]["lat"])
-
-        if "geometry" in e and e["geometry"]:
-            payload["__geometry__"] = e["geometry"]
-
-        result[key] = payload
-
-    return result
+    return member_payloads(json_root.get("elements", []))

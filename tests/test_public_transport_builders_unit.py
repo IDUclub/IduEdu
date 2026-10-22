@@ -1,12 +1,13 @@
-# pylint: disable=protected-access
-
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pytest
-from shapely.geometry import LineString, Point
+from shapely.geometry import LineString, Point, Polygon
 
+from iduedu import DEFAULT_REGISTRY_W_TRAIN
 from iduedu.constants.transport_specs import DEFAULT_REGISTRY, TransportRegistry
-from iduedu.graph_builders.public_transport_builders import _graph_data_to_urban_graph
+from iduedu.graph_builders import public_transport_builders
+from iduedu.graph_builders.public_transport_builders import _graph_data_to_urban_graph, get_public_transport_graph
 
 pytestmark = pytest.mark.unit
 
@@ -192,4 +193,68 @@ def test_graph_data_to_urban_graph_drops_edges_with_unknown_endpoints():
     graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
 
     assert len(graph.nodes_gdf) == 2
+    assert graph.edges_gdf.empty
+
+
+TERRITORY = Polygon([(30.30, 59.90), (30.32, 59.90), (30.32, 59.92), (30.30, 59.92)])
+
+
+def test_get_public_transport_graph_rejects_unknown_transport_type():
+    with pytest.raises(ValueError, match="Unknown transport type"):
+        get_public_transport_graph(transport_types=["bus", "not_a_mode"])
+
+
+def test_get_public_transport_graph_returns_empty_graph_when_no_routes(monkeypatch):
+    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [])
+
+    graph = get_public_transport_graph(transport_types="bus", territory=TERRITORY)
+
+    assert graph.nodes_gdf.empty
+    assert graph.edges_gdf.empty
+    assert graph.is_directed is True
+    assert graph.edge_direction_column == "oneway"
+    assert graph.type == "public_transport"
+
+
+def test_get_public_transport_graph_accepts_train_with_custom_registry(monkeypatch):
+    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [])
+
+    graph = get_public_transport_graph(
+        transport_types="train", territory=TERRITORY, transport_registry=DEFAULT_REGISTRY_W_TRAIN
+    )
+
+    assert graph.nodes_gdf.empty
+    assert graph.edges_gdf.empty
+
+
+def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypatch):
+    # The subway station-context query can pull in unrelated route relations (e.g.
+    # route=train sharing nodes with a metro station). Such leaked types must not
+    # reach the parser / travel-time registry when they were not requested.
+    parsed_types = []
+
+    def fake_routes_to_df(response, enable_subway_details):
+        return pd.DataFrame(
+            {
+                "transport_type": ["bus", "taxi", "monorail", "train"],
+                "is_way_data": [False] * 4,
+                "members": [[], [], [], []],
+            }
+        )
+
+    def fake_ground_parser(row, local_crs, ref2speed, needed_tags):
+        parsed_types.append(row.transport_type)
+        return gpd.GeoDataFrame(), gpd.GeoDataFrame()
+
+    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [object()])
+    monkeypatch.setattr(public_transport_builders, "overpass_routes_to_df", fake_routes_to_df)
+    monkeypatch.setattr(public_transport_builders, "overpass_ground_transport2edgenode", fake_ground_parser)
+
+    # 'train' is present in the Overpass response but was not requested and is not
+    # in the default registry: it must be filtered out (no KeyError, no train edges).
+    graph = get_public_transport_graph(transport_types=["bus", "taxi", "monorail"], territory=TERRITORY)
+
+    assert parsed_types == ["bus", "taxi", "monorail"]
+    assert "bus" in parsed_types
+    assert "train" not in parsed_types
     assert graph.edges_gdf.empty

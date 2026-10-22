@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import LineString, Point
@@ -5,6 +7,14 @@ from shapely.geometry import LineString, Point
 from iduedu.graph.urban_graph import UrbanGraph
 
 CRS = "EPSG:3857"
+
+
+def write_gtfs_feed(directory: Path, tables: dict[str, str]) -> Path:
+    """Write synthetic GTFS tables shared by builder and merge tests."""
+    directory.mkdir(parents=True, exist_ok=True)
+    for name, contents in tables.items():
+        (directory / name).write_text(contents, encoding="utf-8")
+    return directory
 
 
 def _nodes(coords: dict[int, tuple[float, float]]) -> gpd.GeoDataFrame:

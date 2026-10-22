@@ -37,11 +37,11 @@ Rules:
 ## Project Overview
 
 **IduEdu** is a Python library for building and analyzing multi-modal city transport networks from OpenStreetMap and
-GTFS Schedule data. It downloads OSM data via Overpass API, reads local GTFS feeds, constructs `drive`, `walk`, and
-`public transport` graphs, joins them into intermodal networks, and computes OD-matrices with Numba-accelerated
-Dijkstra.
+GTFS Schedule data. It downloads OSM data via Overpass API (or reads local `.osm.pbf` files with the optional `pbf`
+extra), reads local GTFS feeds, constructs `drive`, `walk`, and `public transport` graphs, joins them into intermodal
+networks, and computes OD-matrices and routes with Numba-accelerated Dijkstra.
 
-Python 3.11–3.12 only. Package manager: **uv** (`uv.lock` is generated locally and not committed). Build
+Python 3.11–3.14. Package manager: **uv** (`uv.lock` is generated locally and not committed). Build
 backend: hatchling.
 
 ## Commands
@@ -102,14 +102,16 @@ Default weight for routing: `time_min`. Alternative: `length_meter`.
 iduedu/
   __init__.py        — re-exports everything from _api.py (public surface)
   _api.py            — single import hub; all public symbols come from here
-  config.py          — global config (Overpass URL, cache, rate limits, logging)
+  config.py          — global config (OSM source, Overpass URL, cache, rate limits, logging)
   graph/
     urban_graph.py   — UrbanGraph class (data + adjacency matrix + method dispatch)
     adjacency.py     — build_adjacency_matrix() from edges_gdf → CSR
     components.py    — connected/weakly/strongly connected component algorithms
     editors.py       — subgraph_by_nodes, clip, join, relabel, project_objects2urban_graph
     transformers.py  — keep_largest_component, simplify_multiedges, to_directed/undirected
-    shortest_paths.py — Dijkstra wrappers (single/multi-source, parallel, OD matrix)
+    routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both)
+    routing_result.py — ShortestPathResult: distances with eager or lazy (predecessor-tree) paths
+    shortest_paths.py — public re-exports of the routing API, path_to_edges()
     adapters.py      — UrbanGraph ↔ NetworkX conversion
     nx_utils.py      — legacy NetworkX helpers (optional dep, soft-imported)
     validation.py    — node/edge schema validation, CRS sync
@@ -127,9 +129,14 @@ iduedu/
   gtfs/
     reader.py        — local GTFS directory/ZIP loading
     validation.py    — GTFS table and reference validation
-    merge.py         — merge_gtfs_feeds(): several feeds into one, identifiers qualified by source
+    merge.py         — merge_gtfs_feeds(), deduplicate_across_feeds(): several feeds into one
+    service_days.py  — calendar/calendar_dates → service days for average-day boarding waits
+  osm_pbf/           — local OSM files instead of Overpass (optional pyosmium, soft-imported)
+    reader.py        — PbfSource: answers the Overpass queries of the builders from a file; snapshot_time()
+    filters.py       — Overpass tag-filter parser (parse_way_filter, WayFilter)
+    extract.py       — split_by_polygons(): per-city files from a regional extract in one pass
   overpass/
-    downloaders.py   — Overpass HTTP requests with retry/rate-limit
+    downloaders.py   — Overpass HTTP requests with retry/rate-limit; dispatch to osm_pbf in pbf mode
     parsers.py       — JSON → GeoDataFrame (nodes/edges)
     cache.py         — file-based JSON cache for Overpass responses
   constants/
@@ -141,8 +148,8 @@ iduedu/
 ### Data flow
 
 ```
-Overpass API
-  → downloaders.py (HTTP + cache)
+Overpass API                       Local .osm.pbf (config.set_osm_source("pbf"))
+  → downloaders.py (HTTP + cache)    → osm_pbf/ (same Overpass-shaped elements)
   → parsers.py (JSON → GeoDataFrame)
   → graph_builders/ (GeoDataFrame → UrbanGraph)
 
@@ -153,13 +160,14 @@ Local GTFS directory/ZIP
 UrbanGraph layers
   → intermodal_builders.py (UrbanGraph + UrbanGraph → joined UrbanGraph)
   → graph/editors.py (project objects onto graph)
-  → graph/shortest_paths.py → _numba/ (CSR Dijkstra → OD matrix)
+  → graph/routing.py → _numba/ (CSR Dijkstra → distances, paths, OD matrix)
 ```
 
 ### Public transport speed model
 
 `TransportSpec` (frozen dataclass) encodes per-mode physics and OSM boarding waits: `vmax_tech_kmh`, `accel_dist_m`,
-`brake_dist_m`, `base_speed_kmh`, `dwell_min`, `avg_wait_time_min`. `DEFAULT_REGISTRY` covers
+`brake_dist_m`, `base_speed_kmh`, `dwell_min`, `avg_wait_time_min`, and optionally `long_speed_kmh` with
+`speed_half_length_m` (free speed growing with segment length; set for tram and train). `DEFAULT_REGISTRY` covers
 bus/trolleybus/tram/subway/monorail/taxi; `DEFAULT_REGISTRY_W_TRAIN` adds train. `OSM_ROUTE_ALIASES` maps OSM
 `light_rail` to `tram` and `share_taxi` to `taxi`. Pass a custom `TransportRegistry` to
 `get_public_transport_graph()` to override speeds or waiting times. GTFS boarding waits are schedule-derived and do not use the registry.

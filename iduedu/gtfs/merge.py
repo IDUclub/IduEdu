@@ -123,7 +123,9 @@ def _stop_points(stops: pd.DataFrame) -> pd.DataFrame:
     return frame.loc[eligible]
 
 
-def _stop_merge_map(stops: pd.DataFrame, tolerance: float, crs: Any | None) -> dict[str, str]:
+def _stop_merge_map(
+    stops: pd.DataFrame, tolerance: float, crs: Any | None, prefixes: Sequence[str] | None = None
+) -> dict[str, str]:
     """Map every fused stop_id onto the representative that survives.
 
     The intent is the one the OSM public-transport builder applies to platforms
@@ -141,6 +143,10 @@ def _stop_merge_map(stops: pd.DataFrame, tolerance: float, crs: Any | None) -> d
     result cannot chain -- under a transitive rule a line of stops each just
     inside the tolerance of its neighbour would collapse end to end, however long
     the line.
+
+    With ``prefixes``, a stop only ever joins a representative from another
+    source: two platforms one feed publishes side by side are that feed's own
+    decision and are never fused.
     """
     points = _stop_points(stops)
     if points.empty:
@@ -167,6 +173,8 @@ def _stop_merge_map(stops: pd.DataFrame, tolerance: float, crs: Any | None) -> d
     stop_ids = points["stop_id"].astype(str).to_numpy()[order]
     coords = np.column_stack([projected.x.to_numpy()[order], projected.y.to_numpy()[order]])
 
+    sources = _sources_of(pd.Series(stop_ids), prefixes).to_numpy() if prefixes is not None else None
+
     tree = cKDTree(coords)
     assigned = np.full(len(stop_ids), -1, dtype="int64")
     mapping: dict[str, str] = {}
@@ -175,10 +183,148 @@ def _stop_merge_map(stops: pd.DataFrame, tolerance: float, crs: Any | None) -> d
             continue
         assigned[index] = index
         for neighbour in tree.query_ball_point(coords[index], tolerance):
+            if sources is not None and sources[neighbour] == sources[index]:
+                continue
             if assigned[neighbour] == -1:
                 assigned[neighbour] = index
                 mapping[stop_ids[neighbour]] = stop_ids[index]
     return mapping
+
+
+def _sources_of(identifiers: pd.Series, prefixes: Sequence[str]) -> pd.Series:
+    """The source prefix each qualified identifier carries ('' when none matches).
+
+    Longest prefix first, so a source named ``bus`` does not claim ``bus_night:7``.
+    """
+    values = identifiers.astype(str)
+    result = pd.Series("", index=values.index, dtype=object)
+    for prefix in sorted(set(prefixes), key=len, reverse=True):
+        hit = (result == "") & values.str.startswith(prefix + ":")
+        result[hit] = prefix
+    return result
+
+
+def _seconds_text(values: pd.Series) -> pd.Series:
+    """GTFS times (hours may exceed 24) as whole seconds in text: 8:05:00 equals 08:05:00."""
+    parts = values.fillna("").astype(str).str.strip().str.split(":", expand=True)
+    if parts.shape[1] < 3:
+        return values.fillna("").astype(str)
+    numbers = parts.iloc[:, :3].apply(pd.to_numeric, errors="coerce")
+    seconds = numbers.iloc[:, 0] * 3600 + numbers.iloc[:, 1] * 60 + numbers.iloc[:, 2]
+    return seconds.map(lambda value: "" if pd.isna(value) else str(int(value)))
+
+
+def _trip_signatures(tables: dict[str, pd.DataFrame]) -> pd.Series:
+    """trip_id -> what the trip does on the ground: mode, platforms, times, rules, headways."""
+    trips, stop_times = tables["trips"], tables["stop_times"]
+    ordered = stop_times.assign(_seq=pd.to_numeric(stop_times["stop_sequence"], errors="coerce")).sort_values(
+        ["trip_id", "_seq"], kind="stable"
+    )
+    columns = [ordered["stop_id"].astype(str)]
+    for column in ("arrival_time", "departure_time"):
+        columns.append(_seconds_text(ordered[column]) if column in ordered else pd.Series("", index=ordered.index))
+    for column in ("pickup_type", "drop_off_type"):
+        # blank means 0, regular service (GTFS reference)
+        values = ordered[column].fillna("").astype(str).str.strip() if column in ordered else ""
+        columns.append(pd.Series(values, index=ordered.index).replace("", "0"))
+    tokens = pd.concat(columns, axis=1).astype(str).agg("|".join, axis=1)
+    signature = tokens.groupby(ordered["trip_id"].astype(str), sort=False).agg(";".join)
+
+    frequencies = tables.get("frequencies")
+    if frequencies is not None and not frequencies.empty:
+        rows = frequencies.sort_values(["trip_id", "start_time"], kind="stable")
+        headways = (
+            pd.concat(
+                [_seconds_text(rows["start_time"]), _seconds_text(rows["end_time"]), rows["headway_secs"]], axis=1
+            )
+            .astype(str)
+            .agg("|".join, axis=1)
+            .groupby(rows["trip_id"].astype(str), sort=False)
+            .agg(";".join)
+        )
+        signature = signature + "#" + signature.index.map(headways).fillna("")
+
+    keyed = trips["trip_id"].astype(str)
+    mode = pd.Series("", index=trips.index)
+    routes = tables.get("routes")
+    if routes is not None and "route_type" in routes:
+        mode = trips["route_id"].astype(str).map(routes.set_index(routes["route_id"].astype(str))["route_type"])
+    joined = mode.fillna("").astype(str) + "@" + keyed.map(signature)
+    return pd.Series(joined.to_numpy(), index=keyed.to_numpy()).dropna()
+
+
+def _drop_duplicate_trips(tables: dict[str, pd.DataFrame], prefixes: Sequence[str]) -> int:
+    """Drop trips another source already publishes identically; return how many."""
+    if "trips" not in tables or "stop_times" not in tables:
+        return 0
+    signatures = _trip_signatures(tables)
+    if signatures.empty:
+        return 0
+    sources = _sources_of(pd.Series(signatures.index, index=signatures.index), prefixes)
+    frame = pd.DataFrame({"signature": signatures, "source": sources})
+    # The source that sorts first keeps each timetable; later sources' identical
+    # trips are copies. Trips are never compared within one source: a feed listing
+    # one run under two services means two calendars.
+    keeper = frame.groupby("signature")["source"].transform("min")
+    drop = set(frame.index[frame["source"] != keeper])
+    if not drop:
+        return 0
+    for name in ("trips", "stop_times", "frequencies"):
+        table = tables.get(name)
+        if table is not None and "trip_id" in table:
+            tables[name] = table.loc[~table["trip_id"].astype(str).isin(drop)].reset_index(drop=True)
+    return len(drop)
+
+
+def deduplicate_across_feeds(
+    tables: dict[str, pd.DataFrame],
+    prefixes: Sequence[str],
+    *,
+    platform_tolerance: float = 0.5,
+    crs: Any | None = None,
+) -> dict[str, int]:
+    """Count once what several merged feeds publish twice. Edits ``tables`` in place.
+
+    Catalogues overlap: two versions of one feed, a national feed and a city feed
+    of the same operator, a mirror and its original. Merged with qualified
+    identifiers, the copies never collide -- they sit side by side, and the graph
+    gets two patterns where the city runs one. Two rules remove them, both narrow
+    on purpose, because a wrong merge is worse than a leftover duplicate:
+
+    * **Platforms** -- ``stops`` rows with ``location_type`` 0 or empty, where
+      passengers board; the graph builder makes them ``platform`` nodes, while the
+      vehicle's stopping place is a separate node per pattern and is not touched.
+      Platforms of *different* sources within ``platform_tolerance`` metres are one
+      platform. The default 0.5 m is measured: across 125 703 platforms of cities
+      merged from several feeds, 63% had another source's platform within 0.5 m
+      (the same coordinate republished), while distinct platforms of one feed
+      already occur 1-3 m apart. Stations, entrances, generic nodes and boarding
+      areas are never fused, nor platforms of one source.
+    * **Trips** -- after that, a trip of one source is a copy of a trip of another
+      when both run the same ``route_type`` through the same platforms with the
+      same arrival and departure times (in seconds), pickup and drop-off rules and,
+      for frequency-based trips, the same headways. The source that sorts first
+      keeps it.
+
+    Args:
+        tables: Merged tables keyed by GTFS table name without ``.txt``, identifiers
+            qualified as ``<prefix>:<id>``.
+        prefixes: The prefix of each source.
+        platform_tolerance: Metres within which two sources' platforms are one.
+        crs: Projected CRS in metres for the distance test; estimated when omitted.
+
+    Returns:
+        ``{"platforms_fused": n, "trips_dropped": m}``.
+    """
+    if len(set(prefixes)) < 2 or "stops" not in tables:
+        return {"platforms_fused": 0, "trips_dropped": 0}
+    if platform_tolerance <= 0:
+        raise ValueError("platform_tolerance must be positive")
+    mapping = _stop_merge_map(tables["stops"], float(platform_tolerance), crs, prefixes=prefixes)
+    _apply_stop_merge(tables, mapping)
+    dropped = _drop_duplicate_trips(tables, prefixes)
+    logger.info(f"Deduplicated merged feeds: {len(mapping)} platforms fused, {dropped} duplicate trips dropped")
+    return {"platforms_fused": len(mapping), "trips_dropped": dropped}
 
 
 def _apply_stop_merge(tables: dict[str, pd.DataFrame], mapping: dict[str, str]) -> None:
@@ -218,6 +364,8 @@ def merge_gtfs_feeds(
     *,
     prefixes: Sequence[str] | None = None,
     merge_stops_within: float | None = None,
+    deduplicate: bool = False,
+    duplicate_platform_tolerance: float = 0.5,
     crs: Any | None = None,
     validate: bool = True,
 ) -> GTFSFeed:
@@ -241,6 +389,12 @@ def merge_gtfs_feeds(
             around 15--25 m suit feeds from different agencies; the 1 m used for
             OSM platforms is far too tight here, because two agencies survey the
             same kerb independently.
+        deduplicate: Count once what several sources publish twice: fuse
+            platforms of different sources within ``duplicate_platform_tolerance``
+            metres and drop trips another source already runs identically. See
+            :func:`deduplicate_across_feeds`. Off by default: it changes the feed.
+        duplicate_platform_tolerance: Metres within which two sources' platforms
+            are treated as one when ``deduplicate`` is on.
         crs: Projected CRS in metres used for the distance test. Estimated from
             the stops when omitted.
         validate: Run :func:`iduedu.gtfs.validate_gtfs_feed` on the result. Leave this on:
@@ -285,6 +439,9 @@ def merge_gtfs_feeds(
         mapping = _stop_merge_map(tables["stops"], float(merge_stops_within), crs)
         _apply_stop_merge(tables, mapping)
         logger.info(f"Merged {len(mapping)} stops into shared nodes at {merge_stops_within} m")
+
+    if deduplicate and len(feeds) > 1:
+        deduplicate_across_feeds(tables, names, platform_tolerance=duplicate_platform_tolerance, crs=crs)
 
     merged = GTFSFeed(source=Path(" + ".join(names)), tables=tables)
     if validate:

@@ -29,6 +29,9 @@ io = [
     "pyarrow>=18.1.0,<26.0.0; python_version < '3.14'",
     "pyarrow>=22.0.0,<26.0.0; python_version >= '3.14'",
 ]
+pbf = [
+    "osmium>=4.0,<5",
+]
 
 [dependency-groups]
 dev = [
@@ -38,6 +41,7 @@ dev = [
     { include-group = "release" },
     { include-group = "test" },
     { include-group = "viz" },
+    "osmium>=4.0,<5",
     "pre-commit>=4.3.0,<5.0.0",
     "pyarrow>=18.1.0,<26.0.0; python_version < '3.14'",
     "pyarrow>=22.0.0,<26.0.0; python_version >= '3.14'",
@@ -103,7 +107,7 @@ target-version = ['py311']
 max-line-length = 120
 expected-line-ending-format = "LF"
 max-locals = 20
-extension-pkg-allow-list = ["networkit"]
+extension-pkg-allow-list = ["networkit", "osmium"]
 disable = [
     "duplicate-code",
     "missing-module-docstring",
@@ -140,6 +144,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "-p tests --cov-branch"
 markers = [
     "unit: fast tests that do not touch network or external services",
     "integration: tests that exercise several package layers together",

@@ -21,6 +21,11 @@ from .components import (
     weakly_connected_components,
 )
 from .shortest_paths import (
+    ShortestPathResult,
+    dijkstra_parallel,
+    iter_od_matrix,
+    multi_source_dijkstra,
+    single_source_dijkstra,
     dijkstra_path_length_parallel,
     multi_source_dijkstra_path,
     multi_source_dijkstra_nearest_source,

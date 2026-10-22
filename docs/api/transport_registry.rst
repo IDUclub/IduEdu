@@ -47,41 +47,54 @@ The default registry includes buses, trolleybuses, trams, subways, monorails, an
 
     * - Mode
       - ``base_speed_kmh``
+      - ``long_speed_kmh`` / ``speed_half_length_m``
       - ``avg_wait_time_min``
       - ``dwell_min``
     * - ``bus``
-      - 41.0
-      - 8.2
-      - 0.475
+      - 29.5
+      - --
+      - 12.24
+      - 0.387
     * - ``trolleybus``
       - 20.0
-      - 5.92
-      - 0.325
+      - --
+      - 8.02
+      - 0.159
     * - ``tram``
-      - 41.5
-      - 4.95
-      - 1.2
+      - 11.5
+      - 74.1 / 3506
+      - 5.22
+      - 0.0
     * - ``subway``
-      - 49.0
-      - 3.02
-      - 0.35
+      - 56.7
+      - --
+      - 3.26
+      - 0.694
     * - ``monorail``
-      - 49.0
-      - 3.0
-      - 0.35
+      - 56.7
+      - --
+      - 3.26
+      - 0.694
     * - ``taxi``
-      - 41.0
-      - 8.0
-      - 0.475
+      - 29.5
+      - --
+      - 12.24
+      - 0.387
     * - ``train`` (``DEFAULT_REGISTRY_W_TRAIN`` only)
-      - 50.5
-      - 7.71
-      - 0.375
+      - 33.5
+      - 78.9 / 5270
+      - 21.5
+      - 0.365
 
-Speeds and dwell times are fitted against published GTFS timetables matched to OSM routes. Waiting
-times are medians across cities of the timetable wait over regular services. No city in the
-calibration sample publishes a timetable for monorail or share taxi, so these two borrow the subway
-and bus profiles.
+Speeds and dwell times are fitted on every published GTFS segment that has its own
+geometry (``shapes.txt``) -- about 859,000 segments in 239 cities -- minimising the error in
+scheduled minutes, every city weighing the same, and cross-validated on held-out cities. A
+free speed growing with the segment length is used for tram and train, where it carries to
+unseen cities; bus, subway and trolleybus keep one free speed, as the growing form does not
+improve them. Waiting times are medians across cities of the average-day timetable wait over
+regular services (06:00-22:00, a line counted towards the same next stop). Too few cities
+publish a timetable for monorail or share taxi, so these two borrow the subway and bus
+profiles.
 
 OpenStreetMap tags some services under names the registry does not use. A request for ``tram`` also
 fetches ``route=light_rail`` relations, and ``taxi`` fetches ``route=share_taxi``. The mapping is
@@ -121,12 +134,19 @@ The parameters have the following meaning:
   published timetables showed the two terms are not separately identifiable, and
   dropping the limit term improved accuracy for every mode measured;
 - ``dwell_min`` – time lost standing at a stop, added once per segment;
-- ``avg_wait_time_min`` – average waiting time assigned to boarding edges in OSM-based graphs.
+- ``avg_wait_time_min`` – average waiting time assigned to boarding edges in OSM-based graphs;
+- ``long_speed_kmh`` and ``speed_half_length_m`` – optional, set together. The free speed then
+  grows with the segment length ``L`` from ``base_speed_kmh`` towards ``long_speed_kmh``:
+  ``v(L) = base_speed_kmh + (long_speed_kmh - base_speed_kmh) * L / (L + speed_half_length_m)``,
+  halfway at ``L = speed_half_length_m``. Timetables of every mode show it: a long stretch
+  between stops runs on roads and tracks built for speed. Left at ``None`` (default), one free
+  speed applies to every segment.
 
 Travel time
 ~~~~~~~~~~~
 
-For a segment of length ``L``, the cruising speed ``v`` is ``base_speed_kmh``, capped by
+For a segment of length ``L``, the cruising speed ``v`` is the free speed (``base_speed_kmh``, or
+``v(L)`` above when ``long_speed_kmh`` is set), capped by
 ``vmax_tech_kmh`` and by the road speed limit where that is lower, and
 ``span = accel_dist_m + brake_dist_m``:
 
@@ -178,6 +198,7 @@ Existing transport specifications can be updated:
 .. code-block:: python
 
     registry.update("bus", base_speed_kmh=32.0)
+    registry.update("bus", long_speed_kmh=40.0, speed_half_length_m=5000.0)  # faster on long stretches
     registry.update("tram", vmax_tech_kmh=75)
     registry.update("bus", avg_wait_time_min=5.0)
 

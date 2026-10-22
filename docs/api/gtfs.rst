@@ -28,9 +28,34 @@ is inclusive and ``end_time`` is exclusive; both accept GTFS time strings,
 Python ``time`` values, or seconds. An end time earlier than the start time
 selects an overnight window.
 
-Omitting all three filters intentionally aggregates every trip in the feed.
-This can combine weekday, weekend, and seasonal service, so pass a date and
-time window when the graph should represent a particular operating period.
+Without ``service_date`` the graph holds every route pattern that runs on at
+least one day, and its waiting times are those of the **average day**: each
+distinct service day is computed on its own trips, and the waits are averaged
+with every calendar day weighing the same, over the days the pattern runs. The
+days are the feed's own calendar (at most 366 days from its start) or
+``service_period=(first, last)``, for example one reference week. A gap is only
+ever a gap between departures of the same day: before October 2026 the trips of
+all days were put on one clock, and a weekday departure at 08:00 next to a
+Saturday one at 08:10 gave a 10-minute "gap" no passenger saw -- waits came out
+at about half of any real day's. ``start_time``/``end_time`` apply within each
+day, e.g. ``start_time="06:00", end_time="22:00"`` for daytime service.
+
+.. code-block:: python
+
+    # the average day of one reference week, daytime service only
+    average_week = get_gtfs_public_transport_graph(
+        "feed.zip",
+        service_period=("2026-10-12", "2026-10-18"),
+        start_time="06:00",
+        end_time="22:00",
+    )
+
+``service_dates=[...]`` lists the days explicitly instead, for example a
+reference week plus the own weeks of merged sources that were not in service
+then. Every day still holds only its own trips, so days of different years do
+not mix. ``service_date``, ``service_period`` and ``service_dates`` cannot be
+combined. A feed without ``calendar.txt``/``calendar_dates.txt`` is taken as a
+single day.
 
 Required and optional tables
 ----------------------------
@@ -62,8 +87,12 @@ median scheduled time from departure at one stop to arrival at the next.
 
 Boarding edges represent expected waiting rather than vehicle motion:
 
-- scheduled service uses half the mean gap between consecutive departures at
-  the pattern stop;
+- scheduled service uses half the mean gap between consecutive departures of the
+  **line** at the stop on the same day, averaged over days as described above. A
+  line is the route leaving the stop for the same next stop: all its patterns
+  count -- branches on their shared section, short workings, expresses -- so the
+  wait is that of the line a rider waits for, not of one variant of it. The next
+  stop, not ``direction_id``, decides the direction;
 - ``frequencies.txt`` service uses ``headway_secs / 120`` and duration-weighted
   averaging when frequency periods overlap the selected window;
 - a pattern stop with only one scheduled departure has no estimable headway,
@@ -119,6 +148,22 @@ Stops are kept distinct by default: fusing them changes the network topology,
 and an inferred transfer would look like a published one. Distances of about
 15-25 m suit feeds from different agencies.
 
+Feeds gathered from several catalogues often overlap: two versions of one feed,
+a national feed and a city feed of the same operator, a mirror and its
+original. ``deduplicate=True`` counts that service once. Platforms of different
+sources closer than ``duplicate_platform_tolerance`` (0.5 m by default -- the
+same coordinate republished, while distinct platforms of one feed already occur
+1-3 m apart) become one platform, and a trip that another source already runs
+through the same platforms at the same times is dropped. Platforms of one feed
+are never fused with each other, nor stations, entrances or boarding areas:
+
+.. code-block:: python
+
+    feed = merge_gtfs_feeds(["city.zip", "national.zip"], deduplicate=True)
+
+:func:`iduedu.deduplicate_across_feeds` applies the same rules to tables merged
+elsewhere and returns how many platforms and trips it removed.
+
 Stations, pathways, and intermodal joining
 ------------------------------------------
 
@@ -160,6 +205,8 @@ API reference
     :no-index:
 
 .. autofunction:: merge_gtfs_feeds
+
+.. autofunction:: deduplicate_across_feeds
 
 .. currentmodule:: iduedu.gtfs
 
