@@ -2,6 +2,126 @@
 
 <!-- version list -->
 
+## v2.3.0 (2026-10-22)
+
+### Features
+
+- Local PBF source, joint distance and path routing, and average-day GTFS waits
+  ([#24](https://github.com/IDUclub/IduEdu/pull/24),
+  [`2c22d76`](https://github.com/IDUclub/IduEdu/commit/2c22d765bc0fd580121c7a091a96be881d076307))
+
+* test: regroup unit tests by behavior and run real Numba kernels outside coverage
+
+Tests follow the package layout: graph data, adjacency and UrbanGraph methods live in
+  test_urban_graph_unit.py, NetworkX adapters in test_nx_utils_unit.py, and the former
+  test_graph_builders_unit.py is split into drive/walk, public-transport and intermodal builder
+  modules.
+
+An early pytest plugin in tests/__init__.py preloads NumPy, SciPy, GeoPandas and Numba before
+  pytest-cov starts tracing, which avoids the double-load crash on Windows; only coverage runs
+  disable JIT, so ordinary runs execute the compiled kernels.
+
+The Numba cache is keyed by interpreter and Numba version instead of a per-process directory, so it
+  survives between runs. Small synthetic graphs run on two Numba threads unless NUMBA_NUM_THREADS is
+  set.
+
+Branch coverage is enabled in the pytest options so subprocess tests are measured the same way.
+
+* fix(overpass): read subway stop-area members with the route query
+
+The subway query now returns every member of the stop areas after a `make section` marker, so
+  entrances, exits and platforms get their roles and coordinates from the same response. Only
+  members missing from it are fetched with a second request, and responses cached before the marker
+  existed are handled as before.
+
+Subway nodes and edges built from stop areas are merged on keys compared as Python objects. When one
+  side held only synthetic string ids, pandas inferred a string dtype and refused to merge it with
+  the integer OSM ids (seen on Turin's subway).
+
+Overpass /status is no longer probed before every request: the slot wait is asked for only after a
+  429 response, so an ordinary request is a single HTTP call.
+
+The Overpass cache tests move into test_overpass_downloaders_unit.py.
+
+* feat(transport): grow free speed with segment length and refit the default registry
+
+TransportSpec gains optional long_speed_kmh and speed_half_length_m. When they are set, the free
+  speed grows with the segment length L from base_speed_kmh towards long_speed_kmh and is halfway
+  there at L = speed_half_length_m. free_speed_kmh(L) exposes it and travel_time_min uses it; both
+  fields default to None, which keeps one free speed for every segment.
+
+The default registry is refitted on every published GTFS segment that has its own shape geometry
+  (about 859,000 segments in 239 cities), every city weighing the same and cross-validated on
+  held-out cities. Tram and train use the growing free speed; bus, trolleybus and subway keep one.
+  Waiting times are medians across cities of the average-day timetable wait over regular daytime
+  services. Monorail and share taxi still borrow the subway and bus profiles.
+
+The transport registry guide and notebook show the new parameters and defaults.
+
+* feat(graph): compute distances and paths together in one Dijkstra search
+
+single_source_dijkstra, multi_source_dijkstra (nearest source) and dijkstra_parallel (independent
+  source rows) take output="distances", "paths" or "both", and od_matrix gains the same option.
+  "both" returns a ShortestPathResult whose distances and paths come from the same searches.
+
+path_storage="lazy" keeps compact predecessor trees instead of route lists: get_path() rebuilds one
+  route without another search, and .paths materializes the whole table on first access.
+
+od_matrix supports mode="pairwise" and cutoff (inclusive), with threshold kept as an alias.
+  iter_od_matrix yields origin-row blocks to bound memory, and batch_size limits the searches in
+  flight. Searches stop once every requested target settles, are shared by inputs on the same graph
+  node and run from the smaller unique OD side.
+
+The routing code moves to iduedu/graph/routing.py and routing_result.py; iduedu.graph.shortest_paths
+  re-exports it, so the specialised *_path and *_path_length helpers keep their signatures and
+  return types. Every helper is also an UrbanGraph method.
+
+benchmarks/bench_routing.py compares separate and joint calculations offline. The matrices guide,
+  README and the shortest-path notebook cover the new outputs.
+
+* feat(gtfs): average boarding waits over service days and deduplicate overlapping feeds
+
+Without service_date, boarding waits are now those of the average day: the waits of each service day
+  of the feed's calendar (at most 366 days from its start) or of service_period are computed on that
+  day's trips alone, then averaged with every calendar day weighing the same. Before, all trips
+  shared one clock, so departures of different days interleaved into gaps no passenger saw and waits
+  came out at about half of a real day's.
+
+service_dates lists the days explicitly, for example a reference week plus the own weeks of merged
+  sources of other years. Trips running on none of the days are left out; a feed without
+  calendar.txt or calendar_dates.txt is taken as one day.
+
+Scheduled waits are computed per line instead of per pattern: all patterns of a route leaving a stop
+  for the same next stop share one headway, so branches, short workings and expresses no longer
+  inflate the wait. The next stop, not direction_id, decides the direction.
+
+merge_gtfs_feeds(deduplicate=True) and deduplicate_across_feeds() count overlapping sources once:
+  platforms of different sources within 0.5 m are fused and trips another source already runs
+  identically are dropped. Platforms of one source are never fused.
+
+Trip-level columns repeated in stop_times.txt (route_id and direction_id, as in Kuala Lumpur's
+  feeds) no longer shadow the values from trips.txt.
+
+* feat(osm): build OSM graphs from local .osm.pbf files
+
+config.set_osm_source("pbf", path=...) or `with config.use_pbf(path):` makes every OSM-based builder
+  read a local OpenStreetMap file through the optional pyosmium dependency (pip install
+  "iduedu[pbf]") instead of the Overpass API. The same queries are answered with the same filters
+  and poly: rules: street ways, public-transport routes, subway stop areas and boundaries.
+  IDUEDU_OSM_SOURCE and IDUEDU_PBF_PATH select the source at import time.
+
+split_by_polygons() cuts complete per-city files out of a regional extract in one pass, and
+  snapshot_time() reads the moment a file reflects. PbfSource, parse_way_filter and WayFilter are
+  available for direct use; Overpass syntax beyond tag filters raises UnsupportedFilterError.
+
+iduedu imports and works without pyosmium; only the pbf source requires it.
+
+* docs: bring the agent and contributor guides in line with the new modules
+
+AGENTS.md describes the routing, GTFS service-day and osm_pbf modules, the PBF data flow and the
+  supported Python versions; CONTRIBUTING.md states Python 3.11 through 3.14.
+
+
 ## v2.2.0 (2026-09-30)
 
 ### Chores
