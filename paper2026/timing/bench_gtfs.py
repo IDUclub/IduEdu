@@ -32,6 +32,7 @@ Usage:
 """
 
 import argparse
+import os
 import time
 from pathlib import Path
 
@@ -48,13 +49,13 @@ from bench_common import (
 )
 
 try:
-    from wide_paths import BENCH_FEED_DIR, use_paper_cache
+    from timing_paths import BENCH_FEED_DIR, use_paper_cache
 except ImportError:  # pragma: no cover - the peartree arm runs without IduEdu
     # peartree 0.6.4 needs pandas 1.x (it calls Series.iteritems and reads the
     # grouping column inside groupby.apply, both gone since pandas 2.0), while
     # IduEdu requires pandas >= 3. The two cannot be installed together, so the
     # competitor arm is run from its own interpreter with --only-peartree, and
-    # this module must import there -- where wide_paths, which imports IduEdu at
+    # this module must import there -- where timing_paths, which imports IduEdu at
     # module level, does not.
     BENCH_FEED_DIR = Path(__file__).resolve().parents[1] / "bench_feeds"
 
@@ -65,7 +66,10 @@ except ImportError:  # pragma: no cover - the peartree arm runs without IduEdu
 OUT_CSV = RESULTS_DIR / "gtfs_benchmark.csv"
 KEY_COLUMNS = ["area", "library", "attempt"]
 
-ATTEMPTS = 3
+#: Measurements per cell: one unless BENCH_ATTEMPTS (or ``run_all.py --attempts``) asks for
+#: more. Every row is keyed by its attempt, so a later run with BENCH_ATTEMPTS=3 adds
+#: attempts 2 and 3 to the same CSV and leaves the first one as it is.
+ATTEMPTS = max(1, int(os.environ.get("BENCH_ATTEMPTS", "1")))
 SLEEP_SEC = 0.5
 DEFAULT_WINDOW = "07:00-09:00"
 

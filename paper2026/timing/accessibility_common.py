@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from bench_common import RESULTS_DIR, measure
 from scipy import sparse
-from wide_paths import OVERPASS_CACHE_DIR
+from timing_paths import OVERPASS_CACHE_DIR
 
 HERE = Path(__file__).resolve().parent
 PAPER_DIR = HERE.parent

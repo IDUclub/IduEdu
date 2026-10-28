@@ -507,9 +507,13 @@ def dump_environment(tag: str) -> None:
         "iduedu",
         "osmnx",
         "pyrosm",
+        "osmium",
+        "cityseer",
         "networkx",
         "networkit",
         "igraph",
+        "rustworkx",
+        "peartree",
         "numba",
         "numpy",
         "pandas",
@@ -537,3 +541,54 @@ def dump_environment(tag: str) -> None:
     out = RESULTS_DIR / f"env_{tag}.json"
     out.write_text(json.dumps(info, indent=2), encoding="utf-8")
     print(f"[env] recorded -> {out}")
+
+
+def write_library_provenance() -> Path:
+    """Record which IduEdu the run measured, and the transport constants it used.
+
+    The manuscript's table of model constants is generated from this file
+    (``manuscript_ga/make_floats.py``), so the table describes the registry the
+    timings were taken with and cannot drift to whatever the library holds later.
+    The git fields say whether the measured library was a released version or a
+    working tree with local changes.
+    """
+    import dataclasses
+    import subprocess
+
+    import iduedu
+    from iduedu import DEFAULT_REGISTRY, DEFAULT_REGISTRY_W_TRAIN
+
+    def git(*args: str) -> str | None:
+        try:
+            return subprocess.run(
+                ["git", *args], cwd=Path(iduedu.__file__).parent, capture_output=True, text=True, check=True
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            return None
+
+    def registry(reg) -> dict:
+        return {
+            mode: {k: v for k, v in dataclasses.asdict(reg.get(mode)).items() if k != "name"}
+            for mode in sorted(reg.list_types())
+        }
+
+    # Only changes inside the package matter for what was measured; the rest of the
+    # repository (the papers, their drafts) is usually dirty while a paper is written.
+    library_dirty = git("status", "--porcelain", "--", ".")
+    info = {
+        "purpose": "what the timing run was computed with; the table of model constants is generated from it",
+        "iduedu_version": iduedu.__version__,
+        "iduedu_path": str(Path(iduedu.__file__).parent),
+        "git_commit": git("rev-parse", "HEAD"),
+        "git_describe": git("describe", "--tags"),
+        "library_dirty_paths": library_dirty.splitlines() if library_dirty else [],
+        "python": platform.python_version(),
+        "registry": {
+            "DEFAULT_REGISTRY": registry(DEFAULT_REGISTRY),
+            "DEFAULT_REGISTRY_W_TRAIN": registry(DEFAULT_REGISTRY_W_TRAIN),
+        },
+    }
+    out = RESULTS_DIR / "library_provenance.json"
+    out.write_text(json.dumps(info, indent=2), encoding="utf-8")
+    print(f"[provenance] IduEdu {info['iduedu_version']} ({info['git_describe']}) -> {out}")
+    return out

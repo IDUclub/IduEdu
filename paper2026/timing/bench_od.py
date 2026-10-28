@@ -39,6 +39,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import time
 from pathlib import Path
 
@@ -60,7 +61,7 @@ from bench_common import (
     resolve_area_pbf,
     urban_to_networkx,
 )
-from wide_paths import use_paper_cache
+from timing_paths import use_paper_cache
 
 OUT_CSV = RESULTS_DIR / "od_benchmark.csv"
 KEY_COLUMNS = ["library", "mode", "n_sources", "threshold_min", "attempt"]
@@ -75,7 +76,10 @@ DEST_PATH = PAPER_DIR / "schools_spb.parquet"
 GRAPH_PATH = RESULTS_DIR / "spb_intermodal.urbangraph"
 SMOKE_GRAPH_PATH = RESULTS_DIR / "smoke.urbangraph"
 
-ATTEMPTS = 3
+#: Measurements per cell: one unless BENCH_ATTEMPTS (or ``run_all.py --attempts``) asks for
+#: more. Every row is keyed by its attempt, so a later run with BENCH_ATTEMPTS=3 adds
+#: attempts 2 and 3 to the same CSV and leaves the first one as it is.
+ATTEMPTS = max(1, int(os.environ.get("BENCH_ATTEMPTS", "1")))
 SEED = 42
 SLEEP_SEC = 1.0
 WEIGHT = "time_min"

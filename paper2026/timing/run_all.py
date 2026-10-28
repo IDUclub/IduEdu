@@ -19,6 +19,7 @@ Usage (from this directory, with the benchmark venv's python):
 
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -32,6 +33,8 @@ LOG_DIR = HERE.parent / "results" / "logs"
 # caches the SPb intermodal graph that validity reuses.
 STEPS: list[tuple[str, str, list[str]]] = [
     ("build", "bench_build.py", []),
+    # Right after build: it reuses the Overpass responses the build stage cached.
+    ("simplify", "bench_simplify.py", []),
     ("intermodal", "bench_intermodal.py", []),
     # Independent of the others: builds the transit layer from feeds in bench_feeds/.
     ("gtfs", "bench_gtfs.py", []),
@@ -124,12 +127,23 @@ def main() -> None:
     parser.add_argument("--smoke", action="store_true", help="pass --smoke to every step (quick dry run)")
     parser.add_argument("--only", default=None, help="comma-separated subset of step names to run")
     parser.add_argument(
+        "--attempts",
+        type=int,
+        default=None,
+        help="measurements per cell for every step (sets BENCH_ATTEMPTS; default 1). A later run with a "
+        "larger number adds the missing attempts to the same CSVs",
+    )
+    parser.add_argument(
         "--step-timeout-hours",
         type=float,
         default=None,
         help="kill a step after this many hours and move on (default: no timeout)",
     )
     args = parser.parse_args()
+
+    if args.attempts is not None:
+        # The steps are subprocesses and inherit the environment.
+        os.environ["BENCH_ATTEMPTS"] = str(max(1, args.attempts))
 
     steps = STEPS
     if args.only:
@@ -145,6 +159,13 @@ def main() -> None:
         f"[runner] starting {len(steps)} step(s) at {started_at:%Y-%m-%d %H:%M:%S} " f"with {sys.executable}",
         flush=True,
     )
+
+    if not args.smoke:
+        # The manuscript's table of model constants is generated from this record, so
+        # it is written by the run whose timings the paper reports.
+        from bench_common import write_library_provenance
+
+        write_library_provenance()
 
     results = []
     try:

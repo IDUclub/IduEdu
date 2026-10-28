@@ -7,9 +7,11 @@ representation size for walk and drive graphs over the same AOI (bbox from the
 PBF header), with the simplify on/off ablation for IduEdu, OSMnx and cityseer
 (pyrosm has no comparable switch).
 
-The four are not interchangeable and the table should not pretend they are:
-IduEdu, OSMnx and cityseer fetch from Overpass while pyrosm reads a local PBF,
-and cityseer builds pedestrian networks only, so it is charged on walk alone.
+IduEdu is measured twice, once per data source. The ``iduedu`` arm fetches from
+Overpass like OSMnx and cityseer; the ``iduedu_pbf`` arm (IduEdu 2.3.0 and later,
+needs pyosmium) reads the same local PBF as pyrosm. Each competitor is therefore
+compared with IduEdu on the source it uses itself, and cityseer, which builds
+pedestrian networks only, is charged on walk alone.
 
 One CSV row per attempt; resume-safe. Overpass responses are cached by both
 IduEdu and OSMnx after the first (warm-up) call, so measured times reflect
@@ -40,12 +42,15 @@ from bench_common import (
     resolve_area_pbf,
     urban_graph_memory_mb,
 )
-from wide_paths import use_paper_cache
+from timing_paths import use_paper_cache
 
 OUT_CSV = RESULTS_DIR / "build_benchmark.csv"
 KEY_COLUMNS = ["library", "area", "network", "simplify", "attempt"]
 
-ATTEMPTS = 3
+#: Measurements per cell: one unless BENCH_ATTEMPTS (or ``run_all.py --attempts``) asks for
+#: more. Every row is keyed by its attempt, so a later run with BENCH_ATTEMPTS=3 adds
+#: attempts 2 and 3 to the same CSV and leaves the first one as it is.
+ATTEMPTS = max(1, int(os.environ.get("BENCH_ATTEMPTS", "1")))
 SLEEP_SEC = 0.5
 SIMPLIFY_SETTINGS = [True, False]
 NETWORKS = ["walk", "drive"]
@@ -147,6 +152,50 @@ def build_iduedu(polygon, network: str, simplify: bool):
     builder = get_walk_graph if network == "walk" else get_drive_graph
     graph = builder(territory=polygon, simplify=simplify, keep_largest_subgraph=True)
     return len(graph.nodes_gdf), len(graph.edges_gdf), graph
+
+
+def build_iduedu_pbf(pbf_path: str, polygon, network: str, simplify: bool):
+    """IduEdu answering the same queries from the local PBF that pyrosm reads.
+
+    The library builds a new ``PbfSource`` for every query and reads the file
+    again, so a repeated attempt is not served from memory: like pyrosm, every
+    attempt pays for the file.
+    """
+    from iduedu import config, get_drive_graph, get_walk_graph
+
+    builder = get_walk_graph if network == "walk" else get_drive_graph
+    with config.use_pbf(pbf_path):
+        graph = builder(territory=polygon, simplify=simplify, keep_largest_subgraph=True)
+    return len(graph.nodes_gdf), len(graph.edges_gdf), graph
+
+
+def iduedu_pbf_available() -> bool:
+    """True when the library's PBF source can run here (it needs pyosmium)."""
+    import importlib.util
+
+    return importlib.util.find_spec("osmium") is not None
+
+
+def record_pbf_snapshot(area: str, pbf_path: str) -> None:
+    """Write the replication time of the area's extract to ``pbf_snapshots.json``.
+
+    The PBF arms read whatever extract sits in the cache, so the paper can only say
+    which OSM data they measured if the file's own timestamp is kept next to the
+    results. Extracts without a header timestamp are recorded as unknown.
+    """
+    import json
+
+    from iduedu.osm_pbf import snapshot_time
+
+    path = RESULTS_DIR / "pbf_snapshots.json"
+    snapshots = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    stamp = snapshot_time(pbf_path)
+    snapshots[area] = {
+        "file": Path(pbf_path).name,
+        "size_mb": round(Path(pbf_path).stat().st_size / 1e6, 1),
+        "replication_time": stamp.isoformat() if stamp else None,
+    }
+    path.write_text(json.dumps(snapshots, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def build_osmnx(polygon, network: str, simplify: bool):
@@ -424,7 +473,7 @@ def run_one(
     # the timed region so it does not pollute time_sec.
     representation_size_mb = ""
     if graph is not None:
-        if library == "iduedu":
+        if library in ("iduedu", "iduedu_pbf"):
             representation_size_mb = round(urban_graph_memory_mb(graph), 2)
         else:
             representation_size_mb = round(networkx_graph_memory_mb(graph), 2)
@@ -457,9 +506,9 @@ def main() -> None:
         "--libraries",
         default=None,
         help=(
-            "comma-separated subset of arms to measure (iduedu, osmnx, cityseer, pyrosm). "
-            "pyrosm reads a local PBF and needs no Overpass, so it is the one arm that can be "
-            "banked while the API is refusing large queries; the others can then be filled in "
+            "comma-separated subset of arms to measure (iduedu, iduedu_pbf, osmnx, cityseer, pyrosm). "
+            "pyrosm and iduedu_pbf read a local PBF and need no Overpass, so they are the arms that "
+            "can be banked while the API is refusing large queries; the others can then be filled in "
             "when it recovers, since every row is resume-safe."
         ),
     )
@@ -484,28 +533,48 @@ def main() -> None:
         from iduedu import get_4326_boundary
 
         polygon = get_4326_boundary(osm_id=SMOKE_OSM_ID)
+        # The smoke district lies inside the Saint Petersburg extract, which the full
+        # run downloads anyway, so the PBF arm is checked on the same file it will read.
+        smoke_pbf = resolve_area_pbf("Saint Petersburg") if iduedu_pbf_available() else None
         for network in networks:
             for simplify in SIMPLIFY_SETTINGS:
                 run_one(existing, "iduedu", "smoke", network, simplify, 1, build_iduedu, polygon, network, simplify)
                 run_one(existing, "osmnx", "smoke", network, simplify, 1, build_osmnx, polygon, network, simplify)
+                if smoke_pbf:
+                    run_one(
+                        existing,
+                        "iduedu_pbf",
+                        "smoke",
+                        network,
+                        simplify,
+                        1,
+                        build_iduedu_pbf,
+                        smoke_pbf,
+                        polygon,
+                        network,
+                        simplify,
+                    )
         print(f"[done] smoke results -> {OUT_CSV}")
         return
 
     areas = [a.strip() for a in args.areas.split(",")] if args.areas else AREAS
     wanted = {lib.strip() for lib in args.libraries.split(",")} if args.libraries else None
     if wanted is not None:
-        unknown = wanted - {"iduedu", "osmnx", "cityseer", "pyrosm"}
+        unknown = wanted - {"iduedu", "iduedu_pbf", "osmnx", "cityseer", "pyrosm"}
         if unknown:
             parser.error(f"unknown library/libraries: {sorted(unknown)}")
         print(f"[arms] measuring {sorted(wanted)} only")
     has_pyrosm = pyrosm_available() and (wanted is None or "pyrosm" in wanted)
     has_cityseer = cityseer_available() and (wanted is None or "cityseer" in wanted)
+    has_iduedu_pbf = iduedu_pbf_available() and (wanted is None or "iduedu_pbf" in wanted)
     want_iduedu = wanted is None or "iduedu" in wanted
     want_osmnx = wanted is None or "osmnx" in wanted
     if not has_cityseer:
         print("[warn] cityseer not importable in this environment; its walk rows will be missing")
     if not has_pyrosm:
         print("[warn] pyrosm not importable in this environment; run its rows from a conda env later")
+    if not has_iduedu_pbf and (wanted is None or "iduedu_pbf" in wanted):
+        print("[warn] pyosmium not importable; the iduedu_pbf rows will be missing (pip install 'iduedu[pbf]')")
 
     for area in areas:
         try:
@@ -518,6 +587,9 @@ def main() -> None:
                 n: want_osmnx and has_pending(existing, "osmnx", area, n, SIMPLIFY_SETTINGS) for n in networks
             }
             pyr_pending = {n: has_pyrosm and has_pending(existing, "pyrosm", area, n, [None]) for n in networks}
+            pbf_pending = {
+                n: has_iduedu_pbf and has_pending(existing, "iduedu_pbf", area, n, SIMPLIFY_SETTINGS) for n in networks
+            }
             # cityseer is a walk-only arm, so it is pending on the walk network alone.
             cs_pending = {
                 n: has_cityseer and n == "walk" and has_pending(existing, "cityseer", area, n, SIMPLIFY_SETTINGS)
@@ -533,6 +605,7 @@ def main() -> None:
                 list(idu_pending.values())
                 + list(osm_pending.values())
                 + list(pyr_pending.values())
+                + list(pbf_pending.values())
                 + list(cs_pending.values())
             ):
                 print(f"\n=== {area}: all measurements already recorded, skipping ===")
@@ -546,6 +619,21 @@ def main() -> None:
             pbf_path = resolve_area_pbf(area)
             bounds = bbox_from_pbf(pbf_path)
             print(f"\n=== {area} | bbox={bounds.bbox} ===")
+            if iduedu_pbf_available():
+                record_pbf_snapshot(area, pbf_path)
+
+            # The PBF arm needs no Overpass, so its warm-up only loads the library
+            # and compiles its kernels; a failure here is not transient and is not
+            # retried. Warmed on the same file and polygon it is measured on.
+            pbf_warm = dict.fromkeys(networks, True)
+            for network in networks:
+                if pbf_pending[network]:
+                    print(f"  [warm] iduedu_pbf {network}")
+                    try:
+                        force_cleanup(build_iduedu_pbf(pbf_path, bounds.polygon_4326, network, True)[2])
+                    except Exception as error:  # noqa: BLE001 - the other arms still have work to do
+                        print(f"  [skip] iduedu_pbf {network}: {type(error).__name__}: {error}", flush=True)
+                        pbf_warm[network] = False
 
             # Warm-up populates the Overpass cache for iduedu/osmnx so the first
             # recorded run excludes the download. Skip per library+network when
@@ -573,6 +661,23 @@ def main() -> None:
                 if has_pyrosm:
                     for attempt in range(1, ATTEMPTS + 1):
                         run_one(existing, "pyrosm", area, network, None, attempt, build_pyrosm, pbf_path, network)
+                # Right after pyrosm: the two arms that read the same file, back to back.
+                if has_iduedu_pbf and pbf_warm[network]:
+                    for simplify in SIMPLIFY_SETTINGS:
+                        for attempt in range(1, ATTEMPTS + 1):
+                            run_one(
+                                existing,
+                                "iduedu_pbf",
+                                area,
+                                network,
+                                simplify,
+                                attempt,
+                                build_iduedu_pbf,
+                                pbf_path,
+                                bounds.polygon_4326,
+                                network,
+                                simplify,
+                            )
                 for simplify in SIMPLIFY_SETTINGS:
                     for attempt in range(1, ATTEMPTS + 1) if idu_warm[network] and want_iduedu else ():
                         run_one(

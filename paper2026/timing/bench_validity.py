@@ -26,7 +26,7 @@ import json
 import numpy as np
 from bench_common import RESULTS_DIR, dump_environment, measure, urban_to_networkx
 from bench_od import load_or_build_graph
-from wide_paths import use_paper_cache
+from timing_paths import use_paper_cache
 
 OUT_JSON = RESULTS_DIR / "validity_report.json"
 

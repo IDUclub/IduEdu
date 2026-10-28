@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+import os
 import time
 
 from bench_common import (
@@ -29,12 +30,15 @@ from bench_common import (
     measure,
     resolve_area_pbf,
 )
-from wide_paths import use_paper_cache
+from timing_paths import use_paper_cache
 
 OUT_CSV = RESULTS_DIR / "intermodal_benchmark.csv"
 KEY_COLUMNS = ["area", "attempt"]
 
-ATTEMPTS = 3
+#: Measurements per cell: one unless BENCH_ATTEMPTS (or ``run_all.py --attempts``) asks for
+#: more. Every row is keyed by its attempt, so a later run with BENCH_ATTEMPTS=3 adds
+#: attempts 2 and 3 to the same CSV and leaves the first one as it is.
+ATTEMPTS = max(1, int(os.environ.get("BENCH_ATTEMPTS", "1")))
 SLEEP_SEC = 0.5
 SMOKE_OSM_ID = 1114252
 
