@@ -12,7 +12,10 @@ report it with the log and ask the author.
 The paper's timings were measured in September 2026 on IduEdu before 2.3.0.
 Version 2.3.0 rewrote routing, averages GTFS waits over service days, changed
 the model constants and added a local PBF source, so the whole bench is rerun:
-ratios between libraries are only read within one run. New since September:
+ratios between libraries are only read within one run. The rerun also moves
+every library to its newest release on Python 3.14 (September: Python 3.11 with
+the releases of that time), as the author decided on 29 October 2026. New since
+September:
 
 - the `iduedu_pbf` arm in `bench_build.py`: IduEdu reads the same BBBike extract
   as pyrosm (`config.use_pbf`), with and without simplification;
@@ -22,7 +25,13 @@ ratios between libraries are only read within one run. New since September:
   added later, only when the author asks;
 - `results/library_provenance.json` (version, commit, changed files of the
   package, model constants) and `results/pbf_snapshots.json` (replication time
-  of each extract), both written by the run.
+  of each extract), both written by the run;
+- the pyrosm arm passes `simplify=False` to `to_graph` and clears pyrosm's
+  result cache before each measured read. From 0.19 pyrosm simplifies by
+  default and keeps the result of each read in the temporary folder, so without
+  these two changes the arm would time a simplified graph, and a repeated read
+  would time the cache. Otherwise pyrosm runs with its defaults: since 0.19 it
+  reads the file out of core, and since 0.23 on several threads.
 
 `README.md` in this folder predates these changes and names an old cache path;
 where it disagrees with this file, this file is current.
@@ -56,42 +65,56 @@ into `cityseer_cache/`. Never copy these caches in from elsewhere.
 
 ## Environments
 
-Two interpreters, both Python 3.11 (September: 3.11.9). Below, `<bench python>`
-is the interpreter of `paper2026/.venv-bench` (`Scripts/python.exe` on Windows,
-`bin/python` on Linux) and `<peartree python>` that of the peartree environment;
-commands in this section run from `paper2026/`.
+Two interpreters. Below, `<bench python>` is the interpreter of
+`paper2026/.venv-bench-latest` and `<peartree python>` that of the peartree
+environment (`Scripts/python.exe` on Windows, `bin/python` on Linux); commands
+in this section run from `paper2026/` unless they say otherwise.
 
-**Bench environment.** If `.venv-bench` survives from the September run, keep it
-and its competitor versions, and only reinstall IduEdu from this checkout:
+**Bench environment: a new one, with the newest releases.** Leave the September
+`.venv-bench` as it is and create `.venv-bench-latest` on Python 3.14, the newest
+Python that IduEdu 2.3.0 supports. Python 3.11 cannot take the newest networkx,
+numpy, scipy or pyproj, and networkx 3.7 refuses Python 3.14.1. With uv, which
+fetches Python 3.14 if the machine lacks it (`--seed` puts pip into the
+environment):
 
-    <bench python> -m pip install -e "..[pbf]"
+    uv venv --python 3.14 --seed .venv-bench-latest
 
-Do this even if IduEdu is already installed editable: it refreshes the package
-metadata that `dump_environment` records (the manuscript checks that it reads
-2.3.0) and installs `osmium>=4` for the PBF arm. Then check:
+Without uv, run `python -m venv .venv-bench-latest` with a Python 3.14
+interpreter. Then install everything in one command and without versions, so
+that pip chooses the newest releases that fit together and within IduEdu's own
+bounds:
 
-    <bench python> -c "import importlib.metadata as m, iduedu, osmium; print(m.version('iduedu'), iduedu.__version__, osmium.__version__)"
+    <bench python> -m pip install -e "..[pbf,io]" osmnx pyrosm cityseer networkx networkit igraph rustworkx objectnat numba numpy pandas geopandas shapely scipy pyarrow psutil
+    <bench python> -m pip check
+
+IduEdu 2.3.0 keeps numba below 0.68 and pyarrow below 26. Do not install or
+upgrade any package with a second command afterwards: pip would lift those
+bounds with no more than a warning. On 29 October 2026 the command resolved to
+iduedu 2.3.0, osmium 4.3.2, osmnx 2.1.1, pyrosm 0.26.0, cityseer 5.8.0,
+networkx 3.7, networkit 11.2.2, igraph 1.0.0, rustworkx 0.18.1, objectnat 2.1.0,
+numba 0.67.0, numpy 2.5.4, pandas 3.1.0, geopandas 1.2.0, shapely 2.2.0,
+scipy 1.18.1 and pyarrow 25.0.1 on Python 3.14.7; a release newer than these on
+the day of the run is fine. Then check, from `paper2026/timing/`:
+
+    <bench python> -c "import importlib.metadata as m, iduedu, osmium; print(m.version('iduedu'), iduedu.__version__, m.version('osmium'))"
     <bench python> -c "import osmnx, pyrosm, cityseer, networkx, networkit, igraph, rustworkx, objectnat"
+    <bench python> -c "import bench_build as b, pyrosm.data as d; f = d.get_data('test_pbf'); b.clear_pyrosm_cache(f); print([b.build_pyrosm(f, n)[:2] for n in ('walk', 'drive')])"
 
 Both IduEdu versions must read 2.3.0. A missing `osmium` does not stop the run:
-`bench_build.py` drops the `iduedu_pbf` arm without an error. Install a missing
-`cityseer` or `rustworkx` with pip; do not upgrade what is installed.
+`bench_build.py` drops the `iduedu_pbf` arm without an error. The last command
+runs the pyrosm arm on the small test file that ships with pyrosm, because the
+smoke run does not reach pyrosm; with pyrosm 0.26.0 it prints
+`[(781, 1650), (647, 1237)]`.
 
-Without that environment, create `.venv-bench` with `python -m venv` (Python
-3.11; a `uv venv` has no pip) and install the September versions (cityseer and
-rustworkx were not recorded then; these are the releases of that time):
+**peartree environment.** peartree 0.6.4 (2021) is its newest release. It runs
+only on pandas 1.x, which has no wheels for Python above 3.11, so its stack
+cannot follow the bench environment. Reuse the September peartree environment as
+it is. Without it, create one on Python 3.11 and let pip choose the rest:
 
-    <bench python> -m pip install -e "..[pbf]" osmnx==2.1.1 pyrosm==0.13.1 networkx==3.6.1 networkit==11.2.1 igraph==1.0.0 rustworkx==0.18.1 cityseer==5.8.0 objectnat==2.0.0 numba==0.65.1 numpy==2.4.6 pandas==3.0.5 geopandas==1.1.4 shapely==2.1.2 scipy==1.17.1 pyarrow psutil
+    <peartree python> -m pip install peartree "pandas<2" "numpy<2"
 
-pyrosm 0.13.1 compiles `cykhash` and needs a C compiler (MSVC Build Tools on
-Windows). pyrosm 0.26.0 (2026-10-27) ships wheels, but a different pyrosm is the
-author's decision. `../environment-bench.yml` does not resolve: conda-forge has
-no `osmium` or `cityseer` package.
-
-**peartree environment.** peartree 0.6.4 needs pandas 1.x and cannot share the
-bench environment. Reuse the September one or create `.venv-peartree`:
-
-    <peartree python> -m pip install peartree==0.6.4 pandas==1.5.3 numpy==1.26.4 networkx==3.6.1 geopandas==1.1.4 shapely==2.0.7
+On 29 October 2026 this gave pandas 1.5.3, numpy 1.26.4, networkx 3.6.1 and
+geopandas 1.0.1.
 
 ## Order
 
@@ -100,20 +123,23 @@ From `paper2026/timing/`:
 1. `<bench python> fresh_start.py`, then `<bench python> fresh_start.py --yes`.
    It moves an earlier run's results and caches into
    `../archive/timing_run_<date>/`. Rename that folder (for example to
-   `timing_run_<date>_previous`): step 4 calls the script again, and it refuses
+   `timing_run_<date>_previous`): step 3 calls the script again, and it refuses
    to overwrite.
 2. `<bench python> run_all.py --smoke`. Every step must end `ok`, and
    `../results/build_benchmark.csv` must hold `smoke` rows for `iduedu_pbf`.
-   Show the author the summary and the versions in `../results/env_build.json`,
-   and wait for a go-ahead.
+   If so, send the author the summary and the versions in
+   `../results/env_build.json` and go on without waiting; if not, stop and ask.
 3. `<bench python> fresh_start.py --yes` again. The smoke run writes into the
    same files as the real one; in `od_benchmark.csv` its rows for 256 sources
    carry the keys of real cells, and the real run would skip those cells.
-4. `<peartree python> -X utf8 bench_gtfs.py --only-peartree`, before
+4. Record both environments as UTF-8 text: the output of
+   `<bench python> -m pip freeze` in `../results/pip_freeze_bench.txt` and that
+   of `<peartree python> -m pip freeze` in `../results/pip_freeze_peartree.txt`.
+5. `<peartree python> -X utf8 bench_gtfs.py --only-peartree`, before
    `run_all.py`. peartree does not import in the bench environment, so the GTFS
    stage there writes an `unavailable` row for every city that has no peartree
    row yet, and that row would block the real measurement under the same key.
-5. `<bench python> run_all.py`, in the background, overnight. Stages run one
+6. `<bench python> run_all.py`, in the background, overnight. Stages run one
    after another: build, simplify, intermodal, gtfs, od_rect, od_square,
    validity, accessibility, scenarios. Logs go to `../results/logs/`.
 
@@ -129,6 +155,10 @@ From `paper2026/timing/`:
 - When a stage fails or Overpass keeps refusing, report the tail of
   `../results/logs/<stage>.log` and ask. Every stage resumes from its CSV, so
   `<bench python> run_all.py --only <stage>` continues where it stopped.
+- When a newer release breaks a call in the scripts (the traceback ends inside
+  a library), report the traceback and the change you would make, and wait for
+  the author: a fix may follow a renamed function or argument, but it must not
+  change what is measured.
 - Nothing from the run goes into git: `results/` is ignored on purpose, since
   data are published through Zenodo. Commit or push only when the author asks.
 
@@ -137,9 +167,14 @@ From `paper2026/timing/`:
 - `../results/logs/run_all_<timestamp>.summary` lists every stage as `ok`;
 - `library_provenance.json` says `iduedu_version` 2.3.0 with empty
   `library_dirty_paths`, and every `env_*.json` but `env_gtfs_peartree.json`
-  records `iduedu` 2.3.0;
-- `build_benchmark.csv` has `iduedu_pbf` rows for all six cities, and
-  `pbf_snapshots.json` a date for each extract;
+  records Python 3.14, `iduedu` 2.3.0 and the versions in
+  `pip_freeze_bench.txt`;
+- `build_benchmark.csv` has `iduedu_pbf` and `pyrosm` rows for all six cities,
+  and `pbf_snapshots.json` a date for each extract;
+- the `n_nodes` of each `pyrosm` row is within a few per cent of the
+  `iduedu_pbf` row with `simplify` False for the same city and network (in
+  September, within 0.4 per cent of IduEdu's); a simplified graph would have a
+  tenth to a half as many nodes;
 - in `gtfs_benchmark.csv` peartree is `ok` for four cities and
   `failed: NotImplementedError` for New York (it cannot merge nine feeds), with
   no `unavailable` rows.
@@ -150,9 +185,9 @@ One zip, `timing_run_<date>.zip`, of these items from `paper2026/results/`:
 `build_benchmark.csv`, `simplify_benchmark.csv`, `intermodal_benchmark.csv`,
 `gtfs_benchmark.csv`, `od_benchmark.csv`, `validity_report.json`,
 `library_provenance.json`, `pbf_snapshots.json`, `s7_tables.txt` if present,
-`spb_intermodal.urbangraph`, the undated `env_*.json`, `accessibility/` and
-`logs/`. Tell the author where it is, which checks failed if any, and the
-versions recorded.
+`spb_intermodal.urbangraph`, the undated `env_*.json`, `pip_freeze_bench.txt`,
+`pip_freeze_peartree.txt`, `accessibility/` and `logs/`. Tell the author where
+it is, which checks failed if any, and the versions recorded.
 
 ## More attempts, later
 

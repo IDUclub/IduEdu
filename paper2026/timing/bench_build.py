@@ -4,8 +4,9 @@ B1 — Graph construction benchmark: IduEdu vs OSMnx vs Pyrosm vs cityseer.
 
 Measures wall time, node/edge counts, and resulting in-memory graph
 representation size for walk and drive graphs over the same AOI (bbox from the
-PBF header), with the simplify on/off ablation for IduEdu, OSMnx and cityseer
-(pyrosm has no comparable switch).
+PBF header), with the simplify on/off ablation for IduEdu, OSMnx and cityseer.
+Pyrosm is measured on its unsimplified graph, which is compared with the
+``simplify=False`` rows of the other arms.
 
 IduEdu is measured twice, once per data source. The ``iduedu`` arm fetches from
 Overpass like OSMnx and cityseer; the ``iduedu_pbf`` arm (IduEdu 2.3.0 and later,
@@ -317,14 +318,32 @@ def cityseer_available() -> bool:
 
 
 def build_pyrosm(pbf_path: str, network: str):
+    """Pyrosm's unsimplified graph of the whole extract, read with its default engine.
+
+    ``simplify=False`` is passed explicitly: up to 0.18 it was the default of
+    ``to_graph``, and from 0.19 on pyrosm simplifies unless told otherwise.
+    """
     from pyrosm import OSM
 
     network_type = "walking" if network == "walk" else "driving"
     osm = OSM(pbf_path)
     nodes, edges = osm.get_network(nodes=True, network_type=network_type)
-    graph = osm.to_graph(nodes, edges, graph_type="networkx", network_type=network_type)
+    graph = osm.to_graph(nodes, edges, graph_type="networkx", network_type=network_type, simplify=False)
     force_cleanup(osm, nodes, edges)
     return graph.number_of_nodes(), graph.number_of_edges(), graph
+
+
+def clear_pyrosm_cache(pbf_path: str) -> None:
+    """Remove pyrosm's cached reads of the file, outside the timed region.
+
+    From 0.19 pyrosm reads out of core by default and, with pyarrow installed, keeps
+    the result of each read in the temporary folder, so a second read of the same
+    file and network returns it without decoding the file. Clearing it before every
+    measured read makes each attempt a read of the file, as the first one is.
+    """
+    from pyrosm import OSM
+
+    OSM.clear_cache(pbf_path)
 
 
 def pyrosm_available() -> bool:
@@ -660,6 +679,7 @@ def main() -> None:
             for network in networks:
                 if has_pyrosm:
                     for attempt in range(1, ATTEMPTS + 1):
+                        clear_pyrosm_cache(pbf_path)
                         run_one(existing, "pyrosm", area, network, None, attempt, build_pyrosm, pbf_path, network)
                 # Right after pyrosm: the two arms that read the same file, back to back.
                 if has_iduedu_pbf and pbf_warm[network]:
