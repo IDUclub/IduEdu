@@ -9,6 +9,18 @@ Overpass. Select the source with ``config.set_osm_source("pbf", path=...)`` or
 ``with config.use_pbf(path): ...``; see :doc:`../configuration` for the full
 workflow and the known differences from Overpass.
 
+Downloading from Geofabrik
+=========================
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+
+    download_osm_pbf
+    download_geofabrik_region
+    find_geofabrik_region
+    geofabrik_regions
+
 Reading and splitting files
 ===========================
 
@@ -40,6 +52,9 @@ Module reference
     :no-members:
 
 .. automodule:: iduedu.osm_pbf.extract
+    :no-members:
+
+.. automodule:: iduedu.osm_pbf.download
     :no-members:
 
 .. automodule:: iduedu.osm_pbf.filters
