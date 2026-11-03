@@ -135,6 +135,7 @@ iduedu/
     reader.py        — PbfSource: answers the Overpass queries of the builders from a file; snapshot_time()
     filters.py       — Overpass tag-filter parser (parse_way_filter, WayFilter)
     extract.py       — split_by_polygons(): per-city files from a regional extract in one pass
+    download.py      — download_osm_pbf(): smallest covering Geofabrik extract, cached, cut to a territory
   overpass/
     downloaders.py   — Overpass HTTP requests with retry/rate-limit; dispatch to osm_pbf in pbf mode
     parsers.py       — JSON → GeoDataFrame (nodes/edges)
