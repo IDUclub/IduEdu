@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v2.4.0 (2026-11-03)
+
+### Features
+
+- **osm_pbf**: Download territories from Geofabrik extracts
+  ([#26](https://github.com/IDUclub/IduEdu/pull/26),
+  [`e276b7f`](https://github.com/IDUclub/IduEdu/commit/e276b7fb27a6c090fad5ca37d3bb8979e07032d9))
+
+download_osm_pbf(osm_id=... | territory=...) picks the smallest Geofabrik extract covering the
+  territory (or the given region), downloads it once into the cache with resume and an md5 check,
+  cuts the territory out with split_by_polygons and returns the small file for config.use_pbf. With
+  region given the osm_id boundary is read from the extract, so no Overpass request is made; an
+  existing cut file is returned without any download.
+
+Also adds geofabrik_regions, find_geofabrik_region and download_geofabrik_region, with offline tests
+  against a local server that mimics download.geofabrik.de.
+
+
 ## v2.3.0 (2026-10-22)
 
 ### Features
