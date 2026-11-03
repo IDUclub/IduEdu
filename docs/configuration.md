@@ -96,6 +96,28 @@ time. In pbf mode the Overpass cache is not used and `overpass_date` is ignored:
 snapshot, and subway stop areas are always read. `snapshot_time(path)` returns the moment the file reflects,
 from its header (`osmosis_replication_timestamp`, set in Geofabrik extracts).
 
+### Downloading a territory from Geofabrik
+
+`download_osm_pbf` replaces the Overpass download with [Geofabrik](https://download.geofabrik.de/) extracts.
+Give it the territory as to the graph builders: it picks the smallest extract covering the territory,
+downloads it once (resuming an interrupted download and checking the md5 Geofabrik publishes), cuts the
+territory out with `split_by_polygons` and returns the small file:
+
+```python
+from iduedu import config, download_osm_pbf, get_intermodal_graph
+
+path = download_osm_pbf(osm_id=1114252, region="northwestern-fed-district")
+with config.use_pbf(path):
+    graph = get_intermodal_graph(osm_id=1114252)
+```
+
+With `region` the boundary of `osm_id` is read from the extract and no Overpass request is made; without it
+the boundary is fetched once through Overpass to choose the extract. `territory=` (a polygon or a
+GeoDataFrame) needs neither. Extracts and cut files are cached under `config.overpass_cache_dir`
+(`geofabrik/` and `geofabrik/territories/`); an existing cut file is returned without any download, and a
+cached extract is reused until `update=True` asks for Geofabrik's newer file. `geofabrik_regions()` lists the
+extracts with their outlines, `find_geofabrik_region(territory)` names the smallest covering one.
+
 ### Per-city files from a regional extract
 
 Querying a country-sized file scans all of it on every call. Cut it into small city files once, in one pass
