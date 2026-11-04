@@ -257,9 +257,9 @@ def test_duplicate_labels_and_unique_source_optimization(monkeypatch):
     calls = []
     original = routing.dijkstra_numba_search_parallel
 
-    def record(matrix, sources, targets, cutoff, store_predecessors):
+    def record(matrix, sources, *args):
         calls.append(len(sources))
-        return original(matrix, sources, targets, cutoff, store_predecessors)
+        return original(matrix, sources, *args)
 
     monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", record)
     result = graph.od_matrix(
@@ -280,9 +280,9 @@ def test_pairwise_duplicate_sources_share_one_search(monkeypatch):
     calls = []
     original = routing.dijkstra_numba_search_parallel
 
-    def record(matrix, sources, targets, cutoff, store_predecessors):
-        calls.append((len(sources), list(targets[0])))
-        return original(matrix, sources, targets, cutoff, store_predecessors)
+    def record(matrix, sources, targets, starts, ends, *args):
+        calls.append((len(sources), sorted(targets[starts[0] : ends[0]])))
+        return original(matrix, sources, targets, starts, ends, *args)
 
     monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", record)
     origins = pd.DataFrame({"graph_node_id": [0, 0]}, index=["a", "b"])
@@ -508,3 +508,45 @@ def test_legacy_path_matrix_preserves_labels_mode_and_threshold():
     assert pd.isna(result.iloc[1, 0])
     assert result.attrs["origin_nodes"].to_dict() == {"left": 0, "right": 3}
     assert result.attrs["destination_nodes"].to_dict() == {"near": 2, "far": 0}
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_distance_tables_keep_requested_dtype_with_unreachable_cells(dtype):
+    graph = disconnected_graph()
+    tables = [
+        graph.dijkstra_parallel(source_nodes=[0, 10], cutoff=1, output="distances", dtype=dtype),
+        graph.od_matrix(origins_nodes=[0, 10], destination_nodes=[1, 2, 11], cutoff=1, dtype=dtype),
+        graph.od_matrix(origins_nodes=[0, 1, 2, 10], destination_nodes=[11], dtype=dtype),
+    ]
+    for table in tables:
+        assert all(column == pd.SparseDtype(dtype, np.inf) for column in table.dtypes)
+    assert tables[0].loc[0, 1] == 1 and np.isinf(tables[0].loc[0, 11]) and np.isinf(tables[0].loc[10, 0])
+    assert tables[1].loc[10, 11] == 1 and np.isinf(tables[1].loc[0, 2])
+    assert tables[2][11].tolist() == [np.inf, np.inf, np.inf, 1]
+
+
+@pytest.mark.parametrize("origins,destinations", [([0, 1, 0, 10], [2, 0, 11]), ([0, 1, 2, 10, 11], [1, 1])])
+def test_materialized_path_matrix_matches_lazy_cells(origins, destinations):
+    # The second case runs transposed: searches start from the destinations.
+    graph = disconnected_graph()
+    params = dict(origins_nodes=origins, destination_nodes=destinations, output="both")
+    lazy = graph.od_matrix(**params, path_storage="lazy")
+    paths = graph.od_matrix(**params).paths
+    assert paths.shape == (len(origins), len(destinations))
+    assert (paths.dtypes == pd.SparseDtype(object, None)).all()
+    for row in range(len(origins)):
+        for column in range(len(destinations)):
+            cell = paths.iloc[row, column]
+            assert (cell if isinstance(cell, list) else None) == lazy.get_path_at(row, column)
+    paths.iloc[0, 0].append("edited")
+    assert paths.iloc[2, 0] != paths.iloc[0, 0]
+
+
+def test_pairwise_repeated_unordered_origins_match_matrix_cells():
+    graph = disconnected_graph()
+    origins, destinations = [2, 0, 10, 0, 2, 1], [0, 2, 11, 1, 2, 10]
+    pairwise = graph.od_matrix(origins_nodes=origins, destination_nodes=destinations, mode="pairwise", output="both")
+    matrix = graph.od_matrix(origins_nodes=origins, destination_nodes=destinations, output="both")
+    for i in range(len(origins)):
+        assert pairwise.distances.iloc[i, 0] == matrix.distances.iloc[i, i]
+        assert pairwise.get_path_at(i) == matrix.get_path_at(i, i)

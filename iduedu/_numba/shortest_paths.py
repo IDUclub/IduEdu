@@ -393,8 +393,14 @@ def dijkstra_numba_search(numba_adj_matrix, sources, targets, cutoff, store_pred
 
 
 @_njit(cache=True, parallel=True)
-def dijkstra_numba_search_parallel(numba_adj_matrix, sources, targets_by_source, cutoff, store_predecessors):
-    """Run one search per unique source; preserve compact trees for lazy routes."""
+def dijkstra_numba_search_parallel(
+    numba_adj_matrix, sources, targets, target_starts, target_ends, cutoff, store_predecessors
+):
+    """Run one search per unique source; preserve compact trees for lazy routes.
+
+    Source i stops once targets[target_starts[i]:target_ends[i]] settle; an
+    empty slice means all reachable nodes.
+    """
     result = List.empty_list(compact_search_type)
     for _ in range(len(sources)):
         result.append(
@@ -408,7 +414,11 @@ def dijkstra_numba_search_parallel(numba_adj_matrix, sources, targets_by_source,
     for i in nb.prange(len(sources)):
         row = np.int64(i)
         result[row] = dijkstra_numba_search(
-            numba_adj_matrix, sources[row : row + 1], targets_by_source[row], cutoff, store_predecessors
+            numba_adj_matrix,
+            sources[row : row + 1],
+            targets[target_starts[row] : target_ends[row]],
+            cutoff,
+            store_predecessors,
         )
     return result
 
