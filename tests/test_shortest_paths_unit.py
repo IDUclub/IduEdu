@@ -550,3 +550,14 @@ def test_pairwise_repeated_unordered_origins_match_matrix_cells():
     for i in range(len(origins)):
         assert pairwise.distances.iloc[i, 0] == matrix.distances.iloc[i, i]
         assert pairwise.get_path_at(i) == matrix.get_path_at(i, i)
+
+
+def test_path_to_edges_out_and_back_route_reuses_edges_in_order():
+    graph = undirected_line_graph()
+    route = path_to_edges(graph, [0, 1, 2, 1, 0])
+    assert route["path_order"].tolist() == [0, 1, 2, 3]
+    assert list(zip(route["path_u"], route["path_v"])) == [(0, 1), (1, 2), (2, 1), (1, 0)]
+    assert route.index.tolist() == [0, 1, 1, 0]
+    assert list(route.geometry.iloc[2].coords) == [(20.0, 0.0), (10.0, 0.0)]
+    with pytest.raises(ValueError, match=r"absent or disallowed in graph: \(0, 2\)"):
+        path_to_edges(graph, [0, 1, 0, 2])
