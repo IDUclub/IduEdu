@@ -41,7 +41,7 @@ def _dense(series: pd.Series) -> dict:
 def test_single_source_dijkstra_respects_cutoff():
     graph = undirected_line_graph()
 
-    result = single_source_dijkstra_path_length(graph, 0, weight="time_min", cutoff=3.0)
+    result = single_source_dijkstra(graph, 0, weight="time_min", cutoff=3.0, output="distances")
 
     assert _dense(result) == {0: 0.0, 1: 1.0, 2: 3.0}
     assert 3 not in result.index
@@ -50,8 +50,8 @@ def test_single_source_dijkstra_respects_cutoff():
 def test_reverse_dijkstra_uses_transposed_directed_graph():
     graph = directed_oneway_graph()
 
-    forward = single_source_dijkstra_path_length(graph, 3, weight="time_min")
-    reverse = single_source_dijkstra_path_length(graph, 3, weight="time_min", reverse=True)
+    forward = single_source_dijkstra(graph, 3, weight="time_min", output="distances")
+    reverse = single_source_dijkstra(graph, 3, weight="time_min", reverse=True, output="distances")
 
     assert _dense(forward) == {3: 0.0}
     assert _dense(reverse) == {0: 7.0, 1: 6.0, 2: 4.0, 3: 0.0}
@@ -60,7 +60,7 @@ def test_reverse_dijkstra_uses_transposed_directed_graph():
 def test_multi_source_dijkstra_returns_nearest_distance_and_source():
     graph = undirected_line_graph()
 
-    distances = multi_source_dijkstra_path_length(graph, source_nodes=[0, 3], weight="time_min")
+    distances = multi_source_dijkstra(graph, source_nodes=[0, 3], weight="time_min", output="distances")
     nearest = multi_source_dijkstra_nearest_source(graph, source_nodes=[0, 3], weight="time_min")
 
     assert _dense(distances) == {0: 0.0, 1: 1.0, 2: 3.0, 3: 0.0}
@@ -70,11 +70,11 @@ def test_multi_source_dijkstra_returns_nearest_distance_and_source():
     assert float(nearest.loc[2, "dist"]) == 3.0
 
 
-def test_dijkstra_path_length_parallel_keeps_input_source_index():
+def test_dijkstra_parallel_keeps_input_source_index():
     graph = undirected_line_graph()
     sources = pd.DataFrame({"graph_node_id": [0, 3]}, index=["left", "right"])
 
-    result = dijkstra_path_length_parallel(graph, gdf_sources=sources, weight="time_min", max_workers=1)
+    result = dijkstra_parallel(graph, gdf_sources=sources, weight="time_min", max_workers=1, output="distances")
 
     assert result.index.tolist() == ["left", "right"]
     assert result.columns.tolist() == [0, 1, 2, 3]
@@ -99,7 +99,7 @@ def test_shortest_paths_reject_missing_source_node():
     graph = undirected_line_graph()
 
     with pytest.raises(ValueError, match="absent in graph"):
-        single_source_dijkstra_path_length(graph, 999)
+        single_source_dijkstra(graph, 999)
 
 
 def test_single_source_dijkstra_path_returns_route_and_handles_cutoff():
@@ -188,7 +188,7 @@ def test_cutoff_inclusive_and_legacy_threshold_alias(weight, cutoff, cost):
     assert np.isinf(result.distances.loc[0, 3])
     assert result.get_path(0, 3) is None
     pd.testing.assert_frame_equal(result.distances, od_matrix(graph, **params, threshold=cutoff))
-    assert graph.multi_source_dijkstra_path(**params, cutoff=cutoff).loc[0, 2] == [0, 1, 2]
+    assert graph.od_matrix(**params, cutoff=cutoff, output="paths").loc[0, 2] == [0, 1, 2]
 
 
 @pytest.mark.parametrize("factory", [undirected_line_graph, directed_oneway_graph])
@@ -495,14 +495,15 @@ def test_legacy_path_matrix_preserves_labels_mode_and_threshold():
     graph = undirected_line_graph()
     origins = pd.DataFrame({"graph_node_id": [0, 3]}, index=["left", "right"])
     destinations = pd.DataFrame({"graph_node_id": [2, 0]}, index=["near", "far"])
-    result = multi_source_dijkstra_path(
-        graph,
-        gdf_origins=origins,
-        gdf_destinations=destinations,
-        mode="pairwise",
-        threshold=3,
-        max_workers=1,
-    )
+    with pytest.warns(DeprecationWarning, match="od_matrix"):
+        result = multi_source_dijkstra_path(
+            graph,
+            gdf_origins=origins,
+            gdf_destinations=destinations,
+            mode="pairwise",
+            threshold=3,
+            max_workers=1,
+        )
     assert result.index.tolist() == [("left", "near"), ("right", "far")]
     assert result.iloc[0, 0] == [0, 1, 2]
     assert pd.isna(result.iloc[1, 0])
@@ -550,6 +551,53 @@ def test_pairwise_repeated_unordered_origins_match_matrix_cells():
     for i in range(len(origins)):
         assert pairwise.distances.iloc[i, 0] == matrix.distances.iloc[i, i]
         assert pairwise.get_path_at(i) == matrix.get_path_at(i, i)
+
+
+@pytest.mark.parametrize(
+    "legacy,replacement",
+    [
+        (
+            lambda g: single_source_dijkstra_path_length(g, 0, cutoff=3),
+            lambda g: g.single_source_dijkstra(0, cutoff=3, output="distances"),
+        ),
+        (
+            lambda g: g.single_source_dijkstra_path_length(0, cutoff=3),
+            lambda g: g.single_source_dijkstra(0, cutoff=3, output="distances"),
+        ),
+        (
+            lambda g: multi_source_dijkstra_path_length(g, source_nodes=[0, 3]),
+            lambda g: g.multi_source_dijkstra(source_nodes=[0, 3], output="distances"),
+        ),
+        (
+            lambda g: g.multi_source_dijkstra_path_length(source_nodes=[0, 3]),
+            lambda g: g.multi_source_dijkstra(source_nodes=[0, 3], output="distances"),
+        ),
+        (
+            lambda g: dijkstra_path_length_parallel(g, source_nodes=[0, 3]),
+            lambda g: g.dijkstra_parallel(source_nodes=[0, 3], output="distances"),
+        ),
+        (
+            lambda g: g.dijkstra_path_length_parallel(source_nodes=[0, 3]),
+            lambda g: g.dijkstra_parallel(source_nodes=[0, 3], output="distances"),
+        ),
+        (
+            lambda g: multi_source_dijkstra_path(g, origins_nodes=[0], destination_nodes=[2, 3]),
+            lambda g: g.od_matrix(origins_nodes=[0], destination_nodes=[2, 3], output="paths"),
+        ),
+        (
+            lambda g: g.multi_source_dijkstra_path(origins_nodes=[0], destination_nodes=[2, 3]),
+            lambda g: g.od_matrix(origins_nodes=[0], destination_nodes=[2, 3], output="paths"),
+        ),
+    ],
+)
+def test_legacy_helpers_warn_and_match_replacements(legacy, replacement):
+    graph = undirected_line_graph()
+    with pytest.warns(DeprecationWarning, match="removed in IduEdu 3.0") as record:
+        result = legacy(graph)
+    assert len(record) == 1 and record[0].filename == __file__
+    expected = replacement(graph)
+    assert_equal = pd.testing.assert_series_equal if isinstance(expected, pd.Series) else pd.testing.assert_frame_equal
+    assert_equal(result, expected)
 
 
 def test_path_to_edges_out_and_back_route_reuses_edges_in_order():

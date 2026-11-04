@@ -480,21 +480,19 @@ class UrbanGraph:
         reverse: bool = False,
         dtype: np.dtype = np.float32,
     ) -> pd.Series:
-        """Run single-source Dijkstra shortest path search on this graph.
+        """Return a sparse distance Series indexed by reachable graph nodes.
 
-        See also:
-            https://iduclub.github.io/IduEdu/examples/shortest_paths.html
+        .. deprecated:: 2.4.1
+            Use ``single_source_dijkstra(..., output="distances")``.
         """
 
-        from iduedu.graph.shortest_paths import single_source_dijkstra_path_length
+        from iduedu.graph.routing import warn_deprecated
 
-        return single_source_dijkstra_path_length(
-            self,
-            source_node,
-            weight=weight,
-            cutoff=cutoff,
-            reverse=reverse,
-            dtype=dtype,
+        warn_deprecated(
+            "UrbanGraph.single_source_dijkstra_path_length", 'single_source_dijkstra(..., output="distances")'
+        )
+        return self.single_source_dijkstra(
+            source_node, weight=weight, cutoff=cutoff, reverse=reverse, dtype=dtype, output="distances"
         )
 
     def single_source_dijkstra_path(
@@ -530,16 +528,19 @@ class UrbanGraph:
         reverse: bool = False,
         dtype: np.dtype = np.float32,
     ) -> pd.Series:
-        """Run multi-source Dijkstra shortest path search on this graph.
+        """Return nearest-source distances.
 
-        See also:
-            https://iduclub.github.io/IduEdu/examples/shortest_paths.html
+        .. deprecated:: 2.4.1
+            Use ``multi_source_dijkstra(..., output="distances")``.
         """
 
-        from iduedu.graph.shortest_paths import multi_source_dijkstra_path_length
+        from iduedu.graph.routing import warn_deprecated
 
-        return multi_source_dijkstra_path_length(
-            self,
+        warn_deprecated(
+            "UrbanGraph.multi_source_dijkstra_path_length", 'multi_source_dijkstra(..., output="distances")'
+        )
+        return self.multi_source_dijkstra(
+            output="distances",
             source_nodes=source_nodes,
             gdf_sources=gdf_sources,
             graph_node_column=graph_node_column,
@@ -563,12 +564,17 @@ class UrbanGraph:
         max_workers: int | None = None,
         cutoff: float | None = None,
     ) -> pd.DataFrame:
-        """Return shortest node paths between origin and destination inputs."""
+        """Return shortest node paths between origin and destination inputs.
 
-        from iduedu.graph.shortest_paths import multi_source_dijkstra_path
+        .. deprecated:: 2.4.1
+            Use ``od_matrix(..., output="paths")``.
+        """
 
-        return multi_source_dijkstra_path(
-            self,
+        from iduedu.graph.routing import warn_deprecated
+
+        warn_deprecated("UrbanGraph.multi_source_dijkstra_path", 'od_matrix(..., output="paths")')
+        return self.od_matrix(
+            output="paths",
             gdf_origins=gdf_origins,
             gdf_destinations=gdf_destinations,
             origins_nodes=origins_nodes,
@@ -623,16 +629,17 @@ class UrbanGraph:
         dtype: np.dtype = np.float32,
         max_workers: int | None = None,
     ) -> pd.DataFrame:
-        """Run independent Dijkstra searches for multiple source nodes.
+        """Return independent distance rows for multiple source nodes.
 
-        See also:
-            https://iduclub.github.io/IduEdu/examples/shortest_paths.html
+        .. deprecated:: 2.4.1
+            Use ``dijkstra_parallel(..., output="distances")``.
         """
 
-        from iduedu.graph.shortest_paths import dijkstra_path_length_parallel
+        from iduedu.graph.routing import warn_deprecated
 
-        return dijkstra_path_length_parallel(
-            self,
+        warn_deprecated("UrbanGraph.dijkstra_path_length_parallel", 'dijkstra_parallel(..., output="distances")')
+        return self.dijkstra_parallel(
+            output="distances",
             source_nodes=source_nodes,
             gdf_sources=gdf_sources,
             graph_node_column=graph_node_column,
