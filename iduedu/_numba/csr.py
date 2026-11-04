@@ -70,22 +70,3 @@ def sparse_row2numba_bool_matrix(sparse_row_scipy):
     col_index = sparse_row_scipy.indices.astype(np.uint32, copy=False)
     row_index = sparse_row_scipy.indptr.astype(np.uint32, copy=False)
     return BCSRMatrix(values, col_index, row_index)
-
-
-def coo_rows_to_arrays(coo_rows: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Flatten row-wise COO pairs into row, column and value arrays."""
-    nnz = sum(len(row) for row in coo_rows)
-
-    rows = np.empty(nnz, dtype=np.int32)
-    cols = np.empty(nnz, dtype=np.int32)
-    values = np.empty(nnz, dtype=np.float32)
-
-    pos = 0
-    for row_i, row in enumerate(coo_rows):
-        for col_i, distance in row:
-            rows[pos] = row_i
-            cols[pos] = col_i
-            values[pos] = distance
-            pos += 1
-
-    return rows, cols, values
