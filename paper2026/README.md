@@ -4,7 +4,7 @@ Source, pipeline and figures for two papers built from one body of work.
 
 **A — open urban data.** How complete OpenStreetMap is for public transport, and
 what the difference against published timetables costs when accessibility is
-computed. 126 cities, 169 GTFS feeds, 54 countries. Completeness is measured in
+computed. 265 cities, 626 GTFS feeds, 91 countries (October 2026 snapshot). Completeness is measured in
 **both directions without designating either source as ground truth**, and the
 asymmetry between the two directions stands in for the missing reference.
 Targeted at *Computational Urban Science* (Springer Nature).
@@ -18,48 +18,27 @@ a machine that is not doing anything else.
 
 | Directory | What is in it |
 |---|---|
-| `benchmarks/` | the pipeline that produces every number — see its own README for the order |
-| `figures/` | one generator per paper — `figures_cus.py` here — and the images they write |
-| `results/wide_tier/` | one CSV per stage, plus `METRICS.md` with every headline number |
-| `manuscript_cus/` | the manuscript: text modules, LaTeX generator, Springer template, built PDF — `python manuscript_cus/build_submission.py` (not in Git) |
-| `deposit_cus/` | the Zenodo upload for paper A, assembled by `benchmarks/make_deposit.py --run` (not in Git) |
-| `drafts/`, `archive/`, `tools/`, `PLAN.md` | working notes, superseded drafts, and scripts that answered a question once (not in Git) |
+| `pipeline/` | the study pipeline: every number of paper A from the frozen inputs — [`pipeline/README.md`](pipeline/README.md) |
+| `inputs/` | the frozen inputs: study cities, their feeds (sha256), boundaries, Geofabrik regions; `pipeline/cohort/` says how they were drawn (not in Git; in the Zenodo deposit) |
+| `timing/` | the library timing benchmarks of paper B — [`timing/README.md`](timing/README.md) |
+| `figures/` | the images of both papers; paper A's are drawn by `pipeline/figures.py` |
+| `results/wide_tier/` | one table per stage, `METRICS.md` with every headline number, `logs/` (not in Git; the tables are in the Zenodo deposit) |
+| `manuscript_cus/` | the manuscript: text modules, LaTeX generator, Springer template, built PDF (not in Git) |
+| `deposit_cus/` | the Zenodo deposit, assembled by `python pipeline/deposit.py` (not in Git) |
+| `drafts/`, `archive/`, `tools/`, `PLAN.md` | working notes, superseded versions, one-off scripts (not in Git) |
 | `references/` | PDFs of the work the manuscript cites closely (not in Git) |
-| `city_feeds/` | one merged, boundary-clipped GTFS archive per city (not in Git) |
-| `osm_graphs/`, `gtfs_graphs/` | built graphs (not in Git) |
+| `feed_cache/`, `osm/`, `city_feeds/`, `osm_graphs/`, `gtfs_graphs/`, `osm_graphs_variants/` | downloaded feeds, OSM extracts and built artefacts (not in Git; `osm/` is a junction to `D:/iduedu_osm_pbf` here) |
 
 ## Reproducing the study
 
-Every stage is resume-safe and writes one row per city as it goes. Run with
-`PYTHONIOENCODING=utf-8` — the console here is not UTF-8 by default, and a stray
-non-ASCII character in a log line will otherwise kill a sweep mid-run.
-
 ```bash
-cd paper2026/benchmarks && python wide_cohort.py
+python paper2026/pipeline/run.py list   # the stages and the command behind each
+python paper2026/pipeline/run.py all    # everything after the frozen inputs; every stage resumes
+python paper2026/pipeline/deposit.py    # the Zenodo deposit in deposit_cus/ (nothing is uploaded)
 ```
 
-That prints the funnel — how many cities survive each stage, and which are left
-out with the reason. `benchmarks/README.md` lists the seventeen stages in order.
-The full sweep is hours of Overpass traffic; the graphs and merged feeds are
-published through Zenodo so the measuring stages can be rerun without refetching.
-
-To regenerate the tables and figures from result CSVs already on disk:
-
-```bash
-cd paper2026 && python benchmarks/wide_tier_metrics.py && python figures/figures_cus.py
-```
-
-Neither reads anything a sweep did not write, so the manuscript cannot drift away
-from the data.
-
-## Two modules worth knowing about
-
-`benchmarks/wide_paths.py` declares every directory and table in one place.
-
-`benchmarks/wide_cohort.py` decides which cities a stage runs over. A city enters
-the study when it has a boundary, because the boundary is what makes the two
-sides comparable: the same OSM relation clips the feed and the OSM extract.
-Cities without one are reported with a reason rather than dropped in silence.
+No stage queries a live service: feeds are the archived copies, OSM is one Geofabrik
+snapshot, boundaries are frozen polygons.
 
 ## What is in Git and what is not
 
@@ -73,16 +52,16 @@ published, because a public repository is a preprint and that is a decision to
 take deliberately rather than by commit. Working notes and superseded drafts are
 ours to read and nobody else's.
 
+> **Zenodo deposit of paper A** (265 cities, version 3.0.0):
+> <https://doi.org/10.5281/zenodo.23732451>
+>
 > **Previous Zenodo record** (superseded, kept for reference):
 > <https://doi.org/10.5281/zenodo.21610964>
 
-A new deposit covering the 126-city study is a condition of submission — the
-journal returns a manuscript without a Data Availability Statement as incomplete.
-
 ## Environment
 
-Python 3.11. The study pipeline runs in the repository's own environment with
-IduEdu installed from the root. The timing benchmarks need `environment-bench.yml`
+Python 3.11–3.12. The study pipeline runs in `.venv-bench` with IduEdu installed
+from the root with the `pbf` extra (pyosmium). The timing benchmarks need `environment-bench.yml`
 (conda-forge: `pyrosm` cannot be installed with pip on any platform, because
 `cykhash` publishes no wheels).
 
@@ -90,7 +69,7 @@ IduEdu installed from the root. The timing benchmarks need `environment-bench.ym
 
 Street, public-transport, school and building geometries come from
 OpenStreetMap. Schedules come from the operators' own published GTFS feeds, via
-the Mobility Database, the Transitland Atlas and DigitalTransport4Africa.
+the Mobility Database, the Transitland Atlas, DigitalTransport4Africa and Transitous.
 Population values were allocated to residential buildings by an author-developed
 algorithm; no file contains individual-level data.
 
