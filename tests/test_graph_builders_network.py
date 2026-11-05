@@ -66,7 +66,7 @@ def test_get_drive_graph_adjacency_and_shortest_path(drive_graph):
     assert drive_graph.adjacency_matrix.shape == (len(drive_graph.nodes_gdf), len(drive_graph.nodes_gdf))
 
     source = drive_graph.nodes_gdf.index[0]
-    lengths = drive_graph.single_source_dijkstra_path_length(source, weight="time_min")
+    lengths = drive_graph.single_source_dijkstra(source, weight="time_min", output="distances")
     assert lengths.loc[source] == 0.0
     assert lengths.notna().sum() > 1
 
@@ -223,7 +223,7 @@ def test_get_intermodal_graph_is_routable(intermodal_graph):
     graph.update_adjacency_matrix()
 
     source = graph.nodes_gdf.index[0]
-    lengths = graph.single_source_dijkstra_path_length(source, weight="time_min")
+    lengths = graph.single_source_dijkstra(source, weight="time_min", output="distances")
 
     assert lengths.loc[source] == 0.0
     assert lengths.notna().sum() > 1

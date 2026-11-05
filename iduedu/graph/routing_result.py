@@ -5,15 +5,56 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
+from pandas._libs.sparse import IntIndex  # pylint: disable=no-name-in-module
 
 from iduedu._numba.shortest_paths import reconstruct_numba_compact_path
 
 
-def _path_series(values, index, name):
-    # Construct an object array explicitly: equally long routes must remain
-    # individual cells rather than becoming a two-dimensional numpy array.
+def _sparse_array(values, positions, length, dtype, fill_value):
+    """Wrap stored values at sorted unique positions without a dense round trip."""
+    # pandas >= 3.1 offers from_indices and deprecates the sparse_index argument.
+    if hasattr(pd.arrays.SparseArray, "from_indices"):
+        return pd.arrays.SparseArray.from_indices(values, positions, length, fill_value=fill_value, dtype=dtype)
+    return pd.arrays.SparseArray(
+        values,
+        sparse_index=IntIndex(length, np.asarray(positions, dtype=np.int32)),
+        dtype=pd.SparseDtype(dtype, fill_value),
+    )
+
+
+def _sparse_frame(rows, cols, values, index, columns, dtype, fill_value):
+    """Build a sparse table column by column from coordinate entries."""
+    order = np.lexsort((rows, cols))
+    rows, cols, values = rows[order], cols[order], values[order]
+    bounds = np.searchsorted(cols, np.arange(len(columns) + 1))
+    arrays = {
+        j: _sparse_array(values[start:end], rows[start:end], len(index), dtype, fill_value)
+        for j, (start, end) in enumerate(zip(bounds[:-1], bounds[1:]))
+    }
+    result = pd.DataFrame(arrays, index=index) if arrays else pd.DataFrame(index=index)
+    result.columns = columns
+    return result
+
+
+def _groups(labels, count):
+    """Return positions ordered by label and offsets of each label's run."""
+    order = np.argsort(labels, kind="stable")
+    offsets = np.zeros(count + 1, dtype=np.int64)
+    np.cumsum(np.bincount(labels, minlength=count), out=offsets[1:])
+    return order, offsets
+
+
+def _object_array(values):
+    # Fill cells one by one: equally long routes must remain individual cells
+    # rather than becoming a two-dimensional numpy array.
     objects = np.empty(len(values), dtype=object)
-    objects[:] = values
+    for i, value in enumerate(values):
+        objects[i] = value
+    return objects
+
+
+def _path_series(values, index, name):
+    objects = _object_array(values)
     return pd.Series(pd.arrays.SparseArray(objects, fill_value=None), index=index, name=name)
 
 
@@ -59,18 +100,34 @@ class _PathStore:
             tree_index, target = self.tree_indices[row], self.targets[column]
         return self.trees[tree_index].reconstruct(int(target), self.node_ids, self.reverse)
 
+    def _matrix_paths(self) -> pd.DataFrame:
+        # Reconstruct only cells whose target settled in the tree; rows that
+        # share a tree (repeated sources) reuse the route as separate lists.
+        owners, targets = self.tree_indices, self.origins if self.transposed else self.targets
+        order, offsets = _groups(owners, len(self.trees))
+        rows, cols, values = [], [], []
+        for tree_index, tree in enumerate(self.trees):
+            members = order[offsets[tree_index] : offsets[tree_index + 1]]
+            if members.size == 0 or tree.nodes.size == 0:
+                continue
+            found = np.searchsorted(tree.nodes, targets).clip(max=len(tree.nodes) - 1)
+            found = np.flatnonzero(tree.nodes[found] == targets)
+            routes = [tree.reconstruct(int(targets[k]), self.node_ids, self.reverse) for k in found]
+            for owner in members:
+                owner_axis = np.full(len(found), owner)
+                rows.append(found if self.transposed else owner_axis)
+                cols.append(owner_axis if self.transposed else found)
+                values.extend(list(route) for route in routes)
+        stacked = (np.concatenate(axis) if axis else np.empty(0, dtype=np.int64) for axis in (rows, cols))
+        return _sparse_frame(*stacked, _object_array(values), self.index, self.columns, object, None)
+
     def materialize(self) -> pd.Series | pd.DataFrame:
         if self.layout == "series":
             result = _path_series([self.path_at(i) for i in range(len(self.index))], self.index, "path")
         elif self.layout == "pairwise":
             result = _path_series([self.path_at(i) for i in range(len(self.index))], self.index, "path").to_frame()
         else:
-            columns = [
-                _path_series([self.path_at(i, j) for i in range(len(self.index))], self.index, label)
-                for j, label in enumerate(self.columns)
-            ]
-            result = pd.concat(columns, axis=1) if columns else pd.DataFrame(index=self.index)
-            result.columns = self.columns
+            result = self._matrix_paths()
         result.attrs.update(self.attrs or {})
         return result
 

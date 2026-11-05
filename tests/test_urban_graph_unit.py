@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from shapely.geometry import LineString, Point, box
 
-from iduedu import multi_source_dijkstra_path, nearest_nodes, path_to_edges, single_source_dijkstra_path, validate_graph
+from iduedu import nearest_nodes, od_matrix, path_to_edges, single_source_dijkstra_path, validate_graph
 from iduedu.graph.adjacency import build_adjacency_matrix
 from iduedu.graph.urban_graph import UrbanGraph
 from tests.factories import (
@@ -97,7 +97,12 @@ def test_method_wrappers_match_functional_results():
 
     assert graph.connected_components() == [{0, 1, 2, 3}]
     assert graph.largest_component() == {0, 1, 2, 3}
-    assert graph.single_source_dijkstra_path_length(0).sparse.to_dense().to_dict() == {0: 0.0, 1: 1.0, 2: 3.0, 3: 7.0}
+    assert graph.single_source_dijkstra(0, output="distances").sparse.to_dense().to_dict() == {
+        0: 0.0,
+        1: 1.0,
+        2: 3.0,
+        3: 7.0,
+    }
 
 
 WALK_SPEED_M_PER_MIN = 100.0
@@ -221,17 +226,8 @@ def test_path_routing_is_available_through_methods_and_public_api():
 
     method_path = graph.single_source_dijkstra_path(0, 3)
     function_path = single_source_dijkstra_path(graph, 0, 3)
-    method_matrix = graph.multi_source_dijkstra_path(
-        origins_nodes=[0],
-        destination_nodes=[3],
-        max_workers=1,
-    )
-    function_matrix = multi_source_dijkstra_path(
-        graph,
-        origins_nodes=[0],
-        destination_nodes=[3],
-        max_workers=1,
-    )
+    method_matrix = graph.od_matrix(origins_nodes=[0], destination_nodes=[3], max_workers=1, output="paths")
+    function_matrix = od_matrix(graph, origins_nodes=[0], destination_nodes=[3], max_workers=1, output="paths")
     method_edges = graph.path_to_edges(method_path)
     function_edges = path_to_edges(graph, function_path)
 
