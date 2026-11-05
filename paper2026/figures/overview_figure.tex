@@ -56,61 +56,68 @@
   tap/.style={circle, fill=dataBd!85, inner sep=0pt, minimum size=3pt},
 ]
 
+% ------------------------- where the sample comes from --------------------
+\node[box, draw=dataBd, fill=dataFl, text width=9.0cm] (catalogues) at (0,0)
+  {{\hd Four open catalogues of GTFS feeds}};
+
 % ---------------------------- the cohort ----------------------------------
-\node[box, draw=dataBd, fill=dataFl, text width=7.2cm] (cities) at (0,0)
-  {{\hd 126 cities with a published timetable}};
+\node[box, draw=dataBd, fill=dataFl, text width=9.0cm] (cities) at (0,-2.15cm)
+  {{\hd 265 cities with a published timetable}
+   \sub{2,374 archives retrieved; at most five cities per country, merged into one feed each}};
 
 % ------------------- the two sources, cut by one boundary -----------------
-\node[box, draw=dataBd, fill=dataFl, text width=4.4cm] (osm) at (-6.0cm,-2.15cm)
+\node[box, draw=dataBd, fill=dataFl, text width=4.4cm] (osm) at (-6.0cm,-4.30cm)
   {{\hd OpenStreetMap}\sub{route relations and stops}};
 
-\node[box, draw=dataBd, fill=dataFl, text width=4.4cm] (gtfs) at (6.0cm,-2.15cm)
-  {{\hd The city's GTFS feed}\sub{stops, trips and times}};
+\node[box, draw=dataBd, fill=dataFl, text width=4.4cm] (gtfs) at (6.0cm,-4.30cm)
+  {{\hd The city's GTFS feed}\sub{stops, trips, and times}};
 
-\node[box, draw=cutBd, fill=cutFl, text width=4.6cm] (clip) at (0,-2.15cm)
-  {{\hd One boundary}\sub{the same relation cuts both}};
+\node[box, draw=cutBd, fill=cutFl, text width=4.6cm] (clip) at (0,-4.30cm)
+  {{\hd One boundary}\sub{the same relation clips both}};
 
 % ---------------------------- the two graphs ------------------------------
-\node[box, draw=netBd, fill=netFl, text width=4.4cm] (ugosm) at (-6.0cm,-4.80cm)
-  {{\hd\texttt{UrbanGraph}}\sub{from the map}};
+\node[box, draw=netBd, fill=netFl, text width=4.4cm] (ugosm) at (-6.0cm,-6.95cm)
+  {{\hd Public transport graph}\sub{from the map}};
 
-\node[box, draw=netBd, fill=netFl, text width=4.4cm] (ugfeed) at (6.0cm,-4.80cm)
-  {{\hd\texttt{UrbanGraph}}\sub{from the timetable}};
+\node[box, draw=netBd, fill=netFl, text width=4.4cm] (ugfeed) at (6.0cm,-6.95cm)
+  {{\hd Public transport graph}\sub{from the timetable}};
 
-\node[box, draw=fitBd, fill=fitFl, text width=4.6cm] (coef) at (0,-4.80cm)
+\node[box, draw=fitBd, fill=fitFl, text width=4.6cm] (coef) at (0,-6.95cm)
   {{\hd Waiting and travel times}
    \sub{\textit{measured} on the timetable,\\ \textit{applied} to the map}};
 
 % ---------------------------- first comparison ----------------------------
-\node[box, draw=outBd, fill=outFl, text width=8.0cm] (topo) at (0,-7.30cm)
+\node[box, draw=outBd, fill=outFl, text width=10.6cm] (topo) at (0,-9.45cm)
   {{\hd Compared as networks}
-   \sub{stops the two share $\cdot$ route lengths $\cdot$ topology}};
+   \sub{matched shares at 50, 100, and 150 m $\cdot$ displacement\\ of the stop clouds $\cdot$ stops outside route relations}};
 
-% ------------------- multimodal graphs over one pedestrian layer ----------
-\node[box, draw=netBd, fill=netFl, text width=4.4cm] (mmosm) at (-6.0cm,-9.75cm)
-  {{\hd Multimodal graph}\sub{map $+$ walking}};
+% ------------------- intermodal graphs over one pedestrian layer ----------
+\node[box, draw=netBd, fill=netFl, text width=4.4cm] (mmosm) at (-6.0cm,-11.90cm)
+  {{\hd Intermodal graph}\sub{map $+$ walking}};
 
-\node[box, draw=netBd, fill=netFl, text width=4.4cm] (mmfeed) at (6.0cm,-9.75cm)
-  {{\hd Multimodal graph}\sub{timetable $+$ walking}};
+\node[box, draw=netBd, fill=netFl, text width=4.4cm] (mmfeed) at (6.0cm,-11.90cm)
+  {{\hd Intermodal graph}\sub{timetable $+$ walking}};
 
-\node[box, draw=walkBd, fill=walkFl, text width=4.6cm] (walk) at (0,-9.75cm)
+\node[box, draw=walkBd, fill=walkFl, text width=4.6cm] (walk) at (0,-11.90cm)
   {{\hd Pedestrian graph}\sub{one per city, 1,500 points}};
 
 % ---------------------------- second comparison ---------------------------
-\node[box, draw=outBd, fill=outFl, text width=8.0cm] (acc) at (0,-12.25cm)
+\node[box, draw=outBd, fill=outFl, text width=10.6cm] (acc) at (0,-14.40cm)
   {{\hd Compared as journeys}
-   \sub{places reached within 15, 30 and 45 minutes}};
+   \sub{cumulative opportunity: places reached within 15, 30, and 45 minutes
+   from 100 origins}};
 
 % ---------------------------- flow ----------------------------------------
-% The cohort forks over the boundary box, which sits in the same row.
-\draw[flow] (cities.south) -- ++(0,-0.5cm) -| (osm.north);
-\draw[flow] (cities.south) -- ++(0,-0.5cm) -| (gtfs.north);
+\draw[flow] (catalogues.south) -- (cities.north);
 
-\draw[flow] (osm.east)   -- (clip.west);
-\draw[flow] (gtfs.west)  -- (clip.east);
+% Each city gets its boundary first, and the boundary then cuts both sources,
+% the map to the left and the timetable to the right.
+\draw[flow] (cities.south) -- (clip.north);
+\draw[flow] (clip.west) -- (osm.east);
+\draw[flow] (clip.east) -- (gtfs.west);
 
-\draw[flow] (clip.south) -- ++(0,-0.55cm) -| (ugosm.north);
-\draw[flow] (clip.south) -- ++(0,-0.55cm) -| (ugfeed.north);
+\draw[flow] (osm.south)  -- (ugosm.north);
+\draw[flow] (gtfs.south) -- (ugfeed.north);
 
 % The timetable pays for the constants the map has no way to state; the two
 % directions are named inside the box, where a 1.6 cm arrow has no room for a
