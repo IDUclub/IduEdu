@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v2.4.1 (2026-11-05)
+
+### Bug Fixes
+
+- **routing**: Faster sparse tables and path_to_edges, deprecate legacy wrappers
+  ([#27](https://github.com/IDUclub/IduEdu/pull/27),
+  [`bbf8dc2`](https://github.com/IDUclub/IduEdu/commit/bbf8dc2b1db86ae46fca292d9cf6d08dd57bf231))
+
+
 ## v2.4.0 (2026-11-03)
 
 ### Features
