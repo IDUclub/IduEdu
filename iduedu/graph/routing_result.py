@@ -12,6 +12,9 @@ from iduedu._numba.shortest_paths import reconstruct_numba_compact_path
 
 def _sparse_array(values, positions, length, dtype, fill_value):
     """Wrap stored values at sorted unique positions without a dense round trip."""
+    # pandas >= 3.1 offers from_indices and deprecates the sparse_index argument.
+    if hasattr(pd.arrays.SparseArray, "from_indices"):
+        return pd.arrays.SparseArray.from_indices(values, positions, length, fill_value=fill_value, dtype=dtype)
     return pd.arrays.SparseArray(
         values,
         sparse_index=IntIndex(length, np.asarray(positions, dtype=np.int32)),

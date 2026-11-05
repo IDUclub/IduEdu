@@ -594,7 +594,9 @@ def test_legacy_helpers_warn_and_match_replacements(legacy, replacement):
     graph = undirected_line_graph()
     with pytest.warns(DeprecationWarning, match="removed in IduEdu 3.0") as record:
         result = legacy(graph)
-    assert len(record) == 1 and record[0].filename == __file__
+    # Count only IduEdu deprecations: dependencies may warn inside the same call.
+    legacy_warnings = [item for item in record if "removed in IduEdu 3.0" in str(item.message)]
+    assert len(legacy_warnings) == 1 and legacy_warnings[0].filename == __file__
     expected = replacement(graph)
     assert_equal = pd.testing.assert_series_equal if isinstance(expected, pd.Series) else pd.testing.assert_frame_equal
     assert_equal(result, expected)
