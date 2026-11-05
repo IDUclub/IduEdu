@@ -1,24 +1,33 @@
 """Shared Dijkstra workflows for distances, routes and origin-destination tables."""
 
+import warnings
 from typing import Any, Iterable, Iterator, Literal
 
 import numba as nb
 import numpy as np
 import pandas as pd
-from numba.typed import List
 from scipy import sparse
 
 from iduedu._numba.csr import sparse_row2numba_matrix
 from iduedu._numba.shortest_paths import dijkstra_numba_search, dijkstra_numba_search_parallel
 from iduedu.config import config
 from iduedu.graph.graph_inputs import resolve_graph_nodes_input
-from iduedu.graph.routing_result import ShortestPathResult, _PathStore, _PathTree
+from iduedu.graph.routing_result import ShortestPathResult, _groups, _PathStore, _PathTree, _sparse_frame
 from iduedu.graph.urban_graph import UrbanGraph
 
 Output = Literal["distances", "paths", "both"]
 PathStorage = Literal["eager", "lazy"]
 RoutingTable = pd.Series | pd.DataFrame
 RoutingOutput = RoutingTable | ShortestPathResult
+
+
+def warn_deprecated(name: str, replacement: str, *, stacklevel: int = 3) -> None:
+    """Warn that a legacy routing helper will be removed in IduEdu 3.0."""
+    warnings.warn(
+        f"{name} is deprecated and will be removed in IduEdu 3.0; use {replacement} instead.",
+        DeprecationWarning,
+        stacklevel=stacklevel,
+    )
 
 
 def _validate_options(output, path_storage, max_workers=None, batch_size=None):
@@ -142,18 +151,8 @@ def _distance_frame(searches, targets, inverse, index, columns, dtype, attrs, *,
         (np.concatenate(data), np.concatenate(column_indices), np.array(offsets)),
         shape=(len(searches), len(targets)),
     )[inverse]
-    matrix = (matrix.T if transposed else matrix).tocsc()
-    series = []
-    for j, label in enumerate(columns):
-        start, end = matrix.indptr[j : j + 2]
-        column = pd.Series(
-            pd.arrays.SparseArray(matrix.data[start:end], fill_value=np.inf),
-            index=matrix.indices[start:end],
-        ).reindex(pd.RangeIndex(len(index)), fill_value=np.inf)
-        column.index, column.name = index, label
-        series.append(column)
-    result = pd.concat(series, axis=1) if series else pd.DataFrame(index=index)
-    result.columns = columns
+    matrix = (matrix.T if transposed else matrix).tocoo()
+    result = _sparse_frame(matrix.row, matrix.col, matrix.data.astype(dtype), index, columns, dtype, np.inf)
     result.attrs.update(attrs)
     return result
 
@@ -195,7 +194,14 @@ def _finish(output, distances, store, path_storage, nearest_sources=None):
     return ShortestPathResult(distances, store, path_storage=path_storage, nearest_sources=nearest_sources)
 
 
-def _search_many(matrix, sources, targets, cutoff, output, max_workers, batch_size):
+def _search_many(matrix, sources, targets, cutoff, output, max_workers, batch_size, *, target_offsets=None):
+    # Source i searches for targets[starts[i]:ends[i]]; without offsets all
+    # sources share the whole array, so it is never copied per source.
+    targets = np.ascontiguousarray(targets, dtype=np.int32)
+    if target_offsets is None:
+        starts, ends = np.zeros(len(sources), dtype=np.int64), np.full(len(sources), len(targets), dtype=np.int64)
+    else:
+        starts, ends = target_offsets[:-1], target_offsets[1:]
     searches = []
     previous_threads = nb.get_num_threads()
     if max_workers is not None:
@@ -203,12 +209,16 @@ def _search_many(matrix, sources, targets, cutoff, output, max_workers, batch_si
     try:
         step = len(sources) if batch_size is None else batch_size
         for start in range(0, len(sources), step):
-            target_batch = List.empty_list(nb.types.int32[::1])
-            for target in targets[start : start + step]:
-                target_batch.append(np.ascontiguousarray(target, dtype=np.int32))
+            batch = slice(start, start + step)
             searches.extend(
                 dijkstra_numba_search_parallel(
-                    matrix, sources[start : start + step], target_batch, _cutoff_float(cutoff), output != "distances"
+                    matrix,
+                    sources[batch],
+                    targets,
+                    np.ascontiguousarray(starts[batch], dtype=np.int64),
+                    np.ascontiguousarray(ends[batch], dtype=np.int64),
+                    _cutoff_float(cutoff),
+                    output != "distances",
                 )
             )
     finally:
@@ -374,9 +384,7 @@ def dijkstra_parallel(
     source_positions = _positions(urban_graph, sources.to_numpy())
     unique_sources, inverse = np.unique(source_positions, return_inverse=True)
     target_positions, columns = _targets(urban_graph, target_nodes)
-    searches = _search_many(
-        matrix, unique_sources, [target_positions] * len(unique_sources), cutoff, output, max_workers, batch_size
-    )
+    searches = _search_many(matrix, unique_sources, target_positions, cutoff, output, max_workers, batch_size)
     if columns is None:
         target_positions = np.unique(np.concatenate([search[0] for search in searches]))
         columns = pd.Index(_node_ids(urban_graph)[target_positions], name="node")
@@ -442,10 +450,15 @@ def _od_resolved(
     )
     unique_sources, inverse = np.unique(calc_origins, return_inverse=True)
     if mode == "pairwise":
-        targets = [np.unique(calc_targets[inverse == i]) for i in range(len(unique_sources))]
+        # Each unique origin searches only for the destinations paired with it.
+        order, offsets = _groups(inverse, len(unique_sources))
+        searches = _search_many(
+            matrix, unique_sources, calc_targets[order], cutoff, output, max_workers, batch_size, target_offsets=offsets
+        )
     else:
-        targets = [np.unique(calc_targets)] * len(unique_sources)
-    searches = _search_many(matrix, unique_sources, targets, cutoff, output, max_workers, batch_size)
+        searches = _search_many(
+            matrix, unique_sources, np.unique(calc_targets), cutoff, output, max_workers, batch_size
+        )
     attrs = {"origin_nodes": origins.copy(), "destination_nodes": destinations.copy()}
     index = origins.index
     columns = destinations.index
@@ -454,7 +467,10 @@ def _od_resolved(
         index = pd.MultiIndex.from_arrays([origins.index, destinations.index], names=["origin", "destination"])
         columns = pd.Index(["path"])
         if output != "paths":
-            values = [_lookup(searches[inverse[i]], destination_positions[i : i + 1])[0] for i in range(len(index))]
+            values = np.full(len(index), np.inf, dtype=np.float32)
+            for tree_index, search in enumerate(searches):
+                rows = order[offsets[tree_index] : offsets[tree_index + 1]]
+                values[rows] = _lookup(search, destination_positions[rows])
             distances = _distance_series(values, index, dtype, attrs).to_frame()
     elif output != "paths":
         distances = _distance_frame(
@@ -633,7 +649,12 @@ def single_source_dijkstra_path_length(
     reverse: bool = False,
     dtype: np.dtype = np.float32,
 ) -> pd.Series:
-    """Return a sparse distance Series indexed by reachable graph nodes."""
+    """Return a sparse distance Series indexed by reachable graph nodes.
+
+    .. deprecated:: 2.4.1
+        Use ``single_source_dijkstra(..., output="distances")``.
+    """
+    warn_deprecated("single_source_dijkstra_path_length", 'single_source_dijkstra(..., output="distances")')
     return single_source_dijkstra(
         urban_graph, source_node, weight=weight, cutoff=cutoff, reverse=reverse, dtype=dtype, output="distances"
     )
@@ -650,7 +671,12 @@ def multi_source_dijkstra_path_length(
     reverse: bool = False,
     dtype: np.dtype = np.float32,
 ) -> pd.Series:
-    """Return nearest-source distances; inputs follow multi_source_dijkstra."""
+    """Return nearest-source distances; inputs follow multi_source_dijkstra.
+
+    .. deprecated:: 2.4.1
+        Use ``multi_source_dijkstra(..., output="distances")``.
+    """
+    warn_deprecated("multi_source_dijkstra_path_length", 'multi_source_dijkstra(..., output="distances")')
     return multi_source_dijkstra(
         urban_graph,
         source_nodes=source_nodes,
@@ -706,7 +732,12 @@ def dijkstra_path_length_parallel(
     dtype: np.dtype = np.float32,
     max_workers: int | None = None,
 ) -> pd.DataFrame:
-    """Return independent distance rows; inputs follow dijkstra_parallel."""
+    """Return independent distance rows; inputs follow dijkstra_parallel.
+
+    .. deprecated:: 2.4.1
+        Use ``dijkstra_parallel(..., output="distances")``.
+    """
+    warn_deprecated("dijkstra_path_length_parallel", 'dijkstra_parallel(..., output="distances")')
     return dijkstra_parallel(
         urban_graph,
         source_nodes=source_nodes,
@@ -739,7 +770,11 @@ def multi_source_dijkstra_path(
 
     Despite its historical name this runs independent OD searches, rather than
     the nearest-source search provided by multi_source_dijkstra.
+
+    .. deprecated:: 2.4.1
+        Use ``od_matrix(..., output="paths")``.
     """
+    warn_deprecated("multi_source_dijkstra_path", 'od_matrix(..., output="paths")')
     return od_matrix(
         urban_graph,
         gdf_origins=gdf_origins,

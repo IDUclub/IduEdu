@@ -29,8 +29,9 @@ or ``"both"``.
 
 Use :func:`od_matrix` for specified origin and destination sets, with
 ``mode="all_to_all"`` or ``"pairwise"``. Use :func:`iter_od_matrix` to consume
-origin-row blocks. Existing specialised ``*_path`` and ``*_path_length``
-helpers remain available for compatibility.
+origin-row blocks. :func:`single_source_dijkstra_path` returns one route as a
+list. The legacy ``*_path_length`` helpers and ``multi_source_dijkstra_path``
+are deprecated (see `Deprecated helpers`_).
 
 Use :func:`path_to_edges` to turn a node route into an ordered GeoDataFrame of
 the actual graph edges. This preserves curved edge geometry and transport
@@ -48,9 +49,7 @@ Distances and paths in one search
   and ``paths`` tables, computed by the same searches.
 
 ``od_matrix`` defaults to ``output="distances"`` for compatibility. The three
-general Dijkstra helpers default to ``output="both"``. Existing specialised
-``*_path`` and ``*_path_length`` functions keep their return types and use the
-same search implementation.
+general Dijkstra helpers default to ``output="both"``.
 
 .. code-block:: python
 
@@ -69,8 +68,8 @@ Both matrices preserve input order and labels. Missing routes and routes
 outside the cutoff have distance ``np.inf`` and path ``None`` (pandas can
 display a sparse missing path as ``NaN``). Self routes have cost zero and path
 ``[node]``; zero-cost edges are retained. The cutoff is inclusive and uses the
-selected weight units. ``threshold`` remains an alias on OD functions and
-``multi_source_dijkstra_path``; specifying both names raises ``ValueError``.
+selected weight units. ``threshold`` remains an alias on OD functions;
+specifying both names raises ``ValueError``.
 ``dtype`` controls returned distance storage; kernel arithmetic remains
 ``float32`` even when the requested output dtype is ``float64``.
 
@@ -224,16 +223,34 @@ For object-to-edge projection before OD calculations, see
     :toctree: generated
     :nosignatures:
 
-    single_source_dijkstra_path_length
-    multi_source_dijkstra_path_length
-    multi_source_dijkstra_nearest_source
-    dijkstra_path_length_parallel
     single_source_dijkstra
     multi_source_dijkstra
+    multi_source_dijkstra_nearest_source
     dijkstra_parallel
     od_matrix
     iter_od_matrix
     ShortestPathResult
     single_source_dijkstra_path
-    multi_source_dijkstra_path
     path_to_edges
+
+Deprecated helpers
+~~~~~~~~~~~~~~~~~~
+
+These wrappers emit ``DeprecationWarning`` since 2.4.1 and will be removed in
+IduEdu 3.0. Each calls one general helper with a fixed ``output``:
+
+* ``single_source_dijkstra_path_length`` → ``single_source_dijkstra(..., output="distances")``
+* ``multi_source_dijkstra_path_length`` → ``multi_source_dijkstra(..., output="distances")``
+* ``dijkstra_path_length_parallel`` → ``dijkstra_parallel(..., output="distances")``
+* ``multi_source_dijkstra_path`` → ``od_matrix(..., output="paths")``. Despite
+  its name it computes independent origin-destination routes, not a
+  nearest-source search.
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+
+    single_source_dijkstra_path_length
+    multi_source_dijkstra_path_length
+    dijkstra_path_length_parallel
+    multi_source_dijkstra_path
