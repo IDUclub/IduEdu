@@ -77,8 +77,13 @@ uv run pylint iduedu
 uv run isort --check-only iduedu
 uv run black --check iduedu
 
-# Build docs
+# Build docs (English, then Russian into html/ru)
 uv run sphinx-build -b html docs docs/_build/html
+uv run sphinx-build -b html -D language=ru -d docs/_build/doctrees-ru docs docs/_build/html/ru
+
+# Russian translation of the docs: add new/changed text to the catalogues, then check nothing is untranslated
+uv run python docs/i18n.py update                   # or: make docs-i18n
+uv run python docs/i18n.py check                    # or: make docs-i18n-check (CI fails on untranslated text)
 ```
 
 **Numba JIT note:** When running tests under coverage (`--cov`), `conftest.py` automatically sets `NUMBA_DISABLE_JIT=1`
@@ -191,6 +196,17 @@ PBF fallback; a `pytest_runtest_protocol` hook switches to the file only around 
 same run keep their mocked Overpass), `bounds`, `intermodal_graph` (session-scoped, downloaded once per network run).
 
 Object factories for unit tests: `tests/factories.py`.
+
+### Documentation in two languages
+
+English is the source; Russian lives in gettext catalogues `docs/locale/ru/LC_MESSAGES/<page>.po` (pages, notebook
+markdown and the docstrings autodoc shows). `docs/conf.py` sets `locale_dirs`, one catalogue per page and the
+language switch (`docs/_templates/sidebar/lang.html`: the Russian site is the `ru/` subdirectory of the English one).
+**Whenever English text changes — a page, a notebook text cell, a public docstring — run `docs/i18n.py update`,
+translate every empty or `#, fuzzy` entry (keep markup, roles, literals and links; decimal commas in Russian prose)
+and finish with `docs/i18n.py check`.** Containers of nested lists (`Text:  - a - b`) stay identical to the
+English; the update step keeps them so. Translations on MyST pages (`.md`, including the `Config` docstrings on
+`configuration.md`) are parsed as Markdown: roles there are `{func}`, not `:func:`.
 
 ### Coding conventions
 
