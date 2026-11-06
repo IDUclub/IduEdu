@@ -40,6 +40,14 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}"
 
+      - name: Prepare historical release tags locally
+        run: |
+          git config --local push.followTags false
+          python3 .github/scripts/normalize_release_tags.py \
+            --repo . \
+            --mapping .github/history-rewrite-tags.json \
+            --apply-in-disposable-clone
+
       - name: Python Semantic Release
         id: release
         uses: python-semantic-release/python-semantic-release@v9.21.1

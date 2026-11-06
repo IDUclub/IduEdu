@@ -1,0 +1,79 @@
+[
+  {
+    "tag": "v1.1.0",
+    "public_object": "3eb44d50e7cc64ef21d447c2b59e4f84320e7a0a",
+    "old_commit": "3eb44d50e7cc64ef21d447c2b59e4f84320e7a0a",
+    "rewritten_commit": "a5f219e01d642fdea99b9868d5073ad42e6cb457",
+    "tree": "da6c245bd7a9c500a72efaf6d3ac76a9d3a51899"
+  },
+  {
+    "tag": "v1.2.0",
+    "public_object": "1bf99c1bbc0897f9796448e93b5b4db8aed2c6a3",
+    "old_commit": "1bf99c1bbc0897f9796448e93b5b4db8aed2c6a3",
+    "rewritten_commit": "ec7db39c9469581b8d6ec4222edd69466e1d7d14",
+    "tree": "b7c509a455660d7ddbfb9563ded9d58b7ce50554"
+  },
+  {
+    "tag": "v1.2.1",
+    "public_object": "e51214b1bce2b534201c23d017ce54d766aeef02",
+    "old_commit": "e51214b1bce2b534201c23d017ce54d766aeef02",
+    "rewritten_commit": "b15e44d75fbbf5b41c8a04779f687afdff4c8cd2",
+    "tree": "8a9eb1afb98639e655a5f8f55dc28d6c67717ccc"
+  },
+  {
+    "tag": "v1.2.2",
+    "public_object": "3e51b7d8e5c7ffc732857a406e80dbc5cdb0efe8",
+    "old_commit": "3e51b7d8e5c7ffc732857a406e80dbc5cdb0efe8",
+    "rewritten_commit": "4260387f3584c9ffa72fbed668631fbda5e85f96",
+    "tree": "e5b3b86a82376889911ea02f2e5841165a2caf41"
+  },
+  {
+    "tag": "v2.0.0",
+    "public_object": "9ca4cdd7006b87ed0822b2093baaaa0f0b56221f",
+    "old_commit": "b270d952a4e4479d989850f74b2d2b5a435f43ce",
+    "rewritten_commit": "0eafc14135429813ddb061c2e971c265f92c8cc2",
+    "tree": "5f84205492b500854bf3518b916144618887ce92"
+  },
+  {
+    "tag": "v2.1.0",
+    "public_object": "1d3eb8d75dbd5512f96615f947f9e3cd44ae574f",
+    "old_commit": "f285218355c1025da5f32dc2d9808848096e4e0c",
+    "rewritten_commit": "a41ff8acefad842004a4d70cdbe5f81b3f94da96",
+    "tree": "78a2cdc2fc62316402536c6adeb3cc04cd8483d6"
+  },
+  {
+    "tag": "v2.2.0",
+    "public_object": "5b221d6539b2af00931da3f1320f41ffefcd10b4",
+    "old_commit": "3aa359e39cb083e1808876a26a55bdd6f4923d46",
+    "rewritten_commit": "05d7c4b76e3ae9cde8bd02bb91aa1e0065ab3666",
+    "tree": "851893fe46a80499e6ae9a0f996b7f6548b9e53f"
+  },
+  {
+    "tag": "v2.3.0",
+    "public_object": "4813f8c1fd3bd336d0af2e3db569344c977f433e",
+    "old_commit": "568bdd4574bd200d274defa725efc31317e3f3c4",
+    "rewritten_commit": "8b4f985c5ad03704692872b273fafecca393f603",
+    "tree": "bb9a053c61787737728cdc62856e5c515ee7d390"
+  },
+  {
+    "tag": "v2.4.0",
+    "public_object": "8457c8346200ade2b8889270bfafebcf9d7f63bd",
+    "old_commit": "b3f2e7ee7acb4c56cf4147ff9c912f61b71423c5",
+    "rewritten_commit": "6030f6914f828789bd5a5017e9dde6301efb9d25",
+    "tree": "3354b577281902a43ed4df5c4d52082b117c2bb5"
+  },
+  {
+    "tag": "v2.4.1",
+    "public_object": "8289376b0d09098a7a26e150c86c09b9f3fcb28c",
+    "old_commit": "b1ce604b809f702475fb7c5621df8a5140c283a6",
+    "rewritten_commit": "7635abdc813fda39fcbaff7ff22a7de34f5a3887",
+    "tree": "9d3d1a4a84ddbf3ef1f6afba56d03df76357010e"
+  },
+  {
+    "tag": "v2.4.2",
+    "public_object": "7e617422a91bbf4a24fbb2d201c05af94b908a90",
+    "old_commit": "c057b22f6d453fe5de6ea91e8bb243e3e89c15c0",
+    "rewritten_commit": "e83ea2d45ba84b78b099febd8f66621d5397a02b",
+    "tree": "66629b074f61a96d03f10a0114bc20aa8d3df573"
+  }
+]

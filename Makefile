@@ -120,7 +120,7 @@ version:
 	$(UV_RUN) python -c "from iduedu._version import VERSION; print(VERSION)"
 
 version-next:
-	$(UV_RUN) semantic-release --noop version --print
+	$(UV_RUN) python .github/scripts/local_semantic_release.py --noop version --print
 
 changelog:
-	$(UV_RUN) semantic-release changelog
+	$(UV_RUN) python .github/scripts/local_semantic_release.py changelog
