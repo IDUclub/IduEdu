@@ -1,11 +1,12 @@
 """
 Local OpenStreetMap files as an alternative to the Overpass API.
 
-``config.set_osm_source("pbf", path=...)`` (or ``with config.use_pbf(path): ...``) makes every graph builder
+``config.set_osm_source("pbf", path=...)`` (or ``with iduedu.use_pbf(path): ...``) makes every graph builder
 read OSM data from a local ``.osm.pbf`` file instead of Overpass. :func:`split_by_polygons` cuts compact
 per-city files out of a regional extract, :func:`snapshot_time` reads the date a file reflects.
 :func:`download_osm_pbf` downloads the smallest Geofabrik extract covering a territory and cuts the
-territory out of it.
+territory out of it; ``iduedu.use_pbf(osm_id=...)`` or ``use_pbf(territory=...)`` does the same and switches
+to the file in one step.
 
 Requires the optional dependency pyosmium: ``pip install 'iduedu[pbf]'``. Importing this package works
 without it; using it raises an ``ImportError`` with the installation hint.

@@ -1,0 +1,61 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.nx\\_graph2urban\\_graph"
+msgstr "iduedu.nx\\_graph2urban\\_graph"
+
+msgid "Convert a NetworkX graph to an ``UrbanGraph``."
+msgstr "Преобразует граф NetworkX в ``UrbanGraph``."
+
+msgid "This helper is intended for compatibility with libraries that still produce NetworkX graphs. Nodes must contain ``x`` and ``y`` coordinates, the graph must expose a ``crs`` attribute, and edges are expected to carry ``geometry``, ``length_meter`` and ``time_min`` attributes."
+msgstr "Эта функция нужна для совместимости с библиотеками, которые по-прежнему выдают графы NetworkX. Узлы должны содержать координаты ``x`` и ``y``, у графа должен быть атрибут ``crs``, а у рёбер ожидаются атрибуты ``geometry``, ``length_meter`` и ``time_min``."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "NetworkX graph, directed graph, multigraph or multidigraph. Directed graphs are accepted for compatibility, but a warning is emitted because stable behavior for directed NetworkX inputs is not guaranteed."
+msgstr "Граф NetworkX: неориентированный, ориентированный, мультиграф или ориентированный мультиграф. Ориентированные графы принимаются для совместимости, но с предупреждением, потому что стабильное поведение для ориентированных входных графов NetworkX не гарантируется."
+
+msgid "If ``True``, empty edge geometries are restored as straight lines between endpoint nodes. If ``False``, edges with empty geometries are removed."
+msgstr "Если ``True``, пустые геометрии рёбер восстанавливаются как прямые между концевыми узлами. Если ``False``, рёбра с пустыми геометриями удаляются."
+
+msgid "If ``True`` and ``oneway_column`` exists on edges, that column is used as the UrbanGraph edge direction column."
+msgstr "Если ``True`` и у рёбер есть столбец ``oneway_column``, он используется как столбец направления рёбер UrbanGraph."
+
+msgid "Boolean edge attribute that marks one-way movement."
+msgstr "Логический атрибут ребра, отмечающий одностороннее движение."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Converted ``UrbanGraph`` instance."
+msgstr "Преобразованный ``UrbanGraph``."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``nx_graph`` is not a NetworkX graph."
+msgstr "Если ``nx_graph`` — не граф NetworkX."
+
+msgid "If required CRS, node or edge data is missing or invalid."
+msgstr "Если обязательные данные о системе координат, узлах или рёбрах отсутствуют или некорректны."
+

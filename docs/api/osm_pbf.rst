@@ -6,16 +6,18 @@ Local OSM files
 With the optional dependency pyosmium (``pip install 'iduedu[pbf]'``) every
 OSM-based builder can read local ``.osm.pbf`` files instead of querying
 Overpass. Select the source with ``config.set_osm_source("pbf", path=...)`` or
-``with config.use_pbf(path): ...``; see :doc:`../configuration` for the full
-workflow and the known differences from Overpass.
+``with use_pbf(path): ...``; ``use_pbf(osm_id=...)`` downloads the territory
+from Geofabrik first. See :doc:`../configuration` for the full workflow and the
+known differences from Overpass.
 
 Downloading from Geofabrik
-=========================
+==========================
 
 .. autosummary::
     :toctree: generated
     :nosignatures:
 
+    use_pbf
     download_osm_pbf
     download_geofabrik_region
     find_geofabrik_region

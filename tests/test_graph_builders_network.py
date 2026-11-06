@@ -1,19 +1,19 @@
-# pylint: disable=redefined-outer-name, unused-import
+# pylint: disable=redefined-outer-name
+"""Graph builders on real OSM data of the test territory (Overpass, or its Geofabrik extract, see conftest).
+
+Options and edge cases that do not depend on real data are covered by the unit tests with mocked responses.
+"""
 
 import pytest
+from shapely import MultiPolygon, Polygon
 
 from iduedu import (
-    DEFAULT_REGISTRY,
     DEFAULT_REGISTRY_W_TRAIN,
-    TransportRegistry,
-    config,
     get_drive_graph,
     get_public_transport_graph,
     get_walk_graph,
     join_pt_walk_graph,
 )
-
-config.configure_logging("DEBUG")
 
 pytestmark = [pytest.mark.network, pytest.mark.slow]
 
@@ -40,6 +40,13 @@ def subway_graph(bounds):
 def ground_pt_graph(bounds):
     print("\n Downloading bus+tram graph for bounds \n")
     return get_public_transport_graph(transport_types=["bus", "tram"], territory=bounds)
+
+
+def test_territory_boundary(bounds):
+    assert isinstance(bounds, (Polygon, MultiPolygon))
+    assert bounds.is_valid
+    assert bounds.area > 0
+    assert -180 <= bounds.bounds[0] <= bounds.bounds[2] <= 180  # EPSG:4326
 
 
 # ---------------------------------------------------------------------------
@@ -71,11 +78,6 @@ def test_get_drive_graph_adjacency_and_shortest_path(drive_graph):
     assert lengths.notna().sum() > 1
 
 
-def test_get_drive_graph_without_road_category(bounds):
-    g_drive = get_drive_graph(territory=bounds, add_road_category=False)
-    assert "category" not in g_drive.edges_gdf.columns
-
-
 def test_get_drive_graph_drive_service_includes_service_ways(bounds):
     g_service = get_drive_graph(territory=bounds, network_type="drive_service")
     assert g_service is not None
@@ -83,12 +85,6 @@ def test_get_drive_graph_drive_service_includes_service_ways(bounds):
     # drive_service is a superset filter, so it should never yield fewer edges than plain drive
     g_drive = get_drive_graph(territory=bounds)
     assert len(g_service.edges_gdf) >= len(g_drive.edges_gdf)
-
-
-def test_get_drive_graph_clip_by_territory(bounds):
-    g_clipped = get_drive_graph(territory=bounds, clip_by_territory=True)
-    assert g_clipped is not None
-    assert len(g_clipped.nodes_gdf) > 0
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +104,7 @@ def test_get_walk_graph(walk_graph):
     assert (walk_graph.edges_gdf["time_min"] > 0).all()
 
 
-def test_get_walk_graph_from_cache_custom_attrs(bounds, walk_graph):
+def test_get_walk_graph_custom_attrs(bounds):
     g_walk_custom = get_walk_graph(
         territory=bounds, osm_edge_tags=["surface", "footway"], clip_by_territory=True, keep_largest_subgraph=False
     )
@@ -118,17 +114,6 @@ def test_get_walk_graph_from_cache_custom_attrs(bounds, walk_graph):
     assert len(g_walk_custom.edges_gdf) > 0
     assert "surface" in edge_attr_keys
     assert "footway" in edge_attr_keys
-
-
-def test_get_walk_graph_custom_walk_speed_scales_time(bounds):
-    g_slow = get_walk_graph(territory=bounds, walk_speed=50.0, keep_largest_subgraph=False)
-    g_fast = get_walk_graph(territory=bounds, walk_speed=100.0, keep_largest_subgraph=False)
-
-    ratio_slow = (g_slow.edges_gdf["time_min"] / g_slow.edges_gdf["length_meter"]).mean()
-    ratio_fast = (g_fast.edges_gdf["time_min"] / g_fast.edges_gdf["length_meter"]).mean()
-
-    assert ratio_slow == pytest.approx(1 / 50.0, rel=1e-2)
-    assert ratio_fast == pytest.approx(1 / 100.0, rel=1e-2)
 
 
 # ---------------------------------------------------------------------------
@@ -153,19 +138,6 @@ def test_get_public_transport_graph_multiple_types(ground_pt_graph):
     assert "boarding" in edge_types
 
 
-def test_get_public_transport_graph_uses_registry_wait_time(bounds):
-    registry = TransportRegistry({"bus": DEFAULT_REGISTRY.get("bus")})
-    registry.update("bus", avg_wait_time_min=5.0)
-    g_default = get_public_transport_graph(transport_types="bus", territory=bounds)
-    g_slow_boarding = get_public_transport_graph(transport_types="bus", territory=bounds, transport_registry=registry)
-
-    boarding_default = g_default.edges_gdf.loc[g_default.edges_gdf["type"] == "boarding", "time_min"]
-    boarding_slow = g_slow_boarding.edges_gdf.loc[g_slow_boarding.edges_gdf["type"] == "boarding", "time_min"]
-
-    assert (boarding_default == DEFAULT_REGISTRY.get("bus").avg_wait_time_min).all()
-    assert (boarding_slow == 5.0).all()
-
-
 def test_get_single_pt_graph_where_not_exist(bounds):
     train_graph = get_public_transport_graph(
         transport_types="train", territory=bounds, transport_registry=DEFAULT_REGISTRY_W_TRAIN
@@ -173,11 +145,6 @@ def test_get_single_pt_graph_where_not_exist(bounds):
     assert len(train_graph.nodes_gdf) == 0
     assert len(train_graph.edges_gdf) == 0
     assert train_graph.type == "public_transport"
-
-
-def test_get_public_transport_graph_unknown_type_raises(bounds):
-    with pytest.raises(ValueError, match="Unknown transport type"):
-        get_public_transport_graph(transport_types="airplane", territory=bounds)
 
 
 # ---------------------------------------------------------------------------

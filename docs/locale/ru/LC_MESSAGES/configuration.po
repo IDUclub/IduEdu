@@ -1,0 +1,473 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Configuration"
+msgstr "Настройки"
+
+msgid "IduEdu keeps its runtime settings in one global object, `iduedu.config`. Downloaders and builders read it on every call, so a change applies to everything that runs after it in the same process. Most settings can also be given as environment variables, which are read once when `iduedu` is imported."
+msgstr "IduEdu хранит настройки времени выполнения в одном глобальном объекте `iduedu.config`. Функции загрузки и построения графов читают его при каждом вызове, поэтому изменение действует на всё, что выполняется после него в том же процессе. Большинство настроек можно также задать переменными окружения, которые читаются один раз при импорте `iduedu`."
+
+msgid "Overpass endpoint and requests"
+msgstr "Сервер Overpass и запросы"
+
+msgid "`set_overpass_url` accepts any `http://` or `https://` Overpass interpreter, for example a self-hosted instance or a mirror."
+msgstr "`set_overpass_url` принимает любой интерпретатор Overpass по `http://` или `https://`, например собственный сервер или зеркало."
+
+msgid "`set_timeout` sets the request timeout in seconds. The same value is sent to Overpass as `[timeout:...]` in every query."
+msgstr "`set_timeout` задаёт тайм-аут запроса в секундах. То же значение передаётся Overpass как `[timeout:...]` в каждом запросе."
+
+msgid "`set_rate_limit` spaces requests at least `min_interval` seconds apart. Before each attempt IduEdu asks the instance's `/status` endpoint for a free slot and waits for it. Network errors and HTTP 429, 502, 503 and 504 responses are retried up to `max_retries` times with an exponentially growing delay based on `backoff_base`; a 429 response honours the server's `Retry-After` header."
+msgstr "`set_rate_limit` разносит запросы не менее чем на `min_interval` секунд. Перед каждой попыткой IduEdu спрашивает у сервера свободный слот через `/status` и ждёт его. При сетевых ошибках и ответах HTTP 429, 502, 503 и 504 запрос повторяется до `max_retries` раз с экспоненциально растущей задержкой на основе `backoff_base`; при ответе 429 учитывается заголовок сервера `Retry-After`."
+
+msgid "`config.user_agent` is sent with every request. Set it to something that identifies your project: `config.user_agent = \"my-project/1.0 (me@example.org)\"`."
+msgstr "`config.user_agent` отправляется с каждым запросом. Укажите в нём то, что идентифицирует ваш проект: `config.user_agent = \"my-project/1.0 (me@example.org)\"`."
+
+#, python-brace-format
+msgid "`config.proxies` (a `requests`-style mapping such as `{\"https\": \"http://proxy:3128\"}`) and `config.verify_ssl` are passed to every request."
+msgstr "`config.proxies` (словарь в стиле `requests`, например `{\"https\": \"http://proxy:3128\"}`) и `config.verify_ssl` передаются в каждый запрос."
+
+msgid "The public Overpass instance is shared by many users. Keep the default pacing unless you run your own instance."
+msgstr "Публичным сервером Overpass пользуется множество людей. Оставляйте темп запросов по умолчанию, если у вас нет собственного сервера."
+
+msgid "Overpass cache"
+msgstr "Кеш Overpass"
+
+msgid "IduEdu caches raw Overpass JSON responses on disk: boundaries, street-network queries, route relations and their members. The cache is enabled by default and lives in `.iduedu_cache` relative to the current working directory."
+msgstr "IduEdu кеширует исходные JSON-ответы Overpass на диске: границы, запросы уличных сетей, отношения-маршруты и их участников. Кеш включён по умолчанию и находится в `.iduedu_cache` относительно текущей рабочей папки."
+
+msgid "The cache stores responses only, never processed graphs. Clear the directory or disable the cache to force fresh downloads, for example after OSM data you depend on has been edited."
+msgstr "Кеш хранит только ответы, а не обработанные графы. Очистите папку или отключите кеш, чтобы заново загрузить данные, например после правки нужных вам данных OSM."
+
+msgid "Historical snapshots"
+msgstr "Исторические снимки"
+
+msgid "Overpass can answer a query as OpenStreetMap stood at a given moment:"
+msgstr "Overpass может ответить на запрос по состоянию OpenStreetMap на заданный момент:"
+
+msgid "While a date is set, subway routes are queried as plain route relations: stop areas, stations and entrances are skipped because Overpass does not reliably support those queries at arbitrary timestamps, and a warning is logged."
+msgstr "Пока дата задана, маршруты метро запрашиваются как обычные отношения-маршруты: зоны остановок, станции и входы пропускаются, потому что Overpass ненадёжно выполняет такие запросы на произвольный момент времени, и в журнал пишется предупреждение."
+
+msgid "Local OSM files instead of Overpass"
+msgstr "Локальные файлы OSM вместо Overpass"
+
+msgid "Every OSM-based builder can read its data from a local OpenStreetMap file instead of the Overpass API: the same street networks, public-transport routes, subway stop areas and boundaries, answered with the same filters and the same `poly:` selection rules, so the graphs come out the same. This needs the optional dependency [pyosmium](https://osmcode.org/pyosmium/):"
+msgstr "Любая функция построения графов по OSM может читать данные из локального файла OpenStreetMap вместо Overpass API: те же уличные сети, маршруты общественного транспорта, зоны остановок метро и границы, отобранные теми же фильтрами и по тем же правилам выборки `poly:`, поэтому графы получаются такими же. Для этого нужна необязательная зависимость [pyosmium](https://osmcode.org/pyosmium/):"
+
+msgid "The environment variables `IDUEDU_OSM_SOURCE=pbf` and `IDUEDU_PBF_PATH=/data/city.osm.pbf` do the same at import time. In pbf mode the Overpass cache is not used and `overpass_date` is ignored: the file itself is the snapshot, and subway stop areas are always read. `snapshot_time(path)` returns the moment the file reflects, from its header (`osmosis_replication_timestamp`, set in Geofabrik extracts)."
+msgstr "Переменные окружения `IDUEDU_OSM_SOURCE=pbf` и `IDUEDU_PBF_PATH=/data/city.osm.pbf` делают то же самое при импорте. В режиме pbf кеш Overpass не используется, а `overpass_date` игнорируется: снимком служит сам файл, и зоны остановок метро читаются всегда. `snapshot_time(path)` возвращает момент, на который составлен файл, из его заголовка (`osmosis_replication_timestamp`, задаётся в выгрузках Geofabrik)."
+
+msgid "Downloading a territory from Geofabrik"
+msgstr "Загрузка территории из Geofabrik"
+
+msgid "`download_osm_pbf` replaces the Overpass download with [Geofabrik](https://download.geofabrik.de/) extracts. Give it the territory as to the graph builders: it picks the smallest extract covering the territory, downloads it once (resuming an interrupted download and checking the md5 Geofabrik publishes), cuts the territory out with `split_by_polygons` and returns the small file. `use_pbf` takes the same arguments instead of a path, downloads the file and reads from it inside the block:"
+msgstr "`download_osm_pbf` заменяет загрузку из Overpass выгрузками [Geofabrik](https://download.geofabrik.de/). Территория задаётся так же, как в функциях построения графов: функция выбирает наименьшую выгрузку, покрывающую территорию, скачивает её один раз (докачивая прерванную загрузку и сверяя md5, который публикует Geofabrik), вырезает территорию с помощью `split_by_polygons` и возвращает небольшой файл. `use_pbf` принимает те же аргументы вместо пути, скачивает файл и читает из него внутри блока:"
+
+msgid "With `region` the boundary of `osm_id` is read from the extract and no Overpass request is made; without it the boundary is fetched once through Overpass to choose the extract. `territory=` (a polygon or a GeoDataFrame) needs neither. Extracts and cut files are cached under `config.overpass_cache_dir` (`geofabrik/` and `geofabrik/territories/`); an existing cut file is returned without any download, and a cached extract is reused until `update=True` asks for Geofabrik's newer file. `geofabrik_regions()` lists the extracts with their outlines, `find_geofabrik_region(territory)` names the smallest covering one."
+msgstr "С `region` граница `osm_id` читается из выгрузки, и запрос к Overpass не выполняется; без него граница один раз загружается через Overpass, чтобы выбрать выгрузку. Для `territory=` (полигон или GeoDataFrame) не нужно ни то, ни другое. Выгрузки и вырезанные файлы кешируются в `config.overpass_cache_dir` (`geofabrik/` и `geofabrik/territories/`); уже существующий вырезанный файл возвращается без загрузки, а закешированная выгрузка используется повторно, пока `update=True` не запросит более новый файл Geofabrik. `geofabrik_regions()` перечисляет выгрузки с их контурами, `find_geofabrik_region(territory)` называет наименьшую покрывающую."
+
+msgid "Per-city files from a regional extract"
+msgstr "Файлы городов из региональной выгрузки"
+
+msgid "Querying a country-sized file scans all of it on every call. Cut it into small city files once, in one pass for all cities of the region:"
+msgstr "Запрос к файлу размером со страну каждый раз просматривает его целиком. Нарежьте его на небольшие файлы городов один раз, за один проход для всех городов региона:"
+
+msgid "Each city file keeps, complete and with tags: the street ways (`highway`, `railway`, `public_transport`) touching the polygon; the public-transport route relations touching it, with all their members also outside the polygon; for subways, every relation sharing a node with the line (its stop areas), their members and the stop-area groups containing them; and relations named in `keep_relations` (for instance the boundary, so `osm_id=` keeps working). Building graphs from a city file then gives the same result as from the regional file, for the same polygon or any polygon inside it."
+msgstr "Каждый файл города хранит целиком и с тегами: улицы (`highway`, `railway`, `public_transport`), касающиеся полигона; касающиеся его отношения-маршруты общественного транспорта со всеми участниками, в том числе за пределами полигона; для метро — все отношения, имеющие общий узел с линией (её зоны остановок), их участников и содержащие их группы зон остановок; а также отношения, перечисленные в `keep_relations` (например, границу, чтобы `osm_id=` продолжал работать). Графы, построенные по файлу города, получаются такими же, как по региональному файлу, для того же полигона или любого полигона внутри него."
+
+msgid "Differences from Overpass"
+msgstr "Отличия от Overpass"
+
+msgid "Elements are returned in id order. Overpass returns route responses in quadtile order (`qt`), so node and edge ids of a public-transport graph can be numbered differently even though the graph is the same."
+msgstr "Элементы возвращаются в порядке идентификаторов. Overpass возвращает ответы с маршрутами в порядке квадтайлов (`qt`), поэтому узлы и рёбра графа общественного транспорта могут быть пронумерованы иначе, хотя граф тот же."
+
+msgid "Points on the polygon boundary count as inside. Overpass' handling of exact boundary hits and of very long polygon edges may differ in rare cases."
+msgstr "Точки на границе полигона считаются внутренними. В редких случаях Overpass может иначе обрабатывать точные попадания на границу и очень длинные стороны полигона."
+
+msgid "Only tag filters are supported (`[\"k\"]`, `[!\"k\"]`, `[\"k\"=\"v\"]`, `[\"k\"!=\"v\"]`, `[\"k\"~\"re\"]`, `[\"k\"!~\"re\"]`, with an optional `,i` flag on regular expressions); other Overpass syntax in `custom_filter` raises `UnsupportedFilterError`. Regular expressions use Python's `re` module."
+msgstr "Поддерживаются только фильтры по тегам (`[\"k\"]`, `[!\"k\"]`, `[\"k\"=\"v\"]`, `[\"k\"!=\"v\"]`, `[\"k\"~\"re\"]`, `[\"k\"!~\"re\"]`, с необязательным флагом `,i` для регулярных выражений); другой синтаксис Overpass в `custom_filter` вызывает `UnsupportedFilterError`. Регулярные выражения обрабатываются модулем Python `re`."
+
+msgid "Data missing from the file cannot be found: members of a relation that are not in the file have no geometry. Use `split_by_polygons` (or a complete regional extract) rather than a tight clip."
+msgstr "Данные, которых нет в файле, найти нельзя: у участников отношения, отсутствующих в файле, нет геометрии. Используйте `split_by_polygons` (или полную региональную выгрузку), а не узкую обрезку."
+
+msgid "`split_by_polygons` selects ways spatially only when they carry one of `way_keys`; a `custom_filter` on other keys needs `way_keys=None` (or a list including them) when cutting the city files."
+msgstr "`split_by_polygons` отбирает улицы пространственно, только если у них есть один из ключей `way_keys`; для `custom_filter` по другим ключам при нарезке файлов городов нужен `way_keys=None` (или список, включающий эти ключи)."
+
+msgid "OSM tags kept on edges"
+msgstr "Теги OSM на рёбрах"
+
+msgid "Street and public-transport edges keep only a small set of OSM tags:"
+msgstr "На рёбрах улиц и общественного транспорта сохраняется лишь небольшой набор тегов OSM:"
+
+msgid "Graph"
+msgstr "Граф"
+
+msgid "Default tags"
+msgstr "Теги по умолчанию"
+
+msgid "Global setter"
+msgstr "Глобальная настройка"
+
+msgid "Drive"
+msgstr "Автомобильный"
+
+msgid "`highway`, `name`, `lanes`"
+msgstr "`highway`, `name`, `lanes`"
+
+msgid "`config.set_drive_useful_edges_attr(...)`"
+msgstr "`config.set_drive_useful_edges_attr(...)`"
+
+msgid "Walk"
+msgstr "Пешеходный"
+
+msgid "`highway`, `name`"
+msgstr "`highway`, `name`"
+
+msgid "`config.set_walk_useful_edges_attr(...)`"
+msgstr "`config.set_walk_useful_edges_attr(...)`"
+
+msgid "Public transport"
+msgstr "Общественный транспорт"
+
+msgid "`name`"
+msgstr "`name`"
+
+msgid "`config.set_transport_useful_edges_attr(...)`"
+msgstr "`config.set_transport_useful_edges_attr(...)`"
+
+msgid "The builders' `osm_edge_tags` argument replaces the global set for a single call:"
+msgstr "Аргумент `osm_edge_tags` функций построения заменяет глобальный набор для одного вызова:"
+
+msgid "Progress bars and logging"
+msgstr "Индикаторы прогресса и журналирование"
+
+msgid "IduEdu logs through [loguru](https://loguru.readthedocs.io/), available as `config.logger`. The default level is `WARNING`. `configure_logging` replaces every sink of the shared loguru logger, including sinks your own application added, then writes to standard error and, with `to_file`, to a file rotated at 20 MB and kept for 14 days. `json=True` writes the bare message without time and level, for collectors that add their own."
+msgstr "IduEdu ведёт журнал через [loguru](https://loguru.readthedocs.io/), он доступен как `config.logger`. Уровень по умолчанию — `WARNING`. `configure_logging` заменяет все приёмники общего логгера loguru, включая добавленные вашим приложением, затем пишет в стандартный поток ошибок и, с `to_file`, в файл, который ротируется по достижении 20 МБ и хранится 14 дней. `json=True` пишет только сообщение без времени и уровня — для сборщиков, которые добавляют их сами."
+
+msgid "Environment variables"
+msgstr "Переменные окружения"
+
+msgid "Variable"
+msgstr "Переменная"
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "Equivalent setting"
+msgstr "Соответствующая настройка"
+
+msgid "`OVERPASS_URL`"
+msgstr "`OVERPASS_URL`"
+
+msgid "`https://overpass-api.de/api/interpreter`"
+msgstr "`https://overpass-api.de/api/interpreter`"
+
+msgid "`set_overpass_url`"
+msgstr "`set_overpass_url`"
+
+msgid "`OVERPASS_USER_AGENT`"
+msgstr "`OVERPASS_USER_AGENT`"
+
+msgid "`iduedu/<version> (+https://github.com/IDUclub/IduEdu)`"
+msgstr "`iduedu/<version> (+https://github.com/IDUclub/IduEdu)`"
+
+msgid "`config.user_agent`"
+msgstr "`config.user_agent`"
+
+msgid "`OVERPASS_TIMEOUT`"
+msgstr "`OVERPASS_TIMEOUT`"
+
+msgid "`120`"
+msgstr "`120`"
+
+msgid "`set_timeout`"
+msgstr "`set_timeout`"
+
+msgid "`OVERPASS_MIN_INTERVAL`"
+msgstr "`OVERPASS_MIN_INTERVAL`"
+
+msgid "`2`"
+msgstr "`2`"
+
+msgid "`set_rate_limit(min_interval=...)`"
+msgstr "`set_rate_limit(min_interval=...)`"
+
+msgid "`OVERPASS_MAX_RETRIES`"
+msgstr "`OVERPASS_MAX_RETRIES`"
+
+msgid "`5`"
+msgstr "`5`"
+
+msgid "`set_rate_limit(max_retries=...)`"
+msgstr "`set_rate_limit(max_retries=...)`"
+
+msgid "`OVERPASS_BACKOFF_BASE`"
+msgstr "`OVERPASS_BACKOFF_BASE`"
+
+msgid "`set_rate_limit(backoff_base=...)`"
+msgstr "`set_rate_limit(backoff_base=...)`"
+
+msgid "`OVERPASS_DATE`"
+msgstr "`OVERPASS_DATE`"
+
+msgid "unset"
+msgstr "не задана"
+
+msgid "`set_overpass_date`"
+msgstr "`set_overpass_date`"
+
+msgid "`OVERPASS_CACHE_DIR`"
+msgstr "`OVERPASS_CACHE_DIR`"
+
+msgid "`.iduedu_cache`"
+msgstr "`.iduedu_cache`"
+
+msgid "`set_overpass_cache(cache_dir=...)`"
+msgstr "`set_overpass_cache(cache_dir=...)`"
+
+msgid "`OVERPASS_CACHE_ENABLED`"
+msgstr "`OVERPASS_CACHE_ENABLED`"
+
+msgid "`1`; `0` or `false` disables"
+msgstr "`1`; `0` или `false` отключает"
+
+msgid "`set_overpass_cache(enabled=...)`"
+msgstr "`set_overpass_cache(enabled=...)`"
+
+msgid "`ENABLE_TQDM`"
+msgstr "`ENABLE_TQDM`"
+
+msgid "`set_enable_tqdm`"
+msgstr "`set_enable_tqdm`"
+
+msgid "`LOG_LEVEL`"
+msgstr "`LOG_LEVEL`"
+
+msgid "`WARNING`"
+msgstr "`WARNING`"
+
+msgid "`configure_logging(level=...)`"
+msgstr "`configure_logging(level=...)`"
+
+msgid "`IDUEDU_OSM_SOURCE`"
+msgstr "`IDUEDU_OSM_SOURCE`"
+
+msgid "`overpass`; `pbf` reads a local file"
+msgstr "`overpass`; `pbf` читает локальный файл"
+
+msgid "`set_osm_source`"
+msgstr "`set_osm_source`"
+
+msgid "`IDUEDU_PBF_PATH`"
+msgstr "`IDUEDU_PBF_PATH`"
+
+msgid "`set_osm_source(\"pbf\", path=...)`"
+msgstr "`set_osm_source(\"pbf\", path=...)`"
+
+msgid "An invalid `OVERPASS_DATE` is ignored with a warning rather than failing the import."
+msgstr "Неверное значение `OVERPASS_DATE` игнорируется с предупреждением, импорт при этом не прерывается."
+
+msgid "API reference"
+msgstr "Справочник API"
+
+msgid "Global runtime settings for the OSM data source, Overpass, caching, logging and graph builders."
+msgstr "Глобальные настройки времени выполнения: источник данных OSM, Overpass, кеширование, журналирование и построение графов."
+
+msgid "Configure Loguru: stderr sink (+optional file sink), level, formatting."
+msgstr "Настраивает Loguru: приёмник stderr (и необязательный файловый приёмник), уровень, формат."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Set active Overpass URL (validated), keeps the pool intact."
+msgstr "Задаёт активный URL Overpass (с проверкой), пул соединений не меняется."
+
+msgid "Managing the file cache of Overpass requests. enabled=True -> read/write cache enabled=False -> ignore cache completely"
+msgstr "Управляет файловым кешем запросов Overpass. enabled=True -> чтение и запись кеша enabled=False -> кеш полностью игнорируется"
+
+msgid "Set the default Overpass request timeout in seconds."
+msgstr "Задаёт тайм-аут запросов к Overpass по умолчанию в секундах."
+
+msgid "Positive timeout value in seconds."
+msgstr "Положительный тайм-аут в секундах."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``timeout`` is not positive."
+msgstr "Если ``timeout`` не положителен."
+
+msgid "Set the snapshot date for Overpass queries."
+msgstr "Задаёт дату снимка для запросов к Overpass."
+
+msgid "The date is stored in ISO 8601 UTC format: ``YYYY-MM-DDTHH:MM:SSZ`` and used in the Overpass header as ``[date:\"...\"]``. Calling this method allows you to fix the OSM data to a specific historical snapshot or reset back to the \"current\" data."
+msgstr "Дата хранится в формате ISO 8601 UTC: ``YYYY-MM-DDTHH:MM:SSZ`` и подставляется в заголовок запроса Overpass как ``[date:\"...\"]``. Этот метод позволяет зафиксировать данные OSM на определённом историческом снимке или вернуться к «текущим» данным."
+
+msgid "Usage examples:"
+msgstr "Примеры использования:"
+
+msgid "``set_overpass_date()`` or ``set_overpass_date(None)`` - reset the date (no ``[date:...]`` in queries)."
+msgstr "``set_overpass_date()`` или ``set_overpass_date(None)`` — сбросить дату (без ``[date:...]`` в запросах)."
+
+msgid "``set_overpass_date(date=\"2020-01-01\")`` -> ``2020-01-01T00:00:00Z``."
+msgstr "``set_overpass_date(date=\"2020-01-01\")`` -> ``2020-01-01T00:00:00Z``."
+
+msgid "``set_overpass_date(date=\"2020-01-01T12:34:56Z\")`` -> stores the normalized value of this timestamp."
+msgstr "``set_overpass_date(date=\"2020-01-01T12:34:56Z\")`` -> сохраняет нормализованное значение этой метки времени."
+
+msgid "``set_overpass_date(year=2020)`` -> ``2020-01-01T00:00:00Z``."
+msgstr "``set_overpass_date(year=2020)`` -> ``2020-01-01T00:00:00Z``."
+
+msgid "``set_overpass_date(year=2020, month=5)`` -> ``2020-05-01T00:00:00Z``."
+msgstr "``set_overpass_date(year=2020, month=5)`` -> ``2020-05-01T00:00:00Z``."
+
+msgid "``set_overpass_date(year=2020, month=5, day=10)`` -> ``2020-05-10T00:00:00Z``."
+msgstr "``set_overpass_date(year=2020, month=5, day=10)`` -> ``2020-05-10T00:00:00Z``."
+
+msgid "A date string in ``YYYY-MM-DD`` or ``YYYY-MM-DDTHH:MM:SSZ`` format. If provided, ``year``, ``month`` and ``day`` must all be ``None``."
+msgstr "Строка даты в формате ``YYYY-MM-DD`` или ``YYYY-MM-DDTHH:MM:SSZ``. Если она передана, ``year``, ``month`` и ``day`` должны быть ``None``."
+
+msgid "Year component of the date. If provided without ``date``, at least the year must be set; ``month`` and ``day`` are optional and default to January 1 if omitted."
+msgstr "Год. Если дата задаётся без ``date``, нужно указать хотя бы год; ``month`` и ``day`` необязательны и по умолчанию дают 1 января."
+
+msgid "Month component of the date (1-12). Optional when used with ``year``. Defaults to 1 (January) if not provided."
+msgstr "Месяц (1–12). Необязателен вместе с ``year``. По умолчанию 1 (январь)."
+
+msgid "Day component of the date (1-31). Optional when used with ``year`` and ``month``. Defaults to 1 if not provided."
+msgstr "День (1–31). Необязателен вместе с ``year`` и ``month``. По умолчанию 1."
+
+msgid "If both ``date`` and any of ``year``, ``month``,     ``day`` are provided, if the date string is not in a supported     format, or if the constructed date is invalid."
+msgstr "Если переданы и ``date``, и любой из ``year``, ``month``, ``day``, если строка даты в неподдерживаемом формате или если получившаяся дата недопустима."
+
+msgid "Choose where OpenStreetMap data comes from."
+msgstr "Выбирает источник данных OpenStreetMap."
+
+msgid "``\"overpass\"`` (the default) sends queries to the Overpass API. ``\"pbf\"`` answers the same queries from a local OSM file (``.osm.pbf``, ``.osm``, ``.opl``) through the optional dependency pyosmium (``pip install 'iduedu[pbf]'``); the Overpass cache and ``overpass_date`` are not used then."
+msgstr "``\"overpass\"`` (по умолчанию) отправляет запросы в Overpass API. ``\"pbf\"`` отвечает на те же запросы по локальному файлу OSM (``.osm.pbf``, ``.osm``, ``.opl``) через необязательную зависимость pyosmium (``pip install 'iduedu[pbf]'``); кеш Overpass и ``overpass_date`` тогда не используются."
+
+msgid "``\"overpass\"`` or ``\"pbf\"``."
+msgstr "``\"overpass\"`` или ``\"pbf\"``."
+
+msgid "The OSM file for ``\"pbf\"``. May be omitted when ``pbf_path`` is already set. Ignored by ``\"overpass\"`` apart from being stored."
+msgstr "Файл OSM для ``\"pbf\"``. Можно не указывать, если ``pbf_path`` уже задан. Для ``\"overpass\"`` только сохраняется."
+
+msgid "For an unknown source, or ``\"pbf\"`` without a file."
+msgstr "Для неизвестного источника или ``\"pbf\"`` без файла."
+
+msgid "If the file does not exist."
+msgstr "Если файл не существует."
+
+msgid "If ``\"pbf\"`` is chosen and pyosmium is not installed."
+msgstr "Если выбран ``\"pbf\"``, а pyosmium не установлен."
+
+msgid "Temporarily read OSM data from a local file; the previous source is restored on exit."
+msgstr "Временно читает данные OSM из локального файла; при выходе восстанавливается прежний источник."
+
+msgid "The file is either given as ``path`` or downloaded for a territory: ``osm_id``, ``territory``, ``region`` and any other keyword argument go unchanged to :func:`~iduedu.osm_pbf.download_osm_pbf`, which picks the Geofabrik extract, caches it and cuts the territory out. A file that is already cached is reused without any download. Also available as ``iduedu.use_pbf``."
+msgstr "Файл либо задаётся путём ``path``, либо скачивается для территории: ``osm_id``, ``territory``, ``region`` и любые другие именованные аргументы без изменений передаются в {func}`~iduedu.osm_pbf.download_osm_pbf`, которая выбирает выгрузку Geofabrik, кеширует её и вырезает территорию. Уже закешированный файл используется повторно без загрузки. Также доступна как ``iduedu.use_pbf``."
+
+msgid "The OSM file (``.osm.pbf``, ``.osm``, ``.opl``)."
+msgstr "Файл OSM (``.osm.pbf``, ``.osm``, ``.opl``)."
+
+msgid "OSM relation id of the territory to download, instead of ``path``."
+msgstr "Идентификатор отношения OSM территории для загрузки, вместо ``path``."
+
+msgid "Territory polygon in EPSG:4326, or a GeoDataFrame/GeoSeries, instead of ``path``."
+msgstr "Полигон территории в EPSG:4326 либо GeoDataFrame/GeoSeries, вместо ``path``."
+
+msgid "Geofabrik region id to cut the territory from; chosen automatically when omitted."
+msgstr "Идентификатор региона Geofabrik, из которого вырезается территория; если не указан, выбирается автоматически."
+
+msgid "Further arguments of :func:`~iduedu.osm_pbf.download_osm_pbf` (``update``, ``out_dir``, ``name``, ...)."
+msgstr "Прочие аргументы {func}`~iduedu.osm_pbf.download_osm_pbf` (``update``, ``out_dir``, ``name``, ...)."
+
+msgid "If both ``path`` and download arguments are given, or neither."
+msgstr "Если переданы и ``path``, и аргументы загрузки, или ни то, ни другое."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.config.Config\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.config.Config\\`\\]`"
+
+msgid "Example"
+msgstr "Пример"
+
+msgid "Build the Overpass query header for JSON requests."
+msgstr "Формирует заголовок запроса Overpass для ответов в JSON."
+
+msgid "Optional timeout override in seconds. If omitted, the configured default timeout is used."
+msgstr "Необязательный тайм-аут в секундах вместо настроенного. Если не указан, используется тайм-аут по умолчанию."
+
+msgid "Optional Overpass snapshot date override in ISO UTC format. If omitted, ``self.overpass_date`` is used."
+msgstr "Необязательная дата снимка Overpass в формате ISO UTC вместо настроенной. Если не указана, используется ``self.overpass_date``."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`str\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`str\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Header string such as ``[out:json][timeout:120];`` or ``[out:json][timeout:120][date:\"2020-01-01T00:00:00Z\"];``."
+msgstr "Строка заголовка, например ``[out:json][timeout:120];`` или ``[out:json][timeout:120][date:\"2020-01-01T00:00:00Z\"];``."
+
+msgid "If the effective timeout is not positive."
+msgstr "Если итоговый тайм-аут не положителен."
+
+msgid "Current default Overpass query header."
+msgstr "Текущий заголовок запросов Overpass по умолчанию."
+
+msgid "Enable or disable progress bars for long-running operations."
+msgstr "Включает или отключает индикаторы прогресса для долгих операций."
+
+msgid "Set OSM edge tags retained by drive graph builders."
+msgstr "Задаёт теги OSM, сохраняемые на рёбрах автомобильных графов."
+
+msgid "Set OSM edge tags retained by walk graph builders."
+msgstr "Задаёт теги OSM, сохраняемые на рёбрах пешеходных графов."
+
+msgid "Set OSM edge tags retained by public-transport graph builders."
+msgstr "Задаёт теги OSM, сохраняемые на рёбрах графов общественного транспорта."
+
+msgid "Configure Overpass request pacing and retry behavior."
+msgstr "Настраивает темп запросов к Overpass и повторные попытки."
+
+msgid "Minimum delay between Overpass requests in seconds."
+msgstr "Минимальная пауза между запросами к Overpass в секундах."
+
+msgid "Maximum number of retry attempts for retryable HTTP statuses."
+msgstr "Максимальное число повторов для статусов HTTP, допускающих повтор."
+
+msgid "Base multiplier for exponential retry backoff."
+msgstr "Основание экспоненциальной задержки между повторами."
+
+msgid "If any provided value is outside its accepted range."
+msgstr "Если какое-либо значение вне допустимого диапазона."
+
+msgid "Return a serializable snapshot of the current configuration."
+msgstr "Возвращает сериализуемый снимок текущих настроек."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`dict\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`dict\\``"
+
+msgid "Construct Config using environment variables where available."
+msgstr "Создаёт Config по переменным окружения, где они заданы."
+
+msgid "Besides the ``OVERPASS_*`` variables, ``IDUEDU_OSM_SOURCE`` (``overpass`` or ``pbf``) and ``IDUEDU_PBF_PATH`` select the OSM data source."
+msgstr "Помимо переменных ``OVERPASS_*``, источник данных OSM задают ``IDUEDU_OSM_SOURCE`` (``overpass`` или ``pbf``) и ``IDUEDU_PBF_PATH``."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.config.Config\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.config.Config\\``"
+

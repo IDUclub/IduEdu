@@ -18,6 +18,7 @@ from iduedu import (  # noqa: E402  pylint: disable=wrong-import-position
     download_osm_pbf,
     find_geofabrik_region,
     get_walk_graph,
+    use_pbf,
 )
 from iduedu.osm_pbf import download  # noqa: E402  pylint: disable=wrong-import-position
 
@@ -127,15 +128,18 @@ def test_download_cut_and_build_a_graph(geofabrik):
 
     requests_made = len(log)
     assert download_osm_pbf(osm_id=REL_ID, region="city-region", out_dir=cache) == path
+    with use_pbf(osm_id=REL_ID, region="city-region", out_dir=cache):
+        assert config.pbf_path == str(path)
     assert len(log) == requests_made  # the cut file is reused without touching the network
+    assert config.osm_source == "overpass"
 
 
-def test_territory_picks_the_region_itself(geofabrik):
+def test_use_pbf_downloads_a_territory_and_picks_the_region(geofabrik):
     _, _, cache = geofabrik
-    path = download_osm_pbf(territory=CITY, out_dir=cache)
-    with config.use_pbf(path):
+    with use_pbf(territory=CITY, out_dir=cache):
         walk = get_walk_graph(territory=CITY)
     assert set(walk.edges_gdf["name"]) == {"Inner"}
+    assert config.osm_source == "overpass"
 
 
 def test_checksum_mismatch_removes_the_download(geofabrik):

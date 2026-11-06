@@ -38,6 +38,7 @@ docs/api/generated/
 docs/_autosummary/
 docs/_doctrees/
 docs/api/generated
+docs/locale/**/*.mo
 _build/
 _autosummary/
 

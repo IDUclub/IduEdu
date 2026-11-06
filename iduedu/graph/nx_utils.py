@@ -303,7 +303,7 @@ def gdf2graph(
         lines_centroids = lines.copy()
         lines_centroids.geometry = lines_centroids.apply(
             lambda row: row.geometry.line_interpolate_point(row.geometry.length / 2), axis=1
-        ).buffer(0.05, resolution=2)
+        ).buffer(0.05, quad_segs=2)
         lines_with_attrs = gpd.sjoin(lines_centroids, gdf, how="left", predicate="intersects")
         aggregated_attrs = (
             lines_with_attrs.drop(columns=["geometry", "index_right"])  # remove buffer geometry

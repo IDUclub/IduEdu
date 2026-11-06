@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.UrbanGraphChanges"
+msgstr "iduedu.UrbanGraphChanges"
+
+msgid "Set of table changes that can be applied to an ``UrbanGraph``."
+msgstr "Набор изменений таблиц, который можно применить к ``UrbanGraph``."
+
+msgid "The class is used as an intermediate result when projecting objects onto a graph. It stores new nodes, new edges and edge keys that should be removed from the source graph before split edge segments are appended."
+msgstr "Класс используется как промежуточный результат при проецировании объектов на граф. Он хранит новые узлы, новые рёбра и ключи рёбер, которые нужно удалить из исходного графа перед добавлением отрезков разбитых рёбер."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "New graph edges."
+msgstr "Новые рёбра графа."
+
+msgid "New graph nodes."
+msgstr "Новые узлы графа."
+
+msgid "Edge-key table for edges that should be removed."
+msgstr "Таблица ключей удаляемых рёбер."
+
+msgid "Must match ``UrbanGraph.is_multigraph``."
+msgstr "Должно совпадать с ``UrbanGraph.is_multigraph``."
+
+msgid "Whether edge keys should be interpreted as directed ``u -> v`` keys."
+msgstr "Считать ли ключи рёбер ориентированными ключами ``u -> v``."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If change tables use unsupported types."
+msgstr "Если таблицы изменений имеют неподдерживаемый тип."
+
+msgid "If change keys or geometries are invalid."
+msgstr "Если ключи или геометрии изменений некорректны."
+

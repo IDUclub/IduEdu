@@ -8,7 +8,7 @@ COVERAGE_XML ?= coverage.xml
 COVERAGE_HTML ?= htmlcov
 
 .PHONY: help install install-dev lock update lint format format-check test test-unit test-numba test-network test-all \
-        coverage coverage-xml coverage-html coverage-numba docs clean build publish version version-next changelog
+        coverage coverage-xml coverage-html coverage-numba docs docs-i18n docs-i18n-check clean build publish version version-next changelog
 
 help:
 	@echo "Available targets:"
@@ -26,7 +26,9 @@ help:
 	@echo "  coverage-xml      - run all tests (incl. network) and write coverage.xml for CI"
 	@echo "  coverage-html     - run fast tests and write HTML coverage report"
 	@echo "  coverage-numba    - run Numba tests and show Numba coverage only"
-	@echo "  docs              - build documentation"
+	@echo "  docs              - build the English and Russian documentation (docs/_build/html, .../html/ru)"
+	@echo "  docs-i18n         - add new and changed text to the Russian catalogues (docs/locale/ru)"
+	@echo "  docs-i18n-check   - fail while anything in the documentation is left untranslated"
 	@echo "  build             - build wheel and sdist with uv"
 	@echo "  publish           - publish package with uv"
 	@echo "  version           - print the current version (from $(PACKAGE)/_version.py)"
@@ -95,6 +97,13 @@ coverage-numba:
 
 docs:
 	$(UV_RUN) sphinx-build -b html docs docs/_build/html
+	$(UV_RUN) sphinx-build -b html -D language=ru -d docs/_build/doctrees-ru docs docs/_build/html/ru
+
+docs-i18n:
+	$(UV_RUN) python docs/i18n.py update
+
+docs-i18n-check:
+	$(UV_RUN) python docs/i18n.py check
 
 clean:
 	rm -rf ./dist ./build ./*.egg-info ./$(COVERAGE_HTML) ./.coverage ./.coverage.* ./$(COVERAGE_XML)

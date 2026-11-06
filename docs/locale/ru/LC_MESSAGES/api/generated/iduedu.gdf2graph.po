@@ -1,0 +1,79 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.gdf2graph"
+msgstr "iduedu.gdf2graph"
+
+msgid "Convert a GeoDataFrame of LineStrings into a directed graph (nx.DiGraph)."
+msgstr "Преобразует GeoDataFrame линий LineString в ориентированный граф (nx.DiGraph)."
+
+msgid "Explodes multilines, optionally enforces topological intersections, merges collinear segments, transfers selected attributes back to merged lines via centroid-buffer spatial join, and constructs a directed graph whose edges correspond to line segments. Lengths are computed in meters in a local metric CRS; travel time uses a provided speed."
+msgstr "Разбивает мультилинии, при необходимости обеспечивает топологические пересечения, объединяет коллинеарные отрезки, переносит выбранные атрибуты обратно на объединённые линии пространственным соединением по буферам центроидов и строит ориентированный граф, рёбра которого соответствуют отрезкам линий. Длины рассчитываются в метрах в локальной метрической системе координат; время в пути — по заданной скорости."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Input with LineString geometries (other types are filtered out)."
+msgstr "Входные данные с геометриями LineString (другие типы отбрасываются)."
+
+msgid "If True, projects original attributes to merged lines via nearest overlay."
+msgstr "Если True, исходные атрибуты переносятся на объединённые линии по ближайшему наложению."
+
+msgid "If True, lengths computed in UTM and optionally reprojected back."
+msgstr "Если True, длины рассчитываются в UTM, с возможным обратным перепроецированием."
+
+msgid "Speed in km/h used to compute `time_min` for each edge."
+msgstr "Скорость в км/ч для расчёта `time_min` каждого ребра."
+
+msgid "If True, uses `shapely.node` before `line_merge` to enforce proper splits."
+msgstr "Если True, перед `line_merge` вызывается `shapely.node`, чтобы правильно разбить линии."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Directed graph with:     - node attributes: `x`, `y`;     - edge attributes: `geometry`, `length_meter`, `time_min`, plus projected attributes;      Graph attribute `graph[\"crs\"]` is set to the (possibly reprojected) CRS."
+msgstr "Directed graph with:     - node attributes: `x`, `y`;     - edge attributes: `geometry`, `length_meter`, `time_min`, plus projected attributes;      Graph attribute `graph[\"crs\"]` is set to the (possibly reprojected) CRS."
+
+msgid "Directed graph with:"
+msgstr "Ориентированный граф с:"
+
+msgid "node attributes: `x`, `y`;"
+msgstr "атрибутами узлов: `x`, `y`;"
+
+msgid "edge attributes: `geometry`, `length_meter`, `time_min`, plus projected attributes;"
+msgstr "атрибутами рёбер: `geometry`, `length_meter`, `time_min` и перенесёнными атрибутами;"
+
+msgid "Graph attribute `graph[\"crs\"]` is set to the (possibly reprojected) CRS."
+msgstr "Атрибут графа `graph[\"crs\"]` равен системе координат (возможно, перепроецированной)."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If the input contains no valid LineStrings."
+msgstr "Если во входных данных нет корректных LineString."
+
+msgid "Notes"
+msgstr "Примечания"
+
+msgid "Attribute projection aggregates multi-matches via a uniqueness reducer (`unique_list`)."
+msgstr "При переносе атрибутов несколько совпадений агрегируются функцией уникальности (`unique_list`)."
+
+msgid "`speed` is internally converted to meters/minute."
+msgstr "`speed` внутри переводится в метры в минуту."
+

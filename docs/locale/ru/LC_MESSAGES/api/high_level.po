@@ -1,0 +1,124 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "High-level functions"
+msgstr "Высокоуровневые функции"
+
+msgid "Graph builders"
+msgstr "Построение графов"
+
+msgid "The OSM high-level builders download OpenStreetMap data, while the GTFS builder reads a local Schedule feed. Both normalize their inputs into the ``UrbanGraph`` data model, use a local metric CRS, and compute standard edge weights:"
+msgstr "Высокоуровневые функции для OSM загружают данные OpenStreetMap, а функция для GTFS читает локальный фид Schedule. Обе приводят входные данные к модели ``UrbanGraph``, используют локальную метрическую систему координат и рассчитывают стандартные веса рёбер:"
+
+msgid "``length_meter``"
+msgstr "``length_meter``"
+
+msgid "Edge geometry length in meters."
+msgstr "Длина геометрии ребра в метрах."
+
+msgid "``time_min``"
+msgstr "``time_min``"
+
+msgid "Traversal time in minutes. For walk graphs this is based on ``walk_speed``; for drive graphs it is based on road class and speed tags. OSM-based public transport uses the active :class:`TransportRegistry`; GTFS graphs derive in-vehicle and boarding times from the selected schedule."
+msgstr "Время прохождения в минутах. Для пешеходных графов оно рассчитывается по ``walk_speed``, для автомобильных — по классу дороги и тегам скорости. Общественный транспорт по OSM использует активный :class:`TransportRegistry`; графы GTFS берут время в пути и ожидание посадки из выбранного расписания."
+
+msgid "Most examples use ``osm_id=1114252`` and can be run directly from the notebooks. See :doc:`../examples/get_any_graph` for end-to-end examples of all builders."
+msgstr "Большинство примеров используют ``osm_id=1114252`` и запускаются прямо из ноутбуков. Полные примеры для всех функций построения — в :doc:`../examples/get_any_graph`."
+
+msgid "Drive and walk graphs"
+msgstr "Автомобильные и пешеходные графы"
+
+msgid "Use :func:`get_drive_graph` for car-accessible street networks and :func:`get_walk_graph` for pedestrian networks. Both functions support:"
+msgstr "Используйте :func:`get_drive_graph` для улично-дорожных сетей, доступных автомобилям, и :func:`get_walk_graph` для пешеходных сетей. Обе функции поддерживают:"
+
+msgid "``simplify``"
+msgstr "``simplify``"
+
+msgid "Merge raw OSM way segments into longer graph edges. Use ``False`` when the full per-segment topology is required."
+msgstr "Объединять исходные отрезки улиц OSM в более длинные рёбра графа. Используйте ``False``, когда нужна полная топология по отрезкам."
+
+msgid "``clip_by_territory``"
+msgstr "``clip_by_territory``"
+
+msgid "Clip edge geometries to the exact territory boundary before graph assembly."
+msgstr "Обрезать геометрии рёбер точно по границе территории до сборки графа."
+
+msgid "``keep_largest_subgraph``"
+msgstr "``keep_largest_subgraph``"
+
+msgid "Remove disconnected fragments. Directed graphs use the largest strongly connected component by default."
+msgstr "Удалять несвязные фрагменты. Для ориентированных графов по умолчанию оставляется наибольшая сильно связная компонента."
+
+msgid "The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and ``simplify=False`` side by side and highlights edges affected by clipping."
+msgstr "Ноутбук :doc:`../examples/get_any_graph` показывает ``simplify=True`` и ``simplify=False`` рядом и выделяет рёбра, затронутые обрезкой."
+
+msgid "OSM public-transport and intermodal graphs"
+msgstr "Графы общественного транспорта по OSM и интермодальные графы"
+
+msgid "Use :func:`get_public_transport_graph` to build bus, trolleybus, tram, subway, monorail, or share-taxi (``taxi``) graphs. Pass ``transport_types`` to restrict modes and ``transport_registry`` to customize time calculation. A requested type must exist in the registry, otherwise the builder raises ``ValueError``: trains need a registry that defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. OSM ``light_rail`` routes are fetched as ``tram`` and ``share_taxi`` routes as ``taxi``. See :doc:`transport_registry`."
+msgstr "Используйте :func:`get_public_transport_graph`, чтобы построить графы автобусов, троллейбусов, трамваев, метро, монорельса или маршрутных такси (``taxi``). Передайте ``transport_types``, чтобы ограничить виды транспорта, и ``transport_registry``, чтобы настроить расчёт времени. Запрошенный вид должен быть в реестре, иначе функция вызывает ``ValueError``: для поездов нужен реестр, в котором они определены, например ``DEFAULT_REGISTRY_W_TRAIN``. Маршруты OSM ``light_rail`` загружаются как ``tram``, а ``share_taxi`` — как ``taxi``. См. :doc:`transport_registry`."
+
+msgid "Use :func:`join_pt_walk_graph` when you already have public-transport and walk graphs. Use :func:`get_intermodal_graph` to build both networks and join them in one call. Public-transport platform-like nodes are projected to nearby walk edges, optionally creating link edges."
+msgstr "Используйте :func:`join_pt_walk_graph`, если графы общественного транспорта и пешеходный уже есть. Используйте :func:`get_intermodal_graph`, чтобы построить обе сети и объединить их одним вызовом. Узлы общественного транспорта, похожие на платформы, проецируются на ближайшие пешеходные рёбра, при необходимости с созданием соединительных рёбер."
+
+msgid "See :doc:`../examples/get_any_graph` for intermodal construction and :doc:`../examples/objects_and_nearest_nodes` for the lower-level projection workflow used during joining."
+msgstr "Построение интермодального графа см. в :doc:`../examples/get_any_graph`, а низкоуровневую процедуру проецирования, используемую при объединении, — в :doc:`../examples/objects_and_nearest_nodes`."
+
+msgid "GTFS public-transport graphs"
+msgstr "Графы общественного транспорта по GTFS"
+
+msgid "Use :func:`get_gtfs_public_transport_graph` to build a static graph from a local GTFS Schedule directory or ZIP archive. A list of feeds is merged with :func:`merge_gtfs_feeds` first. Service-date and time-window filters select the departures used to estimate boarding waits. GTFS graphs do not use :class:`TransportRegistry` waiting-time defaults."
+msgstr "Используйте :func:`get_gtfs_public_transport_graph`, чтобы построить статический граф по локальной папке или ZIP-архиву GTFS Schedule. Список фидов сначала объединяется с помощью :func:`merge_gtfs_feeds`. Фильтры по датам обслуживания и окну времени отбирают отправления, по которым оценивается ожидание посадки. Графы GTFS не используют значения ожидания по умолчанию из :class:`TransportRegistry`."
+
+msgid "To make a GTFS graph intermodal, first build a walk graph, pass its CRS to the GTFS builder, and combine the two with :func:`join_pt_walk_graph`. See :doc:`gtfs` for the complete workflow and modeling details."
+msgstr "Чтобы сделать граф GTFS интермодальным, сначала постройте пешеходный граф, передайте его систему координат в функцию построения по GTFS и объедините их с помощью :func:`join_pt_walk_graph`. Полный сценарий и детали моделирования см. в :doc:`gtfs`."
+
+msgid ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+msgstr ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+
+msgid "Build a drivable UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит автомобильный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
+msgstr ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
+
+msgid "Build a pedestrian UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит пешеходный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
+msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
+
+msgid "Build a directed public-transport graph for one or multiple transport modes within a territory."
+msgstr "Строит ориентированный граф общественного транспорта для одного или нескольких видов транспорта в пределах территории."
+
+msgid ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
+msgstr ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
+
+msgid "Build a static public-transport ``UrbanGraph`` from a local GTFS feed."
+msgstr "Строит статический ``UrbanGraph`` общественного транспорта по локальному фиду GTFS."
+
+msgid ":py:obj:`get_intermodal_graph <iduedu.get_intermodal_graph>`"
+msgstr ":py:obj:`get_intermodal_graph <iduedu.get_intermodal_graph>`"
+
+msgid "Build an intermodal (PT+walking) ``UrbanGraph`` for a territory."
+msgstr "Строит интермодальный (общественный транспорт и пешие переходы) ``UrbanGraph`` для территории."
+
+msgid ":py:obj:`join_pt_walk_graph <iduedu.join_pt_walk_graph>`"
+msgstr ":py:obj:`join_pt_walk_graph <iduedu.join_pt_walk_graph>`"
+
+msgid "Join public-transport and pedestrian ``UrbanGraph`` objects into an intermodal graph."
+msgstr "Объединяет ``UrbanGraph`` общественного транспорта и пешеходный в интермодальный граф."
+

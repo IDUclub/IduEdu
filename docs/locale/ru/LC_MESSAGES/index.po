@@ -1,0 +1,179 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "High-level functions"
+msgstr "Высокоуровневые функции"
+
+msgid "Configuration"
+msgstr "Настройки"
+
+msgid "Graph data model"
+msgstr "Модель данных графа"
+
+msgid "Migrating to UrbanGraph"
+msgstr "Переход на UrbanGraph"
+
+msgid "Benchmarks and design notes"
+msgstr "Бенчмарки и устройство"
+
+msgid "Transport registry"
+msgstr "Реестр видов транспорта"
+
+msgid "GTFS public transport"
+msgstr "Общественный транспорт из GTFS"
+
+msgid "Graph utilities"
+msgstr "Утилиты для графов"
+
+msgid "Matrices"
+msgstr "Матрицы"
+
+msgid "Overpass helpers"
+msgstr "Функции Overpass"
+
+msgid "Local OSM files"
+msgstr "Локальные файлы OSM"
+
+msgid "Examples"
+msgstr "Примеры"
+
+msgid "**IduEdu** is an open-source Python library for building and analyzing multimodal city networks from [OpenStreetMap](https://www.openstreetmap.org) and GTFS Schedule feeds."
+msgstr "**IduEdu** — открытая библиотека Python для построения и анализа мультимодальных городских сетей по данным [OpenStreetMap](https://www.openstreetmap.org) и расписаниям GTFS Schedule."
+
+#, python-format
+msgid "[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI version](https://img.shields.io/pypi/v/iduedu.svg)](https://pypi.org/project/iduedu/) [![Tests and Coverage](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml/badge.svg)](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml) [![Coverage](https://raw.githubusercontent.com/IDUclub/IduEdu/python-coverage-comment-action-data/badge.svg)](https://github.com/IDUclub/IduEdu/tree/python-coverage-comment-action-data) [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/) [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)"
+msgstr "[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![PyPI version](https://img.shields.io/pypi/v/iduedu.svg)](https://pypi.org/project/iduedu/) [![Tests and Coverage](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml/badge.svg)](https://github.com/IDUclub/IduEdu/actions/workflows/quality.yml) [![Coverage](https://raw.githubusercontent.com/IDUclub/IduEdu/python-coverage-comment-action-data/badge.svg)](https://github.com/IDUclub/IduEdu/tree/python-coverage-comment-action-data) [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Docs](https://img.shields.io/badge/docs-latest-4aa0d5?logo=readthedocs)](https://iduclub.github.io/IduEdu/) [![GitHub](https://img.shields.io/badge/GitHub-IDUclub%2FIduEdu-181717?logo=github)](https://github.com/IDUclub/IduEdu)"
+
+msgid "Code style: black"
+msgstr "Code style: black"
+
+msgid "PyPI version"
+msgstr "PyPI version"
+
+msgid "Tests and Coverage"
+msgstr "Tests and Coverage"
+
+msgid "Coverage"
+msgstr "Coverage"
+
+msgid "License"
+msgstr "License"
+
+msgid "Docs"
+msgstr "Docs"
+
+msgid "GitHub"
+msgstr "GitHub"
+
+msgid "Features"
+msgstr "Возможности"
+
+msgid "**UrbanGraph model**: graph topology, geometry, CRS and weights are stored in explicit `GeoDataFrame` node and edge tables, with lazy CSR adjacency for numerical routines."
+msgstr "**Модель UrbanGraph**: топология, геометрия, система координат и веса графа хранятся в явных таблицах узлов и рёбер `GeoDataFrame`, а матрица смежности CSR для численных процедур строится по требованию."
+
+msgid "**Street graph builders**: `get_drive_graph` and `get_walk_graph` build OSM-based networks with local metric projection, travel-time weights and optional simplification."
+msgstr "**Построение уличных графов**: `get_drive_graph` и `get_walk_graph` строят сети по данным OSM в локальной метрической проекции, с весами по времени в пути и с необязательным упрощением."
+
+msgid "**Public transport from OSM**: `get_public_transport_graph` builds static bus, trolleybus, tram, subway, monorail and share-taxi graphs directly from OSM route relations; trains are available through `DEFAULT_REGISTRY_W_TRAIN`."
+msgstr "**Общественный транспорт из OSM**: `get_public_transport_graph` строит статические графы автобусов, троллейбусов, трамваев, метро, монорельса и маршрутных такси прямо по отношениям-маршрутам OSM; поезда доступны через `DEFAULT_REGISTRY_W_TRAIN`."
+
+msgid "**Public transport from GTFS**: `get_gtfs_public_transport_graph` reads a local GTFS Schedule directory or ZIP archive, or several feeds merged with `merge_gtfs_feeds`, and builds a static graph with timetable-derived boarding waits."
+msgstr "**Общественный транспорт из GTFS**: `get_gtfs_public_transport_graph` читает локальную папку или ZIP-архив GTFS Schedule либо несколько фидов, объединённых `merge_gtfs_feeds`, и строит статический граф с ожиданием посадки, рассчитанным по расписанию."
+
+msgid "**Intermodal graphs**: `get_intermodal_graph` combines public transport and walk networks by projecting stops, platforms and subway access points onto pedestrian edges."
+msgstr "**Интермодальные графы**: `get_intermodal_graph` объединяет общественный транспорт и пешеходную сеть, проецируя остановки, платформы и входы в метро на пешеходные рёбра."
+
+msgid "**Matrices and shortest paths**: `od_matrix` and Dijkstra helpers use Numba-backed CSR kernels, cutoff thresholds and adaptive graph reversal for large accessibility workloads. Ordered node routes can be converted back to their real edge geometries for map visualization."
+msgstr "**Матрицы и кратчайшие пути**: `od_matrix` и функции Дейкстры используют ядра CSR на Numba, пороги отсечения и адаптивное обращение графа для больших расчётов доступности. Упорядоченные маршруты по узлам можно превратить обратно в реальную геометрию рёбер для отображения на карте."
+
+msgid "**Interoperability**: optional NetworkX adapters are available for projects that need graph exchange or compatibility with older workflows."
+msgstr "**Совместимость**: необязательные адаптеры NetworkX нужны проектам, которым требуется обмен графами или совместимость со старыми сценариями."
+
+msgid "See [Benchmarks and design notes](benchmarks.md) for the construction benchmark summary, raw-result locations and limitations of the static public-transport model."
+msgstr "Сводку бенчмарка построения графов, расположение исходных результатов и ограничения статической модели общественного транспорта см. в разделе [Бенчмарки и устройство](benchmarks.md)."
+
+msgid "Installation"
+msgstr "Установка"
+
+msgid "Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy, Numba). Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from local `.osm.pbf` files instead of Overpass (see [Configuration](configuration.md)). NetworkX is not installed with IduEdu; install it separately to use the optional NetworkX helpers."
+msgstr "Поддерживаются Python с 3.11 по 3.14 и геопространственный стек (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy, Numba). Установите `iduedu[io]`, чтобы читать и записывать архивы `.urbangraph`, и `iduedu[pbf]`, чтобы читать данные OSM из локальных файлов `.osm.pbf` вместо Overpass (см. [Настройки](configuration.md)). NetworkX не устанавливается вместе с IduEdu; установите его отдельно, чтобы пользоваться необязательными функциями для NetworkX."
+
+msgid "Quickstart"
+msgstr "Быстрый старт"
+
+msgid "1) Build an intermodal graph"
+msgstr "1) Постройте интермодальный граф"
+
+msgid "2) Compute an OD matrix (time or length)"
+msgstr "2) Рассчитайте OD-матрицу (по времени или длине)"
+
+msgid "3) Reconstruct a route"
+msgstr "3) Восстановите маршрут"
+
+msgid "IduEdu reads its settings from the global `config` object, and most of them also from environment variables. Use it to point requests at another Overpass instance, pace them, cache responses, query a historical OSM snapshot, choose the OSM tags kept on edges, or set up logging:"
+msgstr "IduEdu берёт настройки из глобального объекта `config`, а большинство из них также из переменных окружения. Через него можно направить запросы на другой сервер Overpass, задать их темп, кешировать ответы, запросить исторический снимок OSM, выбрать теги OSM, сохраняемые на рёбрах, или настроить журналирование:"
+
+msgid "See the [configuration guide](configuration.md) for every setting and its environment variable."
+msgstr "Все настройки и соответствующие им переменные окружения описаны в [руководстве по настройке](configuration.md)."
+
+msgid "Roadmap / Ideas"
+msgstr "Планы и идеи"
+
+msgid "GTFS transfers and time-dependent timetable routing"
+msgstr "Пересадки GTFS и маршрутизация по расписанию с учётом времени"
+
+msgid "Richer edge attributes (e.g., elevation, turn costs)"
+msgstr "Дополнительные атрибуты рёбер (например, высота, стоимость поворотов)"
+
+msgid "Contributions and ideas are welcome! Please open an issue or PR."
+msgstr "Будем рады вкладу и идеям! Открывайте issue или PR."
+
+msgid "Contacts"
+msgstr "Контакты"
+
+msgid "[NCCR](https://actcognitive.org/) - National Center for Cognitive Research"
+msgstr "[НЦКР](https://actcognitive.org/) — Национальный центр когнитивных разработок"
+
+msgid "[IDU](https://idu.itmo.ru/) - Institute of Design and Urban Studies"
+msgstr "[ИДУ](https://idu.itmo.ru/) — Институт дизайна и урбанистики"
+
+msgid "[Natalya Chichkova](https://t.me/nancy_nat) - project manager"
+msgstr "[Наталья Чичкова](https://t.me/nancy_nat) — руководитель проекта"
+
+msgid "[Danila Oleynikov (Donny)](https://t.me/ddonny_dd) - lead software engineer"
+msgstr "[Данила Олейников (Donny)](https://t.me/ddonny_dd) — ведущий разработчик"
+
+msgid "Acknowledgments"
+msgstr "Благодарности"
+
+msgid "Реализовано при финансовой поддержке Фонда поддержки проектов Национальной технологической инициативы в рамках реализации \"дорожной карты\" развития высокотехнологичного направления \"Искусственный интеллект\" на период до 2030 года (Договор № 70-2021-00187)"
+msgstr "Реализовано при финансовой поддержке Фонда поддержки проектов Национальной технологической инициативы в рамках реализации \"дорожной карты\" развития высокотехнологичного направления \"Искусственный интеллект\" на период до 2030 года (Договор № 70-2021-00187)"
+
+msgid "This research is financially supported by the Foundation for National Technology Initiative's Projects Support as a part of the roadmap implementation for the development of the high-tech field of Artificial Intelligence for the period up to 2030 (agreement 70-2021-00187)"
+msgstr "This research is financially supported by the Foundation for National Technology Initiative's Projects Support as a part of the roadmap implementation for the development of the high-tech field of Artificial Intelligence for the period up to 2030 (agreement 70-2021-00187)"
+
+msgid "Citing IduEdu"
+msgstr "Как цитировать IduEdu"
+
+msgid "If you use IduEdu in research, please cite it. Citation metadata is kept in [`CITATION.cff`](https://github.com/IDUclub/IduEdu/blob/main/CITATION.cff); on GitHub, **Cite this repository** in the repository sidebar copies it as APA or BibTeX. Publications describing IduEdu will be listed below."
+msgstr "Если вы используете IduEdu в исследованиях, пожалуйста, ссылайтесь на неё. Метаданные для цитирования хранятся в [`CITATION.cff`](https://github.com/IDUclub/IduEdu/blob/main/CITATION.cff); на GitHub кнопка **Cite this repository** на боковой панели репозитория копирует их в формате APA или BibTeX. Публикации об IduEdu будут перечислены ниже."
+
+msgid "Publications"
+msgstr "Публикации"
+
+msgid "_Coming soon..._"
+msgstr "_Скоро..._"
+

@@ -5,11 +5,15 @@ import threading
 from contextlib import contextmanager
 from datetime import date as _date
 from datetime import datetime as _datetime
-from typing import Iterable, Iterator, Literal, Optional
+from typing import TYPE_CHECKING, Iterable, Iterator, Literal, Optional
 
 from loguru import logger
 
 from ._version import VERSION
+
+if TYPE_CHECKING:
+    import geopandas as gpd
+    from shapely import MultiPolygon, Polygon
 
 LogLevel = Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 OsmSource = Literal["overpass", "pbf"]
@@ -254,13 +258,49 @@ class Config:
             self.pbf_path = new_path
 
     @contextmanager
-    def use_pbf(self, path: str | os.PathLike) -> Iterator["Config"]:
+    def use_pbf(
+        self,
+        path: str | os.PathLike | None = None,
+        *,
+        osm_id: int | None = None,
+        territory: "Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None" = None,
+        region: str | None = None,
+        **download_kwargs,
+    ) -> Iterator["Config"]:
         """Temporarily read OSM data from a local file; the previous source is restored on exit.
+
+        The file is either given as ``path`` or downloaded for a territory: ``osm_id``, ``territory``,
+        ``region`` and any other keyword argument go unchanged to :func:`~iduedu.osm_pbf.download_osm_pbf`,
+        which picks the Geofabrik extract, caches it and cuts the territory out. A file that is already cached is
+        reused without any download. Also available as ``iduedu.use_pbf``.
+
+        Args:
+            path: The OSM file (``.osm.pbf``, ``.osm``, ``.opl``).
+            osm_id: OSM relation id of the territory to download, instead of ``path``.
+            territory: Territory polygon in EPSG:4326, or a GeoDataFrame/GeoSeries, instead of ``path``.
+            region: Geofabrik region id to cut the territory from; chosen automatically when omitted.
+            **download_kwargs: Further arguments of :func:`~iduedu.osm_pbf.download_osm_pbf`
+                (``update``, ``out_dir``, ``name``, ...).
+
+        Raises:
+            ValueError: If both ``path`` and download arguments are given, or neither.
 
         Example:
             >>> with config.use_pbf("berlin.osm.pbf"):
             ...     walk = get_walk_graph(territory=polygon)
+            >>> with iduedu.use_pbf(osm_id=1114252, region="northwestern-fed-district"):
+            ...     graph = get_intermodal_graph(osm_id=1114252)
         """
+        download = {"osm_id": osm_id, "territory": territory, "region": region}
+        download = {key: value for key, value in download.items() if value is not None} | download_kwargs
+        if path is not None and download:
+            raise ValueError("use_pbf takes either a path or the download arguments of download_osm_pbf, not both")
+        if path is None:
+            if osm_id is None and territory is None:
+                raise ValueError("use_pbf needs a path, or osm_id or territory to download the territory")
+            from iduedu.osm_pbf.download import download_osm_pbf  # pylint: disable=import-outside-toplevel
+
+            path = download_osm_pbf(**download)
         previous = (self.osm_source, self.pbf_path)
         self.set_osm_source("pbf", path=path)
         try:
@@ -380,3 +420,24 @@ class Config:
 
 
 config = Config()
+
+
+def use_pbf(
+    path: str | os.PathLike | None = None,
+    *,
+    osm_id: int | None = None,
+    territory: "Polygon | MultiPolygon | gpd.GeoDataFrame | gpd.GeoSeries | None" = None,
+    region: str | None = None,
+    **download_kwargs,
+):
+    """Temporarily read OSM data from a local file, or from a territory downloaded from Geofabrik.
+
+    Shortcut for :meth:`config.use_pbf <Config.use_pbf>` on the global ``config``; the arguments are the same.
+
+    Example:
+        >>> with use_pbf(osm_id=1114252, region="northwestern-fed-district"):
+        ...     graph = get_intermodal_graph(osm_id=1114252)
+        >>> with use_pbf("berlin.osm.pbf"):
+        ...     walk = get_walk_graph(territory=polygon)
+    """
+    return config.use_pbf(path, osm_id=osm_id, territory=territory, region=region, **download_kwargs)

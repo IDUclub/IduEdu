@@ -1,0 +1,136 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.TransportSpec"
+msgstr "iduedu.TransportSpec"
+
+msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
+msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+
+msgid "Each transport specification defines technical and operational characteristics of a mode (e.g. bus, tram, subway) that are used to compute per-edge travel time based on segment length, road speed limits, acceleration/braking behavior, and traffic conditions."
+msgstr "Каждая спецификация определяет технические и эксплуатационные характеристики вида транспорта (например, автобуса, трамвая, метро), по которым рассчитывается время в пути на ребре с учётом длины перегона, ограничений скорости на дороге, разгона и торможения и условий движения."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Transport type identifier, usually matching the OSM ``route=*`` value (e.g. ``\"bus\"``, ``\"tram\"``, ``\"subway\"``)."
+msgstr "Идентификатор вида транспорта, обычно совпадающий со значением OSM ``route=*`` (например, ``\"bus\"``, ``\"tram\"``, ``\"subway\"``)."
+
+msgid "type"
+msgstr "тип"
+
+msgid ":py:class:`str`"
+msgstr ":py:class:`str`"
+
+msgid "Technical maximum speed of the vehicle in kilometers per hour."
+msgstr "Техническая максимальная скорость транспортного средства в километрах в час."
+
+msgid ":py:class:`float`"
+msgstr ":py:class:`float`"
+
+msgid "Typical distance (meters) required to accelerate from standstill to cruising speed."
+msgstr "Типичное расстояние (в метрах), нужное для разгона с места до крейсерской скорости."
+
+msgid "Typical distance (meters) required to decelerate from cruising speed to standstill."
+msgstr "Типичное расстояние (в метрах), нужное для торможения с крейсерской скорости до остановки."
+
+msgid "Free-flow speed of the mode in kilometers per hour: the speed it holds between stops once it is up to speed."
+msgstr "Свободная скорость вида транспорта в километрах в час: скорость, которую он держит между остановками после разгона."
+
+msgid "A road speed limit does **not** scale this value. Earlier versions made free speed affine in the limit, ``base + traffic_coef * limit``, and fitting that form against published timetables showed the two terms are not separately identifiable: for buses, a fast base with a weak coefficient and a slow base with a strong one differ by less than a percent in error. Dropping the term outright improved accuracy for every mode measured (bus, tram, trolleybus, subway, commuter rail), because OSM's ``maxspeed`` describes what a car may do, not what a bus with passengers, stops and traffic actually does."
+msgstr "Ограничение скорости на дороге это значение **не** масштабирует. В ранних версиях свободная скорость линейно зависела от ограничения, ``base + traffic_coef * limit``, и подбор этой формы по опубликованным расписаниям показал, что два слагаемых нельзя оценить по отдельности: для автобусов быстрая база со слабым коэффициентом и медленная база с сильным различаются по ошибке меньше чем на процент. Полный отказ от этого слагаемого повысил точность для всех измеренных видов транспорта (автобус, трамвай, троллейбус, метро, пригородные поезда), потому что ``maxspeed`` в OSM описывает, что разрешено автомобилю, а не что на деле делает автобус с пассажирами, остановками и в потоке."
+
+msgid "The limit is still honoured where it binds: a vehicle is not modelled faster than the road allows."
+msgstr "Ограничение по-прежнему учитывается там, где оно действует: транспорт не моделируется быстрее, чем позволяет дорога."
+
+msgid "Time lost standing at a stop, in minutes. Added once per segment. Defaults to ``0``."
+msgstr "Время стоянки на остановке в минутах. Добавляется один раз на перегон. По умолчанию ``0``."
+
+msgid "Free speed approached on long segments, in km/h. With ``speed_half_length_m`` the free speed grows with the segment length ``L`` from ``base_speed_kmh`` towards it::"
+msgstr "Свободная скорость, к которой стремится движение на длинных перегонах, в км/ч. Вместе с ``speed_half_length_m`` свободная скорость растёт с длиной перегона ``L`` от ``base_speed_kmh`` к ней::"
+
+msgid "Timetables show it for every mode: a long stretch between stops runs on roads and tracks built for speed, which a single free speed cannot express -- buses make about 22 km/h over 500-950 m and 36 km/h over 5-10 km, of which acceleration and dwell explain only part. Both ``None`` (default): one free speed, ``base_speed_kmh``, on every segment."
+msgstr "Это видно по расписаниям всех видов транспорта: длинный перегон проходит по дорогам и путям, построенным для скорости, чего одна свободная скорость выразить не может, — автобусы проходят около 22 км/ч на 500–950 м и 36 км/ч на 5–10 км, и разгон со стоянкой объясняют лишь часть разницы. Оба ``None`` (по умолчанию): одна свободная скорость ``base_speed_kmh`` на всех перегонах."
+
+msgid ":py:class:`float | None`"
+msgstr ":py:class:`float | None`"
+
+msgid "Segment length at which the free speed is halfway from ``base_speed_kmh`` to ``long_speed_kmh``, in metres. Set together with ``long_speed_kmh``."
+msgstr "Длина перегона в метрах, при которой свободная скорость проходит половину пути от ``base_speed_kmh`` к ``long_speed_kmh``. Задаётся вместе с ``long_speed_kmh``."
+
+msgid "Average passenger waiting time in minutes. It is assigned to directed ``boarding`` edges built from OSM data."
+msgstr "Среднее время ожидания пассажира в минутах. Назначается ориентированным рёбрам ``boarding``, построенным по данным OSM."
+
+msgid "https://iduclub.github.io/IduEdu/examples/transport_registry.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/transport_registry.html"
+
+msgid "Methods"
+msgstr "Методы"
+
+msgid ":py:obj:`free_speed_kmh <iduedu.TransportSpec.free_speed_kmh>`"
+msgstr ":py:obj:`free_speed_kmh <iduedu.TransportSpec.free_speed_kmh>`"
+
+msgid "Free speed on a segment of this length: ``base_speed_kmh``, or growing with the length towards ``long_speed_kmh`` when that is set."
+msgstr "Свободная скорость на перегоне этой длины: ``base_speed_kmh`` или скорость, растущая с длиной к ``long_speed_kmh``, если она задана."
+
+msgid ":py:obj:`travel_time_min <iduedu.TransportSpec.travel_time_min>`"
+msgstr ":py:obj:`travel_time_min <iduedu.TransportSpec.travel_time_min>`"
+
+msgid "Compute travel time (minutes) for a single graph segment."
+msgstr "Рассчитывает время в пути (в минутах) для одного перегона графа."
+
+msgid ":py:obj:`validate <iduedu.TransportSpec.validate>`"
+msgstr ":py:obj:`validate <iduedu.TransportSpec.validate>`"
+
+msgid "Validate transport specification fields."
+msgstr "Проверяет поля спецификации вида транспорта."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If a required field is missing or outside the supported"
+msgstr "Если обязательное поле отсутствует или вне поддерживаемого"
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`float\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`float\\``"
+
+msgid "The method estimates traversal time using a simplified kinematic model that accounts for: - the transport mode technical maximum speed; - a free speed that may grow with the segment length (``long_speed_kmh``); - an optional road speed limit, entering the free-flow speed affinely; - time lost standing at a stop (``dwell_min``); - time lost on acceleration and braking."
+msgstr "Метод оценивает время прохождения по упрощённой кинематической модели, которая учитывает: - техническую максимальную скорость вида транспорта; - свободную скорость, которая может расти с длиной перегона (``long_speed_kmh``); - необязательное ограничение скорости на дороге, линейно входящее в свободную скорость; - время стоянки на остановке (``dwell_min``); - потери времени на разгон и торможение."
+
+msgid "For short segments where the vehicle cannot reach cruising speed, a reduced peak speed is assumed and the segment is traversed using an acceleration-deceleration profile without a cruising phase. The peak speed scales as ``sqrt(L / span)`` because under constant acceleration the distance covered grows with the square of the speed reached; the two branches meet continuously at ``L == span``."
+msgstr "Для коротких перегонов, где транспорт не успевает набрать крейсерскую скорость, принимается меньшая пиковая скорость, и перегон проходится с разгоном и торможением без фазы равномерного движения. Пиковая скорость масштабируется как ``sqrt(L / span)``, потому что при постоянном ускорении пройденное расстояние растёт как квадрат достигнутой скорости; обе ветви непрерывно сходятся при ``L == span``."
+
+msgid "Segment length in meters. Must be positive."
+msgstr "Длина перегона в метрах. Должна быть положительной."
+
+msgid "Optional road speed limit in meters per minute. If provided, the effective speed will not exceed this value."
+msgstr "Необязательное ограничение скорости на дороге в метрах в минуту. Если задано, итоговая скорость его не превышает."
+
+msgid "Lower bound for effective speed (meters per minute), used to avoid unrealistically large travel times on very short segments."
+msgstr "Нижняя граница итоговой скорости (в метрах в минуту), чтобы на очень коротких перегонах не получалось нереалистично большое время."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Estimated travel time for the segment in minutes."
+msgstr "Оценка времени прохождения перегона в минутах."
+

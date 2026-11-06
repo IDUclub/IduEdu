@@ -1,0 +1,73 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.download\\_osm\\_pbf"
+msgstr "iduedu.download\\_osm\\_pbf"
+
+msgid "OSM file for a territory, cut out of a Geofabrik extract: a drop-in replacement for Overpass downloads."
+msgstr "Файл OSM для территории, вырезанный из выгрузки Geofabrik: прямая замена загрузки из Overpass."
+
+msgid "The territory is given as in the graph builders. The smallest Geofabrik extract covering it is chosen automatically (or set with ``region``), downloaded once and cached, and the territory is cut out of it with :func:`~iduedu.osm_pbf.split_by_polygons`: the file holds everything the graph builders read for that territory, including public-transport routes leaving it and, for ``osm_id``, the boundary relation, so ``get_*_graph(osm_id=...)`` works on it in pbf mode."
+msgstr "Территория задаётся так же, как в функциях построения графов. Наименьшая покрывающая её выгрузка Geofabrik выбирается автоматически (или задаётся через ``region``), скачивается один раз и кешируется, а территория вырезается из неё с помощью :func:`~iduedu.osm_pbf.split_by_polygons`: файл содержит всё, что функции построения графов читают для этой территории, включая выходящие за неё маршруты общественного транспорта и, для ``osm_id``, отношение границы, поэтому ``get_*_graph(osm_id=...)`` работает с ним в режиме pbf."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation id of the territory. Without ``region`` its boundary is fetched once through Overpass (cached) to choose the extract; with ``region`` it is read from the extract, so no Overpass request is made."
+msgstr "Идентификатор отношения OSM территории. Без ``region`` её граница один раз загружается через Overpass (с кешем), чтобы выбрать выгрузку; с ``region`` она читается из выгрузки, и запрос к Overpass не выполняется."
+
+msgid "Territory polygon in EPSG:4326, or a GeoDataFrame/GeoSeries in any CRS."
+msgstr "Полигон территории в EPSG:4326 либо GeoDataFrame/GeoSeries в любой системе координат."
+
+msgid "Geofabrik region id to cut from; chosen automatically when omitted."
+msgstr "Идентификатор региона Geofabrik, из которого вырезается территория; если не указан, выбирается автоматически."
+
+msgid "Output file name without extension; defaults to ``osm_<osm_id>`` or a hash of the territory."
+msgstr "Имя выходного файла без расширения; по умолчанию ``osm_<osm_id>`` или хеш территории."
+
+msgid "Cache directory; defaults to ``<config.overpass_cache_dir>/geofabrik``. Cut files go to its ``territories/`` subdirectory."
+msgstr "Папка кеша; по умолчанию ``<config.overpass_cache_dir>/geofabrik``. Вырезанные файлы записываются в её подпапку ``territories/``."
+
+msgid "Refresh a cached regional extract when Geofabrik has a newer one and cut again."
+msgstr "Обновить закешированную региональную выгрузку, если у Geofabrik есть более новая, и вырезать заново."
+
+msgid "Cut again even if the territory file exists."
+msgstr "Вырезать заново, даже если файл территории уже есть."
+
+msgid "Node-location index used while cutting (see :func:`~iduedu.osm_pbf.split_by_polygons`); use ``\"sparse_file_array\"`` for country-sized extracts."
+msgstr "Индекс координат узлов, используемый при нарезке (см. :func:`~iduedu.osm_pbf.split_by_polygons`); для выгрузок размером со страну используйте ``\"sparse_file_array\"``."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pathlib.Path\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pathlib.Path\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Path of ``<name>.osm.pbf``."
+msgstr "Путь к ``<name>.osm.pbf``."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If neither ``osm_id`` nor ``territory`` is given, or no extract covers the territory."
+msgstr "Если не задан ни ``osm_id``, ни ``territory`` или ни одна выгрузка не покрывает территорию."
+
+msgid "When pyosmium is not installed and the file has to be cut."
+msgstr "Если pyosmium не установлен, а файл нужно вырезать."
+

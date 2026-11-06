@@ -1,0 +1,73 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_walk\\_graph"
+msgstr "iduedu.get\\_walk\\_graph"
+
+msgid "Build a pedestrian UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит пешеходный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid "The function fetches OSM ways via Overpass (or a local OSM file in pbf mode) using a walking filter, splits each way into line segments, and computes per-edge length (meters) and traversal time (minutes) using a given walking speed (m/min). The graph is stored as an undirected multigraph because pedestrian movement is treated as bidirectional."
+msgstr "Функция загружает линии OSM через Overpass (или из локального файла OSM в режиме pbf) с пешеходным фильтром, разбивает каждую линию на отрезки и рассчитывает длину (в метрах) и время прохождения (в минутах) каждого ребра при заданной скорости ходьбы (м/мин). Граф хранится как неориентированный мультиграф, потому что пешеходное движение считается двусторонним."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation/area ID for the boundary. Provide this or ``territory``."
+msgstr "Идентификатор отношения или области OSM границы. Передайте его или ``territory``."
+
+msgid "Boundary geometry (EPSG:4326) or a GeoDataFrame to define the area when ``osm_id`` is not given."
+msgstr "Геометрия границы (EPSG:4326) или GeoDataFrame, задающие область, если ``osm_id`` не задан."
+
+msgid "If True, merges contiguous segments (via internal line merging) and transfers attributes back to merged lines using nearest midpoints; if False, keeps raw per-segment edges."
+msgstr "Если True, смежные отрезки объединяются (внутренним слиянием линий), а атрибуты переносятся на объединённые линии по ближайшим серединам; если False, сохраняются исходные рёбра по отрезкам."
+
+msgid "If True, clips edges by the provided boundary before graph construction."
+msgstr "Если True, рёбра обрезаются по переданной границе до построения графа."
+
+msgid "If True, retains only the largest strongly connected component."
+msgstr "Если True, сохраняется только наибольшая компонента сильной связности."
+
+msgid "Walking speed in meters per minute used to compute time for each edge."
+msgstr "Скорость ходьбы в метрах в минуту для расчёта времени каждого ребра."
+
+msgid "Preset of Overpass filters. Use custom mode with custom_filter to pass your own way filter."
+msgstr "Готовый набор фильтров Overpass. Используйте режим custom с custom_filter, чтобы передать собственный фильтр линий."
+
+msgid "Custom Overpass filter string used in custom mode."
+msgstr "Собственная строка фильтра Overpass для режима custom."
+
+msgid "List of OSM edge tags to retain (overrides defaults). Only these keys are joined from element tags."
+msgstr "Список сохраняемых тегов OSM на рёбрах (заменяет значения по умолчанию). Из тегов элементов берутся только эти ключи."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Undirected multigraph of the walking network. Edges include geometry in the local CRS, length, travel time and selected OSM tags. The graph keeps the local projected CRS and selected network type as metadata."
+msgstr "Неориентированный мультиграф пешеходной сети. Рёбра содержат геометрию в локальной системе координат, длину, время в пути и выбранные теги OSM. Граф хранит локальную проецированную систему координат и выбранный тип сети как метаданные."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "Notes"
+msgstr "Примечания"
+
+msgid "All walking edges are treated as bidirectional by the undirected UrbanGraph adjacency builder. Lengths are measured in meters in a local projected CRS estimated from the territory bounds."
+msgstr "Построитель матрицы смежности неориентированного UrbanGraph считает все пешеходные рёбра двунаправленными. Длины измеряются в метрах в локальной проецированной системе координат, подобранной по границам территории."
+
+msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+

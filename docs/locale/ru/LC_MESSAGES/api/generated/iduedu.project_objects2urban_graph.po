@@ -1,0 +1,70 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.project\\_objects2urban\\_graph"
+msgstr "iduedu.project\\_objects2urban\\_graph"
+
+msgid "Prepare graph changes that connect objects to their nearest edges."
+msgstr "Готовит изменения графа, присоединяющие объекты к ближайшим рёбрам."
+
+msgid "The function does not mutate the source graph. It computes nodes and edges to add, source edges to remove, and an ``object2node`` mapping. In backend services this is the preferred low-level workflow: ``changes`` can be persisted to graph tables and ``object2node_map`` can be saved on the object table as ``graph_node_id``. For in-memory workflows, apply the result with :func:`apply_urban_graph_changes`."
+msgstr "Функция не меняет исходный граф. Она рассчитывает добавляемые узлы и рёбра, удаляемые исходные рёбра и сопоставление ``object2node``. В серверных сервисах это предпочтительный низкоуровневый сценарий: ``changes`` можно сохранить в таблицы графа, а ``object2node_map`` — в таблицу объектов как ``graph_node_id``. Для работы в памяти примените результат с помощью :func:`apply_urban_graph_changes`."
+
+msgid "Objects are projected by their ``representative_point()``, so the function works for buildings, services and other polygon or point layers with a stable unique index."
+msgstr "Объекты проецируются по ``representative_point()``, поэтому функция работает для зданий, сервисов и других полигональных или точечных слоёв со стабильным уникальным индексом."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Source urban graph."
+msgstr "Исходный городской граф."
+
+msgid "Objects to connect to the graph. The index should be a stable object identifier, such as ``object_id`` or ``building_id``."
+msgstr "Объекты, присоединяемые к графу. Индекс должен быть стабильным идентификатором объекта, например ``object_id`` или ``building_id``."
+
+msgid "Movement speed on created connector edges, in meters per minute. For 5 km/h use ``5 * 1000 / 60``."
+msgstr "Скорость движения по создаваемым соединительным рёбрам в метрах в минуту. Для 5 км/ч используйте ``5 * 1000 / 60``."
+
+msgid "Optional maximum distance from an object to the nearest edge. If ``None``, nearest edges are searched without a distance limit."
+msgstr "Необязательное максимальное расстояние от объекта до ближайшего ребра. Если ``None``, ближайшие рёбра ищутся без ограничения расстояния."
+
+msgid "If ``True``, create a dedicated object node and connector edge. If ``False``, map the object to the projection node on the graph. An object that already lies on the graph is mapped to the node it coincides with in both modes, because a connector edge shorter than ``MIN_CONNECTOR_LENGTH_M`` cannot connect anything."
+msgstr "Если ``True``, создаются отдельный узел объекта и соединительное ребро. Если ``False``, объект сопоставляется с узлом проекции на графе. Объект, уже лежащий на графе, в обоих режимах сопоставляется с совпадающим с ним узлом, потому что соединительное ребро короче ``MIN_CONNECTOR_LENGTH_M`` ничего не соединяет."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.editors.UrbanGraphChanges\\`\\, \\:py\\:class\\:\\`\\~pandas.Series\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.editors.UrbanGraphChanges\\`\\, \\:py\\:class\\:\\`\\~pandas.Series\\`\\]`"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Pair ``(changes, object2node_map)``. ``changes.nodes_gdf`` contains new nodes, ``changes.edges_gdf`` contains new edges, and ``changes.edges_to_delete`` contains replaced edge keys. ``object2node_map`` is a ``Series`` indexed by the original object index with graph node ids as values. Node ids in the mapping always reference connected nodes; several objects may share one node when they project to the same point."
+msgstr "Пара ``(changes, object2node_map)``. ``changes.nodes_gdf`` содержит новые узлы, ``changes.edges_gdf`` — новые рёбра, а ``changes.edges_to_delete`` — ключи заменяемых рёбер. ``object2node_map`` — ``Series`` с исходным индексом объектов и идентификаторами узлов графа в значениях. Идентификаторы узлов в сопоставлении всегда указывают на присоединённые узлы; несколько объектов могут делить один узел, если проецируются в одну точку."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``objects_gdf`` is not a GeoDataFrame."
+msgstr "Если ``objects_gdf`` — не GeoDataFrame."
+
+msgid "If objects are empty or speed/distance parameters are invalid."
+msgstr "Если объектов нет или параметры скорости и расстояния некорректны."
+
+msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+

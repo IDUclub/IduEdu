@@ -62,6 +62,9 @@ uv run pytest tests/test_urban_graph_unit.py -k "test_name" -v
 # Run network tests (calls Overpass API — requires internet)
 uv run pytest --run-network
 
+# Network tests on the Geofabrik extract instead of Overpass (auto, the default, falls back to it when Overpass is down)
+uv run pytest --run-network --osm-source=pbf
+
 # Run with coverage
 uv run pytest --cov=iduedu --cov-report=term-missing
 
@@ -74,8 +77,13 @@ uv run pylint iduedu
 uv run isort --check-only iduedu
 uv run black --check iduedu
 
-# Build docs
+# Build docs (English, then Russian into html/ru)
 uv run sphinx-build -b html docs docs/_build/html
+uv run sphinx-build -b html -D language=ru -d docs/_build/doctrees-ru docs docs/_build/html/ru
+
+# Russian translation of the docs: add new/changed text to the catalogues, then check nothing is untranslated
+uv run python docs/i18n.py update                   # or: make docs-i18n
+uv run python docs/i18n.py check                    # or: make docs-i18n-check (CI fails on untranslated text)
 ```
 
 **Numba JIT note:** When running tests under coverage (`--cov`), `conftest.py` automatically sets `NUMBA_DISABLE_JIT=1`
@@ -175,15 +183,30 @@ bus/trolleybus/tram/subway/monorail/taxi; `DEFAULT_REGISTRY_W_TRAIN` adds train.
 
 ### Test organization
 
-Tests are split into `_unit` (no network, fast) and `_network` (calls Overpass). Network test modules are listed in
-`conftest.py::NETWORK_ONLY_TEST_MODULES` and are excluded from collection unless `--run-network` is passed.
+Tests are split into `_unit` (no network, fast) and `_network` (real OSM data). Network test modules are listed in
+`conftest.py::NETWORK_ONLY_TEST_MODULES` and are excluded from collection unless `--run-network` is passed. They read
+Overpass, or the test territory cut out of its Geofabrik extract (`northwestern-fed-district`, about 650 MB, cached in
+`.iduedu_cache/geofabrik/`, needs pyosmium) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
+Network tests check real data only; options and edge cases belong in the unit tests with mocked responses.
 
 Pytest markers: `unit`, `integration`, `network`, `slow`, `numba`.
 
-Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `bounds`, `intermodal_graph` (
-session-scoped, downloaded once per network run).
+Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `osm_source` (Overpass or the
+PBF fallback; a `pytest_runtest_protocol` hook switches to the file only around network tests, so unit tests in the
+same run keep their mocked Overpass), `bounds`, `intermodal_graph` (session-scoped, downloaded once per network run).
 
 Object factories for unit tests: `tests/factories.py`.
+
+### Documentation in two languages
+
+English is the source; Russian lives in gettext catalogues `docs/locale/ru/LC_MESSAGES/<page>.po` (pages, notebook
+markdown and the docstrings autodoc shows). `docs/conf.py` sets `locale_dirs`, one catalogue per page and the
+language switch (`docs/_templates/sidebar/lang.html`: the Russian site is the `ru/` subdirectory of the English one).
+**Whenever English text changes — a page, a notebook text cell, a public docstring — run `docs/i18n.py update`,
+translate every empty or `#, fuzzy` entry (keep markup, roles, literals and links; decimal commas in Russian prose)
+and finish with `docs/i18n.py check`.** Containers of nested lists (`Text:  - a - b`) stay identical to the
+English; the update step keeps them so. Translations on MyST pages (`.md`, including the `Config` docstrings on
+`configuration.md`) are parsed as Markdown: roles there are `{func}`, not `:func:`.
 
 ### Coding conventions
 
