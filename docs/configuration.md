@@ -81,13 +81,13 @@ pip install "iduedu[pbf]"
 ```
 
 ```python
-from iduedu import config, get_public_transport_graph, get_walk_graph
+from iduedu import config, get_public_transport_graph, get_walk_graph, use_pbf
 
 config.set_osm_source("pbf", path="city.osm.pbf")   # every following call reads the file
 walk = get_walk_graph(territory=city_polygon)
 config.set_osm_source("overpass")                   # back to the default
 
-with config.use_pbf("city.osm.pbf"):                # or only inside a block
+with use_pbf("city.osm.pbf"):                       # or only inside a block (same as config.use_pbf)
     pt = get_public_transport_graph(territory=city_polygon, transport_types=["bus", "tram", "subway"])
 ```
 
@@ -101,14 +101,20 @@ from its header (`osmosis_replication_timestamp`, set in Geofabrik extracts).
 `download_osm_pbf` replaces the Overpass download with [Geofabrik](https://download.geofabrik.de/) extracts.
 Give it the territory as to the graph builders: it picks the smallest extract covering the territory,
 downloads it once (resuming an interrupted download and checking the md5 Geofabrik publishes), cuts the
-territory out with `split_by_polygons` and returns the small file:
+territory out with `split_by_polygons` and returns the small file. `use_pbf` takes the same arguments
+instead of a path, downloads the file and reads from it inside the block:
 
 ```python
-from iduedu import config, download_osm_pbf, get_intermodal_graph
+import iduedu
 
-path = download_osm_pbf(osm_id=1114252, region="northwestern-fed-district")
-with config.use_pbf(path):
-    graph = get_intermodal_graph(osm_id=1114252)
+with iduedu.use_pbf(osm_id=1114252, region="northwestern-fed-district"):
+    boundary = iduedu.get_4326_boundary(osm_id=1114252)
+    graph = iduedu.get_intermodal_graph(territory=boundary, clip_by_territory=True)
+
+with iduedu.use_pbf(territory=city_polygon):        # the extract is chosen from the territory
+    walk = iduedu.get_walk_graph(territory=city_polygon)
+
+path = iduedu.download_osm_pbf(osm_id=1114252, region="northwestern-fed-district")  # or just the file
 ```
 
 With `region` the boundary of `osm_id` is read from the extract and no Overpass request is made; without it

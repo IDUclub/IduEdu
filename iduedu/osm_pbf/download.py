@@ -3,10 +3,9 @@
 :func:`download_osm_pbf` takes the same territory arguments as the graph builders (``osm_id`` or
 ``territory``), picks the smallest Geofabrik extract that covers it, downloads that regional file once (with
 resume and an md5 check) and cuts a compact file for the territory out of it with
-:func:`~iduedu.osm_pbf.split_by_polygons`. The result plugs straight into ``config.use_pbf``::
+:func:`~iduedu.osm_pbf.split_by_polygons`. ``use_pbf`` calls it itself when given a territory instead of a path::
 
-    path = download_osm_pbf(osm_id=1114252)
-    with config.use_pbf(path):
+    with iduedu.use_pbf(osm_id=1114252):  # same as config.use_pbf(download_osm_pbf(osm_id=1114252))
         graph = get_intermodal_graph(osm_id=1114252)
 
 Regional files and cut files are cached under ``config.overpass_cache_dir`` (``geofabrik/`` and
