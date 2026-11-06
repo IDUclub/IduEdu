@@ -1,0 +1,936 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+        <link rel="prefetch" href="../../../_static/iduedulogo.svg" as="image">
+
+    <link rel="shortcut icon" href="../../../_static/iduedufavicon.svg"><!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>iduedu.osm_pbf.reader - IduEdu 2.4.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/iduedu.css?v=e819a31d" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">IduEdu 2.4.2 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../../_static/iduedulogo.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">IduEdu 2.4.2 documentation</span>
+  
+</a><div class="lang-switch">
+  <span class="lang-switch-current" lang="en">English</span>
+  <a href="../../../ru/_modules/iduedu/osm_pbf/reader.html" hreflang="ru" lang="ru">Русский</a>
+</div><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/high_level.html">High-level functions</a><input aria-label="Toggle navigation of High-level functions" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.get_drive_graph.html">iduedu.get_drive_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.get_walk_graph.html">iduedu.get_walk_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.get_public_transport_graph.html">iduedu.get_public_transport_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.get_gtfs_public_transport_graph.html">iduedu.get_gtfs_public_transport_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.get_intermodal_graph.html">iduedu.get_intermodal_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.join_pt_walk_graph.html">iduedu.join_pt_walk_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/graph_data_model.html">Graph data model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../migration_to_urban_graph.html">Migrating to UrbanGraph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmarks.html">Benchmarks and design notes</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/transport_registry.html">Transport registry</a><input aria-label="Toggle navigation of Transport registry" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.TransportSpec.html">iduedu.TransportSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.TransportRegistry.html">iduedu.TransportRegistry</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/gtfs.html">GTFS public transport</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/utilities.html">Graph utilities</a><input aria-label="Toggle navigation of Graph utilities" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.connected_components.html">iduedu.connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.weakly_connected_components.html">iduedu.weakly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.strongly_connected_components.html">iduedu.strongly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.number_connected_components.html">iduedu.number_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.number_weakly_connected_components.html">iduedu.number_weakly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.number_strongly_connected_components.html">iduedu.number_strongly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.largest_connected_component.html">iduedu.largest_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.largest_weakly_connected_component.html">iduedu.largest_weakly_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.largest_strongly_connected_component.html">iduedu.largest_strongly_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.largest_component.html">iduedu.largest_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.keep_largest_connected_component.html">iduedu.keep_largest_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.relabel_urban_graph.html">iduedu.relabel_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.subgraph_by_nodes.html">iduedu.subgraph_by_nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.clip_urban_graph.html">iduedu.clip_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.join_urban_graphs.html">iduedu.join_urban_graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.simplify_multiedges.html">iduedu.simplify_multiedges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.to_directed.html">iduedu.to_directed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.to_undirected.html">iduedu.to_undirected</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.nearest_nodes.html">iduedu.nearest_nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.project_objects2urban_graph.html">iduedu.project_objects2urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.apply_urban_graph_changes.html">iduedu.apply_urban_graph_changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.UrbanGraphChanges.html">iduedu.UrbanGraphChanges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.read_urban_graph.html">iduedu.read_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.write_urban_graph.html">iduedu.write_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.validate_graph.html">iduedu.validate_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/utilities.html#optional-networkx-utilities">Optional NetworkX utilities</a><input aria-label="Toggle navigation of Optional NetworkX utilities" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.urban_graph2nx_graph.html">iduedu.urban_graph2nx_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.nx_graph2urban_graph.html">iduedu.nx_graph2urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.graph2gdf.html">iduedu.graph2gdf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.gdf2graph.html">iduedu.gdf2graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.keep_largest_nx_component.html">iduedu.keep_largest_nx_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.clip_nx_graph.html">iduedu.clip_nx_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.read_gml.html">iduedu.read_gml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.write_gml.html">iduedu.write_gml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.reproject_graph.html">iduedu.reproject_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/matrices.html">Matrices</a><input aria-label="Toggle navigation of Matrices" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.single_source_dijkstra.html">iduedu.single_source_dijkstra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.multi_source_dijkstra.html">iduedu.multi_source_dijkstra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.multi_source_dijkstra_nearest_source.html">iduedu.multi_source_dijkstra_nearest_source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.dijkstra_parallel.html">iduedu.dijkstra_parallel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.od_matrix.html">iduedu.od_matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.iter_od_matrix.html">iduedu.iter_od_matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.ShortestPathResult.html">iduedu.ShortestPathResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.single_source_dijkstra_path.html">iduedu.single_source_dijkstra_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.path_to_edges.html">iduedu.path_to_edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.single_source_dijkstra_path_length.html">iduedu.single_source_dijkstra_path_length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.multi_source_dijkstra_path_length.html">iduedu.multi_source_dijkstra_path_length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.dijkstra_path_length_parallel.html">iduedu.dijkstra_path_length_parallel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.multi_source_dijkstra_path.html">iduedu.multi_source_dijkstra_path</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/overpass.html">Overpass helpers</a><input aria-label="Toggle navigation of Overpass helpers" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.get_4326_boundary.html">iduedu.get_4326_boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/osm_pbf.html">Local OSM files</a><input aria-label="Toggle navigation of Local OSM files" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.use_pbf.html">iduedu.use_pbf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.download_osm_pbf.html">iduedu.download_osm_pbf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.download_geofabrik_region.html">iduedu.download_geofabrik_region</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.find_geofabrik_region.html">iduedu.find_geofabrik_region</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.geofabrik_regions.html">iduedu.geofabrik_regions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.PbfSource.html">iduedu.PbfSource</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.split_by_polygons.html">iduedu.split_by_polygons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.snapshot_time.html">iduedu.snapshot_time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.osm_pbf.parse_way_filter.html">iduedu.osm_pbf.parse_way_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.osm_pbf.WayFilter.html">iduedu.osm_pbf.WayFilter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/generated/iduedu.osm_pbf.UnsupportedFilterError.html">iduedu.osm_pbf.UnsupportedFilterError</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../examples/index.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/get_any_graph.html">Build transport graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/urban_graph_basics.html">UrbanGraph basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/graph_operations.html">Graph operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/connectivity.html">Connectivity diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/objects_and_nearest_nodes.html">Objects, nearest nodes, and graph projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/shortest_paths.html">Shortest paths and OD matrices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/transport_registry.html">Transport registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../examples/gtfs_public_transport.html">GTFS public transport</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for iduedu.osm_pbf.reader</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Answer IduEdu's Overpass queries from a local OpenStreetMap ``.pbf`` file.</span>
+
+<span class="sd">:class:`PbfSource` returns the very JSON element shapes the Overpass downloaders return, so builders and</span>
+<span class="sd">parsers work unchanged whichever source the data comes from. It needs the optional dependency</span>
+<span class="sd">`pyosmium &lt;https://osmcode.org/pyosmium/&gt;`_ (``pip install 'iduedu[pbf]'``).</span>
+
+<span class="sd">Spatial selection follows Overpass ``poly:`` semantics, applied to the polygon's exterior ring (the</span>
+<span class="sd">Overpass downloaders send only the exterior ring too):</span>
+
+<span class="sd">- a node is selected when it lies inside the polygon or on its boundary;</span>
+<span class="sd">- a way is selected when one of its nodes is selected or one of its segments crosses the polygon;</span>
+<span class="sd">- a relation is selected when at least one of its node or way members is selected.</span>
+
+<span class="sd">The geometry of selected elements is always complete, also outside the polygon, as with ``out geom``.</span>
+<span class="sd">Node order in ways and member order in relations are kept as in the file. Elements of one output</span>
+<span class="sd">statement come in ``(type, id)`` order, the order of a sorted ``.pbf`` file; Overpass' ``qt`` (quadtile)</span>
+<span class="sd">order is not reproduced.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">Polygon</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">iduedu.constants.transport_specs</span><span class="w"> </span><span class="kn">import</span> <span class="n">osm_route_values</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">iduedu.osm_pbf.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_way_filter</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">osmium</span>
+<span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - exercised in a subprocess test</span>
+    <span class="k">if</span> <span class="n">exc</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"osmium"</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="n">osmium</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># pylint: disable=invalid-name</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">logger</span>
+
+<span class="n">INSTALL_HINT</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"Reading OpenStreetMap data from .pbf files needs the optional dependency pyosmium. "</span>
+    <span class="s2">"Install it with: pip install 'iduedu[pbf]'"</span>
+<span class="p">)</span>
+
+<span class="c1">#: Name of the marker element separating stop-area members from the rest of a route response.</span>
+<span class="c1">#: Kept equal to ``iduedu.overpass.downloaders.STOP_AREA_MEMBERS_SECTION``.</span>
+<span class="n">STOP_AREA_MEMBERS_SECTION</span> <span class="o">=</span> <span class="s2">"stop_area_members"</span>
+
+<span class="n">_TYPE_NAMES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"n"</span><span class="p">:</span> <span class="s2">"node"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">:</span> <span class="s2">"way"</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">:</span> <span class="s2">"relation"</span><span class="p">}</span>
+<span class="n">_TYPE_CHARS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"node"</span><span class="p">:</span> <span class="s2">"n"</span><span class="p">,</span> <span class="s2">"way"</span><span class="p">:</span> <span class="s2">"w"</span><span class="p">,</span> <span class="s2">"relation"</span><span class="p">:</span> <span class="s2">"r"</span><span class="p">}</span>
+<span class="n">_TYPE_ORDER</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"n"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">require_osmium</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Return the ``osmium`` module, or raise an ``ImportError`` explaining how to install it."""</span>
+    <span class="k">if</span> <span class="n">osmium</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">INSTALL_HINT</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">osmium</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_timestamp</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">:"</span><span class="p">,</span> <span class="s2">":"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"Z"</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"+00:00"</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">stamp</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="n">stamp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stamp</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="snapshot_time">
+<a class="viewcode-back" href="../../../api/generated/iduedu.snapshot_time.html#iduedu.snapshot_time">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">snapshot_time</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the moment an OSM file reflects, from its header, as an aware UTC ``datetime``.</span>
+
+<span class="sd">    Geofabrik and other replication-based extracts store it as ``osmosis_replication_timestamp``; a</span>
+<span class="sd">    plain ``timestamp`` header option is used when that is missing. Returns ``None`` when the header</span>
+<span class="sd">    carries neither.</span>
+<span class="sd">    """</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">require_osmium</span><span class="p">()</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">FileProcessor</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">))</span><span class="o">.</span><span class="n">header</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"osmosis_replication_timestamp"</span><span class="p">,</span> <span class="s2">"timestamp"</span><span class="p">):</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="n">_parse_timestamp</span><span class="p">(</span><span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">stamp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stamp</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_selection_polygon</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Polygon</span> <span class="o">|</span> <span class="n">MultiPolygon</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The area Overpass searches: the exterior ring(s) of the polygon, holes ignored."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+        <span class="n">poly</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">exterior</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">):</span>
+        <span class="n">poly</span> <span class="o">=</span> <span class="n">MultiPolygon</span><span class="p">([</span><span class="n">Polygon</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">exterior</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">polygon</span><span class="o">.</span><span class="n">geoms</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"polygon must be a shapely Polygon or MultiPolygon, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">shapely</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">poly</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">poly</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">coords_intersect</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">coord_lists</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Vectorised ``poly:`` test: for every coordinate list (a way or a node), does it touch ``poly``."""</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coord_lists</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromiter</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord_lists</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">multi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">lengths</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">multi</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">coord_lists</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">multi</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"f8"</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">multi</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">lengths</span><span class="p">[</span><span class="n">multi</span><span class="p">])</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">shapely</span><span class="o">.</span><span class="n">linestrings</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="n">indices</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">multi</span><span class="p">]</span> <span class="o">=</span> <span class="n">shapely</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">lines</span><span class="p">)</span>
+    <span class="n">single</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">lengths</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">single</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">coord_lists</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">single</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"f8"</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">single</span><span class="p">]</span> <span class="o">=</span> <span class="n">shapely</span><span class="o">.</span><span class="n">intersects_xy</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="n">xy</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">xy</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bounds</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">coords</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">lons</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+    <span class="n">lats</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"minlat"</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">lats</span><span class="p">),</span> <span class="s2">"minlon"</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">lons</span><span class="p">),</span> <span class="s2">"maxlat"</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">lats</span><span class="p">),</span> <span class="s2">"maxlon"</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">lons</span><span class="p">)}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_center</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Centre of the bounding box, printed by Overpass with seven decimals."""</span>
+    <span class="n">box</span> <span class="o">=</span> <span class="n">_bounds</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">box</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="s2">"minlat"</span><span class="p">]</span> <span class="o">+</span> <span class="n">box</span><span class="p">[</span><span class="s2">"maxlat"</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="p">(</span><span class="n">box</span><span class="p">[</span><span class="s2">"minlon"</span><span class="p">]</span> <span class="o">+</span> <span class="n">box</span><span class="p">[</span><span class="s2">"maxlon"</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"lat"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">lat</span><span class="si">:</span><span class="s2">.7f</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span> <span class="s2">"lon"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">lon</span><span class="si">:</span><span class="s2">.7f</span><span class="si">}</span><span class="s2">"</span><span class="p">)}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_geometry</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">[{</span><span class="s2">"lat"</span><span class="p">:</span> <span class="n">lat</span><span class="p">,</span> <span class="s2">"lon"</span><span class="p">:</span> <span class="n">lon</span><span class="p">}</span> <span class="k">for</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_with_tags</span><span class="p">(</span><span class="n">element</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">element</span><span class="p">[</span><span class="s2">"tags"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">element</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sort_key</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="n">kind</span><span class="p">,</span> <span class="n">eid</span> <span class="o">=</span> <span class="n">item</span>
+    <span class="k">return</span> <span class="n">_TYPE_ORDER</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="n">eid</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Store</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Objects read from the file: ``nodes[id] = (lonlat | None, tags)``,</span>
+<span class="sd">    ``ways[id] = (node_refs, coords, tags)``, ``rels[id] = (members, tags)``."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rels</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">has</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">eid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">eid</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"n"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rels</span><span class="p">}[</span><span class="n">kind</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">eid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"n"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rels</span><span class="p">}[</span><span class="n">kind</span><span class="p">][</span><span class="n">eid</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">member_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">members</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">members</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"n"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ref</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">coords</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ref</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"w"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">:</span>
+                <span class="n">coords</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">ref</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">coords</span>
+
+    <span class="c1"># ----- Overpass element shapes -----</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tags_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">eid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``out tags``."""</span>
+        <span class="k">return</span> <span class="n">_with_tags</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">_TYPE_NAMES</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="s2">"id"</span><span class="p">:</span> <span class="n">eid</span><span class="p">},</span> <span class="bp">self</span><span class="o">.</span><span class="n">tags</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">eid</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">center_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">eid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``out center`` (body verbosity plus a bounding-box centre for ways and relations)."""</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">_TYPE_NAMES</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="s2">"id"</span><span class="p">:</span> <span class="n">eid</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"n"</span><span class="p">:</span>
+            <span class="n">lonlat</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">lonlat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">element</span><span class="p">[</span><span class="s2">"lat"</span><span class="p">],</span> <span class="n">element</span><span class="p">[</span><span class="s2">"lon"</span><span class="p">]</span> <span class="o">=</span> <span class="n">lonlat</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">lonlat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"w"</span><span class="p">:</span>
+            <span class="n">refs</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="n">_center</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">element</span><span class="p">[</span><span class="s2">"center"</span><span class="p">]</span> <span class="o">=</span> <span class="n">center</span>
+            <span class="n">element</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">refs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">members</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">eid</span><span class="p">]</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="n">_center</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">member_coords</span><span class="p">(</span><span class="n">members</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">element</span><span class="p">[</span><span class="s2">"center"</span><span class="p">]</span> <span class="o">=</span> <span class="n">center</span>
+            <span class="n">element</span><span class="p">[</span><span class="s2">"members"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">_TYPE_NAMES</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="s2">"ref"</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">}</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">members</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_with_tags</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">body_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``out body`` of a relation."""</span>
+        <span class="n">members</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"relation"</span><span class="p">,</span>
+            <span class="s2">"id"</span><span class="p">:</span> <span class="n">rid</span><span class="p">,</span>
+            <span class="s2">"members"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">_TYPE_NAMES</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="s2">"ref"</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">}</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">members</span><span class="p">],</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">_with_tags</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">geom_way</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``out geom`` of a way."""</span>
+        <span class="n">refs</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">wid</span><span class="p">]</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"way"</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">:</span> <span class="n">wid</span><span class="p">}</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="n">_bounds</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">box</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">element</span><span class="p">[</span><span class="s2">"bounds"</span><span class="p">]</span> <span class="o">=</span> <span class="n">box</span>
+        <span class="n">element</span><span class="p">[</span><span class="s2">"nodes"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">refs</span><span class="p">)</span>
+        <span class="n">element</span><span class="p">[</span><span class="s2">"geometry"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_geometry</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_with_tags</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">geom_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``out geom`` of a relation: node members carry lat/lon, way members their full geometry."""</span>
+        <span class="n">members</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">]</span>
+        <span class="n">out_members</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">members</span><span class="p">:</span>
+            <span class="n">member</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">_TYPE_NAMES</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="s2">"ref"</span><span class="p">:</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">:</span> <span class="n">role</span><span class="p">}</span>
+            <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"n"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ref</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ref</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">member</span><span class="p">[</span><span class="s2">"lat"</span><span class="p">],</span> <span class="n">member</span><span class="p">[</span><span class="s2">"lon"</span><span class="p">]</span> <span class="o">=</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"w"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">:</span>
+                <span class="n">member</span><span class="p">[</span><span class="s2">"geometry"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_geometry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">ref</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">out_members</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"relation"</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">:</span> <span class="n">rid</span><span class="p">}</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="n">_bounds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">member_coords</span><span class="p">(</span><span class="n">members</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">box</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">element</span><span class="p">[</span><span class="s2">"bounds"</span><span class="p">]</span> <span class="o">=</span> <span class="n">box</span>
+        <span class="n">element</span><span class="p">[</span><span class="s2">"members"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_members</span>
+        <span class="k">return</span> <span class="n">_with_tags</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_way_record</span><span class="p">(</span><span class="n">way</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+    <span class="n">refs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">way</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
+        <span class="n">refs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">location</span>
+        <span class="k">if</span> <span class="n">location</span><span class="o">.</span><span class="n">valid</span><span class="p">():</span>
+            <span class="n">coords</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">location</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">refs</span><span class="p">),</span> <span class="n">coords</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">way</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="PbfSource">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PbfSource</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A local OpenStreetMap file answering the queries IduEdu otherwise sends to Overpass.</span>
+
+<span class="sd">    Any format libosmium reads works (``.osm.pbf``, ``.osm``, ``.opl``, compressed variants). For a</span>
+<span class="sd">    city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a</span>
+<span class="sd">    whole country extract works too, but every query then scans the whole file.</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">        path: The OSM file.</span>
+<span class="sd">        location_storage: Node-location index used while assembling way geometries, as accepted by</span>
+<span class="sd">            ``osmium.index.create_map``: ``"flex_mem"`` (default) for city files, or a disk-backed</span>
+<span class="sd">            ``"sparse_file_array"`` / ``"dense_file_array"`` (optionally ``",&lt;file&gt;"``) for large extracts.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ImportError: When pyosmium is not installed.</span>
+<span class="sd">        FileNotFoundError: When ``path`` does not exist.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">location_storage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"flex_mem"</span><span class="p">):</span>
+        <span class="n">require_osmium</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"OSM file not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">location_storage</span> <span class="o">=</span> <span class="n">location_storage</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"PbfSource(</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span><span class="si">!r}</span><span class="s2">)"</span>
+
+<div class="viewcode-block" id="PbfSource.snapshot_time">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource.snapshot_time">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">snapshot_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The replication timestamp from the file header, see :func:`snapshot_time`."""</span>
+        <span class="k">return</span> <span class="n">snapshot_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------ reading</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_processor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entities</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">osmium</span><span class="o">.</span><span class="n">FileProcessor</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">),</span> <span class="n">entities</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_relations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">_Store</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tag_pairs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">contains_nodes</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Read relations into ``store``; returns the ids read (in file order)."""</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processor</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">RELATION</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ids</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[]</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">with_filter</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">IdFilter</span><span class="p">(</span><span class="n">ids</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">tag_pairs</span><span class="p">:</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">with_filter</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">TagFilter</span><span class="p">(</span><span class="o">*</span><span class="n">tag_pairs</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">contains_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">contains_nodes</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[]</span>
+            <span class="n">tracker</span> <span class="o">=</span> <span class="n">osmium</span><span class="o">.</span><span class="n">IdTracker</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">nid</span> <span class="ow">in</span> <span class="n">contains_nodes</span><span class="p">:</span>
+                <span class="n">tracker</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">nid</span><span class="p">))</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">with_filter</span><span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">contains_filter</span><span class="p">())</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rel</span> <span class="ow">in</span> <span class="n">fp</span><span class="p">:</span>
+            <span class="n">members</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">m</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">role</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">rel</span><span class="o">.</span><span class="n">members</span><span class="p">)</span>
+            <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rel</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">members</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rel</span><span class="o">.</span><span class="n">tags</span><span class="p">))</span>
+            <span class="n">read</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">read</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_nodes_and_ways</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">_Store</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">way_ids</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Read the given nodes (location and tags) and ways (node refs, coordinates, tags) into ``store``."""</span>
+        <span class="n">node_ids</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">node_ids</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">nodes</span><span class="p">}</span>
+        <span class="n">way_ids</span> <span class="o">=</span> <span class="p">{</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">way_ids</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">ways</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">node_ids</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">way_ids</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">tracker</span> <span class="o">=</span> <span class="n">osmium</span><span class="o">.</span><span class="n">IdTracker</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">nid</span> <span class="ow">in</span> <span class="n">node_ids</span><span class="p">:</span>
+            <span class="n">tracker</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">nid</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">wid</span> <span class="ow">in</span> <span class="n">way_ids</span><span class="p">:</span>
+            <span class="n">tracker</span><span class="o">.</span><span class="n">add_way</span><span class="p">(</span><span class="n">wid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">way_ids</span><span class="p">:</span>
+            <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processor</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">NODE</span> <span class="o">|</span> <span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">WAY</span><span class="p">)</span><span class="o">.</span><span class="n">with_locations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location_storage</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processor</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">NODE</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">with_filter</span><span class="p">(</span><span class="n">tracker</span><span class="o">.</span><span class="n">id_filter</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">fp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">is_node</span><span class="p">():</span>
+                <span class="n">location</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">location</span>
+                <span class="n">lonlat</span> <span class="o">=</span> <span class="p">(</span><span class="n">location</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span> <span class="k">if</span> <span class="n">location</span><span class="o">.</span><span class="n">valid</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lonlat</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">tags</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">_way_record</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_members</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">_Store</span><span class="p">,</span> <span class="n">relation_ids</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">node_ids</span><span class="p">,</span> <span class="n">way_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">relation_ids</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"n"</span><span class="p">:</span>
+                    <span class="n">node_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"w"</span><span class="p">:</span>
+                    <span class="n">way_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_nodes_and_ways</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">,</span> <span class="n">way_ids</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_selected_relations</span><span class="p">(</span><span class="n">store</span><span class="p">:</span> <span class="n">_Store</span><span class="p">,</span> <span class="n">poly</span><span class="p">,</span> <span class="n">relation_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Relations with at least one node or way member touching ``poly``."""</span>
+        <span class="n">node_refs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">ref</span> <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">relation_ids</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"n"</span><span class="p">})</span>
+        <span class="n">way_refs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">ref</span> <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">relation_ids</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"w"</span><span class="p">})</span>
+        <span class="n">node_refs</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">node_refs</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">nodes</span> <span class="ow">and</span> <span class="n">store</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">way_refs</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">way_refs</span> <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">ways</span> <span class="ow">and</span> <span class="n">store</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">w</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">inside_nodes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">n</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">hit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">node_refs</span><span class="p">,</span> <span class="n">coords_intersect</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="p">[[</span><span class="n">store</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">node_refs</span><span class="p">]))</span> <span class="k">if</span> <span class="n">hit</span>
+        <span class="p">}</span>
+        <span class="n">inside_ways</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">w</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">hit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">way_refs</span><span class="p">,</span> <span class="n">coords_intersect</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="p">[</span><span class="n">store</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">w</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">way_refs</span><span class="p">]))</span> <span class="k">if</span> <span class="n">hit</span>
+        <span class="p">}</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">relation_ids</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"n"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">inside_nodes</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"w"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">inside_ways</span><span class="p">):</span>
+                    <span class="n">selected</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rid</span><span class="p">)</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------ queries</span>
+<div class="viewcode-block" id="PbfSource.ways_by_filter">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource.ways_by_filter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ways_by_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon</span><span class="p">:</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">way_filter</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Ways matching an Overpass tag filter inside a polygon.</span>
+
+<span class="sd">        Equivalent to ``way&lt;way_filter&gt;(poly:"..."); out geom;``. Returns Overpass ``out geom`` way</span>
+<span class="sd">        elements ``{"type": "way", "id", "bounds", "nodes", "geometry": [{"lat", "lon"}], "tags"}``.</span>
+<span class="sd">        """</span>
+        <span class="n">predicate</span> <span class="o">=</span> <span class="n">parse_way_filter</span><span class="p">(</span><span class="n">way_filter</span><span class="p">)</span>
+        <span class="n">poly</span> <span class="o">=</span> <span class="n">_selection_polygon</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
+        <span class="n">minx</span><span class="p">,</span> <span class="n">miny</span><span class="p">,</span> <span class="n">maxx</span><span class="p">,</span> <span class="n">maxy</span> <span class="o">=</span> <span class="n">poly</span><span class="o">.</span><span class="n">bounds</span>
+
+        <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processor</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">NODE</span> <span class="o">|</span> <span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">WAY</span><span class="p">)</span><span class="o">.</span><span class="n">with_locations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location_storage</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">with_filter</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">EntityFilter</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">osm</span><span class="o">.</span><span class="n">WAY</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">predicate</span><span class="o">.</span><span class="n">required_keys</span><span class="p">:</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">with_filter</span><span class="p">(</span><span class="n">osmium</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">KeyFilter</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+        <span class="n">records</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">way</span> <span class="ow">in</span> <span class="n">fp</span><span class="p">:</span>
+            <span class="n">tags</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">way</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">predicate</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">refs</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_way_record</span><span class="p">(</span><span class="n">way</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">coords</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">lons</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+            <span class="n">lats</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">lons</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">maxx</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">(</span><span class="n">lons</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">minx</span> <span class="ow">or</span> <span class="nb">min</span><span class="p">(</span><span class="n">lats</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">maxy</span> <span class="ow">or</span> <span class="nb">max</span><span class="p">(</span><span class="n">lats</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">miny</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">way</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">tags</span><span class="p">))</span>
+
+        <span class="n">hits</span> <span class="o">=</span> <span class="n">coords_intersect</span><span class="p">(</span><span class="n">poly</span><span class="p">,</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">])</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">_Store</span><span class="p">()</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">wid</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">tags</span><span class="p">),</span> <span class="n">hit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">hits</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">hit</span><span class="p">:</span>
+                <span class="n">store</span><span class="o">.</span><span class="n">ways</span><span class="p">[</span><span class="n">wid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">refs</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">geom_way</span><span class="p">(</span><span class="n">wid</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Read </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="si">}</span><span class="s2"> ways matching &lt;</span><span class="si">{</span><span class="n">way_filter</span><span class="si">}</span><span class="s2">&gt; from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="PbfSource.routes_by_poly">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource.routes_by_poly">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">routes_by_poly</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">polygon</span><span class="p">:</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">public_transport_types</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Public-transport route elements in a polygon, shaped as ``get_routes_by_poly`` returns them.</span>
+
+<span class="sd">        Reproduces, statement by statement and in the same order, the Overpass query of</span>
+<span class="sd">        :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways of ground routes</span>
+<span class="sd">        (``out tags``), the ground route relations (``out geom``) and, for ``subway``, the relations</span>
+<span class="sd">        sharing a node with a subway route (``out geom``), their stop-area groups (``out body``), the</span>
+<span class="sd">        stations among their members (``out tags``), the ``stop_area_members`` section marker and all</span>
+<span class="sd">        their members (``out center``).</span>
+<span class="sd">        """</span>
+        <span class="n">types</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">public_transport_types</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">types</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">has_subway</span> <span class="o">=</span> <span class="s2">"subway"</span> <span class="ow">in</span> <span class="n">types</span>
+        <span class="n">simple_route_types</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">v</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">types</span> <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="s2">"subway"</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">osm_route_values</span><span class="p">(</span><span class="n">t</span><span class="p">)})</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="n">simple_route_types</span> <span class="o">+</span> <span class="p">([</span><span class="s2">"subway"</span><span class="p">]</span> <span class="k">if</span> <span class="n">has_subway</span> <span class="k">else</span> <span class="p">[])</span>
+        <span class="n">poly</span> <span class="o">=</span> <span class="n">_selection_polygon</span><span class="p">(</span><span class="n">polygon</span><span class="p">)</span>
+
+        <span class="n">store</span> <span class="o">=</span> <span class="n">_Store</span><span class="p">()</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_relations</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">tag_pairs</span><span class="o">=</span><span class="p">[(</span><span class="s2">"route"</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">wanted</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_members</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">candidates</span><span class="p">)</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_selected_relations</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">poly</span><span class="p">,</span> <span class="n">candidates</span><span class="p">)</span>
+
+        <span class="n">simple_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">simple_route_types</span><span class="p">)</span>
+        <span class="n">routes_basic</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"route"</span><span class="p">)</span> <span class="ow">in</span> <span class="n">simple_set</span><span class="p">]</span>
+        <span class="n">subway_routes</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"route"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"subway"</span><span class="p">]</span>
+
+        <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">simple_route_types</span><span class="p">:</span>
+            <span class="n">member_ways</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="n">ref</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">routes_basic</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"w"</span><span class="p">})</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">tags_element</span><span class="p">(</span><span class="s2">"w"</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">member_ways</span> <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">ways</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">geom_relation</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">routes_basic</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">has_subway</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">overpass_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"config.overpass_date is ignored in pbf mode; the file is the snapshot."</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subway_details</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">subway_routes</span><span class="p">))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Read routes with types </span><span class="si">{</span><span class="n">types</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_subway_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">_Store</span><span class="p">,</span> <span class="n">subway_routes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="n">route_nodes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">ref</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">subway_routes</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"n"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">nodes</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">stop_areas</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_read_relations</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">contains_nodes</span><span class="o">=</span><span class="n">route_nodes</span><span class="p">))</span>
+        <span class="n">stop_area_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stop_areas</span><span class="p">)</span>
+
+        <span class="n">group_store</span> <span class="o">=</span> <span class="n">_Store</span><span class="p">()</span>
+        <span class="n">group_candidates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_relations</span><span class="p">(</span><span class="n">group_store</span><span class="p">,</span> <span class="n">tag_pairs</span><span class="o">=</span><span class="p">[(</span><span class="s2">"public_transport"</span><span class="p">,</span> <span class="s2">"stop_area_group"</span><span class="p">)])</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">gid</span> <span class="ow">in</span> <span class="n">group_candidates</span><span class="p">:</span>
+            <span class="n">members</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">group_store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">gid</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"public_transport"</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="n">k</span> <span class="o">==</span> <span class="s2">"r"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">stop_area_set</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">members</span>
+            <span class="p">):</span>
+                <span class="n">groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gid</span><span class="p">)</span>
+        <span class="n">groups</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+        <span class="n">member_keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">stop_areas</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">0</span><span class="p">]},</span> <span class="n">key</span><span class="o">=</span><span class="n">_sort_key</span><span class="p">)</span>
+        <span class="n">member_rels</span> <span class="o">=</span> <span class="p">[</span><span class="n">ref</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">member_keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"r"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_relations</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="n">member_rels</span><span class="p">)</span>
+        <span class="n">nested</span> <span class="o">=</span> <span class="p">[</span><span class="n">ref</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">member_keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"r"</span> <span class="ow">and</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_members</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">stop_areas</span> <span class="o">+</span> <span class="n">nested</span><span class="p">)</span>
+        <span class="n">existing_members</span> <span class="o">=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">member_keys</span> <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)]</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">store</span><span class="o">.</span><span class="n">geom_relation</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">stop_areas</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">gid</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
+            <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">gid</span><span class="p">,</span> <span class="n">group_store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">gid</span><span class="p">])</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">body_relation</span><span class="p">(</span><span class="n">gid</span><span class="p">))</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="n">store</span><span class="o">.</span><span class="n">tags_element</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">existing_members</span>
+            <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">tags</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"public_transport"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"station"</span>
+        <span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"section"</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"tags"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">STOP_AREA_MEMBERS_SECTION</span><span class="p">}})</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">center_element</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">existing_members</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+<div class="viewcode-block" id="PbfSource.member_elements">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource.member_elements">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">member_elements</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">members</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Mapping</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""``out center`` elements of the given members (dicts with ``type`` and ``ref``), sorted by type and id."""</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({(</span><span class="n">_TYPE_CHARS</span><span class="p">[</span><span class="n">m</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]],</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">"ref"</span><span class="p">]))</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">members</span><span class="p">},</span> <span class="n">key</span><span class="o">=</span><span class="n">_sort_key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">_Store</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_relations</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="n">ref</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"r"</span><span class="p">])</span>
+        <span class="n">relation_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">)</span>
+        <span class="n">node_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">ref</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"n"</span><span class="p">}</span>
+        <span class="n">way_ids</span> <span class="o">=</span> <span class="p">{</span><span class="n">ref</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"w"</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">rid</span> <span class="ow">in</span> <span class="n">relation_ids</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">rels</span><span class="p">[</span><span class="n">rid</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"n"</span><span class="p">:</span>
+                    <span class="n">node_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"w"</span><span class="p">:</span>
+                    <span class="n">way_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_nodes_and_ways</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">node_ids</span><span class="p">,</span> <span class="n">way_ids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">store</span><span class="o">.</span><span class="n">center_element</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">ref</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="PbfSource.member_tags">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource.member_tags">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">member_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">members</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Mapping</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Tags and coordinates of members, keyed by ``(type, id)``, as ``fetch_member_tags`` returns them."""</span>
+        <span class="c1"># Imported here: the downloaders import this module lazily, never the other way round at import time.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">iduedu.overpass.downloaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">member_payloads</span>  <span class="c1"># pylint: disable=import-outside-toplevel</span>
+
+        <span class="k">return</span> <span class="n">member_payloads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">member_elements</span><span class="p">(</span><span class="n">members</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PbfSource.boundary">
+<a class="viewcode-back" href="../../../api/generated/iduedu.PbfSource.html#iduedu.PbfSource.boundary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">boundary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">osm_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The relation ``osm_id`` as ``relation(&lt;osm_id&gt;); out geom;`` returns it (empty list when absent)."""</span>
+        <span class="n">store</span> <span class="o">=</span> <span class="n">_Store</span><span class="p">()</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_relations</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">osm_id</span><span class="p">)])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_members</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">found</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">store</span><span class="o">.</span><span class="n">geom_relation</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">osm_id</span><span class="p">))]</span></div>
+</div>
+
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Donny
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=de1351e5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    </body>
+</html>

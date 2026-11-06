@@ -1,0 +1,20 @@
+﻿iduedu.ShortestPathResult
+=========================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: ShortestPathResult
+   :members:
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~ShortestPathResult.get_path
+      ~ShortestPathResult.get_path_at
+   
+   

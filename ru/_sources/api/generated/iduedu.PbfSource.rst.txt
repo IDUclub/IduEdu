@@ -1,0 +1,24 @@
+﻿iduedu.PbfSource
+================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: PbfSource
+   :members:
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~PbfSource.boundary
+      ~PbfSource.member_elements
+      ~PbfSource.member_tags
+      ~PbfSource.routes_by_poly
+      ~PbfSource.snapshot_time
+      ~PbfSource.ways_by_filter
+   
+   

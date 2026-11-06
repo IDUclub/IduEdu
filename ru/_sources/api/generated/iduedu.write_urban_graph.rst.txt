@@ -1,0 +1,6 @@
+﻿iduedu.write\_urban\_graph
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: write_urban_graph

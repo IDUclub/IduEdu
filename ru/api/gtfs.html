@@ -1,0 +1,670 @@
+<!doctype html>
+<html class="no-js" lang="ru" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Алфавитный указатель" href="../genindex.html"><link rel="search" title="Поиск" href="../search.html"><link rel="next" title="Утилиты для графов" href="utilities.html"><link rel="prev" title="iduedu.TransportRegistry" href="generated/iduedu.TransportRegistry.html">
+        <link rel="prefetch" href="../_static/iduedulogo.svg" as="image">
+
+    <link rel="shortcut icon" href="../_static/iduedufavicon.svg"><!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+        <title>Общественный транспорт из GTFS - документация IduEdu 2.4.2</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/iduedu.css?v=e819a31d" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">документация IduEdu 2.4.2</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/iduedulogo.svg" alt="Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">документация IduEdu 2.4.2</span>
+  
+</a><div class="lang-switch">
+  <a href="../../api/gtfs.html" hreflang="en" lang="en">English</a>
+  <span class="lang-switch-current" lang="ru">Русский</span>
+</div><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Поиск" name="q" aria-label="Поиск">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="high_level.html">Высокоуровневые функции</a><input aria-label="Toggle navigation of Высокоуровневые функции" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.get_drive_graph.html">iduedu.get_drive_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.get_walk_graph.html">iduedu.get_walk_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.get_public_transport_graph.html">iduedu.get_public_transport_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.get_gtfs_public_transport_graph.html">iduedu.get_gtfs_public_transport_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.get_intermodal_graph.html">iduedu.get_intermodal_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.join_pt_walk_graph.html">iduedu.join_pt_walk_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration.html">Настройки</a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph_data_model.html">Модель данных графа</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration_to_urban_graph.html">Переход на UrbanGraph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Бенчмарки и устройство</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="transport_registry.html">Реестр видов транспорта</a><input aria-label="Toggle navigation of Реестр видов транспорта" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.TransportSpec.html">iduedu.TransportSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.TransportRegistry.html">iduedu.TransportRegistry</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Общественный транспорт из GTFS</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="utilities.html">Утилиты для графов</a><input aria-label="Toggle navigation of Утилиты для графов" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.connected_components.html">iduedu.connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.weakly_connected_components.html">iduedu.weakly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.strongly_connected_components.html">iduedu.strongly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.number_connected_components.html">iduedu.number_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.number_weakly_connected_components.html">iduedu.number_weakly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.number_strongly_connected_components.html">iduedu.number_strongly_connected_components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.largest_connected_component.html">iduedu.largest_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.largest_weakly_connected_component.html">iduedu.largest_weakly_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.largest_strongly_connected_component.html">iduedu.largest_strongly_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.largest_component.html">iduedu.largest_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.keep_largest_connected_component.html">iduedu.keep_largest_connected_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.relabel_urban_graph.html">iduedu.relabel_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.subgraph_by_nodes.html">iduedu.subgraph_by_nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.clip_urban_graph.html">iduedu.clip_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.join_urban_graphs.html">iduedu.join_urban_graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.simplify_multiedges.html">iduedu.simplify_multiedges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.to_directed.html">iduedu.to_directed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.to_undirected.html">iduedu.to_undirected</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.nearest_nodes.html">iduedu.nearest_nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.project_objects2urban_graph.html">iduedu.project_objects2urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.apply_urban_graph_changes.html">iduedu.apply_urban_graph_changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.UrbanGraphChanges.html">iduedu.UrbanGraphChanges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.read_urban_graph.html">iduedu.read_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.write_urban_graph.html">iduedu.write_urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.validate_graph.html">iduedu.validate_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="utilities.html#optional-networkx-utilities">Необязательные утилиты NetworkX</a><input aria-label="Toggle navigation of Необязательные утилиты NetworkX" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.urban_graph2nx_graph.html">iduedu.urban_graph2nx_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.nx_graph2urban_graph.html">iduedu.nx_graph2urban_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.graph2gdf.html">iduedu.graph2gdf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.gdf2graph.html">iduedu.gdf2graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.keep_largest_nx_component.html">iduedu.keep_largest_nx_component</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.clip_nx_graph.html">iduedu.clip_nx_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.read_gml.html">iduedu.read_gml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.write_gml.html">iduedu.write_gml</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.reproject_graph.html">iduedu.reproject_graph</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="matrices.html">Матрицы</a><input aria-label="Toggle navigation of Матрицы" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.single_source_dijkstra.html">iduedu.single_source_dijkstra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.multi_source_dijkstra.html">iduedu.multi_source_dijkstra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.multi_source_dijkstra_nearest_source.html">iduedu.multi_source_dijkstra_nearest_source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.dijkstra_parallel.html">iduedu.dijkstra_parallel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.od_matrix.html">iduedu.od_matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.iter_od_matrix.html">iduedu.iter_od_matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.ShortestPathResult.html">iduedu.ShortestPathResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.single_source_dijkstra_path.html">iduedu.single_source_dijkstra_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.path_to_edges.html">iduedu.path_to_edges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.single_source_dijkstra_path_length.html">iduedu.single_source_dijkstra_path_length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.multi_source_dijkstra_path_length.html">iduedu.multi_source_dijkstra_path_length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.dijkstra_path_length_parallel.html">iduedu.dijkstra_path_length_parallel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.multi_source_dijkstra_path.html">iduedu.multi_source_dijkstra_path</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="overpass.html">Функции Overpass</a><input aria-label="Toggle navigation of Функции Overpass" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.get_4326_boundary.html">iduedu.get_4326_boundary</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="osm_pbf.html">Локальные файлы OSM</a><input aria-label="Toggle navigation of Локальные файлы OSM" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.use_pbf.html">iduedu.use_pbf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.download_osm_pbf.html">iduedu.download_osm_pbf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.download_geofabrik_region.html">iduedu.download_geofabrik_region</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.find_geofabrik_region.html">iduedu.find_geofabrik_region</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.geofabrik_regions.html">iduedu.geofabrik_regions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.PbfSource.html">iduedu.PbfSource</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.split_by_polygons.html">iduedu.split_by_polygons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.snapshot_time.html">iduedu.snapshot_time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.osm_pbf.parse_way_filter.html">iduedu.osm_pbf.parse_way_filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.osm_pbf.WayFilter.html">iduedu.osm_pbf.WayFilter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/iduedu.osm_pbf.UnsupportedFilterError.html">iduedu.osm_pbf.UnsupportedFilterError</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../examples/index.html">Примеры</a><input aria-label="Toggle navigation of Примеры" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../examples/get_any_graph.html">Построение транспортных графов</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/urban_graph_basics.html">Основы UrbanGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/graph_operations.html">Операции с графами</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/connectivity.html">Диагностика связности</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/objects_and_nearest_nodes.html">Объекты, ближайшие узлы и проецирование на граф</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/shortest_paths.html">Кратчайшие пути и OD-матрицы</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/transport_registry.html">Реестр видов транспорта</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../examples/gtfs_public_transport.html">Общественный транспорт из GTFS</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="gtfs-public-transport">
+<h1>Общественный транспорт из GTFS<a class="headerlink" href="#gtfs-public-transport" title="Ссылка на этот заголовок">¶</a></h1>
+<p>IduEdu может построить статический <a class="reference internal" href="graph_data_model.html#iduedu.UrbanGraph" title="iduedu.UrbanGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">iduedu.UrbanGraph</span></code></a> общественного транспорта по локальному фиду <a class="reference external" href="https://gtfs.org/documentation/schedule/reference/">GTFS Schedule</a>. Источником может быть папка с таблицами <code class="docutils literal notranslate"><span class="pre">*.txt</span></code>, ZIP-архив, уже прочитанный <a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">iduedu.gtfs.GTFSFeed</span></code></a> или список таких источников, объединённых в один фид (см. <a class="reference internal" href="#merging-several-feeds">Объединение нескольких фидов</a>). Ноутбук <a class="reference internal" href="../examples/gtfs_public_transport.html"><span class="doc">Общественный транспорт из GTFS</span></a> проходит все описанные ниже шаги на небольших синтетических фидах.</p>
+<section id="building-a-graph">
+<h2>Построение графа<a class="headerlink" href="#building-a-graph" title="Ссылка на этот заголовок">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_gtfs_public_transport_graph</span>
+
+<span class="n">public_transport</span> <span class="o">=</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">(</span>
+    <span class="s2">"feed.zip"</span><span class="p">,</span>
+    <span class="n">service_date</span><span class="o">=</span><span class="s2">"2026-08-04"</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="s2">"07:00:00"</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="s2">"10:00:00"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">service_date</span></code> применяет <code class="docutils literal notranslate"><span class="pre">calendar.txt</span></code> и <code class="docutils literal notranslate"><span class="pre">calendar_dates.txt</span></code>. Принимает <code class="docutils literal notranslate"><span class="pre">date</span></code> или <code class="docutils literal notranslate"><span class="pre">datetime</span></code> Python, <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DD</span></code> или <code class="docutils literal notranslate"><span class="pre">YYYYMMDD</span></code>. <code class="docutils literal notranslate"><span class="pre">start_time</span></code> включается в окно, <code class="docutils literal notranslate"><span class="pre">end_time</span></code> — нет; оба принимают строки времени GTFS, значения <code class="docutils literal notranslate"><span class="pre">time</span></code> Python или секунды. Если время окончания раньше времени начала, выбирается ночное окно через полночь.</p>
+<p>Без <code class="docutils literal notranslate"><span class="pre">service_date</span></code> граф содержит все варианты маршрутов, которые ходят хотя бы в один день, а время ожидания — время <strong>среднего дня</strong>: каждый отдельный день обслуживания рассчитывается по своим рейсам, и ожидание усредняется с одинаковым весом каждого календарного дня по дням, в которые ходит вариант маршрута. Дни берутся из собственного календаря фида (не более 366 дней от его начала) или из <code class="docutils literal notranslate"><span class="pre">service_period=(first,</span> <span class="pre">last)</span></code>, например одной эталонной недели. Интервал всегда считается только между отправлениями одного дня: до октября 2026 года рейсы всех дней ставились на одни часы, и отправление буднего дня в 08:00 рядом с субботним в 08:10 давало 10-минутный «интервал», которого не видел ни один пассажир, — ожидание получалось примерно вдвое меньше, чем в любой реальный день. <code class="docutils literal notranslate"><span class="pre">start_time</span></code>/<code class="docutils literal notranslate"><span class="pre">end_time</span></code> действуют внутри каждого дня, например <code class="docutils literal notranslate"><span class="pre">start_time=&quot;06:00&quot;,</span> <span class="pre">end_time=&quot;22:00&quot;</span></code> для дневного движения.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the average day of one reference week, daytime service only</span>
+<span class="n">average_week</span> <span class="o">=</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">(</span>
+    <span class="s2">"feed.zip"</span><span class="p">,</span>
+    <span class="n">service_period</span><span class="o">=</span><span class="p">(</span><span class="s2">"2026-10-12"</span><span class="p">,</span> <span class="s2">"2026-10-18"</span><span class="p">),</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="s2">"06:00"</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="s2">"22:00"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">service_dates=[...]</span></code> вместо этого явно перечисляет дни, например эталонную неделю плюс собственные недели объединённых источников, которые в ту неделю не действовали. Каждый день по-прежнему содержит только свои рейсы, поэтому дни разных лет не смешиваются. <code class="docutils literal notranslate"><span class="pre">service_date</span></code>, <code class="docutils literal notranslate"><span class="pre">service_period</span></code> и <code class="docutils literal notranslate"><span class="pre">service_dates</span></code> нельзя сочетать. Фид без <code class="docutils literal notranslate"><span class="pre">calendar.txt</span></code>/<code class="docutils literal notranslate"><span class="pre">calendar_dates.txt</span></code> считается одним днём.</p>
+</section>
+<section id="required-and-optional-tables">
+<h2>Обязательные и необязательные таблицы<a class="headerlink" href="#required-and-optional-tables" title="Ссылка на этот заголовок">¶</a></h2>
+<p>Для построения нужны <code class="docutils literal notranslate"><span class="pre">agency.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">stops.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">routes.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">trips.txt</span></code> и <code class="docutils literal notranslate"><span class="pre">stop_times.txt</span></code>. Также должна быть хотя бы одна из таблиц <code class="docutils literal notranslate"><span class="pre">calendar.txt</span></code> и <code class="docutils literal notranslate"><span class="pre">calendar_dates.txt</span></code>.</p>
+<p>Если они есть, читаются также <code class="docutils literal notranslate"><span class="pre">frequencies.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">shapes.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">pathways.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">levels.txt</span></code> и <code class="docutils literal notranslate"><span class="pre">feed_info.txt</span></code>. <code class="docutils literal notranslate"><span class="pre">transfers.txt</span></code> и точная маршрутизация пересадок с учётом времени пока не реализованы.</p>
+<p>Базовые типы маршрутов представлены как <code class="docutils literal notranslate"><span class="pre">tram</span></code> (0), <code class="docutils literal notranslate"><span class="pre">subway</span></code> (1), <code class="docutils literal notranslate"><span class="pre">train</span></code> (2), <code class="docutils literal notranslate"><span class="pre">bus</span></code> (3), <code class="docutils literal notranslate"><span class="pre">ferry</span></code> (4), <code class="docutils literal notranslate"><span class="pre">cable_tram</span></code> (5), <code class="docutils literal notranslate"><span class="pre">aerial_lift</span></code> (6), <code class="docutils literal notranslate"><span class="pre">funicular</span></code> (7), <code class="docutils literal notranslate"><span class="pre">trolleybus</span></code> (11) и <code class="docutils literal notranslate"><span class="pre">monorail</span></code> (12). Расширенные типы маршрутов Google сопоставляются по явным диапазонам: 100–117 <code class="docutils literal notranslate"><span class="pre">train</span></code>, 200–209 <code class="docutils literal notranslate"><span class="pre">coach</span></code> (отдельно от городских автобусов), 400–404 и 406–499 <code class="docutils literal notranslate"><span class="pre">subway</span></code>, 405 <code class="docutils literal notranslate"><span class="pre">monorail</span></code>, 700–716 <code class="docutils literal notranslate"><span class="pre">bus</span></code>, 800–899 <code class="docutils literal notranslate"><span class="pre">trolleybus</span></code>, 900–906 <code class="docutils literal notranslate"><span class="pre">tram</span></code>, 1000 и 1200 <code class="docutils literal notranslate"><span class="pre">ferry</span></code>, 1300 <code class="docutils literal notranslate"><span class="pre">aerial_lift</span></code>, 1400 <code class="docutils literal notranslate"><span class="pre">funicular</span></code> и 1500 <code class="docutils literal notranslate"><span class="pre">taxi</span></code>. Любой другой код, включая прочие диапазоны 300, 500, 600, 1600 и 1700, остаётся <code class="docutils literal notranslate"><span class="pre">public_transport</span></code>, а не угадывается по соседним кодам.</p>
+</section>
+<section id="static-time-model">
+<h2>Статическая модель времени<a class="headerlink" href="#static-time-model" title="Ссылка на этот заголовок">¶</a></h2>
+<p>Рейсы с одинаковыми маршрутом, направлением, формой, порядком остановок и правилами посадки и высадки образуют вариант маршрута. Для каждого перегона варианта <code class="docutils literal notranslate"><span class="pre">time_min</span></code> — медиана времени по расписанию от отправления с одной остановки до прибытия на следующую.</p>
+<p>Рёбра посадки описывают ожидаемое ожидание, а не движение транспорта:</p>
+<ul class="simple">
+<li><p>для движения по расписанию берётся половина среднего интервала между соседними отправлениями <strong>линии</strong> с остановки в один и тот же день, усреднённая по дням, как описано выше. Линия — это маршрут, уходящий с остановки к одной и той же следующей остановке: учитываются все её варианты — ветви на общем участке, укороченные рейсы, экспрессы, — поэтому ожидание соответствует линии, которую ждёт пассажир, а не одному её варианту. Направление определяет следующая остановка, а не <code class="docutils literal notranslate"><span class="pre">direction_id</span></code>;</p></li>
+<li><p>для движения по <code class="docutils literal notranslate"><span class="pre">frequencies.txt</span></code> берётся <code class="docutils literal notranslate"><span class="pre">headway_secs</span> <span class="pre">/</span> <span class="pre">120</span></code>, с усреднением по длительности, если периоды частот пересекаются с выбранным окном;</p></li>
+<li><p>у остановки варианта маршрута с единственным отправлением по расписанию интервал оценить нельзя, поэтому её ребро посадки по умолчанию не создаётся. Задайте <code class="docutils literal notranslate"><span class="pre">single_departure_wait_min</span></code>, чтобы сохранить его с явным значением по умолчанию.</p></li>
+</ul>
+<p>Рёбра посадки и высадки всегда имеют <code class="docutils literal notranslate"><span class="pre">length_meter</span> <span class="pre">=</span> <span class="pre">0</span></code>. У высадки также <code class="docutils literal notranslate"><span class="pre">time_min</span> <span class="pre">=</span> <span class="pre">0</span></code>. Время ожидания в GTFS берётся из фида и не использует значения по умолчанию из <a class="reference internal" href="generated/iduedu.TransportRegistry.html#iduedu.TransportRegistry" title="iduedu.TransportRegistry"><code class="xref py py-class docutils literal notranslate"><span class="pre">iduedu.TransportRegistry</span></code></a>.</p>
+</section>
+<section id="geometry-and-distance">
+<h2>Геометрия и расстояние<a class="headerlink" href="#geometry-and-distance" title="Ссылка на этот заголовок">¶</a></h2>
+<p>Если <code class="docutils literal notranslate"><span class="pre">shapes.txt</span></code> даёт пригодную геометрию маршрута, геометрия перегона вырезается из соответствующей формы, а <code class="docutils literal notranslate"><span class="pre">length_meter</span></code> — её измеренная длина. Иначе строится прямая между соседними точками остановок маршрута, а оценкой пройденного расстояния считается <code class="docutils literal notranslate"><span class="pre">sqrt(2)</span> <span class="pre">*</span> <span class="pre">straight_line_length</span></code>. Поправка на корень из двух применяется только к рёбрам движения транспорта, таким как <code class="docutils literal notranslate"><span class="pre">bus</span></code>, <code class="docutils literal notranslate"><span class="pre">tram</span></code> или <code class="docutils literal notranslate"><span class="pre">subway</span></code>, и никогда — к посадке или высадке.</p>
+<p>Система координат графа должна быть проецированной, в метрах. Если <code class="docutils literal notranslate"><span class="pre">crs</span></code> не задан, IduEdu подбирает локальную систему UTM по остановкам фида.</p>
+</section>
+<section id="merging-several-feeds">
+<h2>Объединение нескольких фидов<a class="headerlink" href="#merging-several-feeds" title="Ссылка на этот заголовок">¶</a></h2>
+<p>Город часто публикуется несколькими фидами, и каждый фид нумерует свои маршруты, рейсы и остановки по-своему. Передайте список источников, чтобы объединить их перед построением графа:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">public_transport</span> <span class="o">=</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">(</span>
+    <span class="p">[</span><span class="s2">"subway.zip"</span><span class="p">,</span> <span class="s2">"bus.zip"</span><span class="p">],</span>
+    <span class="n">service_date</span><span class="o">=</span><span class="s2">"2026-08-04"</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="s2">"07:00:00"</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="s2">"10:00:00"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Список объединяется функцией <a class="reference internal" href="#iduedu.merge_gtfs_feeds" title="iduedu.merge_gtfs_feeds"><code class="xref py py-func docutils literal notranslate"><span class="pre">iduedu.merge_gtfs_feeds()</span></code></a>, которая дополняет каждый идентификатор источником, поэтому маршрут <code class="docutils literal notranslate"><span class="pre">1</span></code> одного фида и маршрут <code class="docutils literal notranslate"><span class="pre">1</span></code> другого остаются разными. Вызовите её напрямую, чтобы выбрать префиксы или слить остановки, которые разные перевозчики публикуют для одного места:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">,</span> <span class="n">merge_gtfs_feeds</span>
+
+<span class="n">feed</span> <span class="o">=</span> <span class="n">merge_gtfs_feeds</span><span class="p">([</span><span class="s2">"subway.zip"</span><span class="p">,</span> <span class="s2">"bus.zip"</span><span class="p">],</span> <span class="n">merge_stops_within</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">public_transport</span> <span class="o">=</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">(</span><span class="n">feed</span><span class="p">,</span> <span class="n">service_date</span><span class="o">=</span><span class="s2">"2026-08-04"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>По умолчанию остановки остаются раздельными: слияние меняет топологию сети, а выведенная пересадка выглядела бы как опубликованная. Для фидов разных перевозчиков подходят расстояния около 15–25 м.</p>
+<p>Фиды из нескольких каталогов часто пересекаются: две версии одного фида, национальный и городской фиды одного оператора, зеркало и оригинал. <code class="docutils literal notranslate"><span class="pre">deduplicate=True</span></code> учитывает такое движение один раз. Платформы разных источников ближе <code class="docutils literal notranslate"><span class="pre">duplicate_platform_tolerance</span></code> (по умолчанию 0,5 м — та же координата, опубликованная повторно, тогда как разные платформы одного фида бывают и в 1–3 м друг от друга) становятся одной платформой, а рейс, который другой источник уже проводит через те же платформы в то же время, отбрасывается. Платформы одного фида никогда не сливаются друг с другом, как и станции, входы и зоны посадки:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">feed</span> <span class="o">=</span> <span class="n">merge_gtfs_feeds</span><span class="p">([</span><span class="s2">"city.zip"</span><span class="p">,</span> <span class="s2">"national.zip"</span><span class="p">],</span> <span class="n">deduplicate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="#iduedu.deduplicate_across_feeds" title="iduedu.deduplicate_across_feeds"><code class="xref py py-func docutils literal notranslate"><span class="pre">iduedu.deduplicate_across_feeds()</span></code></a> применяет те же правила к таблицам, объединённым другим способом, и возвращает, сколько платформ и рейсов удалено.</p>
+</section>
+<section id="stations-pathways-and-intermodal-joining">
+<h2>Станции, переходы и объединение с пешеходной сетью<a class="headerlink" href="#stations-pathways-and-intermodal-joining" title="Ссылка на этот заголовок">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">pathways.txt</span></code> создаёт внутристанционные рёбра <code class="docutils literal notranslate"><span class="pre">pathway</span></code>. Явное <code class="docutils literal notranslate"><span class="pre">traversal_time</span></code> переводится из секунд в минуты; иначе время оценивается по длине перехода и <code class="docutils literal notranslate"><span class="pre">walk_speed_m_per_min</span></code>. Входы, узлы, зоны посадки и платформы станций сохраняются, если на них ссылаются обслуживаемые остановки или переходы.</p>
+<p>Остановка, у которой указан <code class="docutils literal notranslate"><span class="pre">parent_station</span></code>, связывается с ним двунаправленным ребром <code class="docutils literal notranslate"><span class="pre">station_link</span></code> нулевой стоимости. Связываются только остановки, уже вошедшие в граф. Без этих рёбер станция, описанная вплоть до зон посадки, оставила бы свои платформы в отдельной компоненте, которую удаляет <code class="docutils literal notranslate"><span class="pre">keep_largest_subgraph</span></code>.</p>
+<p>Чтобы присоединить общественный транспорт GTFS к пешеходному графу OSM, сначала постройте пешеходный слой и используйте ту же систему координат:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iduedu</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">,</span> <span class="n">get_walk_graph</span><span class="p">,</span> <span class="n">join_pt_walk_graph</span>
+
+<span class="n">walk</span> <span class="o">=</span> <span class="n">get_walk_graph</span><span class="p">(</span><span class="n">osm_id</span><span class="o">=</span><span class="mi">1114252</span><span class="p">)</span>
+<span class="n">public_transport</span> <span class="o">=</span> <span class="n">get_gtfs_public_transport_graph</span><span class="p">(</span>
+    <span class="s2">"feed.zip"</span><span class="p">,</span>
+    <span class="n">service_date</span><span class="o">=</span><span class="s2">"2026-08-04"</span><span class="p">,</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="s2">"07:00:00"</span><span class="p">,</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="s2">"10:00:00"</span><span class="p">,</span>
+    <span class="n">crs</span><span class="o">=</span><span class="n">walk</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">intermodal</span> <span class="o">=</span> <span class="n">join_pt_walk_graph</span><span class="p">(</span><span class="n">public_transport</span><span class="p">,</span> <span class="n">walk</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="api-reference">
+<h2>Справочник API<a class="headerlink" href="#api-reference" title="Ссылка на этот заголовок">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">iduedu.</span></span><span class="sig-name descname"><span class="pre">get_gtfs_public_transport_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feed</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_date</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">service_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">single_departure_wait_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">walk_speed_m_per_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">83.33333333333333</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iduedu/graph_builders/gtfs_builders.html#get_gtfs_public_transport_graph"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a></dt>
+<dd><p>Строит статический <code class="docutils literal notranslate"><span class="pre">UrbanGraph</span></code> общественного транспорта по локальному фиду GTFS.</p>
+<p>Веса посадки рассчитываются эвристикой половины интервала первой итерации. Для движения по расписанию берётся половина среднего интервала между соседними отправлениями одного варианта маршрута с одной остановки. Для <code class="docutils literal notranslate"><span class="pre">frequencies.txt</span></code> — <code class="docutils literal notranslate"><span class="pre">headway_secs</span> <span class="pre">/</span> <span class="pre">120</span></code>.</p>
+<p>Интервал — это промежуток между отправлениями одного дня. С <code class="docutils literal notranslate"><span class="pre">service_date</span></code> граф описывает расписание этого дня. Без него каждая остановка варианта маршрута получает ожидание <strong>среднего дня</strong>: ожидание каждого дня обслуживания из <code class="docutils literal notranslate"><span class="pre">service_period</span></code> — или из собственного календаря фида, не более 366 дней от его начала, — рассчитанное только по рейсам этого дня и затем усреднённое с одинаковым весом каждого календарного дня по дням, в которые эта остановка обслуживается. Рейсы, не выполняемые ни в один из этих дней, не учитываются. Фид без <code class="docutils literal notranslate"><span class="pre">calendar</span></code>/<code class="docutils literal notranslate"><span class="pre">calendar_dates</span></code> считается одним днём.</p>
+<p><code class="docutils literal notranslate"><span class="pre">start_time</span></code>/<code class="docutils literal notranslate"><span class="pre">end_time</span></code> ограничивают отправления внутри каждого дня; <code class="docutils literal notranslate"><span class="pre">None</span></code> означает отсутствие ограничения.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>feed</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>, <a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.reader.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">GTFSFeed</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a> | <a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.reader.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">GTFSFeed</span></code></a>]]</span>) – Папка с текстовыми файлами GTFS, ZIP-архив GTFS, уже прочитанный <a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">iduedu.gtfs.GTFSFeed</span></code></a> или последовательность любых из них. Последовательность сначала объединяется функцией <a class="reference internal" href="#iduedu.merge_gtfs_feeds" title="iduedu.merge_gtfs_feeds"><code class="xref py py-func docutils literal notranslate"><span class="pre">iduedu.merge_gtfs_feeds()</span></code></a>, которая дополняет идентификаторы источником; передайте объединённый фид сами, если нужно управлять префиксами или сливать остановки разных фидов.</p></li>
+<li><p><strong>service_date</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.date" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">date</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Необязательная дата обслуживания, используется с <code class="docutils literal notranslate"><span class="pre">calendar.txt</span></code> и <code class="docutils literal notranslate"><span class="pre">calendar_dates.txt</span></code>. Принимает <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DD</span></code> или <code class="docutils literal notranslate"><span class="pre">YYYYMMDD</span></code>.</p></li>
+<li><p><strong>service_period</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.date" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">date</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.date" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">date</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>] | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Необязательные даты <code class="docutils literal notranslate"><span class="pre">(first,</span> <span class="pre">last)</span></code>, обе включительно, по которым усредняется ожидание вместо собственного календаря фида (например, эталонная неделя). Нельзя сочетать с <code class="docutils literal notranslate"><span class="pre">service_date</span></code>.</p></li>
+<li><p><strong>service_dates</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(в Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.date" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">date</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span>) – Необязательный явный список дней для усреднения ожидания, например эталонная неделя плюс собственные недели объединённых источников, не действовавших в ту неделю. Каждый день по-прежнему содержит только свои рейсы, поэтому дни разных лет не смешиваются. Нельзя сочетать с <code class="docutils literal notranslate"><span class="pre">service_date</span></code> или <code class="docutils literal notranslate"><span class="pre">service_period</span></code>.</p></li>
+<li><p><strong>start_time</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.time" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Нижняя граница времени отправления, включительно. <code class="docutils literal notranslate"><span class="pre">None</span></code> — без ограничения.</p></li>
+<li><p><strong>end_time</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.time" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">time</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Верхняя граница времени отправления, не включительно. <code class="docutils literal notranslate"><span class="pre">None</span></code> — без ограничения.</p></li>
+<li><p><strong>crs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(в Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Проецированная целевая система координат. Если не задана, подбирается локальная система UTM.</p></li>
+<li><p><strong>single_departure_wait_min</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Явное значение ожидания для остановки варианта маршрута с одним отправлением по расписанию. Если <code class="docutils literal notranslate"><span class="pre">None</span></code>, её ребро посадки не создаётся.</p></li>
+<li><p><strong>walk_speed_m_per_min</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Скорость по умолчанию для переходов без явного времени прохождения.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="graph_data_model.html#iduedu.UrbanGraph" title="iduedu.graph.urban_graph.UrbanGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">UrbanGraph</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="iduedu.merge_gtfs_feeds">
+<span class="sig-prename descclassname"><span class="pre">iduedu.</span></span><span class="sig-name descname"><span class="pre">merge_gtfs_feeds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sources</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefixes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_stops_within</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deduplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duplicate_platform_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iduedu/gtfs/merge.html#merge_gtfs_feeds"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#iduedu.merge_gtfs_feeds" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Объединяет несколько фидов GTFS в один, пригодный для функции построения графа.</p>
+<p>Идентификаторы дополняются источником, поэтому <code class="docutils literal notranslate"><span class="pre">route_id</span></code> <code class="docutils literal notranslate"><span class="pre">1</span></code> в двух фидах становится двумя разными маршрутами. Определения и ссылки переписываются вместе, а пустые необязательные ссылки остаются пустыми.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sources</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a> | <a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.reader.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">GTFSFeed</span></code></a>]</span>) – Пути к папкам или ZIP-архивам GTFS либо уже прочитанные фиды. Единственный источник возвращается без изменений, если не запрошено слияние остановок, поэтому там, где объединение не нужно, функция ничего не делает.</p></li>
+<li><p><strong>prefixes</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(в Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span>) – По одному префиксу на источник. По умолчанию — имя файла каждого источника, с числовым суффиксом, если у двух источников оно совпадает.</p></li>
+<li><p><strong>merge_stops_within</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Расстояние в метрах, ближе которого остановки разных фидов считаются одним местом и сливаются в один узел. <code class="docutils literal notranslate"><span class="pre">None</span></code> (по умолчанию) оставляет все остановки раздельными: слияние меняет топологию сети, а молчаливое слияние сделало бы выведенную пересадку неотличимой от опубликованной. Для фидов разных перевозчиков подходят значения около 15–25 м; 1 м, используемый для платформ OSM, здесь слишком мал, потому что два перевозчика снимают один и тот же бордюр независимо.</p></li>
+<li><p><strong>deduplicate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Учесть один раз то, что несколько источников публикуют дважды: слить платформы разных источников в пределах <code class="docutils literal notranslate"><span class="pre">duplicate_platform_tolerance</span></code> метров и отбросить рейсы, которые другой источник уже выполняет так же. См. <a class="reference internal" href="#iduedu.deduplicate_across_feeds" title="iduedu.deduplicate_across_feeds"><code class="xref py py-func docutils literal notranslate"><span class="pre">deduplicate_across_feeds()</span></code></a>. По умолчанию выключено: это изменяет фид.</p></li>
+<li><p><strong>duplicate_platform_tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Расстояние в метрах, в пределах которого платформы двух источников считаются одной, когда включён <code class="docutils literal notranslate"><span class="pre">deduplicate</span></code>.</p></li>
+<li><p><strong>crs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(в Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Проецированная система координат в метрах для проверки расстояний. Если не задана, подбирается по остановкам.</p></li>
+<li><p><strong>validate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Запустить <a class="reference internal" href="#iduedu.gtfs.validate_gtfs_feed" title="iduedu.gtfs.validate_gtfs_feed"><code class="xref py py-func docutils literal notranslate"><span class="pre">iduedu.gtfs.validate_gtfs_feed()</span></code></a> на результате. Не отключайте: именно это делает объединение проверяемым, а не просто правдоподобным.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.reader.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">GTFSFeed</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Результат<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">iduedu.gtfs.GTFSFeed</span></code></a>, у которого <code class="docutils literal notranslate"><span class="pre">source</span></code> перечисляет объединённые источники.</p>
+</dd>
+<dt class="field-even">Исключение<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(в Python v3.15)"><strong>ValueError</strong></a> – Если источники не переданы или число префиксов не совпадает с числом источников.</p></li>
+<li><p><a class="reference internal" href="#iduedu.gtfs.GTFSValidationError" title="iduedu.gtfs.GTFSValidationError"><strong>GTFSValidationError</strong></a> – Если объединённый фид нарушает требования GTFS.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="iduedu.deduplicate_across_feeds">
+<span class="sig-prename descclassname"><span class="pre">iduedu.</span></span><span class="sig-name descname"><span class="pre">deduplicate_across_feeds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefixes</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iduedu/gtfs/merge.html#deduplicate_across_feeds"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#iduedu.deduplicate_across_feeds" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Учитывает один раз то, что несколько объединённых фидов публикуют дважды. Изменяет <code class="docutils literal notranslate"><span class="pre">tables</span></code> на месте.</p>
+<p>Каталоги пересекаются: две версии одного фида, национальный и городской фиды одного оператора, зеркало и оригинал. При объединении с дополненными идентификаторами копии никогда не конфликтуют — они лежат рядом, и граф получает два варианта маршрута там, где в городе ходит один. Их удаляют два правила, оба намеренно узкие, потому что ошибочное слияние хуже оставшегося дубликата:</p>
+<ul class="simple">
+<li><p><strong>Платформы</strong> — строки <code class="docutils literal notranslate"><span class="pre">stops</span></code> с <code class="docutils literal notranslate"><span class="pre">location_type</span></code> 0 или пустым, где пассажиры садятся; функция построения графа делает из них узлы <code class="docutils literal notranslate"><span class="pre">platform</span></code>, а место остановки транспорта — отдельный узел для каждого варианта маршрута, и его это правило не затрагивает. Платформы <em>разных</em> источников в пределах <code class="docutils literal notranslate"><span class="pre">platform_tolerance</span></code> метров считаются одной платформой. Значение по умолчанию 0,5 м получено измерением: из 125 703 платформ городов, объединённых из нескольких фидов, у 63 % в пределах 0,5 м была платформа другого источника (та же координата, опубликованная повторно), тогда как разные платформы одного фида бывают и в 1–3 м друг от друга. Станции, входы, общие узлы и зоны посадки никогда не сливаются, как и платформы одного источника.</p></li>
+<li><p><strong>Рейсы</strong> — после этого рейс одного источника считается копией рейса другого, если оба имеют одинаковый <code class="docutils literal notranslate"><span class="pre">route_type</span></code>, проходят через те же платформы с теми же временами прибытия и отправления (в секундах), правилами посадки и высадки и, для рейсов по частотам, теми же интервалами. Его сохраняет источник, идущий первым при сортировке.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tables</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(в pandas v3.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>]</span>) – Объединённые таблицы с ключами по имени таблицы GTFS без <code class="docutils literal notranslate"><span class="pre">.txt</span></code>, идентификаторы в виде <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;:&lt;id&gt;</span></code>.</p></li>
+<li><p><strong>prefixes</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Префикс каждого источника.</p></li>
+<li><p><strong>platform_tolerance</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Расстояние в метрах, в пределах которого платформы двух источников считаются одной.</p></li>
+<li><p><strong>crs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(в Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Проецированная система координат в метрах для проверки расстояний; если не задана, подбирается автоматически.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Тип результата<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(в Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Результат<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{&quot;platforms_fused&quot;:</span> <span class="pre">n,</span> <span class="pre">&quot;trips_dropped&quot;:</span> <span class="pre">m}</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="iduedu.gtfs.read_gtfs_feed">
+<span class="sig-prename descclassname"><span class="pre">iduedu.gtfs.</span></span><span class="sig-name descname"><span class="pre">read_gtfs_feed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usecols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iduedu/gtfs/reader.html#read_gtfs_feed"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#iduedu.gtfs.read_gtfs_feed" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Читает текстовые таблицы GTFS Schedule из папки или ZIP-архива.</p>
+<p>Все поля сохраняются как строки. Преобразование чисел, дат, времени и геометрии выполняется на этапах проверки и построения графа.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.reader.GTFSFeed"><code class="xref py py-class docutils literal notranslate"><span class="pre">GTFSFeed</span></code></a></span></p>
+</dd>
+<dt class="field-even">Параметры<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>source</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(в Python v3.15)"><em>Path</em></a>)</p></li>
+<li><p><strong>table_names</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(в Python v3.15)"><em>Iterable</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><em>str</em></a><em>] </em><em>| </em><em>None</em>)</p></li>
+<li><p><strong>usecols</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(в Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(в Python v3.15)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><em>str</em></a><em>]</em><em>] </em><em>| </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="iduedu.gtfs.validate_gtfs_feed">
+<span class="sig-prename descclassname"><span class="pre">iduedu.gtfs.</span></span><span class="sig-name descname"><span class="pre">validate_gtfs_feed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iduedu/gtfs/validation.html#validate_gtfs_feed"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#iduedu.gtfs.validate_gtfs_feed" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Проверяет структурные требования GTFS, нужные функции построения графа.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Тип результата<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(в Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+<dt class="field-even">Параметры<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>feed</strong> (<a class="reference internal" href="#iduedu.gtfs.GTFSFeed" title="iduedu.gtfs.reader.GTFSFeed"><em>GTFSFeed</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="iduedu.gtfs.GTFSFeed">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iduedu.gtfs.</span></span><span class="sig-name descname"><span class="pre">GTFSFeed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/iduedu/gtfs/reader.html#GTFSFeed"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#iduedu.gtfs.GTFSFeed" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Таблицы GTFS Schedule в памяти, загруженные из папки или ZIP-архива.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Параметры<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(в Python v3.15)"><em>Path</em></a>)</p></li>
+<li><p><strong>tables</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(в Python v3.15)"><em>dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(в Python v3.15)"><em>str</em></a><em>, </em><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(в pandas v3.1)"><em>DataFrame</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="iduedu.gtfs.GTFSValidationError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">iduedu.gtfs.</span></span><span class="sig-name descname"><span class="pre">GTFSValidationError</span></span><a class="reference internal" href="../_modules/iduedu/gtfs/validation.html#GTFSValidationError"><span class="viewcode-link"><span class="pre">[исходный</span> <span class="pre">код]</span></span></a><a class="headerlink" href="#iduedu.gtfs.GTFSValidationError" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Возникает, когда фид GTFS нельзя преобразовать в UrbanGraph.</p>
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="utilities.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Утилиты для графов</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="generated/iduedu.TransportRegistry.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">iduedu.TransportRegistry</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Donny
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Общественный транспорт из GTFS</a><ul>
+<li><a class="reference internal" href="#building-a-graph">Построение графа</a></li>
+<li><a class="reference internal" href="#required-and-optional-tables">Обязательные и необязательные таблицы</a></li>
+<li><a class="reference internal" href="#static-time-model">Статическая модель времени</a></li>
+<li><a class="reference internal" href="#geometry-and-distance">Геометрия и расстояние</a></li>
+<li><a class="reference internal" href="#merging-several-feeds">Объединение нескольких фидов</a></li>
+<li><a class="reference internal" href="#stations-pathways-and-intermodal-joining">Станции, переходы и объединение с пешеходной сетью</a></li>
+<li><a class="reference internal" href="#api-reference">Справочник API</a><ul>
+<li><a class="reference internal" href="#iduedu.merge_gtfs_feeds"><code class="docutils literal notranslate"><span class="pre">merge_gtfs_feeds()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.deduplicate_across_feeds"><code class="docutils literal notranslate"><span class="pre">deduplicate_across_feeds()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.gtfs.read_gtfs_feed"><code class="docutils literal notranslate"><span class="pre">read_gtfs_feed()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.gtfs.validate_gtfs_feed"><code class="docutils literal notranslate"><span class="pre">validate_gtfs_feed()</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.gtfs.GTFSFeed"><code class="docutils literal notranslate"><span class="pre">GTFSFeed</span></code></a></li>
+<li><a class="reference internal" href="#iduedu.gtfs.GTFSValidationError"><code class="docutils literal notranslate"><span class="pre">GTFSValidationError</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=b015732a"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/translations.js?v=cd1d70c9"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    </body>
+</html>
