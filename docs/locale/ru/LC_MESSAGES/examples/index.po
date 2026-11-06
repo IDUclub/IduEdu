@@ -1,0 +1,22 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Examples"
+msgstr "Примеры"
+
+msgid "The notebooks below cover the main IduEdu workflows: graph construction, graph inspection, graph editing, object projection, connectivity diagnostics, shortest-path calculations, public-transport registry configuration, and GTFS feeds. The shortest-path notebook includes separate and combined distance/route outputs, nearest-source versus independent searches, lazy paths, pairwise OD queries, and processing OD matrices in blocks."
+msgstr "Ноутбуки ниже охватывают основные сценарии работы с IduEdu: построение графов, их изучение и редактирование, проецирование объектов, диагностику связности, расчёт кратчайших путей, настройку реестра видов общественного транспорта и фиды GTFS. Ноутбук о кратчайших путях показывает раздельный и совместный вывод расстояний и маршрутов, поиск от ближайшего источника в сравнении с независимыми поисками, ленивые пути, попарные запросы OD и обработку OD-матриц блоками."
+

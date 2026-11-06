@@ -1,0 +1,79 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_public\\_transport\\_graph"
+msgstr "iduedu.get\\_public\\_transport\\_graph"
+
+msgid "Build a directed public-transport graph for one or multiple transport modes within a territory."
+msgstr "Строит ориентированный граф общественного транспорта для одного или нескольких видов транспорта в пределах территории."
+
+msgid "The function resolves a boundary (by ``osm_id`` or ``territory``), downloads OpenStreetMap public-transport routes inside that boundary, converts them into a projected ``UrbanGraph``, and computes per-edge length (meters) and travel time (minutes). Multiple modes can coexist in the same graph; node ids are unified across modes."
+msgstr "Функция определяет границу (по ``osm_id`` или ``territory``), загружает маршруты общественного транспорта OpenStreetMap внутри неё, преобразует их в проецированный ``UrbanGraph`` и рассчитывает длину (в метрах) и время в пути (в минутах) для каждого ребра. В одном графе могут сосуществовать несколько видов транспорта; идентификаторы узлов общие для всех видов."
+
+msgid "For the ``subway`` mode, additional station context may be added (entrances/exits and inter-station transfers), and available station metadata may be merged into node attributes."
+msgstr "Для вида ``subway`` может добавляться контекст станций (входы, выходы и пересадки между станциями), а доступные метаданные станций — объединяться с атрибутами узлов."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation/area id of the territory. Provide this or ``territory``."
+msgstr "Идентификатор отношения или области OSM территории. Передайте его или ``territory``."
+
+msgid "Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given."
+msgstr "Геометрия границы в EPSG:4326 (или GeoDataFrame). Используется, если ``osm_id`` не задан."
+
+msgid "Transport mode(s) to include. Accepts:   - ``None``: include all types available in ``transport_registry.rst``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+msgstr "Transport mode(s) to include. Accepts:   - ``None``: include all types available in ``transport_registry.rst``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+
+msgid "Transport mode(s) to include. Accepts:"
+msgstr "Включаемые виды транспорта. Принимает:"
+
+msgid "``None``: include all types available in ``transport_registry.rst``;"
+msgstr "``None``: все виды, доступные в ``transport_registry.rst``;"
+
+msgid "``str``: a single OSM route type, e.g. ``\"bus\"``;"
+msgstr "``str``: один тип маршрута OSM, например ``\"bus\"``;"
+
+msgid "``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``."
+msgstr "``Sequence[str]``: несколько типов, например ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``."
+
+msgid "Values are normalized with ``strip().lower()`` and validated against the registry."
+msgstr "Значения нормализуются через ``strip().lower()`` и проверяются по реестру."
+
+msgid "If True, clip the resulting graph to the boundary (in the local CRS)."
+msgstr "Если True, итоговый граф обрезается по границе (в локальной системе координат)."
+
+msgid "Subset of OSM tags to retain on edges/nodes. If None, a default subset is used."
+msgstr "Набор тегов OSM, сохраняемых на рёбрах и узлах. Если None, используется набор по умолчанию."
+
+msgid "Transport registry used to validate transport types and to compute per-edge travel times (via each mode's parameters such as max speed, acceleration/braking distances, traffic coefficient, and average waiting time for boarding edges). If None, ``DEFAULT_REGISTRY`` is used."
+msgstr "Реестр видов транспорта для проверки видов и расчёта времени в пути на каждом ребре (по параметрам каждого вида, таким как максимальная скорость, расстояния разгона и торможения, коэффициент движения и среднее время ожидания на рёбрах посадки). Если None, используется ``DEFAULT_REGISTRY``."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Directed PT ``UrbanGraph`` with ``crs`` and ``type=\"public_transport\"``."
+msgstr "Ориентированный ``UrbanGraph`` общественного транспорта с ``crs`` и ``type=\"public_transport\"``."
+
+msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html https://iduclub.github.io/IduEdu/examples/transport_registry.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html https://iduclub.github.io/IduEdu/examples/transport_registry.html"
+

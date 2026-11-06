@@ -1,0 +1,82 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_intermodal\\_graph"
+msgstr "iduedu.get\\_intermodal\\_graph"
+
+msgid "Build an intermodal (PT+walking) ``UrbanGraph`` for a territory."
+msgstr "Строит интермодальный (общественный транспорт и пешие переходы) ``UrbanGraph`` для территории."
+
+msgid "The function resolves a boundary polygon (by ``osm_id`` or ``territory``), runs pedestrian graph construction (:func:`get_walk_graph`) and public transport graph construction (:func:`iduedu.get_public_transport_graph`) in parallel, then connects public-transport platforms to nearby walk edges via :func:`join_pt_walk_graph` using the ``max_dist`` snapping radius. Edge lengths (meters) and travel times (minutes) come from the underlying builders and from the walk-edge splits created during projection."
+msgstr "Функция определяет полигон границы (по ``osm_id`` или ``territory``), параллельно строит пешеходный граф (:func:`get_walk_graph`) и граф общественного транспорта (:func:`iduedu.get_public_transport_graph`), затем присоединяет платформы общественного транспорта к ближайшим пешеходным рёбрам через :func:`join_pt_walk_graph` с радиусом привязки ``max_dist``. Длины рёбер (в метрах) и время в пути (в минутах) берутся из базовых функций построения и из разбиений пешеходных рёбер при проецировании."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation/area id for the territory; provide this or ``territory``."
+msgstr "Идентификатор отношения или области OSM для территории; передайте его или ``territory``."
+
+msgid "Boundary geometry in EPSG:4326."
+msgstr "Геометрия границы в EPSG:4326."
+
+msgid "If True, both PT and Walk graphs are clipped to the boundary."
+msgstr "Если True, оба графа — общественного транспорта и пешеходный — обрезаются по границе."
+
+msgid "Subset of OSM tags to retain (forwarded to both builders)."
+msgstr "Набор сохраняемых тегов OSM (передаётся в обе функции построения)."
+
+msgid "Max distance in meters to connect PT platforms to walk edges."
+msgstr "Максимальное расстояние в метрах для присоединения платформ общественного транспорта к пешеходным рёбрам."
+
+msgid "If True, keep only the largest strongly connected component after joining."
+msgstr "Если True, после объединения остаётся только наибольшая компонента сильной связности."
+
+msgid "If True, add platform-to-walk connector edges during projection."
+msgstr "Если True, при проецировании добавляются соединительные рёбра от платформ к пешеходной сети."
+
+msgid "Extra keyword args for :func:`get_walk_graph` (e.g., ``walk_speed``, ``simplify``, ``osm_edge_tags``, ``keep_largest_subgraph``). Walk graph keep_largest_subgraph defaults to False unless explicitly set here."
+msgstr "Дополнительные именованные аргументы для :func:`get_walk_graph` (например, ``walk_speed``, ``simplify``, ``osm_edge_tags``, ``keep_largest_subgraph``). Для пешеходного графа keep_largest_subgraph по умолчанию False, если не задан здесь явно."
+
+msgid "Extra keyword args for :func:`iduedu.get_public_transport_graph` (e.g., ``transport_types``, ``osm_edge_tags``, ``transport_registry``)."
+msgstr "Дополнительные именованные аргументы для :func:`iduedu.get_public_transport_graph` (например, ``transport_types``, ``osm_edge_tags``, ``transport_registry``)."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Intermodal ``UrbanGraph`` combining public transport and pedestrian edges. The graph CRS equals the builders' local projected CRS."
+msgstr "Интермодальный ``UrbanGraph``, объединяющий рёбра общественного транспорта и пешеходные рёбра. Система координат графа — локальная проецированная система координат функций построения."
+
+msgid "Notes"
+msgstr "Примечания"
+
+msgid "``clip_by_territory`` and ``osm_edge_tags`` are propagated to both builders unless overridden in ``walk_kwargs``/``pt_kwargs``."
+msgstr "``clip_by_territory`` и ``osm_edge_tags`` передаются в обе функции построения, если не переопределены в ``walk_kwargs``/``pt_kwargs``."
+
+msgid "If the PT graph is empty for the area, the function returns the walking graph alone (with a warning)."
+msgstr "Если граф общественного транспорта для территории пуст, функция возвращает только пешеходный граф (с предупреждением)."
+
+msgid "Joining requires both sub-graphs to share the same CRS; builders derive a local projected CRS from the boundary's extent, so lengths/times are in meters/minutes."
+msgstr "Для объединения оба подграфа должны быть в одной системе координат; функции построения выводят локальную проецированную систему координат из охвата границы, поэтому длины и время — в метрах и минутах."
+
+msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+

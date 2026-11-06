@@ -20,68 +20,23 @@ def sample_data():
     return gpd.read_parquet(data_path).head(8)
 
 
-def test_get_square_od_matrix(sample_data, intermodal_graph):
-    matrix = od_matrix(
-        intermodal_graph,
-        gdf_origins=sample_data,
-        gdf_destinations=sample_data,
-        weight="time_min",
-        threshold=15,
-    )
-
-    assert matrix is not None
-    assert matrix.shape == (len(sample_data), len(sample_data))
-    assert np.array_equal(matrix.index, sample_data.index)
-    assert np.array_equal(matrix.columns, sample_data.index)
-
-
-def test_get_single_od_matrix(sample_data, intermodal_graph):
-    single_from = sample_data.iloc[[0]]
-    single_to = sample_data.iloc[[1]]
+@pytest.mark.parametrize(
+    "origins,destinations",
+    [(slice(None), slice(None)), (slice(0, 1), slice(1, 2)), (slice(None), slice(0, 4)), (slice(0, 4), slice(None))],
+    ids=["square", "single", "many-to-less", "less-to-many"],
+)
+def test_od_matrix_on_intermodal_graph(sample_data, intermodal_graph, origins, destinations):
+    gdf_origins, gdf_destinations = sample_data.iloc[origins], sample_data.iloc[destinations]
 
     matrix = od_matrix(
         intermodal_graph,
-        gdf_origins=single_from,
-        gdf_destinations=single_to,
+        gdf_origins=gdf_origins,
+        gdf_destinations=gdf_destinations,
         weight="time_min",
         dtype=np.float32,
     )
 
-    assert matrix is not None
-    assert matrix.shape == (1, 1)
-    assert matrix.index[0] == single_from.index[0]
-    assert matrix.columns[0] == single_to.index[0]
-
-
-def test_get_many_to_less_od_matrix(sample_data, intermodal_graph):
-    smaller_data = sample_data.iloc[: len(sample_data) // 2]
-
-    matrix = od_matrix(
-        intermodal_graph,
-        gdf_origins=sample_data,
-        gdf_destinations=smaller_data,
-        weight="time_min",
-        dtype=np.float32,
-    )
-
-    assert matrix is not None
-    assert matrix.shape == (len(sample_data), len(smaller_data))
-    assert np.array_equal(matrix.index, sample_data.index)
-    assert np.array_equal(matrix.columns, smaller_data.index)
-
-
-def test_get_less_to_many_od_matrix(sample_data, intermodal_graph):
-    smaller_data = sample_data.iloc[: len(sample_data) // 2]
-
-    matrix = od_matrix(
-        intermodal_graph,
-        gdf_origins=smaller_data,
-        gdf_destinations=sample_data,
-        weight="time_min",
-        dtype=np.float32,
-    )
-
-    assert matrix is not None
-    assert matrix.shape == (len(smaller_data), len(sample_data))
-    assert np.array_equal(matrix.index, smaller_data.index)
-    assert np.array_equal(matrix.columns, sample_data.index)
+    assert matrix.shape == (len(gdf_origins), len(gdf_destinations))
+    assert np.array_equal(matrix.index, gdf_origins.index)
+    assert np.array_equal(matrix.columns, gdf_destinations.index)
+    assert np.isfinite(matrix.to_numpy()).any()

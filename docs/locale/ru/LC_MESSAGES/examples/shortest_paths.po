@@ -1,0 +1,85 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Shortest paths and OD matrices"
+msgstr "Кратчайшие пути и OD-матрицы"
+
+msgid "Choose `output=\"distances\"`, `\"paths\"`, or `\"both\"` with the general Dijkstra and OD helpers. Combined results calculate costs and paths in the same searches. This notebook covers single-source, nearest-source, independent-source, all-to-all and pairwise queries, lazy routes and OD blocks. Costs use minutes for `time_min` and meters for `length_meter`; `cutoff` is inclusive."
+msgstr "В общих функциях Дейкстры и OD выбирайте `output=\"distances\"`, `\"paths\"` или `\"both\"`. Совместные результаты рассчитывают стоимости и пути одними и теми же поисками. Этот ноутбук охватывает запросы от одного источника, от ближайшего источника, от независимых источников, «все со всеми» и попарные запросы, ленивые маршруты и блоки OD. Стоимости измеряются в минутах для `time_min` и в метрах для `length_meter`; `cutoff` включается в диапазон."
+
+msgid "One route, its cost and geometry"
+msgstr "Один маршрут, его стоимость и геометрия"
+
+msgid "`single_source_dijkstra(..., output=\"both\")` returns matching distance and path Series. `get_path(target)` reconstructs one route from a lazy result. `path_to_edges` preserves actual edge geometries and transport attributes for mapping. Missing targets have cost `inf` and route `None`."
+msgstr "`single_source_dijkstra(..., output=\"both\")` возвращает согласованные Series расстояний и путей. `get_path(target)` восстанавливает один маршрут из ленивого результата. `path_to_edges` сохраняет реальную геометрию рёбер и атрибуты транспорта для отображения на карте. У отсутствующих целей стоимость `inf` и маршрут `None`."
+
+msgid "Path matrices and pairwise queries"
+msgstr "Матрицы путей и попарные запросы"
+
+msgid "Use `od_matrix(output=\"paths\")` for an all-to-all matrix of node routes. `mode=\"pairwise\"` matches origins and destinations by position, returning a table indexed by `(origin, destination)`. Combined pairwise results expose both a `dist` column and a `path` column."
+msgstr "Используйте `od_matrix(output=\"paths\")` для матрицы маршрутов по узлам «все со всеми». `mode=\"pairwise\"` сопоставляет отправления и назначения по позиции и возвращает таблицу с индексом `(origin, destination)`. Совместные попарные результаты содержат и столбец `dist`, и столбец `path`."
+
+msgid "Visualize several matrix routes"
+msgstr "Несколько маршрутов матрицы на карте"
+
+msgid "Each non-empty matrix cell can be passed directly to `path_to_edges`. The plot below overlays all routes from the first origin to the selected destinations. Colors distinguish transport types, while solid and dashed patterns distinguish OD routes."
+msgstr "Любую непустую ячейку матрицы можно напрямую передать в `path_to_edges`. На графике ниже наложены все маршруты от первой точки отправления до выбранных назначений. Цвета различают виды транспорта, а сплошные и пунктирные линии — маршруты OD."
+
+msgid "Single-source distances"
+msgstr "Расстояния от одного источника"
+
+msgid "Use this for one origin and many possible destinations, for example an intermodal travel-time catchment around one point."
+msgstr "Подходит для одной точки отправления и многих возможных назначений, например для зоны интермодальной доступности по времени вокруг одной точки."
+
+msgid "Multi-source distance to the closest source"
+msgstr "Расстояние до ближайшего из нескольких источников"
+
+msgid "All sources are inserted into one Dijkstra queue. The result gives the distance to the nearest source, not one row per source."
+msgstr "Все источники помещаются в одну очередь Дейкстры. Результат даёт расстояние до ближайшего источника, а не строку на каждый источник."
+
+msgid "Nearest source, cost and route together"
+msgstr "Ближайший источник, стоимость и маршрут вместе"
+
+msgid "With `output=\"both\"`, a nearest-source result exposes the winning graph node in `nearest_sources`. These are graph node ids, even when source objects have their own labels."
+msgstr "С `output=\"both\"` результат поиска от ближайшего источника содержит узел-победитель в `nearest_sources`. Это идентификаторы узлов графа, даже если у объектов-источников есть собственные метки."
+
+msgid "Independent parallel searches"
+msgstr "Независимые параллельные поиски"
+
+msgid "`dijkstra_parallel` keeps a row for every source. This differs from `multi_source_dijkstra`, which chooses only the nearest source for each node. Lazy storage avoids creating every route list."
+msgstr "`dijkstra_parallel` сохраняет строку для каждого источника. В этом отличие от `multi_source_dijkstra`, которая для каждого узла выбирает только ближайший источник. Ленивое хранение позволяет не создавать все списки маршрутов."
+
+msgid "OD distances and lazy paths from the same searches"
+msgstr "Расстояния OD и ленивые пути из одних и тех же поисков"
+
+msgid "`od_matrix` accepts node lists or object tables. Rows follow the origin labels, columns the destination labels. The default `output=\"distances\"` returns only costs; `output=\"both\"` returns a `ShortestPathResult`. `get_path(origin, destination)` does not rerun Dijkstra or create other routes. Accessing `.paths` materializes and caches the complete path table. Lazy storage requires `output=\"both\"`."
+msgstr "`od_matrix` принимает списки узлов или таблицы объектов. Строки соответствуют меткам отправлений, столбцы — меткам назначений. По умолчанию `output=\"distances\"` возвращает только стоимости; `output=\"both\"` возвращает `ShortestPathResult`. `get_path(origin, destination)` не запускает Дейкстру заново и не создаёт другие маршруты. Обращение к `.paths` строит и кеширует полную таблицу путей. Ленивое хранение требует `output=\"both\"`."
+
+msgid "Process OD rows in blocks"
+msgstr "Обработка строк OD блоками"
+
+msgid "`batch_size` on a full calculation limits searches in flight. `iter_od_matrix` yields origin-row blocks, so consume and release each block to bound retained result memory. Pairwise mode slices destinations too. Lazy trees still require memory, and materializing every route can be expensive."
+msgstr "`batch_size` в полном расчёте ограничивает число одновременных поисков. `iter_od_matrix` выдаёт блоки строк по отправлениям, поэтому обрабатывайте и освобождайте каждый блок, чтобы ограничить занятую результатами память. В попарном режиме нарезаются и назначения. Ленивые деревья всё равно занимают память, а построение всех маршрутов может быть затратным."
+
+msgid "Function and method forms; compatibility"
+msgstr "Функции и методы; совместимость"
+
+msgid "Every general helper is also a method on `UrbanGraph`: `single_source_dijkstra`, `multi_source_dijkstra`, `dijkstra_parallel`, `od_matrix` and `iter_od_matrix`. Object tables use `gdf_sources`, `gdf_origins` or `gdf_destinations`; an existing `graph_node_id` mapping is reused, otherwise geometries are matched to graph nodes. Duplicate result labels can be addressed with `result.get_path_at(row, column)`."
+msgstr "Каждая общая функция есть и как метод `UrbanGraph`: `single_source_dijkstra`, `multi_source_dijkstra`, `dijkstra_parallel`, `od_matrix` и `iter_od_matrix`. Таблицы объектов передаются через `gdf_sources`, `gdf_origins` или `gdf_destinations`; существующее сопоставление `graph_node_id` используется повторно, иначе геометрии сопоставляются с узлами графа. К повторяющимся меткам результата можно обращаться через `result.get_path_at(row, column)`."
+
+msgid "`single_source_dijkstra_path` returns one route as a list, and `multi_source_dijkstra_nearest_source` returns the nearest source with its distance. The deprecated `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`, `dijkstra_path_length_parallel` and `multi_source_dijkstra_path` will be removed in 3.0: use the general helpers with `output=...`. `threshold` is a compatible alias for `cutoff` on OD helpers; pass only one of them."
+msgstr "`single_source_dijkstra_path` возвращает один маршрут в виде списка, а `multi_source_dijkstra_nearest_source` — ближайший источник с расстоянием. Устаревшие `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`, `dijkstra_path_length_parallel` и `multi_source_dijkstra_path` будут удалены в 3.0: используйте общие функции с `output=...`. `threshold` — совместимый псевдоним `cutoff` в функциях OD; передавайте только один из них."
+

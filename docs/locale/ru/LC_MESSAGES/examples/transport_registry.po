@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Transport registry"
+msgstr "Реестр видов транспорта"
+
+msgid "Transport registries define public-transport mode parameters used to estimate edge travel time."
+msgstr "Реестры видов транспорта задают параметры видов общественного транспорта, по которым оценивается время в пути на рёбрах."
+
+msgid "Inspect a transport specification"
+msgstr "Изучение спецификации вида транспорта"
+
+msgid "Each `TransportSpec` stores the speed, acceleration, braking, dwell and waiting-time parameters of one mode."
+msgstr "Каждая `TransportSpec` хранит параметры скорости, разгона, торможения, стоянки и ожидания одного вида транспорта."
+
+msgid "Free speed growing with segment length"
+msgstr "Свободная скорость, растущая с длиной перегона"
+
+msgid "Tram and train also set `long_speed_kmh` and `speed_half_length_m`: their free speed grows with the distance between stops, from `base_speed_kmh` towards `long_speed_kmh`, and is halfway there at `speed_half_length_m`. Long stretches between stops run on tracks built for speed, which one free speed cannot express. Bus, trolleybus and subway keep one free speed for every segment."
+msgstr "Для трамвая и поезда заданы также `long_speed_kmh` и `speed_half_length_m`: их свободная скорость растёт с расстоянием между остановками от `base_speed_kmh` к `long_speed_kmh` и проходит половину пути при `speed_half_length_m`. Длинные перегоны проходят по путям, построенным для скорости, чего одна свободная скорость выразить не может. Автобус, троллейбус и метро сохраняют одну свободную скорость для всех перегонов."
+
+msgid "Create a custom registry"
+msgstr "Создание собственного реестра"
+
+msgid "Use a custom registry when you need project-specific speed assumptions or additional transport modes."
+msgstr "Собственный реестр нужен, когда требуются свои допущения о скоростях для проекта или дополнительные виды транспорта."
+
+msgid "Update, ensure, and remove specs"
+msgstr "Обновление, ensure и удаление спецификаций"
+
+msgid "Names are normalized internally. `ensure` creates a missing mode from defaults when needed."
+msgstr "Имена нормализуются внутри реестра. `ensure` при необходимости создаёт отсутствующий вид транспорта из значений по умолчанию."
+
+msgid "Use a registry in graph construction"
+msgstr "Реестр при построении графа"
+
+msgid "Pass the registry to public-transport builders through `transport_registry`."
+msgstr "Передайте реестр в функции построения графов общественного транспорта через `transport_registry`."
+

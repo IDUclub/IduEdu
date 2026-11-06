@@ -355,3 +355,29 @@ def test_set_osm_source_and_use_pbf(tmp_path):
         with cfg.use_pbf(second):
             raise RuntimeError("boom")
     assert cfg.osm_source == "overpass"
+
+
+def test_use_pbf_takes_a_path_or_download_arguments(tmp_path):
+    cfg = Config()
+    with pytest.raises(ValueError, match="not both"):
+        with cfg.use_pbf(tmp_path / "a.osm.pbf", osm_id=1):
+            pass
+    with pytest.raises(ValueError, match="not both"):
+        with cfg.use_pbf(tmp_path / "a.osm.pbf", update=True):
+            pass
+    with pytest.raises(ValueError, match="osm_id or territory"):
+        with cfg.use_pbf(region="northwestern-fed-district"):
+            pass
+    assert cfg.osm_source == "overpass"
+
+
+def test_top_level_use_pbf_switches_the_global_config(tmp_path):
+    pytest.importorskip("osmium")
+    import iduedu  # pylint: disable=import-outside-toplevel
+
+    path = tmp_path / "a.osm.pbf"
+    path.write_bytes(b"")
+    with iduedu.use_pbf(path) as inside:
+        assert inside is iduedu.config
+        assert (iduedu.config.osm_source, iduedu.config.pbf_path) == ("pbf", str(path))
+    assert iduedu.config.osm_source == "overpass"

@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Objects, nearest nodes, and graph projection"
+msgstr "Объекты, ближайшие узлы и проецирование на граф"
+
+msgid "This notebook shows how to match external objects to a graph and how to project them onto nearest graph edges."
+msgstr "Этот ноутбук показывает, как сопоставить внешние объекты с графом и как спроецировать их на ближайшие рёбра графа."
+
+msgid "Create simulated objects near roads"
+msgstr "Создание имитационных объектов рядом с дорогами"
+
+msgid "The example below creates a small synthetic object layer. We take several road segments, place points on them, and then shift those points perpendicular to the road. This imitates buildings or services located near, but not directly on, the road centerline."
+msgstr "Пример ниже создаёт небольшой синтетический слой объектов. Мы берём несколько отрезков дорог, ставим на них точки и сдвигаем эти точки перпендикулярно дороге. Так имитируются здания или сервисы, расположенные рядом с осью дороги, но не на ней."
+
+msgid "Nearest graph nodes"
+msgstr "Ближайшие узлы графа"
+
+msgid "`nearest_nodes` maps each object geometry to the nearest existing graph node. This is fast and useful for coarse object-to-graph matching, but it does not change graph topology."
+msgstr "`nearest_nodes` сопоставляет каждую геометрию объекта с ближайшим существующим узлом графа. Это быстро и полезно для грубой привязки объектов к графу, но топологию графа не меняет."
+
+msgid "Project objects with link edges"
+msgstr "Проецирование объектов с соединительными рёбрами"
+
+msgid "`project_objects2urban_graph` splits nearest edges when needed and prepares changes that can be applied later. With `add_link_edge=True`, every object receives its own object node and a connector edge to the projected point on the graph."
+msgstr "`project_objects2urban_graph` при необходимости разбивает ближайшие рёбра и готовит изменения, которые можно применить позже. С `add_link_edge=True` каждый объект получает собственный узел и соединительное ребро до точки проекции на графе."
+
+msgid "Project objects without link edges"
+msgstr "Проецирование объектов без соединительных рёбер"
+
+msgid "With `add_link_edge=False`, objects are mapped to projection nodes on the graph. The graph still receives split edges and projection nodes, but there are no separate object-to-road connector edges."
+msgstr "С `add_link_edge=False` объекты сопоставляются с узлами проекций на графе. Граф всё равно получает разбитые рёбра и узлы проекций, но отдельных соединительных рёбер от объектов к дороге нет."
+
+msgid "Method form"
+msgstr "Метод графа"
+
+msgid "For in-memory workflows, `UrbanGraph.project_objects` applies the changes and returns the updated graph plus the object-to-node mapping."
+msgstr "Для работы в памяти `UrbanGraph.project_objects` применяет изменения и возвращает обновлённый граф вместе с сопоставлением объектов и узлов."
+

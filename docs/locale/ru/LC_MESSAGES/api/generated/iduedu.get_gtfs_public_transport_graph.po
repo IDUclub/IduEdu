@@ -1,0 +1,67 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_gtfs\\_public\\_transport\\_graph"
+msgstr "iduedu.get\\_gtfs\\_public\\_transport\\_graph"
+
+msgid "Build a static public-transport ``UrbanGraph`` from a local GTFS feed."
+msgstr "Строит статический ``UrbanGraph`` общественного транспорта по локальному фиду GTFS."
+
+msgid "Boarding weights use the first-iteration half-headway heuristic. Scheduled services use half the mean gap between consecutive departures of the same route pattern at the same stop. ``frequencies.txt`` uses ``headway_secs / 120``."
+msgstr "Веса посадки рассчитываются эвристикой половины интервала первой итерации. Для движения по расписанию берётся половина среднего интервала между соседними отправлениями одного варианта маршрута с одной остановки. Для ``frequencies.txt`` — ``headway_secs / 120``."
+
+msgid "A gap is a gap between departures of the same day. With ``service_date`` the graph is that day's timetable. Without it each pattern-stop gets the **average day's** wait: the wait of every service day of ``service_period`` -- or of the feed's own calendar, at most 366 days from its start -- computed on that day's trips alone, then averaged with every calendar day weighing the same, over the days the pattern-stop runs. Trips running on none of those days are left out. A feed without ``calendar``/``calendar_dates`` is taken as a single day."
+msgstr "Интервал — это промежуток между отправлениями одного дня. С ``service_date`` граф описывает расписание этого дня. Без него каждая остановка варианта маршрута получает ожидание **среднего дня**: ожидание каждого дня обслуживания из ``service_period`` — или из собственного календаря фида, не более 366 дней от его начала, — рассчитанное только по рейсам этого дня и затем усреднённое с одинаковым весом каждого календарного дня по дням, в которые эта остановка обслуживается. Рейсы, не выполняемые ни в один из этих дней, не учитываются. Фид без ``calendar``/``calendar_dates`` считается одним днём."
+
+msgid "``start_time``/``end_time`` bound the departures within each day; ``None`` means unbounded."
+msgstr "``start_time``/``end_time`` ограничивают отправления внутри каждого дня; ``None`` означает отсутствие ограничения."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Directory containing GTFS text files, a GTFS ZIP archive, an already-read :class:`iduedu.gtfs.GTFSFeed`, or a sequence of any of those. A sequence is merged with :func:`iduedu.merge_gtfs_feeds` first, which qualifies identifiers by source; pass the merged feed yourself when you need to control prefixes or fuse stops across feeds."
+msgstr "Папка с текстовыми файлами GTFS, ZIP-архив GTFS, уже прочитанный :class:`iduedu.gtfs.GTFSFeed` или последовательность любых из них. Последовательность сначала объединяется функцией :func:`iduedu.merge_gtfs_feeds`, которая дополняет идентификаторы источником; передайте объединённый фид сами, если нужно управлять префиксами или сливать остановки разных фидов."
+
+msgid "Optional service date used with ``calendar.txt`` and ``calendar_dates.txt``. Accepts ``date``, ``YYYY-MM-DD`` or ``YYYYMMDD``."
+msgstr "Необязательная дата обслуживания, используется с ``calendar.txt`` и ``calendar_dates.txt``. Принимает ``date``, ``YYYY-MM-DD`` или ``YYYYMMDD``."
+
+msgid "Optional ``(first, last)`` dates, both inclusive, to average the waits over instead of the feed's own calendar (for example a reference week). Cannot be combined with ``service_date``."
+msgstr "Необязательные даты ``(first, last)``, обе включительно, по которым усредняется ожидание вместо собственного календаря фида (например, эталонная неделя). Нельзя сочетать с ``service_date``."
+
+msgid "Optional explicit days to average the waits over, e.g. a reference week plus the own weeks of merged sources not in service then. Every day still holds only its own trips, so days of different years do not mix. Cannot be combined with ``service_date`` or ``service_period``."
+msgstr "Необязательный явный список дней для усреднения ожидания, например эталонная неделя плюс собственные недели объединённых источников, не действовавших в ту неделю. Каждый день по-прежнему содержит только свои рейсы, поэтому дни разных лет не смешиваются. Нельзя сочетать с ``service_date`` или ``service_period``."
+
+msgid "Inclusive departure-time bound. ``None`` means unbounded."
+msgstr "Нижняя граница времени отправления, включительно. ``None`` — без ограничения."
+
+msgid "Exclusive departure-time bound. ``None`` means unbounded."
+msgstr "Верхняя граница времени отправления, не включительно. ``None`` — без ограничения."
+
+msgid "Projected target CRS. If omitted, a local UTM CRS is estimated."
+msgstr "Проецированная целевая система координат. Если не задана, подбирается локальная система UTM."
+
+msgid "Explicit wait fallback for a pattern-stop with one scheduled departure. If ``None``, its boarding edge is omitted."
+msgstr "Явное значение ожидания для остановки варианта маршрута с одним отправлением по расписанию. Если ``None``, её ребро посадки не создаётся."
+
+msgid "Fallback speed for pathways without an explicit traversal time."
+msgstr "Скорость по умолчанию для переходов без явного времени прохождения."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+

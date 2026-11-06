@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "UrbanGraph basics"
+msgstr "Основы UrbanGraph"
+
+msgid "`UrbanGraph` is the core IduEdu data model. It stores topology and geometry in two tables and builds SciPy CSR adjacency matrices for routing."
+msgstr "`UrbanGraph` — основная модель данных IduEdu. Она хранит топологию и геометрию в двух таблицах и строит матрицы смежности SciPy CSR для маршрутизации."
+
+msgid "Nodes and edges"
+msgstr "Узлы и рёбра"
+
+msgid "The node index is the graph node id. Edges reference node ids through `u` and `v`; multigraph edges also use `k`."
+msgstr "Индекс узлов — идентификатор узла графа. Рёбра ссылаются на идентификаторы узлов через `u` и `v`; рёбра мультиграфа используют также `k`."
+
+msgid "Validation and copying"
+msgstr "Проверка и копирование"
+
+msgid "`validate` checks table contracts. `copy` returns an independent graph object and preserves adjacency cache state when it exists."
+msgstr "`validate` проверяет требования к таблицам. `copy` возвращает независимый объект графа и сохраняет состояние кеша смежности, если он есть."
+
+msgid "Adjacency matrix cache"
+msgstr "Кеш матрицы смежности"
+
+msgid "`to_csr` builds a matrix without changing the graph cache. `update_adjacency_matrix` stores the matrix on the graph and records the node order."
+msgstr "`to_csr` строит матрицу, не меняя кеш графа. `update_adjacency_matrix` сохраняет матрицу в графе и запоминает порядок узлов."
+
+msgid "Empty graph"
+msgstr "Пустой граф"
+
+msgid "Use `UrbanGraph.empty` when a workflow needs to return a graph object even when no edges were found."
+msgstr "Используйте `UrbanGraph.empty`, когда сценарий должен вернуть объект графа, даже если рёбер не нашлось."
+
+msgid "Read and write `.urbangraph` archives"
+msgstr "Чтение и запись архивов `.urbangraph`"
+
+msgid "The archive stores node and edge tables. It can also store the adjacency cache if it has been built."
+msgstr "Архив хранит таблицы узлов и рёбер. В нём можно сохранить и кеш смежности, если он построен."
+

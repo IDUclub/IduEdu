@@ -1,0 +1,61 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_4326\\_boundary"
+msgstr "iduedu.get\\_4326\\_boundary"
+
+msgid "Normalize a territory boundary to a single EPSG:4326 Polygon."
+msgstr "Приводит границу территории к одному полигону Polygon в EPSG:4326."
+
+msgid "Accepts either an `osm_id` (relation id) to fetch the boundary from OSM, a direct `Polygon`/`MultiPolygon`, or a `GeoDataFrame`. Returns a single `Polygon` in lon/lat. For `MultiPolygon`, the function returns its **convex hull** as a Polygon."
+msgstr "Принимает `osm_id` (идентификатор отношения), чтобы загрузить границу из OSM, готовый `Polygon`/`MultiPolygon` или `GeoDataFrame`. Возвращает один `Polygon` в долготе и широте. Для `MultiPolygon` функция возвращает его **выпуклую оболочку** как Polygon."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation id. If provided, boundary is fetched via Overpass (or read from the local OSM file in pbf mode, see ``config.set_osm_source``)."
+msgstr "Идентификатор отношения OSM. Если передан, граница загружается через Overpass (или читается из локального файла OSM в режиме pbf, см. ``config.set_osm_source``)."
+
+msgid "Existing boundary geometry or a GeoDataFrame containing it. If GeoDataFrame is given, it is reprojected to 4326 and unioned (`.union_all()`)."
+msgstr "Готовая геометрия границы или содержащий её GeoDataFrame. GeoDataFrame перепроецируется в 4326 и объединяется (`.union_all()`)."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Boundary polygon in EPSG:4326."
+msgstr "Полигон границы в EPSG:4326."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "Notes"
+msgstr "Примечания"
+
+msgid "Input `Polygon` is returned as-is (assumed already in EPSG:4326 by caller)."
+msgstr "Входной `Polygon` возвращается как есть (предполагается, что он уже в EPSG:4326)."
+
+msgid "For `MultiPolygon`, a **convex hull** is returned (may slightly expand the area and fill gaps between parts)."
+msgstr "Для `MultiPolygon` возвращается **выпуклая оболочка** (может немного расширить площадь и заполнить промежутки между частями)."
+
+msgid "For `GeoDataFrame`, the geometry is first reprojected to 4326 and dissolved via `.union_all()`; the result is then normalized to a `Polygon` (convex hull if needed)."
+msgstr "Для `GeoDataFrame` геометрия сначала перепроецируется в 4326 и объединяется через `.union_all()`; затем результат приводится к `Polygon` (при необходимости выпуклой оболочкой)."
+
+msgid "Examples"
+msgstr "Примеры"
+
+msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+

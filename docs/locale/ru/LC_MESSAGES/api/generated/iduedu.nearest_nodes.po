@@ -1,0 +1,58 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.nearest\\_nodes"
+msgstr "iduedu.nearest\\_nodes"
+
+msgid "Return the nearest graph node id for each input geometry."
+msgstr "Возвращает идентификатор ближайшего узла графа для каждой входной геометрии."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph whose ``nodes_gdf`` contains point geometries."
+msgstr "Граф, в ``nodes_gdf`` которого точечные геометрии."
+
+msgid "GeoDataFrame with geometries to match to graph nodes."
+msgstr "GeoDataFrame с геометриями, сопоставляемыми с узлами графа."
+
+msgid "Name assigned to the returned ``Series``."
+msgstr "Имя возвращаемой ``Series``."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Series indexed like ``gdf`` with nearest node ids as values."
+msgstr "Series с тем же индексом, что ``gdf``, и идентификаторами ближайших узлов в значениях."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``gdf`` is not a GeoDataFrame."
+msgstr "Если ``gdf`` — не GeoDataFrame."
+
+msgid "If graph or object geometries cannot be matched safely."
+msgstr "Если геометрии графа или объектов нельзя надёжно сопоставить."
+
+msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+

@@ -1,0 +1,82 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.od\\_matrix"
+msgstr "iduedu.od\\_matrix"
+
+msgid "Compute OD distances, node routes, or both with one search per unique source."
+msgstr "Рассчитывает расстояния OD, маршруты по узлам или и то и другое — по одному поиску на уникальный источник."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Urban graph to search."
+msgstr "Городской граф для поиска."
+
+msgid "Origin objects, using graph_node_column or nearest geometries."
+msgstr "Объекты-отправления, по graph_node_column или ближайшим геометриям."
+
+msgid "Destination objects, with the same input conventions."
+msgstr "Объекты-назначения, с теми же правилами для входных данных."
+
+msgid "Origin graph ids, as an alternative to gdf_origins."
+msgstr "Идентификаторы узлов отправления в графе, как альтернатива gdf_origins."
+
+msgid "Destination graph ids, instead of gdf_destinations."
+msgstr "Идентификаторы узлов назначения в графе, вместо gdf_destinations."
+
+msgid "Explicit graph node id column in object tables."
+msgstr "Явный столбец идентификаторов узлов графа в таблицах объектов."
+
+msgid "Edge cost column: time_min (minutes) or length_meter (meters)."
+msgstr "Столбец стоимости рёбер: time_min (минуты) или length_meter (метры)."
+
+msgid "Returned distance dtype; kernel arithmetic remains float32."
+msgstr "Тип возвращаемых расстояний; арифметика ядра остаётся float32."
+
+msgid "Compatible alias for cutoff. Passing both is an error."
+msgstr "Совместимый псевдоним cutoff. Передавать оба нельзя."
+
+msgid "Numba thread count, restored on completion."
+msgstr "Число потоков Numba, восстанавливается по завершении."
+
+msgid "Inclusive maximum total cost, or None for no limit."
+msgstr "Максимальная общая стоимость включительно или None без ограничения."
+
+msgid "distances (default, preserving existing calls), paths, or both."
+msgstr "distances (по умолчанию, чтобы не менять существующие вызовы), paths или both."
+
+msgid "eager or lazy. Lazy requires output=both and retains compact predecessor trees. result.get_path(origin, destination) reconstructs one path; result.paths materializes and caches the entire path table."
+msgstr "eager или lazy. lazy требует output=both и сохраняет компактные деревья предшественников. result.get_path(origin, destination) восстанавливает один путь; result.paths строит и кеширует всю таблицу путей."
+
+msgid "all_to_all creates matrices; pairwise matches inputs by position and returns a MultiIndex table with one dist or path column."
+msgstr "all_to_all строит матрицы; pairwise сопоставляет входные данные по позиции и возвращает таблицу с MultiIndex и одним столбцом dist или path."
+
+msgid "Maximum searches per batch. This limits working memory, not the full returned table or retained lazy trees. Use iter_od_matrix to consume bounded blocks of origin rows instead."
+msgstr "Максимальное число поисков в пакете. Ограничивает рабочую память, но не полную возвращаемую таблицу и не сохранённые ленивые деревья. Чтобы обрабатывать ограниченные блоки строк отправлений, используйте iter_od_matrix."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Sparse DataFrame or ShortestPathResult. Labels and duplicate node inputs are preserved. Unreachable and out-of-cutoff pairs contain inf/None. Searches use the smaller unique input side when possible, stop once requested targets settle, and restore original directed route order."
+msgstr "Разреженный DataFrame или ShortestPathResult. Метки и повторяющиеся входные узлы сохраняются. Недостижимые пары и пары за порогом содержат inf/None. Поиски по возможности идут со стороны меньшего множества уникальных входных точек, останавливаются, когда обработаны запрошенные цели, и восстанавливают исходный порядок ориентированного маршрута."
+

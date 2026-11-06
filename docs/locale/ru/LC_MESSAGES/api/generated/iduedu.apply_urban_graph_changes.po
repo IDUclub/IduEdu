@@ -1,0 +1,55 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.apply\\_urban\\_graph\\_changes"
+msgstr "iduedu.apply\\_urban\\_graph\\_changes"
+
+msgid "Apply prepared changes to an ``UrbanGraph``."
+msgstr "Применяет подготовленные изменения к ``UrbanGraph``."
+
+msgid "The function removes edges listed in ``changes.edges_to_delete``, appends new nodes and edges, and returns a new graph. Any previously cached adjacency matrix is considered stale after applying structural changes; rebuild it before running routing or accessibility calculations."
+msgstr "Функция удаляет рёбра из ``changes.edges_to_delete``, добавляет новые узлы и рёбра и возвращает новый граф. Закешированная ранее матрица смежности после структурных изменений считается устаревшей; постройте её заново перед маршрутизацией или расчётом доступности."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Source graph."
+msgstr "Исходный граф."
+
+msgid "Changes prepared by :func:`project_objects2urban_graph` or created manually."
+msgstr "Изменения, подготовленные :func:`project_objects2urban_graph` или созданные вручную."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "New ``UrbanGraph`` with changes applied."
+msgstr "Новый ``UrbanGraph`` с применёнными изменениями."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If graph and change topology flags differ or if     ``edges_to_delete`` references edges that are absent from the graph."
+msgstr "Если флаги топологии графа и изменений различаются или если ``edges_to_delete`` ссылается на рёбра, которых нет в графе."
+
+msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+

@@ -1,0 +1,49 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.path\\_to\\_edges"
+msgstr "iduedu.path\\_to\\_edges"
+
+msgid "Convert an ordered node path to ordered graph edges."
+msgstr "Преобразует упорядоченный путь по узлам в упорядоченные рёбра графа."
+
+msgid "For parallel edges the first edge with the minimum selected ``weight`` is used, matching the default adjacency-matrix aggregation rule. Edge attributes are preserved and reverse traversals receive reversed geometry."
+msgstr "Из кратных рёбер берётся первое ребро с минимальным значением выбранного ``weight``, как в правиле агрегации матрицы смежности по умолчанию. Атрибуты рёбер сохраняются, а при обратном проходе геометрия разворачивается."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Spatial urban graph containing edge geometries."
+msgstr "Пространственный городской граф с геометриями рёбер."
+
+msgid "Ordered graph node ids, for example from :func:`single_source_dijkstra_path` or a path-matrix cell."
+msgstr "Упорядоченные идентификаторы узлов графа, например из :func:`single_source_dijkstra_path` или ячейки матрицы путей."
+
+msgid "Edge weight used to choose between parallel edges."
+msgstr "Вес рёбер для выбора между кратными рёбрами."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "GeoDataFrame of traversed edges with ``path_order``, ``path_u`` and ``path_v`` columns."
+msgstr "GeoDataFrame пройденных рёбер со столбцами ``path_order``, ``path_u`` и ``path_v``."
+

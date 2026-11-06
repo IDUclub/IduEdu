@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Graph operations"
+msgstr "Операции с графами"
+
+msgid "This notebook shows common editing and transformation operations for `UrbanGraph` objects."
+msgstr "Этот ноутбук показывает распространённые операции редактирования и преобразования объектов `UrbanGraph`."
+
+msgid "Induced subgraph and relabeling"
+msgstr "Порождённый подграф и перенумерация"
+
+msgid "`subgraph_by_nodes` preserves original node ids. `relabel` converts them to a dense `RangeIndex`."
+msgstr "`subgraph_by_nodes` сохраняет исходные идентификаторы узлов. `relabel` переводит их в плотный `RangeIndex`."
+
+msgid "Clip by geometry"
+msgstr "Обрезка по геометрии"
+
+msgid "`clip` keeps nodes inside a polygon and then keeps edges whose endpoints remain in the graph. The polygon must be in the graph CRS."
+msgstr "`clip` оставляет узлы внутри полигона, а затем рёбра, оба конца которых остались в графе. Полигон должен быть в системе координат графа."
+
+msgid "Multiedge simplification"
+msgstr "Упрощение кратных рёбер"
+
+msgid "`simplify_multiedges` collapses parallel edges by selecting the min or max value of an edge weight."
+msgstr "`simplify_multiedges` сводит кратные рёбра, выбирая минимальное или максимальное значение веса."
+
+msgid "Directed and undirected views"
+msgstr "Ориентированный и неориентированный вид"
+
+msgid "Use these transformations when an algorithm needs a specific direction model."
+msgstr "Используйте эти преобразования, когда алгоритму нужна определённая модель направлений."
+
+msgid "Joining compatible graphs"
+msgstr "Объединение совместимых графов"
+
+msgid "`join_urban_graphs` and `UrbanGraph.join` concatenate compatible graph tables. The example below offsets node ids in the second small graph to avoid key collisions."
+msgstr "`join_urban_graphs` и `UrbanGraph.join` объединяют таблицы совместимых графов. В примере ниже идентификаторы узлов второго небольшого графа сдвинуты, чтобы ключи не совпадали."
+
