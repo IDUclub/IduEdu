@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_661fff2b98f2e16e_routing_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.0">coverage.py v7.17.0</a>,
-            created at 2026-11-05 13:18 +0000
+            created at 2026-11-06 14:30 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -387,7 +387,7 @@
     <p class="run"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">        <span class="nam">lines_centroids</span> <span class="op">=</span> <span class="nam">lines</span><span class="op">.</span><span class="nam">copy</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t304" href="#t304">304</a></span><span class="t">        <span class="nam">lines_centroids</span><span class="op">.</span><span class="nam">geometry</span> <span class="op">=</span> <span class="nam">lines_centroids</span><span class="op">.</span><span class="nam">apply</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t">            <span class="key">lambda</span> <span class="nam">row</span><span class="op">:</span> <span class="nam">row</span><span class="op">.</span><span class="nam">geometry</span><span class="op">.</span><span class="nam">line_interpolate_point</span><span class="op">(</span><span class="nam">row</span><span class="op">.</span><span class="nam">geometry</span><span class="op">.</span><span class="nam">length</span> <span class="op">/</span> <span class="num">2</span><span class="op">)</span><span class="op">,</span> <span class="nam">axis</span><span class="op">=</span><span class="num">1</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">buffer</span><span class="op">(</span><span class="num">0.05</span><span class="op">,</span> <span class="nam">resolution</span><span class="op">=</span><span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">buffer</span><span class="op">(</span><span class="num">0.05</span><span class="op">,</span> <span class="nam">quad_segs</span><span class="op">=</span><span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t307" href="#t307">307</a></span><span class="t">        <span class="nam">lines_with_attrs</span> <span class="op">=</span> <span class="nam">gpd</span><span class="op">.</span><span class="nam">sjoin</span><span class="op">(</span><span class="nam">lines_centroids</span><span class="op">,</span> <span class="nam">gdf</span><span class="op">,</span> <span class="nam">how</span><span class="op">=</span><span class="str">&quot;left&quot;</span><span class="op">,</span> <span class="nam">predicate</span><span class="op">=</span><span class="str">&quot;intersects&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t308" href="#t308">308</a></span><span class="t">        <span class="nam">aggregated_attrs</span> <span class="op">=</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t309" href="#t309">309</a></span><span class="t">            <span class="nam">lines_with_attrs</span><span class="op">.</span><span class="nam">drop</span><span class="op">(</span><span class="nam">columns</span><span class="op">=</span><span class="op">[</span><span class="str">&quot;geometry&quot;</span><span class="op">,</span> <span class="str">&quot;index_right&quot;</span><span class="op">]</span><span class="op">)</span>  <span class="com"># remove buffer geometry</span>&nbsp;</span><span class="r"></span></p>
@@ -464,7 +464,7 @@
             <a class="nav" href="z_661fff2b98f2e16e_routing_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.0">coverage.py v7.17.0</a>,
-            created at 2026-11-05 13:18 +0000
+            created at 2026-11-06 14:30 +0000
         </p>
     </div>
 </footer>
