@@ -1,0 +1,101 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.PbfSource"
+msgstr "iduedu.PbfSource"
+
+msgid "A local OpenStreetMap file answering the queries IduEdu otherwise sends to Overpass."
+msgstr "Локальный файл OpenStreetMap, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
+
+msgid "Any format libosmium reads works (``.osm.pbf``, ``.osm``, ``.opl``, compressed variants). For a city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a whole country extract works too, but every query then scans the whole file."
+msgstr "Подходит любой формат, который читает libosmium (``.osm.pbf``, ``.osm``, ``.opl``, сжатые варианты). Для города передайте компактный файл города, вырезанный :func:`iduedu.osm_pbf.split_by_polygons`; чтение выгрузки целой страны тоже работает, но тогда каждый запрос просматривает весь файл."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "The OSM file."
+msgstr "Файл OSM."
+
+msgid "Node-location index used while assembling way geometries, as accepted by ``osmium.index.create_map``: ``\"flex_mem\"`` (default) for city files, or a disk-backed ``\"sparse_file_array\"`` / ``\"dense_file_array\"`` (optionally ``\",<file>\"``) for large extracts."
+msgstr "Индекс координат узлов для сборки геометрий линий в формате ``osmium.index.create_map``: ``\"flex_mem\"`` (по умолчанию) для файлов городов или дисковый ``\"sparse_file_array\"`` / ``\"dense_file_array\"`` (при необходимости с ``\",<file>\"``) для больших выгрузок."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "When pyosmium is not installed."
+msgstr "Если pyosmium не установлен."
+
+msgid "When ``path`` does not exist."
+msgstr "Если ``path`` не существует."
+
+msgid "Methods"
+msgstr "Методы"
+
+msgid ":py:obj:`boundary <iduedu.PbfSource.boundary>`"
+msgstr ":py:obj:`boundary <iduedu.PbfSource.boundary>`"
+
+msgid "The relation ``osm_id`` as ``relation(<osm_id>); out geom;`` returns it (empty list when absent)."
+msgstr "Отношение ``osm_id`` в том виде, в каком его возвращает ``relation(<osm_id>); out geom;`` (пустой список, если его нет)."
+
+msgid ":py:obj:`member_elements <iduedu.PbfSource.member_elements>`"
+msgstr ":py:obj:`member_elements <iduedu.PbfSource.member_elements>`"
+
+msgid "``out center`` elements of the given members (dicts with ``type`` and ``ref``), sorted by type and id."
+msgstr "Элементы ``out center`` переданных участников (словари с ``type`` и ``ref``), отсортированные по типу и идентификатору."
+
+msgid ":py:obj:`member_tags <iduedu.PbfSource.member_tags>`"
+msgstr ":py:obj:`member_tags <iduedu.PbfSource.member_tags>`"
+
+msgid "Tags and coordinates of members, keyed by ``(type, id)``, as ``fetch_member_tags`` returns them."
+msgstr "Теги и координаты участников с ключами ``(type, id)``, в том виде, в каком их возвращает ``fetch_member_tags``."
+
+msgid ":py:obj:`routes_by_poly <iduedu.PbfSource.routes_by_poly>`"
+msgstr ":py:obj:`routes_by_poly <iduedu.PbfSource.routes_by_poly>`"
+
+msgid "Public-transport route elements in a polygon, shaped as ``get_routes_by_poly`` returns them."
+msgstr "Элементы маршрутов общественного транспорта в полигоне, в том виде, в каком их возвращает ``get_routes_by_poly``."
+
+msgid ":py:obj:`snapshot_time <iduedu.PbfSource.snapshot_time>`"
+msgstr ":py:obj:`snapshot_time <iduedu.PbfSource.snapshot_time>`"
+
+msgid "The replication timestamp from the file header, see :func:`snapshot_time`."
+msgstr "Метка времени репликации из заголовка файла, см. :func:`snapshot_time`."
+
+msgid ":py:obj:`ways_by_filter <iduedu.PbfSource.ways_by_filter>`"
+msgstr ":py:obj:`ways_by_filter <iduedu.PbfSource.ways_by_filter>`"
+
+msgid "Ways matching an Overpass tag filter inside a polygon."
+msgstr "Линии внутри полигона, подходящие под фильтр тегов Overpass."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~datetime.datetime\\` \\| \\:py\\:obj\\:\\`None\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~datetime.datetime\\` \\| \\:py\\:obj\\:\\`None\\``"
+
+#, python-brace-format
+msgid "Equivalent to ``way<way_filter>(poly:\"...\"); out geom;``. Returns Overpass ``out geom`` way elements ``{\"type\": \"way\", \"id\", \"bounds\", \"nodes\", \"geometry\": [{\"lat\", \"lon\"}], \"tags\"}``."
+msgstr "Равносильно ``way<way_filter>(poly:\"...\"); out geom;``. Возвращает элементы-линии Overpass ``out geom`` ``{\"type\": \"way\", \"id\", \"bounds\", \"nodes\", \"geometry\": [{\"lat\", \"lon\"}], \"tags\"}``."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`dict\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`dict\\`\\]`"
+
+msgid "Reproduces, statement by statement and in the same order, the Overpass query of :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways of ground routes (``out tags``), the ground route relations (``out geom``) and, for ``subway``, the relations sharing a node with a subway route (``out geom``), their stop-area groups (``out body``), the stations among their members (``out tags``), the ``stop_area_members`` section marker and all their members (``out center``)."
+msgstr "Воспроизводит, оператор за оператором и в том же порядке, запрос Overpass функции :func:`iduedu.overpass.downloaders.get_routes_by_poly`: теги линий-участников наземных маршрутов (``out tags``), отношения наземных маршрутов (``out geom``) и, для ``subway``, отношения, имеющие общий узел с маршрутом метро (``out geom``), их группы зон остановок (``out body``), станции среди их участников (``out tags``), маркер раздела ``stop_area_members`` и всех их участников (``out center``)."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`dict\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`dict\\``"
+

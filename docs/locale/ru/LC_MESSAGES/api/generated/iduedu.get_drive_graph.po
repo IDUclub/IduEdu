@@ -1,0 +1,67 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_drive\\_graph"
+msgstr "iduedu.get\\_drive\\_graph"
+
+msgid "Build a drivable UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит автомобильный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid "The function downloads OSM ways via Overpass (or reads them from a local OSM file in pbf mode, see ``config.set_osm_source``), segments them into directed edges, optionally merges contiguous segments, normalizes OSM one-way semantics into a bool ``oneway`` edge column, and computes per-edge length (meters) and travel time (minutes). Node coordinates are unique line endpoints in a local projected CRS. Edge attributes can include selected OSM tags and a derived road category/speed."
+msgstr "Функция загружает линии OSM через Overpass (или читает их из локального файла OSM в режиме pbf, см. ``config.set_osm_source``), разбивает их на ориентированные рёбра, при необходимости объединяет смежные отрезки, приводит семантику одностороннего движения OSM к логическому столбцу рёбер ``oneway`` и рассчитывает длину (в метрах) и время в пути (в минутах) для каждого ребра. Координаты узлов — уникальные концы линий в локальной проецированной системе координат. Атрибуты рёбер могут включать выбранные теги OSM и производные категорию и скорость дороги."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation/area ID of the territory boundary. Provide this or ``territory``."
+msgstr "Идентификатор отношения или области OSM границы территории. Передайте его или ``territory``."
+
+msgid "Boundary geometry in EPSG:4326 or GeoDataFrame. Used when ``osm_id`` is not given."
+msgstr "Геометрия границы в EPSG:4326 или GeoDataFrame. Используется, если ``osm_id`` не задан."
+
+msgid "If True, merges contiguous collinear segments and transfers attributes back to merged lines using nearest midpoints. If False, keeps raw per-segment edges."
+msgstr "Если True, смежные коллинеарные отрезки объединяются, а атрибуты переносятся на объединённые линии по ближайшим серединам. Если False, сохраняются исходные рёбра по отрезкам."
+
+msgid "If True, adds a derived ``category`` (e.g., local/regional/federal) and a default speed (``maxspeed_mpm``) inferred from the OSM ``highway`` class."
+msgstr "Если True, добавляются производная категория ``category`` (например, местная, региональная, федеральная) и скорость по умолчанию (``maxspeed_mpm``), выводимая из класса OSM ``highway``."
+
+msgid "If True, clips edges by the exact boundary geometry before graph construction."
+msgstr "Если True, рёбра обрезаются точно по геометрии границы до построения графа."
+
+msgid "If True, returns only the largest strongly connected component."
+msgstr "Если True, возвращается только наибольшая компонента сильной связности."
+
+msgid "Preset of Overpass filters to select drivable ways. Use \"custom\" together with ``custom_filter`` to pass your own Overpass ``way`` filter."
+msgstr "Готовый набор фильтров Overpass для отбора дорог, доступных автомобилям. Используйте \"custom\" вместе с ``custom_filter``, чтобы передать собственный фильтр Overpass ``way``."
+
+msgid "Custom Overpass way filter used in custom mode."
+msgstr "Собственный фильтр линий Overpass для режима custom."
+
+msgid "Which OSM tags to retain on edges. Overrides defaults from config. The tags oneway, maxspeed, and highway are always added."
+msgstr "Какие теги OSM сохранять на рёбрах. Заменяет значения по умолчанию из config. Теги oneway, maxspeed и highway добавляются всегда."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Directed multigraph of the road network. Edges include geometry in the local CRS, length, travel time, direction metadata and selected OSM tags. The graph keeps the local projected CRS and selected network type as metadata."
+msgstr "Ориентированный мультиграф дорожной сети. Рёбра содержат геометрию в локальной системе координат, длину, время в пути, сведения о направлении и выбранные теги OSM. Граф хранит локальную проецированную систему координат и выбранный тип сети как метаданные."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html"
+

@@ -1,0 +1,43 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.urban\\_graph2nx\\_graph"
+msgstr "iduedu.urban\\_graph2nx\\_graph"
+
+msgid "Convert an ``UrbanGraph`` to a NetworkX graph."
+msgstr "Преобразует ``UrbanGraph`` в граф NetworkX."
+
+msgid "NetworkX is not required for normal IduEdu workflows, but this conversion is useful at integration boundaries with tools that consume NetworkX graph objects."
+msgstr "Для обычных сценариев IduEdu NetworkX не нужен, но это преобразование полезно на стыке с инструментами, которые работают с графами NetworkX."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Tabular urban graph to convert."
+msgstr "Преобразуемый табличный городской граф."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:data\\:\\`\\~typing.Any\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:data\\:\\`\\~typing.Any\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "``networkx.Graph``, ``networkx.DiGraph``, ``networkx.MultiGraph`` or ``networkx.MultiDiGraph`` with node and edge attributes copied from the UrbanGraph tables."
+msgstr "``networkx.Graph``, ``networkx.DiGraph``, ``networkx.MultiGraph`` или ``networkx.MultiDiGraph`` с атрибутами узлов и рёбер, скопированными из таблиц UrbanGraph."
+

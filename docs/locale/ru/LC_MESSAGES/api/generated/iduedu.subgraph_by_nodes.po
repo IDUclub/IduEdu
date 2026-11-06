@@ -1,0 +1,37 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.subgraph\\_by\\_nodes"
+msgstr "iduedu.subgraph\\_by\\_nodes"
+
+msgid "Return an induced ``UrbanGraph`` subgraph for the provided node ids."
+msgstr "Возвращает подграф ``UrbanGraph``, порождённый переданными идентификаторами узлов."
+
+msgid "Node ids are preserved. Edges are retained only when both endpoints are in ``nodes``."
+msgstr "Идентификаторы узлов сохраняются. Ребро сохраняется, только если оба его конца входят в ``nodes``."
+
+msgid "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Parameters"
+msgstr "Параметры"
+

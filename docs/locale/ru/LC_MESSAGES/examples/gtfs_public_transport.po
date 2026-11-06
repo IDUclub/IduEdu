@@ -1,0 +1,115 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "GTFS public transport"
+msgstr "Общественный транспорт из GTFS"
+
+msgid "This notebook builds static public-transport `UrbanGraph` objects from GTFS Schedule feeds: it reads and validates a feed, selects a service day and time window, merges several feeds of one city, and joins the result to an OpenStreetMap walking network for routing."
+msgstr "Этот ноутбук строит статические графы `UrbanGraph` общественного транспорта по фидам GTFS Schedule: читает и проверяет фид, выбирает день обслуживания и окно времени, объединяет несколько фидов одного города и присоединяет результат к пешеходной сети OpenStreetMap для маршрутизации."
+
+msgid "The feeds are small synthetic examples placed on approximate coordinates in Saint Petersburg's Vasileostrovsky District, so the notebook runs without downloading a real feed. Replace the paths with your own GTFS directories or ZIP archives."
+msgstr "Фиды — небольшие синтетические примеры с приблизительными координатами в Василеостровском районе Санкт-Петербурга, поэтому ноутбук работает без загрузки реального фида. Замените пути на собственные папки или ZIP-архивы GTFS."
+
+msgid "Example feeds"
+msgstr "Примеры фидов"
+
+msgid "Three agencies publish their own feed, and each of them numbers its only route `1`:"
+msgstr "Три перевозчика публикуют собственные фиды, и каждый нумерует свой единственный маршрут как `1`:"
+
+msgid "**metro**: two stations with entrances, escalator pathways and boarding areas, a `frequencies.txt` service every 4 minutes, and route geometry in `shapes.txt`;"
+msgstr "**metro**: две станции со входами, переходами-эскалаторами и зонами посадки, движение по `frequencies.txt` каждые 4 минуты и геометрия маршрута в `shapes.txt`;"
+
+msgid "**bus**: five stops along Sredny Prospekt with a scheduled departure every 10 minutes and no shapes;"
+msgstr "**bus**: пять остановок вдоль Среднего проспекта с отправлением по расписанию каждые 10 минут и без форм маршрута;"
+
+msgid "**trolleybus**: three stops with a scheduled departure every 12 minutes; its stop on Sredny Prospekt is about 10 m from the bus stop."
+msgstr "**trolleybus**: три остановки с отправлением по расписанию каждые 12 минут; его остановка на Среднем проспекте примерно в 10 м от автобусной."
+
+msgid "Read and validate a feed"
+msgstr "Чтение и проверка фида"
+
+msgid "`read_gtfs_feed` loads every table of a directory or ZIP archive as strings. `validate_gtfs_feed` checks the required tables and columns, unique identifiers and references between tables, and raises `GTFSValidationError` when the feed breaks them. The graph builder runs the same validation itself."
+msgstr "`read_gtfs_feed` загружает все таблицы папки или ZIP-архива как строки. `validate_gtfs_feed` проверяет обязательные таблицы и столбцы, уникальность идентификаторов и ссылки между таблицами и вызывает `GTFSValidationError`, если фид их нарушает. Функция построения графа сама выполняет ту же проверку."
+
+msgid "Build a graph for one service day"
+msgstr "Граф для одного дня обслуживания"
+
+msgid "`service_date` keeps the trips whose calendar runs on that day. `start_time` and `end_time` select the departures used to estimate boarding waits: for scheduled service the wait is half the mean gap between departures, so the bus leaving every 10 minutes gets a 5-minute `boarding` edge. A vehicle edge takes the median scheduled time between its two stops."
+msgstr "`service_date` оставляет рейсы, календарь которых действует в этот день. `start_time` и `end_time` отбирают отправления, по которым оценивается ожидание посадки: для движения по расписанию ожидание равно половине среднего интервала между отправлениями, поэтому автобус, уходящий каждые 10 минут, получает ребро `boarding` на 5 минут. Ребро движения транспорта получает медиану времени по расписанию между двумя его остановками."
+
+msgid "The bus feed has no shapes, so each vehicle edge is a straight line between two stops, and its `length_meter` is that line's length multiplied by √2 to approximate the street path."
+msgstr "У автобусного фида нет форм маршрута, поэтому каждое ребро движения — прямая между двумя остановками, а его `length_meter` — длина этой прямой, умноженная на √2, чтобы приблизить путь по улицам."
+
+msgid "A day without service gives an empty graph and a warning:"
+msgstr "День без движения даёт пустой граф и предупреждение:"
+
+msgid "The average day"
+msgstr "Средний день"
+
+msgid "Without `service_date` every pattern that runs on at least one day enters the graph, and its boarding waits are those of the **average day**: the waits of each service day are computed on that day's trips alone and then averaged, every calendar day weighing the same. The days come from the feed's own calendar or from `service_period=(first, last)`, for example one reference week."
+msgstr "Без `service_date` в граф попадают все варианты маршрутов, которые ходят хотя бы в один день, а ожидание посадки — ожидание **среднего дня**: ожидание каждого дня обслуживания рассчитывается только по рейсам этого дня и затем усредняется с одинаковым весом каждого календарного дня. Дни берутся из собственного календаря фида или из `service_period=(first, last)`, например одной эталонной недели."
+
+msgid "To see the difference, give the bus a weekend timetable: every 20 minutes on Saturdays and Sundays instead of every 10."
+msgstr "Чтобы увидеть разницу, зададим автобусу расписание выходного дня: каждые 20 минут по субботам и воскресеньям вместо каждых 10."
+
+msgid "Five weekdays at 5 minutes and two weekend days at 10 minutes give (5·5 + 2·10) / 7 ≈ 6.4 minutes. A gap is only ever a gap between departures of the same day, so the weekday and weekend timetables never interleave into gaps no passenger sees. `service_dates=[...]` lists the days explicitly instead, for example a reference week plus the own weeks of merged sources that were not in service then."
+msgstr "Пять будних дней по 5 минут и два выходных по 10 минут дают (5·5 + 2·10) / 7 ≈ 6,4 минуты. Интервал всегда считается только между отправлениями одного дня, поэтому расписания будних и выходных дней никогда не перемешиваются в интервалы, которых не видит ни один пассажир. `service_dates=[...]` вместо этого явно перечисляет дни, например эталонную неделю плюс собственные недели объединённых источников, которые в ту неделю не действовали."
+
+msgid "Merge several feeds"
+msgstr "Объединение нескольких фидов"
+
+msgid "Concatenating the three feeds would attach the trips of three agencies to one `route_id` `1`. `merge_gtfs_feeds` qualifies every identifier with the name of its source, here the folder name, and rewrites references together with definitions. The graph builder does the same when it receives a list of feeds."
+msgstr "Простое соединение трёх фидов привязало бы рейсы трёх перевозчиков к одному `route_id` `1`. `merge_gtfs_feeds` дополняет каждый идентификатор именем источника, здесь — именем папки, и переписывает ссылки вместе с определениями. Функция построения графа делает то же самое, когда получает список фидов."
+
+msgid "Fuse stops shared by several feeds"
+msgstr "Слияние общих остановок нескольких фидов"
+
+msgid "The bus and trolleybus stops on Sredny Prospekt are published about 10 m apart. They stay two nodes unless `merge_stops_within` is set; with it, stops closer than the given distance become one node, so a transfer between the two routes needs no walk. Only stops where vehicles call are fused, never stations, entrances or boarding areas."
+msgstr "Автобусная и троллейбусная остановки на Среднем проспекте опубликованы примерно в 10 м друг от друга. Они остаются двумя узлами, если не задан `merge_stops_within`; с ним остановки ближе заданного расстояния становятся одним узлом, и пересадка между двумя маршрутами не требует перехода пешком. Сливаются только остановки, где останавливается транспорт, но никогда — станции, входы или зоны посадки."
+
+msgid "Count duplicated feeds once"
+msgstr "Учёт повторяющихся фидов один раз"
+
+msgid "Feeds gathered from several catalogues often overlap: the same feed published twice, or a national feed repeating a city operator. Merged as they are, the copies get their own qualified identifiers and every trip runs twice. `deduplicate=True` fuses platforms of different sources closer than `duplicate_platform_tolerance` (0.5 m by default) and drops the trips another source already runs through the same platforms at the same times. Platforms of one feed are never fused with each other."
+msgstr "Фиды из нескольких каталогов часто пересекаются: один и тот же фид опубликован дважды или национальный фид повторяет городского оператора. Если объединить их как есть, копии получат собственные дополненные идентификаторы, и каждый рейс будет выполняться дважды. `deduplicate=True` сливает платформы разных источников ближе `duplicate_platform_tolerance` (по умолчанию 0,5 м) и отбрасывает рейсы, которые другой источник уже проводит через те же платформы в то же время. Платформы одного фида никогда не сливаются друг с другом."
+
+msgid "Boarding waits by route"
+msgstr "Ожидание посадки по маршрутам"
+
+msgid "Scheduled services wait half their mean headway. A `frequencies.txt` service waits `headway_secs / 120` minutes, so the metro running every 240 seconds gets a 2-minute wait."
+msgstr "Для движения по расписанию ожидание равно половине среднего интервала. Для движения по `frequencies.txt` ожидание — `headway_secs / 120` минут, поэтому метро, идущее каждые 240 секунд, получает ожидание 2 минуты."
+
+msgid "Stations"
+msgstr "Станции"
+
+msgid "The metro feed describes each station down to a boarding area. The street entrance leads through an escalator `pathway` to the boarding area, and a zero-cost `station_link` connects the boarding area to its platform. Because the platform is reached through the station, its node type is `station_platform`, and only the entrance (`station_entry_exit`) is later attached to the walking network."
+msgstr "Фид метро описывает каждую станцию вплоть до зоны посадки. Вход с улицы ведёт через эскалатор `pathway` к зоне посадки, а `station_link` нулевой стоимости соединяет зону посадки с её платформой. Поскольку на платформу попадают через станцию, тип её узла — `station_platform`, и к пешеходной сети потом присоединяется только вход (`station_entry_exit`)."
+
+msgid "Plot the graph"
+msgstr "График графа"
+
+msgid "Join with the walking network"
+msgstr "Объединение с пешеходной сетью"
+
+msgid "Build the walking graph first and pass its CRS to the GTFS builder, so both layers share one metric projection. `join_pt_walk_graph` then attaches platforms and station entrances to nearby walking edges."
+msgstr "Сначала постройте пешеходный граф и передайте его систему координат в функцию построения по GTFS, чтобы оба слоя были в одной метрической проекции. Затем `join_pt_walk_graph` присоединяет платформы и входы станций к ближайшим пешеходным рёбрам."
+
+msgid "Route across the layers"
+msgstr "Маршрут через слои"
+
+msgid "Take the walking nodes nearest to a point by Primorskaya and a point on 1-ya Liniya, find the fastest route between them, and turn it into edges to see how the time splits between walking, waiting and riding."
+msgstr "Возьмём пешеходные узлы, ближайшие к точке у «Приморской» и к точке на 1-й линии, найдём между ними самый быстрый маршрут и превратим его в рёбра, чтобы увидеть, как время делится между ходьбой, ожиданием и поездкой."
+

@@ -1,0 +1,97 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Migrating to UrbanGraph"
+msgstr "Переход на UrbanGraph"
+
+msgid "IduEdu now uses `UrbanGraph` as the primary graph representation. The old NetworkX-first workflow is still available through optional compatibility helpers, but new builders, matrix functions and graph utilities operate on `UrbanGraph`."
+msgstr "Теперь основное представление графа в IduEdu — `UrbanGraph`. Прежний сценарий с NetworkX в основе по-прежнему доступен через необязательные функции совместимости, но новые функции построения, матричные функции и утилиты для графов работают с `UrbanGraph`."
+
+msgid "Main changes"
+msgstr "Основные изменения"
+
+msgid "Graph builders such as `get_walk_graph`, `get_drive_graph`, `get_public_transport_graph` and `get_intermodal_graph` return `UrbanGraph`."
+msgstr "Функции построения графов, такие как `get_walk_graph`, `get_drive_graph`, `get_public_transport_graph` и `get_intermodal_graph`, возвращают `UrbanGraph`."
+
+msgid "Node and edge data live in `graph.nodes_gdf` and `graph.edges_gdf`."
+msgstr "Данные узлов и рёбер хранятся в `graph.nodes_gdf` и `graph.edges_gdf`."
+
+msgid "OD matrices and shortest-path helpers accept `UrbanGraph` directly."
+msgstr "OD-матрицы и функции кратчайших путей принимают `UrbanGraph` напрямую."
+
+msgid "NetworkX conversion is optional: use `urban_graph2nx_graph()` and `nx_graph2urban_graph()` when integration with NetworkX code is required."
+msgstr "Преобразование в NetworkX необязательно: используйте `urban_graph2nx_graph()` и `nx_graph2urban_graph()`, когда нужна интеграция с кодом на NetworkX."
+
+msgid "GML helpers and legacy NetworkX utilities require optional NetworkX support."
+msgstr "Функциям GML и устаревшим утилитам NetworkX нужна необязательная поддержка NetworkX."
+
+msgid "Node inputs"
+msgstr "Входные узлы"
+
+msgid "Functions that accept origins, destinations or source nodes can work with either explicit node ids or GeoDataFrames:"
+msgstr "Функции, принимающие точки отправления, назначения или узлы-источники, работают как с явными идентификаторами узлов, так и с GeoDataFrame:"
+
+msgid "If a GeoDataFrame already contains `graph_node_id`, IduEdu uses it directly. If the column is absent, geometries are matched to the nearest graph nodes."
+msgstr "Если в GeoDataFrame уже есть `graph_node_id`, IduEdu использует его напрямую. Если столбца нет, геометрии сопоставляются с ближайшими узлами графа."
+
+msgid "Validation"
+msgstr "Проверка"
+
+msgid "Use `graph.validate()` or `validate_graph(graph)` to check node ids, edge endpoints, required columns, geometries and CRS consistency after custom edits:"
+msgstr "После собственных правок проверьте идентификаторы узлов, концы рёбер, обязательные столбцы, геометрии и согласованность систем координат с помощью `graph.validate()` или `validate_graph(graph)`:"
+
+msgid "Storage"
+msgstr "Хранение"
+
+msgid "Use `.urbangraph` archives to persist `UrbanGraph` objects without converting them to NetworkX or GML. The archive stores `metadata.json`, `nodes.parquet` and `edges.parquet`; adjacency matrices can be included as an optional cache."
+msgstr "Сохраняйте объекты `UrbanGraph` в архивы `.urbangraph`, не преобразуя их в NetworkX или GML. Архив хранит `metadata.json`, `nodes.parquet` и `edges.parquet`; матрицы смежности можно добавить как необязательный кеш."
+
+msgid "Install `iduedu[io]` when parquet support is not already available."
+msgstr "Установите `iduedu[io]`, если поддержки parquet ещё нет."
+
+msgid "Common replacements"
+msgstr "Частые замены"
+
+msgid "Old workflow"
+msgstr "Прежний сценарий"
+
+msgid "New workflow"
+msgstr "Новый сценарий"
+
+msgid "Read nodes and edges from a NetworkX graph"
+msgstr "Читать узлы и рёбра из графа NetworkX"
+
+msgid "Use `graph.nodes_gdf` and `graph.edges_gdf`"
+msgstr "Использовать `graph.nodes_gdf` и `graph.edges_gdf`"
+
+msgid "Convert GeoDataFrames to NetworkX before OD calculations"
+msgstr "Преобразовывать GeoDataFrame в NetworkX перед расчётом OD-матриц"
+
+msgid "Pass `UrbanGraph` directly to `od_matrix()`"
+msgstr "Передавать `UrbanGraph` напрямую в `od_matrix()`"
+
+msgid "Manually snap objects to node ids before every matrix call"
+msgstr "Вручную привязывать объекты к узлам перед каждым расчётом матрицы"
+
+msgid "Use `nearest_nodes()` or provide `graph_node_id`"
+msgstr "Использовать `nearest_nodes()` или передавать `graph_node_id`"
+
+msgid "Keep NetworkX as the canonical in-memory graph"
+msgstr "Держать NetworkX основным графом в памяти"
+
+msgid "Keep `UrbanGraph`; convert to NetworkX only at boundaries"
+msgstr "Держать `UrbanGraph`; преобразовывать в NetworkX только на стыках"
+

@@ -1,0 +1,46 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.download\\_geofabrik\\_region"
+msgstr "iduedu.download\\_geofabrik\\_region"
+
+msgid "Download the Geofabrik extract ``region`` (an id from :func:`geofabrik_regions`)."
+msgstr "Скачивает выгрузку Geofabrik ``region`` (идентификатор из :func:`geofabrik_regions`)."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Geofabrik region id, e.g. ``\"northwestern-fed-district\"``."
+msgstr "Идентификатор региона Geofabrik, например ``\"northwestern-fed-district\"``."
+
+msgid "Cache directory; defaults to ``<config.overpass_cache_dir>/geofabrik``."
+msgstr "Папка кеша; по умолчанию ``<config.overpass_cache_dir>/geofabrik``."
+
+msgid "Re-download when Geofabrik has a newer file (compared by md5). Without it an existing file is reused as is, which keeps results reproducible."
+msgstr "Скачать заново, если у Geofabrik есть более новый файл (сравнение по md5). Без этого существующий файл используется как есть, что сохраняет воспроизводимость результатов."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pathlib.Path\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pathlib.Path\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Path of the ``<region>-latest.osm.pbf`` file."
+msgstr "Путь к файлу ``<region>-latest.osm.pbf``."
+

@@ -1,0 +1,136 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.TransportRegistry"
+msgstr "iduedu.TransportRegistry"
+
+msgid "Registry of available public-transport modes and their specifications."
+msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+
+msgid "The registry stores ``TransportSpec`` objects indexed by normalized transport type names (lowercase). It provides utilities for validating transport types, updating parameters, and ensuring that unknown types encountered during parsing are assigned reasonable defaults."
+msgstr "Реестр хранит объекты ``TransportSpec`` по нормализованным именам видов транспорта (в нижнем регистре). Он позволяет проверять виды транспорта, обновлять параметры и назначать разумные значения по умолчанию неизвестным видам, встреченным при разборе."
+
+msgid "The registry is used throughout graph construction to compute per-edge travel times consistently across different transport modes."
+msgstr "Реестр используется при построении графа, чтобы единообразно рассчитывать время в пути на рёбрах для разных видов транспорта."
+
+msgid "https://iduclub.github.io/IduEdu/examples/transport_registry.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/transport_registry.html"
+
+msgid "Methods"
+msgstr "Методы"
+
+msgid ":py:obj:`add <iduedu.TransportRegistry.add>`"
+msgstr ":py:obj:`add <iduedu.TransportRegistry.add>`"
+
+msgid "Add a transport specification to the registry."
+msgstr "Добавляет спецификацию вида транспорта в реестр."
+
+msgid ":py:obj:`ensure <iduedu.TransportRegistry.ensure>`"
+msgstr ":py:obj:`ensure <iduedu.TransportRegistry.ensure>`"
+
+msgid "Return an existing spec or create one from defaults."
+msgstr "Возвращает существующую спецификацию или создаёт её из значений по умолчанию."
+
+msgid ":py:obj:`get <iduedu.TransportRegistry.get>`"
+msgstr ":py:obj:`get <iduedu.TransportRegistry.get>`"
+
+msgid "Return a transport specification by name."
+msgstr "Возвращает спецификацию вида транспорта по имени."
+
+msgid ":py:obj:`list_types <iduedu.TransportRegistry.list_types>`"
+msgstr ":py:obj:`list_types <iduedu.TransportRegistry.list_types>`"
+
+msgid "Return registered transport type names."
+msgstr "Возвращает имена зарегистрированных видов транспорта."
+
+msgid ":py:obj:`remove <iduedu.TransportRegistry.remove>`"
+msgstr ":py:obj:`remove <iduedu.TransportRegistry.remove>`"
+
+msgid "Remove a transport specification by name."
+msgstr "Удаляет спецификацию вида транспорта по имени."
+
+msgid ":py:obj:`try_get <iduedu.TransportRegistry.try_get>`"
+msgstr ":py:obj:`try_get <iduedu.TransportRegistry.try_get>`"
+
+msgid "Return a transport specification, or ``None`` if it is unknown."
+msgstr "Возвращает спецификацию вида транспорта или ``None``, если вид неизвестен."
+
+msgid ":py:obj:`update <iduedu.TransportRegistry.update>`"
+msgstr ":py:obj:`update <iduedu.TransportRegistry.update>`"
+
+msgid "Update fields of an existing transport specification."
+msgstr "Обновляет поля существующей спецификации вида транспорта."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Transport type name. Matching is case-insensitive and ignores surrounding whitespace."
+msgstr "Имя вида транспорта. Сравнение без учёта регистра и пробелов по краям."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If the transport type is unknown."
+msgstr "Если вид транспорта неизвестен."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.constants.transport\\_specs.TransportSpec\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.constants.transport\\_specs.TransportSpec\\``"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.constants.transport\\_specs.TransportSpec\\` \\| \\:py\\:obj\\:\\`None\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.constants.transport\\_specs.TransportSpec\\` \\| \\:py\\:obj\\:\\`None\\``"
+
+msgid "Specification to add."
+msgstr "Добавляемая спецификация."
+
+msgid "If true, replace an existing specification with the same normalized name."
+msgstr "Если истинно, существующая спецификация с тем же нормализованным именем заменяется."
+
+msgid "If ``spec`` is invalid or already exists."
+msgstr "Если ``spec`` некорректна или уже существует."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
+
+msgid "Existing transport type name."
+msgstr "Имя существующего вида транспорта."
+
+msgid "Dataclass fields to update."
+msgstr "Обновляемые поля dataclass."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Updated transport specification."
+msgstr "Обновлённая спецификация вида транспорта."
+
+msgid "If ``transport_type`` is unknown."
+msgstr "Если ``transport_type`` неизвестен."
+
+msgid "If updated fields are invalid or rename conflicts."
+msgstr "Если обновлённые поля некорректны или переименование конфликтует."
+
+msgid "Transport type name."
+msgstr "Имя вида транспорта."
+
+msgid "Optional specification used when the name is missing."
+msgstr "Необязательная спецификация, используемая, если имени нет в реестре."
+
+msgid "Existing or newly registered transport specification."
+msgstr "Существующая или только что зарегистрированная спецификация вида транспорта."
+

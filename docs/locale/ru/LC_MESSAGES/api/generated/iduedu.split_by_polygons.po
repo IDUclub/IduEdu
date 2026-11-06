@@ -1,0 +1,73 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.split\\_by\\_polygons"
+msgstr "iduedu.split\\_by\\_polygons"
+
+msgid "Write one compact, referentially complete ``<name>.osm.pbf`` per polygon from a regional extract."
+msgstr "Записывает по одному компактному, полному по ссылкам ``<name>.osm.pbf`` на каждый полигон из региональной выгрузки."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Sorted regional OSM file (``.osm.pbf`` as distributed by Geofabrik, or any format libosmium reads)."
+msgstr "Отсортированный региональный файл OSM (``.osm.pbf`` в том виде, как его распространяет Geofabrik, или любой формат, который читает libosmium)."
+
+#, python-brace-format
+msgid "``{name: polygon}`` in EPSG:4326. Use the polygons (or larger ones) you will later build graphs for; as with Overpass, only the exterior ring counts. ``name`` becomes the file name and must not contain path separators."
+msgstr "``{name: polygon}`` в EPSG:4326. Используйте полигоны, по которым потом будете строить графы (или более крупные); как и в Overpass, учитывается только внешнее кольцо. ``name`` становится именем файла и не должно содержать разделителей пути."
+
+msgid "Output directory, created if missing."
+msgstr "Папка для результатов, создаётся при отсутствии."
+
+msgid "Node-location index for the spatial pass, as accepted by ``osmium.index.create_map``. ``\"flex_mem\"`` keeps it in memory. For country-sized files use a disk-backed index: ``\"sparse_file_array\"`` or ``\"dense_file_array\"`` alone put it in an anonymous temporary file that libosmium removes itself; ``\"dense_file_array,/scratch/nodes.idx\"`` names the file (it is left in place, and on Windows stays locked until the process exits). ``dense_file_array`` suits extracts with a large share of all node ids (big countries), ``sparse_file_array`` smaller ones."
+msgstr "Индекс координат узлов для пространственного прохода в формате ``osmium.index.create_map``. ``\"flex_mem\"`` хранит его в памяти. Для файлов размером со страну используйте дисковый индекс: ``\"sparse_file_array\"`` или ``\"dense_file_array\"`` без имени файла помещают его в анонимный временный файл, который libosmium удаляет сама; ``\"dense_file_array,/scratch/nodes.idx\"`` задаёт файл явно (он остаётся на месте, а в Windows заблокирован до завершения процесса). ``dense_file_array`` подходит для выгрузок с большой долей всех идентификаторов узлов (большие страны), ``sparse_file_array`` — для меньших."
+
+msgid "Ways carrying at least one of these keys are selected spatially. ``None`` selects every way. Ways without them still enter a city file as members of selected relations."
+msgstr "Линии хотя бы с одним из этих ключей отбираются пространственно. ``None`` отбирает все линии. Линии без них всё равно попадают в файл города как участники выбранных отношений."
+
+msgid "OSM ``route`` values of the relations to keep; defaults to every mode of ``DEFAULT_REGISTRY_W_TRAIN`` (bus, trolleybus, tram/light_rail, subway, monorail, train, taxi/share_taxi)."
+msgstr "Значения OSM ``route`` сохраняемых отношений; по умолчанию все виды из ``DEFAULT_REGISTRY_W_TRAIN`` (bus, trolleybus, tram/light_rail, subway, monorail, train, taxi/share_taxi)."
+
+#, python-brace-format
+msgid "``{name: [relation ids]}`` relations to copy complete into that city's file, e.g. its boundary relation."
+msgstr "``{name: [relation ids]}`` — отношения, копируемые целиком в файл этого города, например отношение его границы."
+
+msgid "Replace existing output files."
+msgstr "Заменять существующие выходные файлы."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`dict\\`\\\\ \\\\\\[\\:py\\:class\\:\\`str\\`\\, \\:py\\:class\\:\\`\\~pathlib.Path\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`dict\\`\\\\ \\\\\\[\\:py\\:class\\:\\`str\\`\\, \\:py\\:class\\:\\`\\~pathlib.Path\\`\\]`"
+
+msgid "Returns"
+msgstr "Результат"
+
+#, python-brace-format
+msgid "``{name: path}`` of the written files."
+msgstr "``{name: path}`` записанных файлов."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "When pyosmium is not installed."
+msgstr "Если pyosmium не установлен."
+
+msgid "When an output exists and ``overwrite`` is False."
+msgstr "Если выходной файл существует, а ``overwrite`` равен False."
+

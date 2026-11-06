@@ -1,0 +1,145 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Benchmarks and Design Notes"
+msgstr "Бенчмарки и устройство"
+
+msgid "IduEdu is designed as a single Python pipeline for city-network analysis: OpenStreetMap extraction, graph construction, public-transport integration and large origin-destination computations all use the same `UrbanGraph` data model. The 2026 paper benchmark suite in `paper2026/` measures those stages from raw CSV outputs, with repeated runs and median values."
+msgstr "IduEdu задумана как единый конвейер на Python для анализа городских сетей: извлечение данных OpenStreetMap, построение графов, интеграция общественного транспорта и большие расчёты корреспонденций используют одну модель данных `UrbanGraph`. Набор бенчмарков статьи 2026 года в `paper2026/` измеряет эти этапы по исходным CSV-результатам, с повторными запусками и медианными значениями."
+
+msgid "The numbers below are not a general ranking of geospatial libraries. OSMnx remains a mature and widely used toolkit for street-network analysis. This comparison isolates one common workload: pedestrian graph construction from the same city-scale AOIs, using both `simplify=False` and `simplify=True` in IduEdu and OSMnx."
+msgstr "Приведённые ниже числа — не общий рейтинг геопространственных библиотек. OSMnx остаётся зрелым и широко используемым инструментом для анализа уличных сетей. Это сравнение выделяет одну типичную задачу: построение пешеходного графа для одних и тех же областей интереса масштаба города, с `simplify=False` и `simplify=True` в IduEdu и OSMnx."
+
+msgid "![Pedestrian graph construction benchmark](_static/benchmark_walk_summary.png)"
+msgstr "![Бенчмарк построения пешеходного графа](_static/benchmark_walk_summary.png)"
+
+msgid "Pedestrian graph construction benchmark"
+msgstr "Бенчмарк построения пешеходного графа"
+
+msgid "What IduEdu Adds"
+msgstr "Что добавляет IduEdu"
+
+msgid "`UrbanGraph`: a tabular graph representation backed by `GeoDataFrame` node and edge tables."
+msgstr "`UrbanGraph`: табличное представление графа на основе таблиц узлов и рёбер `GeoDataFrame`."
+
+msgid "Lazy CSR adjacency built directly from edge tables and reused by shortest-path routines."
+msgstr "Матрица смежности CSR, которая строится по требованию прямо из таблицы рёбер и повторно используется процедурами кратчайших путей."
+
+msgid "Street-graph builders for drive and walk networks from OSM with metric projection and optional simplification."
+msgstr "Построение автомобильных и пешеходных уличных графов по OSM в метрической проекции с необязательным упрощением."
+
+msgid "Static public-transport graph construction directly from OSM relations, without requiring GTFS. A separate GTFS builder is available, but it is not part of the reported benchmark workload."
+msgstr "Построение статического графа общественного транспорта прямо по отношениям OSM, без GTFS. Отдельная функция построения по GTFS есть, но в приведённый бенчмарк она не входит."
+
+msgid "Intermodal graph construction by projecting stops, platforms and subway access points onto the walking graph."
+msgstr "Построение интермодального графа проецированием остановок, платформ и входов в метро на пешеходный граф."
+
+msgid "OD-matrix computation on Numba-backed CSR kernels with cutoff thresholds and adaptive graph reversal."
+msgstr "Расчёт OD-матриц на ядрах CSR на Numba с порогами отсечения и адаптивным обращением графа."
+
+msgid "Optional NetworkX adapters for interoperability without using NetworkX as the internal graph representation."
+msgstr "Необязательные адаптеры NetworkX для совместимости, без использования NetworkX как внутреннего представления графа."
+
+msgid "Pedestrian Graph Construction"
+msgstr "Построение пешеходного графа"
+
+msgid "Benchmark B1 compares graph construction time, stored edge rows and a deterministic object-size estimate for the final in-memory geospatial graph representation. For IduEdu, the estimate covers `UrbanGraph` node and edge `GeoDataFrame` tables plus Shapely geometry coordinate buffers. For OSMnx, the estimate covers the returned `networkx.MultiDiGraph` dictionaries, attributes, geometry and coordinate buffers. It is not peak process RSS during construction."
+msgstr "Бенчмарк B1 сравнивает время построения графа, число хранимых строк рёбер и детерминированную оценку размера объектов итогового геопространственного представления графа в памяти. Для IduEdu оценка охватывает таблицы узлов и рёбер `GeoDataFrame` в `UrbanGraph` и буферы координат геометрий Shapely. Для OSMnx — словари, атрибуты, геометрии и буферы координат возвращаемого `networkx.MultiDiGraph`. Это не пиковый объём памяти процесса (RSS) во время построения."
+
+msgid "Without simplification, IduEdu's time ratio is highest in this workload: OSMnx takes **6.6-10.0x** longer across the tested cities, with a median ratio of **9.7x**. With simplification enabled, the ratio is **3.9-6.7x** with a median of **6.5x**. In both modes, the final graph representation has a roughly **10-12x** lower deterministic object-size estimate."
+msgstr "Без упрощения преимущество IduEdu по времени в этой задаче наибольшее: OSMnx работает в **6,6–10,0 раза** дольше в проверенных городах, медианное соотношение — **9,7 раза**. С упрощением соотношение составляет **3,9–6,7 раза** при медиане **6,5 раза**. В обоих режимах детерминированная оценка размера итогового представления графа примерно в **10–12 раз** меньше."
+
+msgid "Rows are lightly shaded by simplify mode. Ratios are `OSMnx / IduEdu`."
+msgstr "Строки слегка выделены цветом по режиму упрощения. Соотношения — `OSMnx / IduEdu`."
+
+msgid "Edge counts should be read as stored edge rows in each representation, not as an independent quality metric. `UrbanGraph` can encode bidirectional pedestrian edges with one row and an edge-direction column, while a directed multigraph representation commonly stores separate directed edge rows."
+msgstr "Число рёбер следует понимать как число хранимых строк рёбер в каждом представлении, а не как самостоятельный показатель качества. `UrbanGraph` может хранить двунаправленное пешеходное ребро одной строкой со столбцом направления, тогда как ориентированный мультиграф обычно хранит отдельные строки для каждого направления."
+
+msgid "Protocol"
+msgstr "Методика"
+
+msgid "All B1 measurements use the same area of interest per city. The benchmark suite downloads PBF files, extracts the PBF bounding box and uses that bounding box as the AOI for each library. Every measurement is repeated at least three times, and the documentation reports medians."
+msgstr "Все измерения B1 используют одну и ту же область интереса для каждого города. Набор бенчмарков скачивает файлы PBF, берёт ограничивающий прямоугольник PBF и использует его как область интереса для каждой библиотеки. Каждое измерение повторяется не менее трёх раз, в документации приведены медианы."
+
+msgid "Environment recorded for the B1 run:"
+msgstr "Окружение, записанное для запуска B1:"
+
+msgid "CPU class: Intel Core i7-12700F workstation, 64 GB RAM."
+msgstr "Процессор: рабочая станция Intel Core i7-12700F, 64 ГБ ОЗУ."
+
+msgid "Platform: Windows 10 / Windows 11 family."
+msgstr "Платформа: семейство Windows 10 / Windows 11."
+
+msgid "Python: 3.11.9."
+msgstr "Python: 3.11.9."
+
+msgid "IduEdu: 2.0.0."
+msgstr "IduEdu: 2.0.0."
+
+msgid "OSMnx: 2.1.1."
+msgstr "OSMnx: 2.1.1."
+
+msgid "NetworkX: 3.6.1."
+msgstr "NetworkX: 3.6.1."
+
+msgid "GeoPandas: 1.1.4."
+msgstr "GeoPandas: 1.1.4."
+
+msgid "Shapely: 2.1.2."
+msgstr "Shapely: 2.1.2."
+
+msgid "Raw results and environment captures are stored in:"
+msgstr "Исходные результаты и снимки окружения хранятся в:"
+
+msgid "`paper2026/results/build_benchmark.csv`"
+msgstr "`paper2026/results/build_benchmark.csv`"
+
+msgid "`paper2026/results/intermodal_benchmark.csv`"
+msgstr "`paper2026/results/intermodal_benchmark.csv`"
+
+msgid "`paper2026/results/od_benchmark.csv`"
+msgstr "`paper2026/results/od_benchmark.csv`"
+
+msgid "`paper2026/results/env_build.json`"
+msgstr "`paper2026/results/env_build.json`"
+
+msgid "OD Matrices"
+msgstr "OD-матрицы"
+
+msgid "IduEdu computes OD matrices directly on the graph representation produced by its builders. The CSR adjacency is built from `UrbanGraph.edges_gdf`, cached, and passed to Numba kernels without converting the graph into another library's format."
+msgstr "IduEdu рассчитывает OD-матрицы прямо на представлении графа, которое строят её функции. Матрица смежности CSR строится из `UrbanGraph.edges_gdf`, кешируется и передаётся ядрам Numba без преобразования графа в формат другой библиотеки."
+
+msgid "Two mechanisms are important for accessibility workloads:"
+msgstr "Для расчётов доступности важны два механизма:"
+
+msgid "Cutoff thresholds stop Dijkstra expansion once the travel-time or distance threshold is exceeded."
+msgstr "Пороги отсечения останавливают поиск Дейкстры, как только превышен порог времени в пути или расстояния."
+
+msgid "Adaptive graph reversal swaps origins and destinations on the transposed graph when `|origins|` is much larger than `|destinations|`, reducing the number of shortest-path launches."
+msgstr "Адаптивное обращение графа меняет местами точки отправления и назначения на транспонированном графе, когда `|origins|` намного больше `|destinations|`, и тем самым сокращает число запусков поиска кратчайших путей."
+
+msgid "The paper benchmark validates OD results against NetworkX on an identical graph: reachability sets match, and the maximum finite difference is about `3e-4` minutes, explained by `float32` arithmetic in the accelerated kernel versus the `float64` reference."
+msgstr "Бенчмарк статьи сверяет результаты OD с NetworkX на одинаковом графе: множества достижимости совпадают, а максимальная конечная разница составляет около `3e-4` минуты, что объясняется арифметикой `float32` в ускоренном ядре по сравнению с эталоном на `float64`."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "The public-transport graph used in these benchmarks is static and OSM-based. It does not model schedules, headways or time-dependent waiting. The optional GTFS builder estimates static boarding waits from a selected schedule window, but it is still not an exact time-dependent timetable router."
+msgstr "Граф общественного транспорта в этих бенчмарках статический и построен по OSM. Он не моделирует расписания, интервалы движения и зависящее от времени ожидание. Необязательная функция построения по GTFS оценивает статическое ожидание посадки по выбранному окну расписания, но и она не является точным маршрутизатором по расписанию с учётом времени."
+
+msgid "The benchmark advantages are strongest for large city graphs and batch computations such as OD matrices, many-source accessibility and repeated spatial analysis. For one-off route queries, specialized routing engines can still be the right tool, especially when schedule-aware or turn-cost routing is required."
+msgstr "Преимущества по бенчмаркам сильнее всего проявляются на больших городских графах и пакетных расчётах, таких как OD-матрицы, доступность от многих источников и повторяющийся пространственный анализ. Для разовых запросов маршрута специализированные движки маршрутизации могут оставаться верным выбором, особенно когда нужна маршрутизация по расписанию или с учётом стоимости поворотов."
+
