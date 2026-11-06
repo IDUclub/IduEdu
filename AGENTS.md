@@ -187,7 +187,8 @@ Network tests check real data only; options and edge cases belong in the unit te
 Pytest markers: `unit`, `integration`, `network`, `slow`, `numba`.
 
 Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `osm_source` (Overpass or the
-PBF fallback, active for the whole run), `bounds`, `intermodal_graph` (session-scoped, downloaded once per network run).
+PBF fallback; a `pytest_runtest_protocol` hook switches to the file only around network tests, so unit tests in the
+same run keep their mocked Overpass), `bounds`, `intermodal_graph` (session-scoped, downloaded once per network run).
 
 Object factories for unit tests: `tests/factories.py`.
 

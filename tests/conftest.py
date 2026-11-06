@@ -109,39 +109,76 @@ def territory_osm_id():
     return TERRITORY_OSM_ID  # OSM ID for https://www.openstreetmap.org/relation/1114252
 
 
-@pytest.fixture(scope="session")
-def osm_source(request, territory_osm_id):
-    """Where network tests read OSM data: Overpass, or the territory cut out of its Geofabrik extract.
+_OSM_SOURCE = pytest.StashKey[tuple[str, str | None]]()
 
-    With ``--osm-source=auto`` the extract is used only when Overpass does not answer. An OSM file selected
+
+def _network_osm_source(pytest_config) -> tuple[str, str | None]:
+    """Decide once per run where network tests read OSM data.
+
+    Returns ``("overpass", None)``, ``("pbf", path)`` or ``("skip", reason)``. With ``--osm-source=auto`` the
+    test territory is cut out of its Geofabrik extract only when Overpass does not answer. An OSM file selected
     through ``IDUEDU_OSM_SOURCE=pbf`` is kept as it is.
     """
+    if _OSM_SOURCE in pytest_config.stash:
+        return pytest_config.stash[_OSM_SOURCE]
+
+    import importlib.util
+
     import requests
 
-    from iduedu import config, download_osm_pbf, use_pbf
+    from iduedu import config, download_osm_pbf
 
-    choice = request.config.getoption("--osm-source")
+    choice = pytest_config.getoption("--osm-source")
     if config.osm_source == "pbf":
+        decision = ("pbf", config.pbf_path)
         print(f"\n OSM data from {config.pbf_path} \n")
-        yield config.pbf_path
-        return
-    if choice == "overpass" or (choice == "auto" and _overpass_available()):
+    elif choice == "overpass" or (choice == "auto" and _overpass_available()):
+        decision = ("overpass", None)
         print(f"\n OSM data from Overpass {config.overpass_url} \n")
-        yield "overpass"
-        return
+    elif importlib.util.find_spec("osmium") is None:
+        decision = ("skip", "Overpass is not used and the PBF fallback needs pyosmium: pip install 'iduedu[pbf]'")
+    else:
+        print(f"\n Overpass is not used; OSM data from the Geofabrik extract {TERRITORY_GEOFABRIK_REGION} \n")
+        try:
+            path = download_osm_pbf(osm_id=TERRITORY_OSM_ID, region=TERRITORY_GEOFABRIK_REGION)
+            decision = ("pbf", str(path))
+        except requests.RequestException as exc:
+            decision = ("skip", f"Overpass is not used and the Geofabrik extract could not be downloaded: {exc}")
+    pytest_config.stash[_OSM_SOURCE] = decision
+    return decision
 
-    pytest.importorskip("osmium", reason="the PBF fallback needs pyosmium: pip install 'iduedu[pbf]'")
-    print(f"\n Overpass is not used; OSM data from the Geofabrik extract {TERRITORY_GEOFABRIK_REGION} \n")
-    try:
-        path = download_osm_pbf(osm_id=territory_osm_id, region=TERRITORY_GEOFABRIK_REGION)
-    except requests.RequestException as exc:
-        pytest.skip(f"Overpass is not used and the Geofabrik extract could not be downloaded: {exc}")
-    with use_pbf(path):
-        yield str(path)
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_protocol(item, nextitem):  # pylint: disable=unused-argument
+    """Run each network test, with its fixture setup and teardown, on the chosen OSM source.
+
+    The switch to the PBF file covers only network tests: unit tests in the same run keep the default source
+    and their mocked Overpass responses.
+    """
+    if "network" not in item.keywords or item.get_closest_marker("skip"):
+        yield
+        return
+    from iduedu import config, use_pbf
+
+    kind, value = _network_osm_source(item.config)
+    if kind == "skip":
+        item.add_marker(pytest.mark.skip(reason=value))
+    if kind != "pbf" or config.osm_source == "pbf":
+        yield
+        return
+    with use_pbf(value):
+        yield
 
 
 @pytest.fixture(scope="session")
-def bounds(territory_osm_id, osm_source):  # pylint: disable=unused-argument
+def osm_source(request):
+    """``"overpass"`` or the path of the OSM file the network tests read."""
+    kind, value = _network_osm_source(request.config)
+    return value if kind == "pbf" else kind
+
+
+@pytest.fixture(scope="session")
+def bounds(territory_osm_id):
     from iduedu import get_4326_boundary
 
     print(f"\n Downloading boundary {territory_osm_id} \n")
