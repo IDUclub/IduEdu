@@ -2,6 +2,67 @@
 
 <!-- version list -->
 
+## v2.4.2 (2026-11-06)
+
+### Bug Fixes
+
+- **config**: Use_pbf downloads the territory itself, PBF fallback for network tests, Russian docs
+  ([#29](https://github.com/IDUclub/IduEdu/pull/29),
+  [`470bbee`](https://github.com/IDUclub/IduEdu/commit/470bbee50ea4dc93ad50ff1e69cea7f908dec463))
+
+* fix(config): use_pbf downloads the territory itself and is exported as iduedu.use_pbf
+
+use_pbf takes either a path, as before, or the arguments of download_osm_pbf (osm_id, territory,
+  region, update, ...) and downloads and cuts the territory before switching to it. Passing both, or
+  neither, raises ValueError. iduedu.use_pbf is a shortcut for config.use_pbf on the global config.
+
+Closes #28
+
+* fix(nx_utils): use quad_segs instead of the deprecated buffer resolution argument
+
+* test: run network tests on the Geofabrik extract when Overpass does not answer
+
+The session fixture osm_source probes the configured Overpass instance with one tiny query. When it
+  does not answer, the test territory is cut out of the northwestern-fed-district extract (cached
+  under .iduedu_cache/geofabrik) and every network test reads it through use_pbf.
+  --osm-source=overpass|pbf|auto forces a source; IDUEDU_OSM_SOURCE=pbf is respected. Without
+  pyosmium, or when Geofabrik is unreachable as well, the network tests are skipped.
+
+* test: keep only real-data checks in the network tests
+
+Drop network tests that repeat unit tests with mocked responses (road category, clipping, walk
+  speed, registry wait times, unknown transport type), fold the boundary test into the builder tests
+  with real assertions, parametrize the OD-matrix shapes and stop forcing DEBUG logging on import.
+
+* test: switch to the PBF fallback only around network tests
+
+The session fixture kept config.osm_source at "pbf" until the end of the run, so unit tests
+  collected after the network modules (osm_pbf download, Overpass downloaders) read the file instead
+  of their mocked Overpass responses and failed in CI, where Overpass did not answer. A
+  pytest_runtest_protocol hook now decides the source once and wraps only network tests, with their
+  fixture setup and teardown, in use_pbf.
+
+* docs: build the documentation in English and Russian
+
+Sphinx gettext with one catalogue per page in docs/locale/ru/LC_MESSAGES. docs/i18n.py update
+  extracts the text and merges it into the catalogues (new messages empty, changed ones fuzzy with
+  the old translation); check fails while anything is missing, untranslated or fuzzy, and keeps
+  containers of nested parameter lists unchanged. The Russian site is built into html/ru, a sidebar
+  switch links each page to the other language, the docs workflow runs the check on pull requests
+  and builds and publishes both sites. CONTRIBUTING, AGENTS and the new pull request template
+  require translating every change of English text.
+
+* docs: translate the documentation into Russian
+
+Pages, notebook text and the docstrings shown by autodoc. Roles in the translations of MyST pages
+  use MyST syntax, as Sphinx parses them as Markdown.
+
+### Documentation
+
+- **paper**: Move the study pipeline to paper2026/pipeline and the timing benchmarks to timing/
+  ([`e79d352`](https://github.com/IDUclub/IduEdu/commit/e79d352509cb6313c2f041e6d505ec517b7c8a4b))
+
+
 ## v2.4.1 (2026-11-05)
 
 ### Bug Fixes
