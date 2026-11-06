@@ -62,6 +62,9 @@ uv run pytest tests/test_urban_graph_unit.py -k "test_name" -v
 # Run network tests (calls Overpass API — requires internet)
 uv run pytest --run-network
 
+# Network tests on the Geofabrik extract instead of Overpass (auto, the default, falls back to it when Overpass is down)
+uv run pytest --run-network --osm-source=pbf
+
 # Run with coverage
 uv run pytest --cov=iduedu --cov-report=term-missing
 
@@ -175,13 +178,16 @@ bus/trolleybus/tram/subway/monorail/taxi; `DEFAULT_REGISTRY_W_TRAIN` adds train.
 
 ### Test organization
 
-Tests are split into `_unit` (no network, fast) and `_network` (calls Overpass). Network test modules are listed in
-`conftest.py::NETWORK_ONLY_TEST_MODULES` and are excluded from collection unless `--run-network` is passed.
+Tests are split into `_unit` (no network, fast) and `_network` (real OSM data). Network test modules are listed in
+`conftest.py::NETWORK_ONLY_TEST_MODULES` and are excluded from collection unless `--run-network` is passed. They read
+Overpass, or the test territory cut out of its Geofabrik extract (`northwestern-fed-district`, about 650 MB, cached in
+`.iduedu_cache/geofabrik/`, needs pyosmium) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
+Network tests check real data only; options and edge cases belong in the unit tests with mocked responses.
 
 Pytest markers: `unit`, `integration`, `network`, `slow`, `numba`.
 
-Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `bounds`, `intermodal_graph` (
-session-scoped, downloaded once per network run).
+Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `osm_source` (Overpass or the
+PBF fallback, active for the whole run), `bounds`, `intermodal_graph` (session-scoped, downloaded once per network run).
 
 Object factories for unit tests: `tests/factories.py`.
 

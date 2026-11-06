@@ -24,7 +24,7 @@ uv sync --all-groups     # or: make install-dev
 |-------------------------|---------------------|---------------------------------------------------|
 | Fast tests (no network) | `make test`         | default loop; excludes Overpass tests             |
 | Unit tests only         | `make test-unit`    |                                                   |
-| Network tests           | `make test-network` | calls the Overpass API; needs internet            |
+| Network tests           | `make test-network` | Overpass, or a Geofabrik extract if it is down    |
 | All tests               | `make test-all`     | `pytest --run-network`                            |
 | Coverage (terminal)     | `make coverage`     | fast subset                                       |
 | Coverage for CI         | `make coverage-xml` | **includes network tests**, writes `coverage.xml` |

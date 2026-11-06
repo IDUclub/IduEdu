@@ -33,11 +33,13 @@ if "NUMBA_CACHE_DIR" not in os.environ:
 import numba  # noqa: E402  pylint: disable=wrong-import-position
 
 NETWORK_ONLY_TEST_MODULES = {
-    "test_downloaders_network.py",
     "test_graph_builders_network.py",
     "test_matrix_network.py",
-    "test_nx_utils_network.py",
 }
+
+# The Geofabrik extract that covers the test territory, read when Overpass is unavailable.
+TERRITORY_OSM_ID = 1114252
+TERRITORY_GEOFABRIK_REGION = "northwestern-fed-district"
 
 
 def pytest_addoption(parser):
@@ -46,6 +48,13 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="run tests that may call Overpass or depend on downloaded graph data",
+    )
+    parser.addoption(
+        "--osm-source",
+        choices=("auto", "overpass", "pbf"),
+        default="auto",
+        help="OSM data for network tests: Overpass, the Geofabrik extract of the test territory, "
+        "or Overpass with the extract as a fallback when Overpass does not answer (auto, the default)",
     )
 
 
@@ -75,13 +84,64 @@ def _numba_threads():
     numba.set_num_threads(previous)
 
 
+def _overpass_available() -> bool:
+    """One tiny query: True when the configured Overpass instance answers it."""
+    import requests
+
+    from iduedu import config
+
+    try:
+        response = requests.post(
+            config.overpass_url,
+            data={"data": "[out:json][timeout:20];node(1);out ids;"},
+            timeout=30,
+            headers={"User-Agent": config.user_agent},
+            proxies=config.proxies,
+            verify=config.verify_ssl,
+        )
+    except requests.RequestException:
+        return False
+    return response.status_code == 200
+
+
 @pytest.fixture(scope="session")
 def territory_osm_id():
-    return 1114252  # OSM ID for https://www.openstreetmap.org/relation/1114252
+    return TERRITORY_OSM_ID  # OSM ID for https://www.openstreetmap.org/relation/1114252
 
 
 @pytest.fixture(scope="session")
-def bounds(territory_osm_id):
+def osm_source(request, territory_osm_id):
+    """Where network tests read OSM data: Overpass, or the territory cut out of its Geofabrik extract.
+
+    With ``--osm-source=auto`` the extract is used only when Overpass does not answer. An OSM file selected
+    through ``IDUEDU_OSM_SOURCE=pbf`` is kept as it is.
+    """
+    import requests
+
+    from iduedu import config, download_osm_pbf, use_pbf
+
+    choice = request.config.getoption("--osm-source")
+    if config.osm_source == "pbf":
+        print(f"\n OSM data from {config.pbf_path} \n")
+        yield config.pbf_path
+        return
+    if choice == "overpass" or (choice == "auto" and _overpass_available()):
+        print(f"\n OSM data from Overpass {config.overpass_url} \n")
+        yield "overpass"
+        return
+
+    pytest.importorskip("osmium", reason="the PBF fallback needs pyosmium: pip install 'iduedu[pbf]'")
+    print(f"\n Overpass is not used; OSM data from the Geofabrik extract {TERRITORY_GEOFABRIK_REGION} \n")
+    try:
+        path = download_osm_pbf(osm_id=territory_osm_id, region=TERRITORY_GEOFABRIK_REGION)
+    except requests.RequestException as exc:
+        pytest.skip(f"Overpass is not used and the Geofabrik extract could not be downloaded: {exc}")
+    with use_pbf(path):
+        yield str(path)
+
+
+@pytest.fixture(scope="session")
+def bounds(territory_osm_id, osm_source):  # pylint: disable=unused-argument
     from iduedu import get_4326_boundary
 
     print(f"\n Downloading boundary {territory_osm_id} \n")
