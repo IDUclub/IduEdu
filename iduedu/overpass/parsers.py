@@ -142,18 +142,30 @@ def overpass_routes_to_df(json_routes: list[dict], enable_subway_details: bool) 
     return data
 
 
+def _transform_points(points, transformer) -> list[tuple[float, float]]:
+    """Project a list of ``{"lon": ..., "lat": ...}`` points in one call."""
+    if not points:
+        return []
+    xs, ys = transformer.transform([pt["lon"] for pt in points], [pt["lat"] for pt in points])
+    return list(zip(np.atleast_1d(xs).tolist(), np.atleast_1d(ys).tolist()))
+
+
 def transform_geometry(loc, transformer):
     """Transform an Overpass node or way geometry and return projected coordinates."""
     if isinstance(loc["geometry"], float):
         return transformer.transform(loc["lon"], loc["lat"])
-    p = LineString([transformer.transform(coords["lon"], coords["lat"]) for coords in loc["geometry"]]).centroid
+    p = LineString(_transform_points(loc["geometry"], transformer)).centroid
     return p.x, p.y
 
 
 def process_roles(route, roles, transformer):
     """Extract projected member coordinates and references for selected roles."""
     filtered = route[route["role"].isin(roles)]
-    return filtered.apply(transform_geometry, transformer=transformer, axis=1).tolist(), filtered["ref"].tolist()
+    coords = [
+        transform_geometry({"geometry": geometry, "lon": lon, "lat": lat}, transformer)
+        for geometry, lon, lat in zip(filtered["geometry"], filtered["lon"], filtered["lat"])
+    ]
+    return coords, filtered["ref"].tolist()
 
 
 def side_left_or_right(point, path):
@@ -511,6 +523,33 @@ def _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs):
     return items, matched_p, matched_s
 
 
+def _vertex_distances(coords: np.ndarray) -> np.ndarray:
+    """Distance of every vertex along the line, summed the way ``shapely.ops.substring`` sums it."""
+    # ``** 0.5`` per segment as in shapely, not np.sqrt: the two can differ in the last bit, which decides whether a
+    # vertex exactly at a stop is kept.
+    xy = coords.tolist()
+    lengths = [((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 for (x1, y1), (x2, y2) in zip(xy, xy[1:])]
+    return np.concatenate([[0.0], np.cumsum(lengths)])
+
+
+def _substring(coords: np.ndarray, vertex_dist: np.ndarray, start: float, end: float, start_point, end_point):
+    """``shapely.ops.substring(line, start, end)`` with its end points given (``line.interpolate`` of both).
+
+    Same vertices as shapely (those strictly between the two distances), found by binary search on precomputed
+    vertex distances instead of a walk over the whole line per call, which made route parsing quadratic.
+    """
+    if start == end:
+        point = (start_point.x, start_point.y)
+        return LineString([point, point])
+    low, high = (start, end) if start < end else (end, start)
+    first = np.searchsorted(vertex_dist, low, side="right")
+    last = min(np.searchsorted(vertex_dist, high, side="left"), len(coords) - 1)
+    inner = coords[first:last]
+    if start > end:
+        inner = inner[::-1]
+    return LineString(np.vstack([[(start_point.x, start_point.y)], inner, [(end_point.x, end_point.y)]]))
+
+
 def _speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
 
     if b < a:
@@ -599,13 +638,11 @@ def overpass_ground_transport2edgenode(
     if len(ways_df) == 0 or not (platforms or stops):
         return gpd.GeoDataFrame(), gpd.GeoDataFrame()
 
-    ways_df["speed"] = ways_df["ref"].map(ref2speed)
-
-    ways = []
-    for _, r in ways_df.reset_index(drop=True).iterrows():
-        g = r["geometry"]
-        coords = [transformer.transform(pt["lon"], pt["lat"]) for pt in g]
-        ways.append((coords, float(r["speed"])))
+    # dict.get per way: Series.map(dict) turns the whole (city-sized) dict into a Series on every call.
+    ways = [
+        (_transform_points(geometry, transformer), float(ref2speed.get(ref, np.nan)))
+        for ref, geometry in zip(ways_df["ref"], ways_df["geometry"])
+    ]
 
     connected_ways = [{"coords": [], "speeds": []}]
     cur_way = 0
@@ -724,13 +761,16 @@ def overpass_ground_transport2edgenode(
     groups, reversed_parts = _pairs_by_part(stop_plat_pairs, paths, _member_rank(route))
     for part_index, part_pairs in groups:
         path = paths[part_index]
-        steps = np.diff(np.asarray(path.coords), axis=0)
+        path_coords = np.asarray(path.coords)
+        steps = np.diff(path_coords, axis=0)
         cumdist = np.concatenate([[0.0], np.cumsum(np.hypot(steps[:, 0], steps[:, 1]))])
+        vertex_dist = _vertex_distances(path_coords)
         seg_speeds = np.asarray(parts[part_index]["speeds"][:-1], dtype=float)
         if part_index in reversed_parts:
             seg_speeds = seg_speeds[::-1]
         last_dist = None
         last_projected_stop_id = None
+        last_projected_stop = None
 
         for item in part_pairs:
             plat_xy = item["p"]
@@ -755,9 +795,7 @@ def overpass_ground_transport2edgenode(
             add_node(node_id=stop_ref, point=projected_stop, node_type=transport_type)
 
             if last_dist is not None:
-                seg = substring(path, last_dist, stop_dist)
-                if isinstance(seg, Point):
-                    seg = LineString((seg, seg))
+                seg = _substring(path_coords, vertex_dist, last_dist, stop_dist, last_projected_stop, projected_stop)
                 v_avg = _speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
 
                 add_edge(
@@ -770,6 +808,7 @@ def overpass_ground_transport2edgenode(
                 )
 
             last_projected_stop_id = stop_ref
+            last_projected_stop = projected_stop
             last_dist = stop_dist
 
             add_node(node_id=plat_ref, point=platform, node_type="platform")

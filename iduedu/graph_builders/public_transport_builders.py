@@ -29,12 +29,40 @@ logger = config.logger
 DEFAULT_WALK_SPEED_M_PER_MIN = 5 * 1000 / 60
 
 
-def _merge_dicts_last(dicts):
-    out = {}
-    for d in dicts.dropna():
-        for k, v in d.items():
-            out[k] = v
-    return out
+def _aggregate_nodes(nodes: pd.DataFrame, keys: list[str], *, dropna: bool, with_routes: bool) -> pd.DataFrame:
+    """``nodes.groupby(keys, as_index=False).agg(...)`` of the node merge, without a Python call per group.
+
+    One row per group in sorted key order: the keys, the first geometry, the tuple of non-missing node ids
+    (and of all routes, with ``with_routes``) in row order, and the extra-data dicts merged with later keys
+    winning.
+    """
+    columns = keys + ["geometry", "node_id"] + (["route"] if with_routes else []) + ["extra_data"]
+    codes = nodes.groupby(keys, sort=True, dropna=dropna).ngroup().to_numpy()
+    kept = np.flatnonzero(codes >= 0)  # rows with a missing key are dropped when dropna
+    if len(kept) == 0:
+        return pd.DataFrame(columns=columns)
+    order = kept[np.argsort(codes[kept], kind="stable")]
+    starts = np.flatnonzero(np.r_[True, np.diff(codes[order]) != 0])
+    ends = np.r_[starts[1:], len(order)]
+    firsts = order[starts]
+    result = nodes.iloc[firsts][keys + ["geometry"]].reset_index(drop=True)
+
+    def chunks(column):
+        values = nodes[column].to_numpy(dtype=object)[order].tolist()
+        return [values[a:b] for a, b in zip(starts, ends)]
+
+    result["node_id"] = [tuple(v for v in chunk if not _is_missing(v)) for chunk in chunks("node_id")]
+    if with_routes:
+        result["route"] = [tuple(chunk) for chunk in chunks("route")]
+    merged = []
+    for chunk in chunks("extra_data"):
+        out = {}
+        for item in chunk:
+            if isinstance(item, dict):
+                out.update(item)
+        merged.append(out)
+    result["extra_data"] = merged
+    return result[columns]
 
 
 def _is_missing(value) -> bool:
@@ -130,20 +158,13 @@ def _graph_data_to_urban_graph(
     if "extra_data" not in graph_nodes_gdf.columns:
         graph_nodes_gdf["extra_data"] = [{} for _ in range(len(graph_nodes_gdf))]
 
-    platforms = graph_nodes_gdf[graph_nodes_gdf["type"] == "platform"].copy()
-    platforms = platforms.groupby(["_x_group", "_y_group"], as_index=False).agg(
-        geometry=("geometry", "first"),
-        node_id=("node_id", lambda s: tuple(s.dropna())),
-        route=("route", lambda s: tuple(s)),
-        extra_data=("extra_data", _merge_dicts_last),
-    )
+    platforms = graph_nodes_gdf[graph_nodes_gdf["type"] == "platform"]
+    platforms = _aggregate_nodes(platforms, ["_x_group", "_y_group"], dropna=True, with_routes=True)
     platforms["type"] = "platform"
 
-    not_platforms = graph_nodes_gdf[graph_nodes_gdf["type"] != "platform"].copy()
-    not_platforms = not_platforms.groupby(["_x_group", "_y_group", "route", "type"], as_index=False, dropna=False).agg(
-        geometry=("geometry", "first"),
-        node_id=("node_id", lambda s: tuple(s.dropna())),
-        extra_data=("extra_data", _merge_dicts_last),
+    not_platforms = graph_nodes_gdf[graph_nodes_gdf["type"] != "platform"]
+    not_platforms = _aggregate_nodes(
+        not_platforms, ["_x_group", "_y_group", "route", "type"], dropna=False, with_routes=False
     )
 
     all_nodes = gpd.GeoDataFrame(
