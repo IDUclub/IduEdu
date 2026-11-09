@@ -60,8 +60,8 @@ pip install iduedu
 ```
 
 > Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy);
-> the graph algorithms are compiled from Rust and ship inside the wheels. Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from
-> local `.osm.pbf` files instead of Overpass (see [Configuration](configuration.md)). NetworkX is not installed with
+> the graph algorithms are compiled from Rust and ship inside the wheels. Install `iduedu[io]` to read and write `.urbangraph` archives. Reading OSM data
+> from local `.osm.pbf` files instead of Overpass needs nothing extra (see [Configuration](configuration.md)). NetworkX is not installed with
 > IduEdu; install it separately to use the optional NetworkX helpers.
 
 ---

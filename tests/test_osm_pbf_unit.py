@@ -10,15 +10,14 @@ the element sets written out by hand below, independently of the pbf reader's ow
 import datetime as dt
 from pathlib import Path
 
+import numpy as np
 import pytest
+from geopandas.testing import assert_geodataframe_equal
+from shapely import Polygon, box
 
-osmium = pytest.importorskip("osmium")
-
-from geopandas.testing import assert_geodataframe_equal  # noqa: E402  pylint: disable=wrong-import-position
-from shapely import Polygon, box  # noqa: E402  pylint: disable=wrong-import-position
-
-from iduedu import (  # noqa: E402  pylint: disable=wrong-import-position
+from iduedu import (
     PbfSource,
+    _rust,
     config,
     get_4326_boundary,
     get_drive_graph,
@@ -27,17 +26,14 @@ from iduedu import (  # noqa: E402  pylint: disable=wrong-import-position
     snapshot_time,
     split_by_polygons,
 )
-from iduedu.constants.network_enums import Network  # noqa: E402  pylint: disable=wrong-import-position
-from iduedu.osm_pbf.filters import (  # noqa: E402  pylint: disable=wrong-import-position
-    UnsupportedFilterError,
-    parse_way_filter,
-)
-from iduedu.overpass import downloaders  # noqa: E402  pylint: disable=wrong-import-position
+from iduedu.constants.network_enums import Network
+from iduedu.osm_pbf.filters import UnsupportedFilterError, parse_way_filter
+from iduedu.overpass import downloaders
 
 pytestmark = pytest.mark.unit
 
 POLY = box(30.300, 59.930, 30.320, 59.940)
-TIMESTAMP = "2026-10-01T20:21:02Z"
+TIMESTAMP = int(dt.datetime(2026, 10, 1, 20, 21, 2, tzinfo=dt.UTC).timestamp())
 PT_TYPES = ["bus", "trolleybus", "tram", "subway"]
 
 
@@ -49,12 +45,8 @@ _TYPE_NAME = {"n": "node", "w": "way", "r": "relation"}
 _TYPE_ORDER = {"n": 0, "w": 1, "r": 2}
 
 
-def _opl_escape(text: str) -> str:
-    return "".join(c if (c.isascii() and (c.isalnum() or c in "_-.:")) else f"%{ord(c):x}%" for c in str(text))
-
-
 class OsmData:
-    """Nodes, ways and relations held in Python, written to OPL/PBF and rendered as Overpass JSON."""
+    """Nodes, ways and relations held in Python, written to a .pbf file and rendered as Overpass JSON."""
 
     def __init__(self):
         self.nodes = {}  # id -> (lon, lat, tags)
@@ -74,39 +66,11 @@ class OsmData:
         return rid
 
     # ----- files -----
-    @staticmethod
-    def _tags(tags):
-        return ",".join(f"{_opl_escape(k)}={_opl_escape(v)}" for k, v in tags.items())
-
-    def write_opl(self, path: Path, exclude=()) -> Path:
-        lines = []
-        for nid in sorted(self.nodes):
-            if ("n", nid) in exclude:
-                continue
-            lon, lat, tags = self.nodes[nid]
-            lines.append(f"n{nid} v1 x{lon:.7f} y{lat:.7f} T{self._tags(tags)}")
-        for wid in sorted(self.ways):
-            if ("w", wid) in exclude:
-                continue
-            refs, tags = self.ways[wid]
-            lines.append(f"w{wid} v1 T{self._tags(tags)} N{','.join(f'n{r}' for r in refs)}")
-        for rid in sorted(self.rels):
-            if ("r", rid) in exclude:
-                continue
-            members, tags = self.rels[rid]
-            mem = ",".join(f"{t}{ref}@{_opl_escape(role)}" for t, ref, role in members)
-            lines.append(f"r{rid} v1 T{self._tags(tags)} M{mem}")
-        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        return path
-
-    def write_pbf(self, path: Path, timestamp: str | None = TIMESTAMP) -> Path:
-        opl = self.write_opl(path.with_suffix(".src.opl"))
-        header = osmium.io.Header()
-        if timestamp:
-            header.set("osmosis_replication_timestamp", timestamp)
-        with osmium.SimpleWriter(str(path), header=header, overwrite=True) as writer:
-            for obj in osmium.FileProcessor(str(opl)):
-                writer.add(obj)
+    def write_pbf(self, path: Path, timestamp: int | None = TIMESTAMP) -> Path:
+        nodes = [(nid, lon, lat, list(tags.items())) for nid, (lon, lat, tags) in sorted(self.nodes.items())]
+        ways = [(wid, refs, list(tags.items())) for wid, (refs, tags) in sorted(self.ways.items())]
+        rels = [(rid, members, list(tags.items())) for rid, (members, tags) in sorted(self.rels.items())]
+        _rust.write_pbf(path, nodes, ways, rels, replication_timestamp=timestamp)
         return path
 
     # ----- Overpass JSON, as the Overpass API prints it -----
@@ -543,8 +507,7 @@ def test_way_shape_written_out_literally(city_pbf):
     }
 
 
-@pytest.mark.parametrize("suffix", [".opl", ".osm.pbf"])  # pyosmium and the Rust reader
-def test_poly_semantics_for_ways(tmp_path, suffix):
+def test_poly_semantics_for_ways(tmp_path):
     d = OsmData()
     d.node(1, 0.5, 0.5)  # inside
     d.node(2, 2.0, 0.5)
@@ -557,7 +520,7 @@ def test_poly_semantics_for_ways(tmp_path, suffix):
     d.way(12, [4, 5], {"highway": "c"})  # outside
     d.way(13, [6], {"highway": "d"})  # a single node on the boundary
     d.way(14, [2, 6, 4], {"highway": "e"})  # touches the boundary
-    path = d.write_opl(tmp_path / "poly.opl") if suffix == ".opl" else d.write_pbf(tmp_path / "poly.osm.pbf")
+    path = d.write_pbf(tmp_path / "poly.osm.pbf")
     square = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)], holes=[[(0.4, 0.4), (0.6, 0.4), (0.6, 0.6), (0.4, 0.6)]])
     ids = [w["id"] for w in PbfSource(path).ways_by_filter(square, '["highway"]')]
     # Holes are ignored, as the Overpass downloaders send only the exterior ring.
@@ -612,9 +575,25 @@ def test_boundary_returns_relation_out_geom(city, city_pbf):
     assert src.boundary(999999) == []
 
 
-def test_pbf_source_missing_file(tmp_path):
+def test_pbf_source_missing_or_foreign_file(tmp_path):
     with pytest.raises(FileNotFoundError):
         PbfSource(tmp_path / "missing.osm.pbf")
+    xml = tmp_path / "city.osm"
+    xml.write_text("<osm version='0.6'></osm>", encoding="utf-8")
+    with pytest.raises(ValueError, match="osmium cat city.osm -o city.osm.pbf"):
+        PbfSource(xml)
+
+
+def test_location_storage_is_deprecated(city_pbf):
+    with pytest.warns(DeprecationWarning, match="3.1"):
+        PbfSource(city_pbf, location_storage="flex_mem")
+
+
+def test_repeated_queries_use_the_block_index(city, city_pbf):
+    src = PbfSource(city_pbf)
+    first = src.routes_by_poly(POLY, PT_TYPES)
+    assert src.routes_by_poly(POLY, PT_TYPES) == first == city.ov_routes(GROUND_ROUTES, STOP_AREA_LIKE, GROUPS)
+    assert src.ways_by_filter(POLY, Network.WALK.filter) == [city.ov_way_geom(w) for w in WALK_WAYS]
 
 
 # ---------------------------------------------------------------------------
@@ -678,15 +657,17 @@ def test_member_fallback_reads_the_file(city, city_pbf, no_overpass):
 # ---------------------------------------------------------------------------
 
 
-def _ids(path):
-    out = {"n": set(), "w": set(), "r": set()}
-    for obj in osmium.FileProcessor(str(path)):
-        out[obj.type_str()].add(obj.id)
-    return out
+def _ids(path, data):
+    """Ids of the nodes, ways and relations of ``data`` that the file holds."""
+    file = _rust.PbfFile(path)
+    return {
+        "n": set(file.nodes(np.asarray(sorted(data.nodes), dtype=np.int64))[0].tolist()),
+        "w": set(file.ways(locations=False, tags=False)[0].tolist()),
+        "r": set(file.relations()[0].tolist()),
+    }
 
 
-@pytest.fixture(scope="module")
-def region_pbf(city, tmp_path_factory):
+def _region_data():
     d = build_city()
     # Things far from the city, in the same regional file.
     d.node(901, 31.000, 60.500)
@@ -694,7 +675,12 @@ def region_pbf(city, tmp_path_factory):
     d.node(903, 31.010, 60.5001, {"highway": "bus_stop"})
     d.way(910, [901, 902], {"highway": "residential"})
     d.rel(1090, [("n", 902, "stop"), ("n", 903, "platform"), ("w", 910, "")], {"type": "route", "route": "bus"})
-    return d.write_pbf(tmp_path_factory.mktemp("region") / "region.osm.pbf")
+    return d
+
+
+@pytest.fixture(scope="module")
+def region_pbf(city, tmp_path_factory):
+    return _region_data().write_pbf(tmp_path_factory.mktemp("region") / "region.osm.pbf")
 
 
 @pytest.fixture(scope="module")
@@ -704,7 +690,6 @@ def split_city(region_pbf, tmp_path_factory):
         region_pbf,
         {"city": POLY},
         out_dir,
-        location_storage="sparse_file_array",
         keep_relations={"city": [1020]},
     )
     return paths["city"]
@@ -712,8 +697,7 @@ def split_city(region_pbf, tmp_path_factory):
 
 def test_split_writes_compact_complete_city_files(split_city, region_pbf):
     assert split_city.name == "city.osm.pbf"
-    assert not list(split_city.parent.glob("*.idx"))  # the temporary node index is removed
-    ids = _ids(split_city)
+    ids = _ids(split_city, _region_data())
     # Bus 2 leaves the polygon: the relation, its far way, the way's nodes and its far stops are all there.
     assert {1002, 1001, 1003, 1005, 1010, 1011, 1012, 1013, 1020} <= ids["r"]
     assert {131, 130, 160} <= ids["w"]
@@ -725,12 +709,14 @@ def test_split_writes_compact_complete_city_files(split_city, region_pbf):
     assert 180 not in ids["w"] and 71 not in ids["n"]
     # Referential completeness: every way node and every node/way member is in the file.
     nodes, ways = ids["n"], ids["w"]
-    for obj in osmium.FileProcessor(str(split_city)):
-        if obj.is_way():
-            assert all(n.ref in nodes for n in obj.nodes)
-        elif obj.is_relation() and obj.id != 1013:
-            for m in obj.members:
-                assert (m.type == "n" and m.ref in nodes) or (m.type == "w" and m.ref in ways) or m.type == "r"
+    file = _rust.PbfFile(split_city)
+    assert set(file.ways(locations=False, tags=False)[2].tolist()) <= nodes
+    rel_ids, offsets, types, refs, _, _ = file.relations()
+    for i, rid in enumerate(rel_ids.tolist()):
+        if rid == 1013:
+            continue
+        for kind, ref in zip(types[offsets[i] : offsets[i + 1]].tolist(), refs[offsets[i] : offsets[i + 1]].tolist()):
+            assert (kind == 0 and ref in nodes) or (kind == 1 and ref in ways) or kind == 2
 
 
 def test_split_city_file_answers_like_the_region(split_city, region_pbf, no_overpass):
@@ -750,6 +736,11 @@ def test_split_keeps_the_snapshot_time(split_city, region_pbf):
     assert snapshot_time(split_city) == snapshot_time(region_pbf) == dt.datetime(2026, 10, 1, 20, 21, 2, tzinfo=dt.UTC)
 
 
+def test_split_location_storage_is_deprecated(region_pbf, tmp_path):
+    with pytest.warns(DeprecationWarning, match="location_storage"):
+        split_by_polygons(region_pbf, {"a": POLY}, tmp_path, location_storage="flex_mem")
+
+
 def test_split_validates_names_and_existing_files(region_pbf, tmp_path):
     with pytest.raises(ValueError):
         split_by_polygons(region_pbf, {"a/b": POLY}, tmp_path)
@@ -765,7 +756,7 @@ def test_split_several_cities_in_one_pass(region_pbf, tmp_path):
     west = box(30.300, 59.930, 30.307, 59.940)
     far = box(30.990, 60.490, 31.020, 60.510)
     paths = split_by_polygons(region_pbf, {"west": west, "far": far}, tmp_path)
-    west_ids, far_ids = _ids(paths["west"]), _ids(paths["far"])
+    west_ids, far_ids = _ids(paths["west"], _region_data()), _ids(paths["far"], _region_data())
     assert 1090 in far_ids["r"] and 910 in far_ids["w"] and 1001 not in far_ids["r"]
     assert 1090 not in west_ids["r"] and 1001 in west_ids["r"]
     assert 113 not in west_ids["w"]  # column 2 lies east of the western polygon
@@ -779,9 +770,14 @@ def test_split_several_cities_in_one_pass(region_pbf, tmp_path):
 def test_snapshot_time_from_header(tmp_path):
     d = OsmData()
     d.node(1, 0.0, 0.0)
-    with_ts = d.write_pbf(tmp_path / "a.osm.pbf", timestamp="2026-09-30T23:59:59Z")
+    with_ts = d.write_pbf(
+        tmp_path / "a.osm.pbf", timestamp=int(dt.datetime(2026, 9, 30, 23, 59, 59, tzinfo=dt.UTC).timestamp())
+    )
     without = d.write_pbf(tmp_path / "b.osm.pbf", timestamp=None)
     assert snapshot_time(with_ts) == dt.datetime(2026, 9, 30, 23, 59, 59, tzinfo=dt.UTC)
     assert PbfSource(with_ts).snapshot_time() == snapshot_time(with_ts)
     assert snapshot_time(without) is None
-    assert snapshot_time(d.write_opl(tmp_path / "c.opl")) is None
+    opl = tmp_path / "c.opl"
+    opl.write_text("n1 v1 x0 y0\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="osm.pbf"):
+        snapshot_time(opl)

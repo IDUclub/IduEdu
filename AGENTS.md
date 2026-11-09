@@ -37,8 +37,8 @@ Rules:
 ## Project Overview
 
 **IduEdu** is a Python library for building and analyzing multi-modal city transport networks from OpenStreetMap and
-GTFS Schedule data. It downloads OSM data via Overpass API (or reads local `.osm.pbf` files with the optional `pbf`
-extra), reads local GTFS feeds, constructs `drive`, `walk`, and `public transport` graphs, joins them into intermodal
+GTFS Schedule data. It downloads OSM data via Overpass API (or reads local `.osm.pbf` files with its Rust
+reader), reads local GTFS feeds, constructs `drive`, `walk`, and `public transport` graphs, joins them into intermodal
 networks, and computes OD-matrices and routes with Dijkstra kernels written in Rust.
 
 Python 3.11–3.14. Package manager: **uv** (`uv.lock` is generated locally and not committed). Build
@@ -141,7 +141,7 @@ iduedu/
     validation.py    — GTFS table and reference validation
     merge.py         — merge_gtfs_feeds(), deduplicate_across_feeds(): several feeds into one
     service_days.py  — calendar/calendar_dates → service days for average-day boarding waits
-  osm_pbf/           — local OSM files instead of Overpass (optional pyosmium, soft-imported)
+  osm_pbf/           — local .osm.pbf files instead of Overpass (read and written by the Rust core)
     reader.py        — PbfSource: answers the Overpass queries of the builders from a file; snapshot_time()
     filters.py       — Overpass tag-filter parser (parse_way_filter, WayFilter)
     extract.py       — split_by_polygons(): per-city files from a regional extract in one pass
@@ -158,8 +158,9 @@ rust/                — Rust core, compiled into iduedu._rust (see rust/README.
   src/csr.rs         — CSR view and validation, edge list → CSR (parallel arcs merged by min/max), transpose
   src/dijkstra.rs    — Dijkstra (multi-source, cutoff, early exit, predecessors, nearest source), route rebuild
   src/components.rs  — connected and strongly connected components
-  src/pbf.rs         — ways of a .pbf file by Overpass tag filter (osmpbf, parallel), used by osm_pbf/reader.py
-  src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, read_pbf_ways
+  src/pbf.rs         — .pbf reading (osmpbf, parallel, block index): ways by tag filter, nodes, relations, header
+  src/pbf_write.rs   — .pbf writing: per-territory extracts (osm_pbf/extract.py) and files from element lists
+  src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, PbfFile, write_pbf
 ```
 
 ### Data flow
@@ -194,7 +195,7 @@ bus/trolleybus/tram/subway/monorail/taxi; `DEFAULT_REGISTRY_W_TRAIN` adds train.
 Tests are split into `_unit` (no network, fast) and `_network` (real OSM data). Network test modules are listed in
 `conftest.py::NETWORK_ONLY_TEST_MODULES` and are excluded from collection unless `--run-network` is passed. They read
 Overpass, or the test territory cut out of its Geofabrik extract (`northwestern-fed-district`, about 650 MB, cached in
-`.iduedu_cache/geofabrik/`, needs pyosmium) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
+`.iduedu_cache/geofabrik/`) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
 Network tests check real data only; options and edge cases belong in the unit tests with mocked responses.
 
 Pytest markers: `unit`, `integration`, `network`, `slow`, `rust`.
@@ -225,6 +226,6 @@ English; the update step keeps them so. Translations on MyST pages (`.md`, inclu
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
 - Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
-  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`) and `osm_pbf/reader.py`, never directly
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`) and `osm_pbf/` (`reader.py`, `extract.py`), never directly
   from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
   run parallel work on rayon; `max_workers` maps to the number of rayon threads

@@ -73,12 +73,9 @@ logged.
 
 Every OSM-based builder can read its data from a local OpenStreetMap file instead of the Overpass API: the
 same street networks, public-transport routes, subway stop areas and boundaries, answered with the same
-filters and the same `poly:` selection rules, so the graphs come out the same. This needs the optional
-dependency [pyosmium](https://osmcode.org/pyosmium/):
-
-```bash
-pip install "iduedu[pbf]"
-```
+filters and the same `poly:` selection rules, so the graphs come out the same. The files are read by
+IduEdu's Rust core, so nothing else has to be installed. Only `.osm.pbf` files are read; convert `.osm` or
+`.opl` files first, for example with `osmium cat city.osm -o city.osm.pbf`.
 
 ```python
 from iduedu import config, get_public_transport_graph, get_walk_graph, use_pbf
@@ -126,8 +123,8 @@ extracts with their outlines, `find_geofabrik_region(territory)` names the small
 
 ### Per-city files from a regional extract
 
-Querying a country-sized file scans all of it on every call. Cut it into small city files once, in one pass
-for all cities of the region:
+Querying a country-sized file scans all of it for every territory. Cut it into small city files once, for
+all cities of the region at the same time:
 
 ```python
 from iduedu import snapshot_time, split_by_polygons
@@ -136,7 +133,6 @@ paths = split_by_polygons(
     "russia-northwestern-fed-district-latest.osm.pbf",
     {"spb": spb_polygon, "petrozavodsk": ptz_polygon},
     "cities/",
-    location_storage="dense_file_array",     # disk-backed node index for large extracts
 )
 snapshot_time(paths["spb"])                  # the extract's replication timestamp is kept
 ```
@@ -145,8 +141,9 @@ Each city file keeps, complete and with tags: the street ways (`highway`, `railw
 touching the polygon; the public-transport route relations touching it, with all their members also outside
 the polygon; for subways, every relation sharing a node with the line (its stop areas), their members and
 the stop-area groups containing them; and relations named in `keep_relations` (for instance the boundary, so
-`osm_id=` keeps working). Building graphs from a city file then gives the same result as from the regional
-file, for the same polygon or any polygon inside it.
+`osm_id=` keeps working). Element metadata (versions, timestamps, users) is not copied. Building graphs
+from a city file then gives the same result as from the regional file, for the same polygon or any polygon
+inside it.
 
 ### Differences from Overpass
 

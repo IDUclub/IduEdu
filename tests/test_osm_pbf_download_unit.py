@@ -8,19 +8,10 @@ import threading
 from functools import partial
 
 import pytest
+from shapely import box
 
-osmium = pytest.importorskip("osmium")
-
-from shapely import box  # noqa: E402  pylint: disable=wrong-import-position
-
-from iduedu import (  # noqa: E402  pylint: disable=wrong-import-position
-    config,
-    download_osm_pbf,
-    find_geofabrik_region,
-    get_walk_graph,
-    use_pbf,
-)
-from iduedu.osm_pbf import download  # noqa: E402  pylint: disable=wrong-import-position
+from iduedu import _rust, config, download_osm_pbf, find_geofabrik_region, get_walk_graph, use_pbf
+from iduedu.osm_pbf import download
 
 pytestmark = pytest.mark.unit
 
@@ -28,23 +19,27 @@ CITY = box(30.300, 59.930, 30.320, 59.940)
 REL_ID = 77
 
 
-def _region_opl() -> str:
+def _write_region(path) -> None:
     """A walkable street crossing the city, a street far away and the city boundary relation."""
-    lines = [
-        "n1 v1 x30.3050000 y59.9350000",
-        "n2 v1 x30.3150000 y59.9350000",
-        "n3 v1 x30.4000000 y59.9000000",
-        "n4 v1 x30.4100000 y59.9000000",
-        "n11 v1 x30.3000000 y59.9300000",
-        "n12 v1 x30.3200000 y59.9300000",
-        "n13 v1 x30.3200000 y59.9400000",
-        "n14 v1 x30.3000000 y59.9400000",
-        "w1 v1 Thighway=residential,name=Inner Nn1,n2",
-        "w2 v1 Thighway=residential,name=Outer Nn3,n4",
-        "w11 v1 T Nn11,n12,n13,n14,n11",
-        f"r{REL_ID} v1 Ttype=boundary,boundary=administrative,name=City Mw11@outer",
+    nodes = [
+        (1, 30.305, 59.935, []),
+        (2, 30.315, 59.935, []),
+        (3, 30.400, 59.900, []),
+        (4, 30.410, 59.900, []),
+        (11, 30.300, 59.930, []),
+        (12, 30.320, 59.930, []),
+        (13, 30.320, 59.940, []),
+        (14, 30.300, 59.940, []),
     ]
-    return "\n".join(lines) + "\n"
+    ways = [
+        (1, [1, 2], [("highway", "residential"), ("name", "Inner")]),
+        (2, [3, 4], [("highway", "residential"), ("name", "Outer")]),
+        (11, [11, 12, 13, 14, 11], []),
+    ]
+    relations = [
+        (REL_ID, [("w", 11, "outer")], [("type", "boundary"), ("boundary", "administrative"), ("name", "City")])
+    ]
+    _rust.write_pbf(path, nodes, ways, relations)
 
 
 @pytest.fixture()
@@ -52,12 +47,8 @@ def geofabrik(tmp_path, monkeypatch):
     """Serve a fake Geofabrik and point the downloader at it; yields (server dir, request log, cache dir)."""
     root = tmp_path / "server"
     root.mkdir()
-    opl = tmp_path / "region.opl"
-    opl.write_text(_region_opl(), encoding="utf-8")
     pbf = root / "city-region-latest.osm.pbf"
-    with osmium.SimpleWriter(str(pbf)) as writer:
-        for obj in osmium.FileProcessor(str(opl)):
-            writer.add(obj)
+    _write_region(pbf)
     (root / "city-region-latest.osm.pbf.md5").write_text(
         f"{hashlib.md5(pbf.read_bytes(), usedforsecurity=False).hexdigest()}  {pbf.name}\n", encoding="utf-8"
     )

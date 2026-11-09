@@ -333,7 +333,6 @@ def test_set_osm_source_validates(tmp_path):
 
 
 def test_set_osm_source_and_use_pbf(tmp_path):
-    pytest.importorskip("osmium")
     first, second = tmp_path / "a.osm.pbf", tmp_path / "b.osm.pbf"
     first.write_bytes(b"")
     second.write_bytes(b"")
@@ -372,7 +371,6 @@ def test_use_pbf_takes_a_path_or_download_arguments(tmp_path):
 
 
 def test_top_level_use_pbf_switches_the_global_config(tmp_path):
-    pytest.importorskip("osmium")
     import iduedu  # pylint: disable=import-outside-toplevel
 
     path = tmp_path / "a.osm.pbf"

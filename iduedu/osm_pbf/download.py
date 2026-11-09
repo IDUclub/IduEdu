@@ -9,8 +9,7 @@ resume and an md5 check) and cuts a compact file for the territory out of it wit
         graph = get_intermodal_graph(osm_id=1114252)
 
 Regional files and cut files are cached under ``config.overpass_cache_dir`` (``geofabrik/`` and
-``geofabrik/territories/``); a cut file that already exists is returned without any download. Cutting needs
-the optional dependency pyosmium (``pip install 'iduedu[pbf]'``); downloading does not.
+``geofabrik/territories/``); a cut file that already exists is returned without any download.
 """
 
 import hashlib
@@ -28,7 +27,7 @@ from tqdm.auto import tqdm
 
 from iduedu import config
 from iduedu.osm_pbf.extract import split_by_polygons
-from iduedu.osm_pbf.reader import PbfSource
+from iduedu.osm_pbf.reader import PbfSource, warn_location_storage
 from iduedu.overpass.downloaders import _boundary_from_elements, get_4326_boundary, get_boundary_by_osm_id
 
 logger = config.logger
@@ -228,7 +227,7 @@ def download_osm_pbf(
     out_dir: str | os.PathLike | None = None,
     update: bool = False,
     overwrite: bool = False,
-    location_storage: str = "flex_mem",
+    location_storage: str | None = None,
 ) -> Path:
     """OSM file for a territory, cut out of a Geofabrik extract: a drop-in replacement for Overpass downloads.
 
@@ -249,16 +248,15 @@ def download_osm_pbf(
             ``territories/`` subdirectory.
         update: Refresh a cached regional extract when Geofabrik has a newer one and cut again.
         overwrite: Cut again even if the territory file exists.
-        location_storage: Node-location index used while cutting (see
-            :func:`~iduedu.osm_pbf.split_by_polygons`); use ``"sparse_file_array"`` for country-sized extracts.
+        location_storage: Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1.
 
     Returns:
         Path of ``<name>.osm.pbf``.
 
     Raises:
         ValueError: If neither ``osm_id`` nor ``territory`` is given, or no extract covers the territory.
-        ImportError: When pyosmium is not installed and the file has to be cut.
     """
+    warn_location_storage(location_storage)
     if osm_id is None and territory is None:
         raise ValueError("Either osm_id or territory must be specified")
     polygon = get_4326_boundary(territory=territory) if territory is not None else None
@@ -285,7 +283,6 @@ def download_osm_pbf(
         region_pbf,
         {name: polygon},
         target_dir,
-        location_storage=location_storage,
         keep_relations=keep,
         overwrite=True,
     )

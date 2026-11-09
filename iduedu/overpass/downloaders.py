@@ -1,5 +1,6 @@
 import datetime as dt
 import math
+import os
 import re
 import time
 from collections import defaultdict
@@ -69,17 +70,27 @@ def active_overpass_date() -> str | None:
     return config.overpass_date
 
 
+_PBF_SOURCES: dict = {}
+
+
 def _pbf_source():
-    """The :class:`~iduedu.osm_pbf.PbfSource` for ``config.pbf_path``."""
+    """The :class:`~iduedu.osm_pbf.PbfSource` for ``config.pbf_path``.
+
+    The source is kept while the file is unchanged, so the walk, drive and transport builders of one
+    territory share the block index of the file.
+    """
     if not config.pbf_path:
         raise ValueError("config.osm_source is 'pbf' but config.pbf_path is not set; use config.set_osm_source")
-    try:
-        from iduedu.osm_pbf.reader import PbfSource  # pylint: disable=import-outside-toplevel
-    except ModuleNotFoundError as exc:  # pragma: no cover - the reader soft-imports osmium itself
-        if exc.name != "osmium":
-            raise
-        raise ImportError("osm_source='pbf' needs pyosmium. Install it with: pip install 'iduedu[pbf]'") from exc
-    return PbfSource(config.pbf_path)
+    from iduedu.osm_pbf.reader import PbfSource  # pylint: disable=import-outside-toplevel
+
+    path = os.path.abspath(config.pbf_path)
+    stat = os.stat(path)
+    key = (path, stat.st_mtime_ns, stat.st_size)
+    source = _PBF_SOURCES.get(key)
+    if source is None:
+        _PBF_SOURCES.clear()
+        source = _PBF_SOURCES[key] = PbfSource(path)
+    return source
 
 
 def _overpass_http(

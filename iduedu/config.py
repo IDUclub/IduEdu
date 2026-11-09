@@ -1,4 +1,3 @@
-import importlib.util
 import os
 import sys
 import threading
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
 LogLevel = Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 OsmSource = Literal["overpass", "pbf"]
 OSM_SOURCES = ("overpass", "pbf")
-PBF_INSTALL_HINT = "osm_source='pbf' needs the optional dependency pyosmium. Install it with: pip install 'iduedu[pbf]'"
 
 
 class Config:
@@ -228,8 +226,7 @@ class Config:
         """Choose where OpenStreetMap data comes from.
 
         ``"overpass"`` (the default) sends queries to the Overpass API. ``"pbf"`` answers the same
-        queries from a local OSM file (``.osm.pbf``, ``.osm``, ``.opl``) through the optional
-        dependency pyosmium (``pip install 'iduedu[pbf]'``); the Overpass cache and
+        queries from a local ``.osm.pbf`` file, read by IduEdu's Rust core; the Overpass cache and
         ``overpass_date`` are not used then.
 
         Args:
@@ -240,7 +237,6 @@ class Config:
         Raises:
             ValueError: For an unknown source, or ``"pbf"`` without a file.
             FileNotFoundError: If the file does not exist.
-            ImportError: If ``"pbf"`` is chosen and pyosmium is not installed.
         """
         normalized = str(source).strip().lower()
         if normalized not in OSM_SOURCES:
@@ -251,8 +247,6 @@ class Config:
                 raise ValueError("osm_source='pbf' requires a path to an OSM file")
             if not os.path.isfile(new_path):
                 raise FileNotFoundError(f"OSM file not found: {new_path}")
-            if importlib.util.find_spec("osmium") is None:
-                raise ImportError(PBF_INSTALL_HINT)
         with self._lock:
             self.osm_source = normalized
             self.pbf_path = new_path
@@ -275,7 +269,7 @@ class Config:
         reused without any download. Also available as ``iduedu.use_pbf``.
 
         Args:
-            path: The OSM file (``.osm.pbf``, ``.osm``, ``.opl``).
+            path: The ``.osm.pbf`` file.
             osm_id: OSM relation id of the territory to download, instead of ``path``.
             territory: Territory polygon in EPSG:4326, or a GeoDataFrame/GeoSeries, instead of ``path``.
             region: Geofabrik region id to cut the territory from; chosen automatically when omitted.

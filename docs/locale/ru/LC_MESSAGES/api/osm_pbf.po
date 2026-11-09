@@ -17,8 +17,8 @@ msgstr ""
 msgid "Local OSM files"
 msgstr "Локальные файлы OSM"
 
-msgid "With the optional dependency pyosmium (``pip install 'iduedu[pbf]'``) every OSM-based builder can read local ``.osm.pbf`` files instead of querying Overpass. Select the source with ``config.set_osm_source(\"pbf\", path=...)`` or ``with use_pbf(path): ...``; ``use_pbf(osm_id=...)`` downloads the territory from Geofabrik first. See :doc:`../configuration` for the full workflow and the known differences from Overpass."
-msgstr "С необязательной зависимостью pyosmium (``pip install 'iduedu[pbf]'``) любая функция построения по OSM может читать локальные файлы ``.osm.pbf`` вместо запросов к Overpass. Выберите источник через ``config.set_osm_source(\"pbf\", path=...)`` или ``with use_pbf(path): ...``; ``use_pbf(osm_id=...)`` сначала скачивает территорию из Geofabrik. Полный сценарий и известные отличия от Overpass описаны в :doc:`../configuration`."
+msgid "Every OSM-based builder can read local ``.osm.pbf`` files instead of querying Overpass; IduEdu's Rust core reads and writes them, with no further dependency. Select the source with ``config.set_osm_source(\"pbf\", path=...)`` or ``with use_pbf(path): ...``; ``use_pbf(osm_id=...)`` downloads the territory from Geofabrik first. See :doc:`../configuration` for the full workflow and the known differences from Overpass."
+msgstr "Любая функция построения по OSM может читать локальные файлы ``.osm.pbf`` вместо запросов к Overpass; их читает и записывает ядро IduEdu на Rust, без других зависимостей. Выберите источник через ``config.set_osm_source(\"pbf\", path=...)`` или ``with use_pbf(path): ...``; ``use_pbf(osm_id=...)`` сначала скачивает территорию из Geofabrik. Полный сценарий и известные отличия от Overpass описаны в :doc:`../configuration`."
 
 msgid "Downloading from Geofabrik"
 msgstr "Загрузка из Geofabrik"
@@ -59,8 +59,8 @@ msgstr "Чтение и нарезка файлов"
 msgid ":py:obj:`PbfSource <iduedu.PbfSource>`"
 msgstr ":py:obj:`PbfSource <iduedu.PbfSource>`"
 
-msgid "A local OpenStreetMap file answering the queries IduEdu otherwise sends to Overpass."
-msgstr "Локальный файл OpenStreetMap, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
+msgid "A local OpenStreetMap ``.osm.pbf`` file answering the queries IduEdu otherwise sends to Overpass."
+msgstr "Локальный файл OpenStreetMap ``.osm.pbf``, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
 
 msgid ":py:obj:`split_by_polygons <iduedu.split_by_polygons>`"
 msgstr ":py:obj:`split_by_polygons <iduedu.split_by_polygons>`"
@@ -98,11 +98,11 @@ msgstr "Возникает для синтаксиса фильтров Overpass
 msgid "Module reference"
 msgstr "Справка по модулям"
 
-msgid "Answer IduEdu's Overpass queries from a local OpenStreetMap ``.pbf`` file."
-msgstr "Отвечает на запросы IduEdu к Overpass по локальному файлу OpenStreetMap ``.pbf``."
+msgid "Answer IduEdu's Overpass queries from a local OpenStreetMap ``.osm.pbf`` file."
+msgstr "Отвечает на запросы IduEdu к Overpass по локальному файлу OpenStreetMap ``.osm.pbf``."
 
-msgid ":class:`PbfSource` returns the very JSON element shapes the Overpass downloaders return, so builders and parsers work unchanged whichever source the data comes from. It needs the optional dependency `pyosmium <https://osmcode.org/pyosmium/>`_ (``pip install 'iduedu[pbf]'``)."
-msgstr ":class:`PbfSource` возвращает элементы JSON той же формы, что и функции загрузки из Overpass, поэтому функции построения и разбора работают без изменений, откуда бы ни пришли данные. Нужна необязательная зависимость `pyosmium <https://osmcode.org/pyosmium/>`_ (``pip install 'iduedu[pbf]'``)."
+msgid ":class:`PbfSource` returns the very JSON element shapes the Overpass downloaders return, so builders and parsers work unchanged whichever source the data comes from. The file is read by IduEdu's Rust core, with no further dependency; the first query records which blocks of the file hold which elements, so later queries on the same source read only the blocks they need."
+msgstr ":class:`PbfSource` возвращает элементы JSON той же формы, что и функции загрузки из Overpass, поэтому функции построения и разбора работают без изменений, откуда бы ни пришли данные. Файл читает ядро IduEdu на Rust, без других зависимостей; первый запрос запоминает, в каких блоках файла какие элементы, поэтому следующие запросы к тому же источнику читают только нужные им блоки."
 
 msgid "Spatial selection follows Overpass ``poly:`` semantics, applied to the polygon's exterior ring (the Overpass downloaders send only the exterior ring too):"
 msgstr "Пространственная выборка следует семантике Overpass ``poly:`` и применяется к внешнему кольцу полигона (функции загрузки из Overpass тоже отправляют только внешнее кольцо):"
@@ -122,8 +122,8 @@ msgstr "Геометрия выбранных элементов всегда п
 msgid "Cut compact per-city OSM files out of a large regional extract."
 msgstr "Нарезает компактные файлы OSM для городов из большой региональной выгрузки."
 
-msgid ":func:`split_by_polygons` reads a regional extract (for instance a Geofabrik country file) once for the spatial selection of every city at the same time, completes the references in a few cheap relation-only and way-only passes, and writes one sorted ``.osm.pbf`` per city in a final pass. Each city file holds what IduEdu's queries can reach from that city's polygon -- as ``osmium extract --strategy smart`` would, restricted to the objects IduEdu reads -- so :class:`~iduedu.osm_pbf.PbfSource` answers them on the small file exactly as on the regional one:"
-msgstr ":func:`split_by_polygons` читает региональную выгрузку (например, файл страны из Geofabrik) один раз для пространственной выборки сразу всех городов, дополняет ссылки несколькими быстрыми проходами только по отношениям и только по линиям и последним проходом записывает по одному отсортированному ``.osm.pbf`` на город. Каждый файл города содержит то, до чего запросы IduEdu могут дотянуться из полигона этого города, — как сделал бы ``osmium extract --strategy smart``, но только для объектов, которые читает IduEdu, — поэтому :class:`~iduedu.osm_pbf.PbfSource` отвечает на них по маленькому файлу точно так же, как по региональному:"
+msgid ":func:`split_by_polygons` reads a regional extract (for instance a Geofabrik country file) for the spatial selection of every city at the same time, completes the references in a few passes that read only the relation or way blocks of the file, and writes one ``.osm.pbf`` per city in a final pass. Each city file holds what IduEdu's queries can reach from that city's polygon -- as ``osmium extract --strategy smart`` would, restricted to the objects IduEdu reads -- so :class:`~iduedu.osm_pbf.PbfSource` answers them on the small file exactly as on the regional one:"
+msgstr ":func:`split_by_polygons` читает региональную выгрузку (например, файл страны из Geofabrik) для пространственной выборки сразу всех городов, дополняет ссылки несколькими проходами, которые читают только блоки отношений или линий, и последним проходом записывает по одному ``.osm.pbf`` на город. Каждый файл города содержит то, до чего запросы IduEdu могут дотянуться из полигона этого города, — как сделал бы ``osmium extract --strategy smart``, но только для объектов, которые читает IduEdu, — поэтому :class:`~iduedu.osm_pbf.PbfSource` отвечает на них по маленькому файлу точно так же, как по региональному:"
 
 msgid "ways carrying one of ``way_keys`` (by default ``highway``, ``railway``, ``public_transport``) that touch the polygon under Overpass ``poly:`` semantics, with all their nodes;"
 msgstr "линии с одним из ключей ``way_keys`` (по умолчанию ``highway``, ``railway``, ``public_transport``), касающиеся полигона в семантике Overpass ``poly:``, со всеми их узлами;"
@@ -137,8 +137,8 @@ msgstr "для маршрутов метро — все отношения, им
 msgid "relations listed in ``keep_relations`` (for example the city boundary, so that ``osm_id=`` keeps working) with their node and way members complete."
 msgstr "отношения из ``keep_relations`` (например, граница города, чтобы ``osm_id=`` продолжал работать) с участниками-узлами и участниками-линиями полностью."
 
-msgid "Tags are kept on every object, including referenced ones outside the polygon. The header keeps the source's replication timestamp, so :func:`~iduedu.osm_pbf.snapshot_time` works on the city files."
-msgstr "Теги сохраняются на всех объектах, в том числе на объектах по ссылкам за пределами полигона. Заголовок сохраняет метку времени репликации источника, поэтому :func:`~iduedu.osm_pbf.snapshot_time` работает и на файлах городов."
+msgid "Tags are kept on every object, including referenced ones outside the polygon; element metadata (versions, timestamps, users) is not copied. The header keeps the source's replication timestamp, so :func:`~iduedu.osm_pbf.snapshot_time` works on the city files."
+msgstr "Теги сохраняются на всех объектах, в том числе на объектах по ссылкам за пределами полигона; метаданные элементов (версии, метки времени, пользователи) не копируются. Заголовок сохраняет метку времени репликации источника, поэтому :func:`~iduedu.osm_pbf.snapshot_time` работает и на файлах городов."
 
 msgid "Download OpenStreetMap extracts from Geofabrik for a territory, as an alternative to Overpass."
 msgstr "Загружает выгрузки OpenStreetMap из Geofabrik для территории как альтернативу Overpass."
@@ -146,8 +146,8 @@ msgstr "Загружает выгрузки OpenStreetMap из Geofabrik для 
 msgid ":func:`download_osm_pbf` takes the same territory arguments as the graph builders (``osm_id`` or ``territory``), picks the smallest Geofabrik extract that covers it, downloads that regional file once (with resume and an md5 check) and cuts a compact file for the territory out of it with :func:`~iduedu.osm_pbf.split_by_polygons`. ``use_pbf`` calls it itself when given a territory instead of a path::"
 msgstr ":func:`download_osm_pbf` принимает те же аргументы территории, что и функции построения графов (``osm_id`` или ``territory``), выбирает наименьшую выгрузку Geofabrik, покрывающую территорию, один раз скачивает этот региональный файл (с докачкой и проверкой md5) и вырезает из него компактный файл территории с помощью :func:`~iduedu.osm_pbf.split_by_polygons`. ``use_pbf`` сама вызывает её, если вместо пути передана территория::"
 
-msgid "Regional files and cut files are cached under ``config.overpass_cache_dir`` (``geofabrik/`` and ``geofabrik/territories/``); a cut file that already exists is returned without any download. Cutting needs the optional dependency pyosmium (``pip install 'iduedu[pbf]'``); downloading does not."
-msgstr "Региональные и вырезанные файлы кешируются в ``config.overpass_cache_dir`` (``geofabrik/`` и ``geofabrik/territories/``); уже существующий вырезанный файл возвращается без загрузки. Для нарезки нужна необязательная зависимость pyosmium (``pip install 'iduedu[pbf]'``), для загрузки — нет."
+msgid "Regional files and cut files are cached under ``config.overpass_cache_dir`` (``geofabrik/`` and ``geofabrik/territories/``); a cut file that already exists is returned without any download."
+msgstr "Региональные и вырезанные файлы кешируются в ``config.overpass_cache_dir`` (``geofabrik/`` и ``geofabrik/territories/``); уже существующий вырезанный файл возвращается без загрузки."
 
 msgid "Overpass way filters evaluated on OSM tags."
 msgstr "Фильтры линий Overpass, вычисляемые по тегам OSM."

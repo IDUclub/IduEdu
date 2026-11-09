@@ -20,8 +20,17 @@ msgstr "iduedu.snapshot\\_time"
 msgid "Return the moment an OSM file reflects, from its header, as an aware UTC ``datetime``."
 msgstr "Возвращает момент, на который составлен файл OSM, из его заголовка, как ``datetime`` в UTC с часовым поясом."
 
-msgid "Geofabrik and other replication-based extracts store it as ``osmosis_replication_timestamp``; a plain ``timestamp`` header option is used when that is missing. Returns ``None`` when the header carries neither."
-msgstr "Выгрузки Geofabrik и другие выгрузки на основе репликации хранят его как ``osmosis_replication_timestamp``; если его нет, используется обычный параметр заголовка ``timestamp``. Возвращает ``None``, если в заголовке нет ни того, ни другого."
+msgid "Geofabrik and other replication-based extracts store it as ``osmosis_replication_timestamp``. Returns ``None`` when the header carries none."
+msgstr "Выгрузки Geofabrik и другие выгрузки на основе репликации хранят его как ``osmosis_replication_timestamp``. Возвращает ``None``, если в заголовке его нет."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "When ``path`` does not exist."
+msgstr "Если ``path`` не существует."
+
+msgid "When the file is not an OSM ``.pbf`` file."
+msgstr "Если файл не является файлом OSM ``.pbf``."
 
 msgid "Return type"
 msgstr "Тип результата"

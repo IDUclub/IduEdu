@@ -28,9 +28,8 @@ io = [
     "pyarrow>=18.1.0,<26.0.0; python_version < '3.14'",
     "pyarrow>=22.0.0,<26.0.0; python_version >= '3.14'",
 ]
-pbf = [
-    "osmium>=4.0,<5",
-]
+# Empty since 3.0: .osm.pbf files are read by the Rust core. Kept so that iduedu[pbf] still installs; removed in 3.1.
+pbf = []
 
 [dependency-groups]
 dev = [
@@ -40,7 +39,6 @@ dev = [
     { include-group = "release" },
     { include-group = "test" },
     { include-group = "viz" },
-    "osmium>=4.0,<5",
     "pre-commit>=4.3.0,<5.0.0",
     "pyarrow>=18.1.0,<26.0.0; python_version < '3.14'",
     "pyarrow>=22.0.0,<26.0.0; python_version >= '3.14'",
@@ -108,7 +106,7 @@ target-version = ['py311']
 max-line-length = 120
 expected-line-ending-format = "LF"
 max-locals = 20
-extension-pkg-allow-list = ["iduedu._rust", "networkit", "osmium"]
+extension-pkg-allow-list = ["iduedu._rust", "networkit"]
 disable = [
     "duplicate-code",
     "missing-module-docstring",

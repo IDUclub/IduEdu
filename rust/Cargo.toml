@@ -16,8 +16,9 @@ path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+flate2 = "1.1"
 numpy = "0.30"
-osmpbf = "0.3.7"
+osmpbf = "0.3.8"
 pyo3 = { version = "0.30", features = ["abi3-py311"] }
 rayon = "1.10"
 regex = "1.13.1"

@@ -3,9 +3,9 @@ Local OSM files
 
 .. currentmodule:: iduedu
 
-With the optional dependency pyosmium (``pip install 'iduedu[pbf]'``) every
-OSM-based builder can read local ``.osm.pbf`` files instead of querying
-Overpass. Select the source with ``config.set_osm_source("pbf", path=...)`` or
+Every OSM-based builder can read local ``.osm.pbf`` files instead of
+querying Overpass; IduEdu's Rust core reads and writes them, with no further
+dependency. Select the source with ``config.set_osm_source("pbf", path=...)`` or
 ``with use_pbf(path): ...``; ``use_pbf(osm_id=...)`` downloads the territory
 from Geofabrik first. See :doc:`../configuration` for the full workflow and the
 known differences from Overpass.

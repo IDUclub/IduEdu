@@ -1,8 +1,9 @@
-"""Answer IduEdu's Overpass queries from a local OpenStreetMap ``.pbf`` file.
+"""Answer IduEdu's Overpass queries from a local OpenStreetMap ``.osm.pbf`` file.
 
 :class:`PbfSource` returns the very JSON element shapes the Overpass downloaders return, so builders and
-parsers work unchanged whichever source the data comes from. It needs the optional dependency
-`pyosmium <https://osmcode.org/pyosmium/>`_ (``pip install 'iduedu[pbf]'``).
+parsers work unchanged whichever source the data comes from. The file is read by IduEdu's Rust core, with no
+further dependency; the first query records which blocks of the file hold which elements, so later queries
+on the same source read only the blocks they need.
 
 Spatial selection follows Overpass ``poly:`` semantics, applied to the polygon's exterior ring (the
 Overpass downloaders send only the exterior ring too):
@@ -21,6 +22,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import warnings
 from itertools import chain
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -34,19 +36,7 @@ from iduedu import _rust, config
 from iduedu.constants.transport_specs import osm_route_values
 from iduedu.osm_pbf.filters import parse_way_filter
 
-try:
-    import osmium
-except ModuleNotFoundError as exc:  # pragma: no cover - exercised in a subprocess test
-    if exc.name != "osmium":
-        raise
-    osmium = None  # pylint: disable=invalid-name
-
 logger = config.logger
-
-INSTALL_HINT = (
-    "Reading OpenStreetMap data from .pbf files needs the optional dependency pyosmium. "
-    "Install it with: pip install 'iduedu[pbf]'"
-)
 
 #: Name of the marker element separating stop-area members from the rest of a route response.
 #: Kept equal to ``iduedu.overpass.downloaders.STOP_AREA_MEMBERS_SECTION``.
@@ -55,44 +45,55 @@ STOP_AREA_MEMBERS_SECTION = "stop_area_members"
 _TYPE_NAMES = {"n": "node", "w": "way", "r": "relation"}
 _TYPE_CHARS = {"node": "n", "way": "w", "relation": "r"}
 _TYPE_ORDER = {"n": 0, "w": 1, "r": 2}
+_MEMBER_CHARS = np.array(["n", "w", "r"])
 
 
-def require_osmium():
-    """Return the ``osmium`` module, or raise an ``ImportError`` explaining how to install it."""
-    if osmium is None:
-        raise ImportError(INSTALL_HINT)
-    return osmium
+def open_pbf(path: str | os.PathLike) -> _rust.PbfFile:
+    """Open an OSM ``.pbf`` file with the Rust reader.
 
-
-def _parse_timestamp(value: str | None) -> dt.datetime | None:
-    if not value:
-        return None
-    text = value.strip().replace("\\:", ":")
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
+    Raises:
+        FileNotFoundError: When ``path`` does not exist.
+        ValueError: When the file is not an OSM ``.pbf`` file (other formats, such as ``.osm`` XML or
+            ``.opl``, can be converted with ``osmium cat in.osm -o out.osm.pbf``).
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError(f"OSM file not found: {path}")
     try:
-        stamp = dt.datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if stamp.tzinfo is None:
-        stamp = stamp.replace(tzinfo=dt.timezone.utc)
-    return stamp.astimezone(dt.timezone.utc)
+        return _rust.PbfFile(path)
+    except ValueError as exc:
+        raise ValueError(
+            f"{exc}. IduEdu reads OSM data from .osm.pbf files only; convert other formats first, "
+            f"for example with: osmium cat {path.name} -o {path.stem}.osm.pbf"
+        ) from None
+
+
+def warn_location_storage(location_storage) -> None:
+    """``location_storage`` chose libosmium's node index; the Rust reader needs none."""
+    if location_storage is not None:
+        warnings.warn(
+            "location_storage is deprecated and will be removed in IduEdu 3.1.0; it is ignored, since OSM files "
+            "are read without pyosmium",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+
+
+def _utc(stamp: int | None) -> dt.datetime | None:
+    return None if stamp is None else dt.datetime.fromtimestamp(stamp, dt.timezone.utc)
 
 
 def snapshot_time(path: str | os.PathLike) -> dt.datetime | None:
     """Return the moment an OSM file reflects, from its header, as an aware UTC ``datetime``.
 
-    Geofabrik and other replication-based extracts store it as ``osmosis_replication_timestamp``; a
-    plain ``timestamp`` header option is used when that is missing. Returns ``None`` when the header
-    carries neither.
+    Geofabrik and other replication-based extracts store it as ``osmosis_replication_timestamp``.
+    Returns ``None`` when the header carries none.
+
+    Raises:
+        FileNotFoundError: When ``path`` does not exist.
+        ValueError: When the file is not an OSM ``.pbf`` file.
     """
-    module = require_osmium()
-    header = module.FileProcessor(str(path)).header
-    for key in ("osmosis_replication_timestamp", "timestamp"):
-        stamp = _parse_timestamp(header.get(key, ""))
-        if stamp is not None:
-            return stamp
-    return None
+    return _utc(open_pbf(path).header()["osmosis_replication_timestamp"])
 
 
 def _selection_polygon(polygon) -> Polygon | MultiPolygon:
@@ -251,100 +252,77 @@ class _Store:
         return _with_tags(element, tags)
 
 
-def _way_record(way) -> tuple:
-    refs = []
-    coords = []
-    for node in way.nodes:
-        refs.append(node.ref)
-        location = node.location
-        if location.valid():
-            coords.append((location.lon, location.lat))
-    return tuple(refs), coords, dict(way.tags)
-
-
 class PbfSource:
-    """A local OpenStreetMap file answering the queries IduEdu otherwise sends to Overpass.
+    """A local OpenStreetMap ``.osm.pbf`` file answering the queries IduEdu otherwise sends to Overpass.
 
-    Any format libosmium reads works (``.osm.pbf``, ``.osm``, ``.opl``, compressed variants). For a
-    city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a
-    whole country extract works too, but every query then scans the whole file.
+    For a city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a
+    whole country extract works too, but the first query then scans the whole file. Later queries on the
+    same source read only the blocks of the file they need.
 
     Parameters:
-        path: The OSM file.
-        location_storage: Node-location index used while assembling way geometries, as accepted by
-            ``osmium.index.create_map``: ``"flex_mem"`` (default) for city files, or a disk-backed
-            ``"sparse_file_array"`` / ``"dense_file_array"`` (optionally ``",<file>"``) for large extracts.
+        path: The ``.osm.pbf`` file.
+        location_storage: Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1.
 
     Raises:
-        ImportError: When pyosmium is not installed.
         FileNotFoundError: When ``path`` does not exist.
+        ValueError: When the file is not an OSM ``.pbf`` file.
     """
 
-    def __init__(self, path: str | os.PathLike, *, location_storage: str = "flex_mem"):
-        require_osmium()
+    def __init__(self, path: str | os.PathLike, *, location_storage: str | None = None):
+        warn_location_storage(location_storage)
         self.path = Path(path)
-        if not self.path.is_file():
-            raise FileNotFoundError(f"OSM file not found: {self.path}")
-        self.location_storage = location_storage
+        self._file = open_pbf(self.path)
 
     def __repr__(self) -> str:
         return f"PbfSource({str(self.path)!r})"
 
     def snapshot_time(self) -> dt.datetime | None:
         """The replication timestamp from the file header, see :func:`snapshot_time`."""
-        return snapshot_time(self.path)
+        return _utc(self._file.header()["osmosis_replication_timestamp"])
 
     # ------------------------------------------------------------------ reading
-    def _processor(self, entities):
-        return osmium.FileProcessor(str(self.path), entities)
+    @staticmethod
+    def _id_array(ids) -> np.ndarray:
+        return np.fromiter((int(i) for i in ids), dtype=np.int64)
 
     def _read_relations(self, store: _Store, *, ids=None, tag_pairs=None, contains_nodes=None) -> list[int]:
         """Read relations into ``store``; returns the ids read (in file order)."""
-        fp = self._processor(osmium.osm.RELATION)
         if ids is not None:
-            ids = [int(i) for i in ids]
-            if not ids:
+            ids = self._id_array(ids)
+            if ids.size == 0:
                 return []
-            fp.with_filter(osmium.filter.IdFilter(ids))
-        if tag_pairs:
-            fp.with_filter(osmium.filter.TagFilter(*tag_pairs))
         if contains_nodes is not None:
-            if not contains_nodes:
+            contains_nodes = self._id_array(contains_nodes)
+            if contains_nodes.size == 0:
                 return []
-            tracker = osmium.IdTracker()
-            for nid in contains_nodes:
-                tracker.add_node(int(nid))
-            fp.with_filter(tracker.contains_filter())
-        read = []
-        for rel in fp:
-            members = tuple((m.type, m.ref, m.role) for m in rel.members)
-            store.rels[rel.id] = (members, dict(rel.tags))
-            read.append(rel.id)
+        rel_ids, offsets, types, refs, roles, tags = self._file.relations(
+            ids=ids, tags=list(tag_pairs) if tag_pairs else None, contains_nodes=contains_nodes
+        )
+        kinds, refs, offsets = _MEMBER_CHARS[types].tolist(), refs.tolist(), offsets.tolist()
+        read = rel_ids.tolist()
+        for i, rid in enumerate(read):
+            a, b = offsets[i], offsets[i + 1]
+            store.rels[rid] = (tuple(zip(kinds[a:b], refs[a:b], roles[a:b])), tags[i])
         return read
 
     def _read_nodes_and_ways(self, store: _Store, node_ids: Iterable[int], way_ids: Iterable[int]) -> None:
         """Read the given nodes (location and tags) and ways (node refs, coordinates, tags) into ``store``."""
-        node_ids = {int(i) for i in node_ids if int(i) not in store.nodes}
-        way_ids = {int(i) for i in way_ids if int(i) not in store.ways}
-        if not node_ids and not way_ids:
-            return
-        tracker = osmium.IdTracker()
-        for nid in node_ids:
-            tracker.add_node(nid)
-        for wid in way_ids:
-            tracker.add_way(wid)
+        node_ids = {int(i) for i in node_ids} - store.nodes.keys()
+        way_ids = {int(i) for i in way_ids} - store.ways.keys()
         if way_ids:
-            fp = self._processor(osmium.osm.NODE | osmium.osm.WAY).with_locations(self.location_storage)
-        else:
-            fp = self._processor(osmium.osm.NODE)
-        fp.with_filter(tracker.id_filter())
-        for obj in fp:
-            if obj.is_node():
-                location = obj.location
-                lonlat = (location.lon, location.lat) if location.valid() else None
-                store.nodes[obj.id] = (lonlat, dict(obj.tags))
-            else:
-                store.ways[obj.id] = _way_record(obj)
+            wids, ref_offsets, refs, coord_offsets, lon, lat, tags = self._file.ways(ids=self._id_array(way_ids))
+            refs, xy = refs.tolist(), list(zip(lon.tolist(), lat.tolist()))
+            ref_offsets, coord_offsets = ref_offsets.tolist(), coord_offsets.tolist()
+            for i, wid in enumerate(wids.tolist()):
+                store.ways[wid] = (
+                    tuple(refs[ref_offsets[i] : ref_offsets[i + 1]]),
+                    xy[coord_offsets[i] : coord_offsets[i + 1]],
+                    tags[i],
+                )
+        if node_ids:
+            nids, lon, lat, tags = self._file.nodes(self._id_array(node_ids))
+            for nid, x, y, node_tags in zip(nids.tolist(), lon.tolist(), lat.tolist(), tags):
+                store.nodes[nid] = ((x, y), node_tags)
 
     def _read_members(self, store: _Store, relation_ids: Iterable[int]) -> None:
         node_ids, way_ids = set(), set()
@@ -379,43 +357,26 @@ class PbfSource:
 
     # ------------------------------------------------------------------ queries
     def _read_ways(self, polygon: Polygon, way_filter: str):
-        """Ways matching ``way_filter`` that touch ``polygon``, read by the Rust core in two parallel passes.
+        """Ways matching ``way_filter`` that touch ``polygon``.
 
         Returns ``(ids, refs, coords, tags)``: way ids in file order, per way the tuple of node refs and the
         ``(k, 2)`` lon/lat array of the nodes found in the file, and the tag dicts.
         """
         predicate = parse_way_filter(way_filter)
         poly = _selection_polygon(polygon)
-        if not self.path.name.lower().endswith(".pbf"):
-            return self._read_ways_osmium(poly, predicate)
         clauses = [(c.key, c.op, c.value, c.ignore_case) for c in predicate.clauses]
+        bboxes = [poly.bounds]  # the reader keeps only the ways whose box meets the polygon's
         try:
-            ids, ref_offsets, refs, coord_offsets, lon, lat, tags = _rust.read_pbf_ways(self.path, clauses)
+            ids, ref_offsets, refs, coord_offsets, lon, lat, tags = self._file.ways(clauses, bboxes=bboxes)
             keep = np.ones(len(ids), dtype=bool)
         except ValueError:
             # A regular expression Rust's engine does not support: read by the other clauses, then filter here.
             plain = [c for c in clauses if c[1] not in {"~", "!~"}]
-            ids, ref_offsets, refs, coord_offsets, lon, lat, tags = _rust.read_pbf_ways(self.path, plain)
+            ids, ref_offsets, refs, coord_offsets, lon, lat, tags = self._file.ways(plain, bboxes=bboxes)
             keep = np.fromiter((predicate(t) for t in tags), dtype=bool, count=len(tags))
 
         counts = np.diff(coord_offsets)
-        keep &= counts > 0
         candidates = np.flatnonzero(keep)
-        if len(candidates):
-            # Bounding-box prefilter, then the poly: test on the candidates only.
-            minx, miny, maxx, maxy = poly.bounds
-            starts = coord_offsets[:-1][candidates]
-            outside = (
-                (
-                    (np.minimum.reduceat(lon, starts) > maxx)
-                    | (np.maximum.reduceat(lon, starts) < minx)
-                    | (np.minimum.reduceat(lat, starts) > maxy)
-                    | (np.maximum.reduceat(lat, starts) < miny)
-                )
-                if len(starts) and starts[-1] < len(lon)
-                else np.zeros(len(candidates), dtype=bool)
-            )
-            candidates = candidates[~outside]
         hits = np.zeros(len(candidates), dtype=bool)
         lengths = counts[candidates]
         multi, single = np.flatnonzero(lengths >= 2), np.flatnonzero(lengths == 1)
@@ -434,35 +395,6 @@ class PbfSource:
         out_refs = [tuple(way_refs[ref_offsets[w] : ref_offsets[w + 1]]) for w in selected]
         out_coords = [xy[coord_offsets[w] : coord_offsets[w + 1]] for w in selected]
         return ids[selected].tolist(), out_refs, out_coords, [tags[w] for w in selected]
-
-    def _read_ways_osmium(self, poly, predicate):
-        """:meth:`_read_ways` through pyosmium, for the formats other than ``.pbf`` (``.osm``, ``.opl``, ...)."""
-        minx, miny, maxx, maxy = poly.bounds
-        fp = self._processor(osmium.osm.NODE | osmium.osm.WAY).with_locations(self.location_storage)
-        fp.with_filter(osmium.filter.EntityFilter(osmium.osm.WAY))
-        for key in predicate.required_keys:
-            fp.with_filter(osmium.filter.KeyFilter(key))
-        records = []
-        for way in fp:
-            tags = dict(way.tags)
-            if not predicate(tags):
-                continue
-            refs, coords, _ = _way_record(way)
-            if not coords:
-                continue
-            lons = [c[0] for c in coords]
-            lats = [c[1] for c in coords]
-            if min(lons) > maxx or max(lons) < minx or min(lats) > maxy or max(lats) < miny:
-                continue
-            records.append((way.id, refs, coords, tags))
-        hits = coords_intersect(poly, [r[2] for r in records])
-        kept = [r for r, hit in zip(records, hits) if hit]
-        return (
-            [r[0] for r in kept],
-            [r[1] for r in kept],
-            [np.asarray(r[2], dtype="f8").reshape(-1, 2) for r in kept],
-            [r[3] for r in kept],
-        )
 
     def ways_by_filter(self, polygon: Polygon, way_filter: str) -> list[dict]:
         """Ways matching an Overpass tag filter inside a polygon.

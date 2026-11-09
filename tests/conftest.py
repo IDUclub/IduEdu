@@ -80,8 +80,6 @@ def _network_osm_source(pytest_config) -> tuple[str, str | None]:
     if _OSM_SOURCE in pytest_config.stash:
         return pytest_config.stash[_OSM_SOURCE]
 
-    import importlib.util
-
     import requests
 
     from iduedu import config, download_osm_pbf
@@ -93,8 +91,6 @@ def _network_osm_source(pytest_config) -> tuple[str, str | None]:
     elif choice == "overpass" or (choice == "auto" and _overpass_available()):
         decision = ("overpass", None)
         print(f"\n OSM data from Overpass {config.overpass_url} \n")
-    elif importlib.util.find_spec("osmium") is None:
-        decision = ("skip", "Overpass is not used and the PBF fallback needs pyosmium: pip install 'iduedu[pbf]'")
     else:
         print(f"\n Overpass is not used; OSM data from the Geofabrik extract {TERRITORY_GEOFABRIK_REGION} \n")
         try:

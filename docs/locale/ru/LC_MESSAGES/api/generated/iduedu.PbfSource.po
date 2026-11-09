@@ -17,29 +17,29 @@ msgstr ""
 msgid "iduedu.PbfSource"
 msgstr "iduedu.PbfSource"
 
-msgid "A local OpenStreetMap file answering the queries IduEdu otherwise sends to Overpass."
-msgstr "Локальный файл OpenStreetMap, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
+msgid "A local OpenStreetMap ``.osm.pbf`` file answering the queries IduEdu otherwise sends to Overpass."
+msgstr "Локальный файл OpenStreetMap ``.osm.pbf``, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
 
-msgid "Any format libosmium reads works (``.osm.pbf``, ``.osm``, ``.opl``, compressed variants). For a city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a whole country extract works too, but every query then scans the whole file."
-msgstr "Подходит любой формат, который читает libosmium (``.osm.pbf``, ``.osm``, ``.opl``, сжатые варианты). Для города передайте компактный файл города, вырезанный :func:`iduedu.osm_pbf.split_by_polygons`; чтение выгрузки целой страны тоже работает, но тогда каждый запрос просматривает весь файл."
+msgid "For a city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a whole country extract works too, but the first query then scans the whole file. Later queries on the same source read only the blocks of the file they need."
+msgstr "Для города передайте компактный файл города, вырезанный :func:`iduedu.osm_pbf.split_by_polygons`; чтение выгрузки целой страны тоже работает, но тогда первый запрос просматривает весь файл. Следующие запросы к тому же источнику читают только нужные им блоки файла."
 
 msgid "Parameters"
 msgstr "Параметры"
 
-msgid "The OSM file."
-msgstr "Файл OSM."
+msgid "The ``.osm.pbf`` file."
+msgstr "Файл ``.osm.pbf``."
 
-msgid "Node-location index used while assembling way geometries, as accepted by ``osmium.index.create_map``: ``\"flex_mem\"`` (default) for city files, or a disk-backed ``\"sparse_file_array\"`` / ``\"dense_file_array\"`` (optionally ``\",<file>\"``) for large extracts."
-msgstr "Индекс координат узлов для сборки геометрий линий в формате ``osmium.index.create_map``: ``\"flex_mem\"`` (по умолчанию) для файлов городов или дисковый ``\"sparse_file_array\"`` / ``\"dense_file_array\"`` (при необходимости с ``\",<file>\"``) для больших выгрузок."
+msgid "Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1."
+msgstr "Устарел и игнорируется; задавал индекс координат узлов pyosmium. Будет удалён в 3.1."
 
 msgid "Raises"
 msgstr "Исключения"
 
-msgid "When pyosmium is not installed."
-msgstr "Если pyosmium не установлен."
-
 msgid "When ``path`` does not exist."
 msgstr "Если ``path`` не существует."
+
+msgid "When the file is not an OSM ``.pbf`` file."
+msgstr "Если файл не является файлом OSM ``.pbf``."
 
 msgid "Methods"
 msgstr "Методы"

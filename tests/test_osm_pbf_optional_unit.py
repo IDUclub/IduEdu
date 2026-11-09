@@ -1,5 +1,5 @@
 # pylint: disable=redefined-outer-name, protected-access, unused-argument
-"""The pbf source without pyosmium, and the downloader dispatch, tested without reading any OSM file."""
+"""The downloader dispatch to the pbf source, and pbf mode in an interpreter where pyosmium cannot be imported."""
 
 import json
 import os
@@ -128,67 +128,42 @@ _NO_OSMIUM_SCRIPT = textwrap.dedent(
     sys.modules["osmium"] = None  # every "import osmium" now raises ModuleNotFoundError(name="osmium")
 
     import iduedu
-    from iduedu import config, get_walk_graph
-    from iduedu.overpass import downloaders
+    from iduedu import _rust, config, get_walk_graph
     from shapely import box
 
-    result = {}
-    for name, call in [
-        ("PbfSource", lambda: iduedu.PbfSource(sys.argv[1])),
-        ("split_by_polygons", lambda: iduedu.split_by_polygons(sys.argv[1], {"a": box(0, 0, 1, 1)}, ".")),
-        ("snapshot_time", lambda: iduedu.snapshot_time(sys.argv[1])),
-        ("set_osm_source", lambda: config.set_osm_source("pbf", path=sys.argv[1])),
-    ]:
-        try:
-            call()
-            result[name] = "no error"
-        except ImportError as exc:
-            result[name] = str(exc)
-
-    config.osm_source, config.pbf_path = "pbf", sys.argv[1]
-    try:
-        downloaders.get_network_by_filters(box(0, 0, 1, 1), '["highway"]')
-        result["pbf_mode"] = "no error"
-    except ImportError as exc:
-        result["pbf_mode"] = str(exc)
-    config.osm_source = "overpass"
-
-    class _Response:
-        def json(self):
-            return {"elements": [
-                {"type": "way", "id": 1, "nodes": [1, 2, 3], "tags": {"highway": "residential"},
-                 "geometry": [{"lat": 59.0, "lon": 30.0}, {"lat": 59.0, "lon": 30.001}, {"lat": 59.001, "lon": 30.001}]}
-            ]}
-
-    downloaders.cache_load = lambda prefix, key_src: None
-    downloaders.cache_save_async = lambda prefix, key_src, obj: None
-    downloaders._overpass_request = lambda *a, **k: _Response()
-    graph = get_walk_graph(territory=box(29.99, 58.99, 30.01, 59.01))
-    result["walk_edges"] = len(graph.edges_gdf)
+    path = sys.argv[1]
+    nodes = [(1, 30.0, 59.0, []), (2, 30.001, 59.0, []), (3, 30.001, 59.001, [])]
+    _rust.write_pbf(path, nodes, [(1, [1, 2, 3], [("highway", "residential")])], [], replication_timestamp=0)
+    result = {
+        "ways": len(iduedu.PbfSource(path).ways_by_filter(box(29.99, 58.99, 30.01, 59.01), '["highway"]')),
+        "split": sorted(iduedu.split_by_polygons(path, {"a": box(29.99, 58.99, 30.01, 59.01)}, "cut")),
+        "snapshot": str(iduedu.snapshot_time(path)),
+    }
+    with config.use_pbf(path):
+        result["walk_edges"] = len(get_walk_graph(territory=box(29.99, 58.99, 30.01, 59.01)).edges_gdf)
     result["osmium_loaded"] = sys.modules.get("osmium") is not None
     print(json.dumps(result))
     """
 )
 
 
-def test_iduedu_works_without_osmium(tmp_path):
-    osm_file = tmp_path / "city.osm.pbf"
-    osm_file.write_bytes(b"")
+def test_pbf_mode_needs_no_osmium(tmp_path):
     proc = subprocess.run(
-        [sys.executable, "-c", _NO_OSMIUM_SCRIPT, str(osm_file)],
+        [sys.executable, "-c", _NO_OSMIUM_SCRIPT, str(tmp_path / "city.osm.pbf")],
         capture_output=True,
         text=True,
         cwd=tmp_path,
         timeout=300,
         check=False,
-        # This subprocess checks optional imports and OSM building, not routing.
-        # Avoid compiling unused Dijkstra kernels in a second interpreter;
-        # the main routing/Numba tests still exercise actual JIT compilation.
-        env={**os.environ, "PYTHONPATH": str(REPO_ROOT), "ENABLE_TQDM": "0", "NUMBA_DISABLE_JIT": "1"},
+        env={**os.environ, "PYTHONPATH": str(REPO_ROOT), "ENABLE_TQDM": "0"},
     )
     assert proc.returncode == 0, proc.stderr
     result = json.loads(proc.stdout.strip().splitlines()[-1])
-    for name in ("PbfSource", "split_by_polygons", "snapshot_time", "set_osm_source", "pbf_mode"):
-        assert "pip install 'iduedu[pbf]'" in result[name], (name, result[name])
+    assert result == {
+        "ways": 1,
+        "split": ["a"],
+        "snapshot": "1970-01-01 00:00:00+00:00",
+        "walk_edges": result["walk_edges"],
+        "osmium_loaded": False,
+    }
     assert result["walk_edges"] > 0
-    assert result["osmium_loaded"] is False

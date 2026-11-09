@@ -57,11 +57,15 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
    - [x] PBF reading of street ways in Rust (`rust/src/pbf.rs`, `osmpbf`): two parallel passes (filtered
      ways, then their node locations), output identical to pyosmium; `PbfSource.ways_table` hands the builders
      coordinate arrays instead of Overpass point dicts. St Petersburg: walk ways 20.2 → 0.64 s, `get_walk_graph`
-     49.6 → 28.5 s, `get_drive_graph` 16.2 → 5.5 s, identical graphs. `.osm`/`.opl` stay on pyosmium.
-   - [ ] Not done, measured: relations (`routes_by_poly` 4.2 s of the 28 s PT build, `boundary` 0.3 s) would
-     save ~4 s per city; pyosmium stays needed anyway for cutting extracts (`osmpbf` cannot write). The rest
-     of the walk build (~23 s: `line_merge` over all segments, `MultiLineString`, midpoint `sjoin_nearest` to
-     carry attributes) is a topological rewrite that changes results; decide separately.
+     49.6 → 28.5 s, `get_drive_graph` 16.2 → 5.5 s, identical graphs.
+   - [x] pyosmium dropped entirely: `PbfFile` (`rust/src/pbf.rs`) reads nodes, ways and relations with a block
+     index of the first pass (later queries read only the blocks they need), `rust/src/pbf_write.rs` writes
+     `.pbf` (zlib, dense nodes, no metadata) for `split_by_polygons`. NW Russia extract: split for St Petersburg
+     and Leningrad oblast 86.5 → 17.2 s with identical elements (1.6M nodes, 425k ways, 1854 relations);
+     `routes_by_poly` on St Petersburg 6.7 → 1.8 s, identical output. Only `.osm.pbf` is read now (`.osm`/`.opl`:
+     convert with `osmium cat`); the `pbf` extra stays empty until 3.1, `location_storage` is deprecated.
+   - [ ] Not done: the rest of the walk build (~23 s: `line_merge` over all segments, `MultiLineString`, midpoint
+     `sjoin_nearest` to carry attributes) is a topological rewrite that changes results; decide separately.
 
 ## Stage 2. New functionality (new kernels in Rust from the start)
 
@@ -89,7 +93,8 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 
 14. [ ] "Upgrading to 3.0" docs page, README/AGENTS/CONTRIBUTING updated, Russian translation (`docs-i18n`,
     `docs-i18n-check`), delete this file, squash `dev` → `main` as `feat!: ...` → 3.0.0.
-15. [ ] 3.1.0: remove the shims deprecated in 3.0.0.
+15. [ ] 3.1.0: remove the shims deprecated in 3.0.0 (`location_storage` of `PbfSource`, `split_by_polygons`,
+    `download_osm_pbf`; the empty `pbf` extra).
 16. [ ] Docs rework along ObjectNat's structure.
 17. [ ] Design document for schedule-based routing (CSA / RAPTOR in Rust).
 
