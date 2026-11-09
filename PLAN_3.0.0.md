@@ -49,7 +49,15 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 5. [x] **Python wrappers**: drop the per-call `_prepare_numba_graph`; faster `_distance_frame` and result assembly
    (74–96 % of `dijkstra_parallel` / `single_source_dijkstra` time is Python today); remove the 2.4.1 deprecations.
 6. [~] **Other utilities in Rust** where measurements justify it (see "Survey of existing utilities" below):
-   PT route segmentation, edge splitting in `project_objects2urban_graph`; PBF reading after a separate measurement.
+   - [x] PT route segmentation: the cost was algorithmic (quadratic `substring`, `iterrows`, `Series.map(dict)`,
+     a lambda per group), not computation; fixed in Python/numpy (`iduedu.graph.lines`), 89 → 28 s on
+     St Petersburg with byte-identical output. Rust would add nothing here.
+   - [x] `project_objects2urban_graph`: 2.1 s per 20k objects without the profiler, spread over pandas/shapely
+     overhead; a vectorized rewrite gave identical output and no speed-up, so it stays as is.
+   - [ ] PBF reading: walk graph 51 s = 23 s reading through pyosmium Python callbacks + 4.3 s `line_merge` +
+     ~20 s other geometry work; drive 19 s = 12.8 s reading. A Rust reader (`osmpbf` crate) with the tag
+     filters and way geometry in Rust is the remaining big win; large scope (PbfSource answers the Overpass
+     queries of all builders, pyosmium also cuts extracts). Decision pending.
 
 ## Stage 2. New functionality (new kernels in Rust from the start)
 
