@@ -65,7 +65,7 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 
 ## Stage 2. New functionality (new kernels in Rust from the start)
 
-7. [ ] **Utilities**: `nearest_edges` (public); `unique_segments` (deduplicated by elementary segments — consecutive
+7. [x] **Utilities**: `nearest_edges` (public); `unique_segments` (deduplicated by elementary segments — consecutive
    coordinate pairs with sorted endpoints, so partly shared there-and-back geometries count once);
    `consolidate_intersections` (KD-tree single-linkage clusters, split by connectivity inside each cluster, only edge
    end points moved, mapping old → new nodes).
