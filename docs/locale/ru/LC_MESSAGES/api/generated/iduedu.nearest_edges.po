@@ -1,0 +1,61 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-09 20:06+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.nearest\\_edges"
+msgstr "iduedu.nearest\\_edges"
+
+msgid "Return the nearest graph edge for each input geometry, with the distance and the position along it."
+msgstr "Возвращает ближайшее ребро графа для каждой входной геометрии вместе с расстоянием до него и положением вдоль него."
+
+msgid "Objects are matched by their ``representative_point()`` in the graph CRS, as in :func:`nearest_nodes`. This does not change the graph; use :func:`project_objects2urban_graph` to insert objects into it."
+msgstr "Объекты сопоставляются по ``representative_point()`` в системе координат графа, как в :func:`nearest_nodes`. Граф при этом не меняется; чтобы встроить объекты в граф, используйте :func:`project_objects2urban_graph`."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph whose ``edges_gdf`` contains line geometries."
+msgstr "Граф, у которого ``edges_gdf`` содержит линейные геометрии."
+
+msgid "GeoDataFrame with geometries to match to graph edges."
+msgstr "GeoDataFrame с геометриями, которые нужно сопоставить с рёбрами графа."
+
+msgid "Optional search radius in graph CRS units; objects farther from every edge get missing values. ``None`` searches without a limit."
+msgstr "Необязательный радиус поиска в единицах системы координат графа; объекты дальше от всех рёбер получают пропущенные значения. ``None`` — поиск без ограничения."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame indexed like ``gdf`` with columns ``edge`` (label of the edge in ``edges_gdf``), ``u``, ``v`` (and ``k`` for multigraphs), ``dist`` (distance from the object to the edge) and ``along`` (distance from the start of the edge geometry to the closest point on it). When several edges are equally near, one of them is returned."
+msgstr "DataFrame с тем же индексом, что у ``gdf``, и столбцами ``edge`` (метка ребра в ``edges_gdf``), ``u``, ``v`` (и ``k`` для мультиграфов), ``dist`` (расстояние от объекта до ребра) и ``along`` (расстояние от начала геометрии ребра до ближайшей к объекту точки на нём). Если несколько рёбер одинаково близки, возвращается одно из них."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``gdf`` is not a GeoDataFrame."
+msgstr "Если ``gdf`` не GeoDataFrame."
+
+msgid "If the graph has no edges or geometries cannot be matched safely."
+msgstr "Если в графе нет рёбер или геометрии нельзя надёжно сопоставить."
+
+msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
+

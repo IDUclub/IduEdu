@@ -32,13 +32,22 @@ Use :func:`subgraph_by_nodes` for node-induced subgraphs,
 Use :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected`, and
 :meth:`UrbanGraph.simplify_multiedges` for topology transformations.
 
+:func:`consolidate_intersections` merges groups of nearby nodes, such as the
+several nodes OSM draws for one junction of dual carriageways, into one node.
+Use it before network statistics or centralities, not for routing graphs.
+:func:`unique_segments` returns the straight pieces of the edge geometries with
+every physical segment once, also where two edges of a two-way street or a
+there-and-back pair share their points; its total length is the network length
+on the ground.
+
 See :doc:`../examples/graph_operations` for editing examples.
 
 Object matching and projection
 ==============================
 
 Use :func:`nearest_nodes` when an object table only needs a nearest existing
-graph node id.
+graph node id, and :func:`nearest_edges` for the nearest edge with the distance
+to it and the position along it.
 
 Use :func:`project_objects2urban_graph` when objects should be inserted into
 the graph topology. The function prepares an :class:`UrbanGraphChanges` object
@@ -79,7 +88,10 @@ optionally include the cached adjacency matrix. See
     simplify_multiedges
     to_directed
     to_undirected
+    consolidate_intersections
+    unique_segments
     nearest_nodes
+    nearest_edges
     project_objects2urban_graph
     apply_urban_graph_changes
     UrbanGraphChanges

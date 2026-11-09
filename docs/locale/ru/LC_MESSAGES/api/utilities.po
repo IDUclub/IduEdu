@@ -41,14 +41,17 @@ msgstr "Используйте :func:`subgraph_by_nodes` для подграфо
 msgid "Use :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected`, and :meth:`UrbanGraph.simplify_multiedges` for topology transformations."
 msgstr "Используйте :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected` и :meth:`UrbanGraph.simplify_multiedges` для преобразований топологии."
 
+msgid ":func:`consolidate_intersections` merges groups of nearby nodes, such as the several nodes OSM draws for one junction of dual carriageways, into one node. Use it before network statistics or centralities, not for routing graphs. :func:`unique_segments` returns the straight pieces of the edge geometries with every physical segment once, also where two edges of a two-way street or a there-and-back pair share their points; its total length is the network length on the ground."
+msgstr ":func:`consolidate_intersections` сливает группы близких узлов, например несколько узлов, которыми OSM рисует один перекрёсток дорог с разделёнными проезжими частями, в один узел. Используйте её перед статистикой сети или центральностями, а не для графов маршрутизации. :func:`unique_segments` возвращает прямые куски геометрий рёбер, каждый физический отрезок один раз, в том числе там, где два ребра двусторонней улицы или пара туда и обратно делят свои точки; их общая длина — длина сети на местности."
+
 msgid "See :doc:`../examples/graph_operations` for editing examples."
 msgstr "Примеры редактирования — в :doc:`../examples/graph_operations`."
 
 msgid "Object matching and projection"
 msgstr "Сопоставление и проецирование объектов"
 
-msgid "Use :func:`nearest_nodes` when an object table only needs a nearest existing graph node id."
-msgstr "Используйте :func:`nearest_nodes`, когда таблице объектов нужен лишь идентификатор ближайшего существующего узла графа."
+msgid "Use :func:`nearest_nodes` when an object table only needs a nearest existing graph node id, and :func:`nearest_edges` for the nearest edge with the distance to it and the position along it."
+msgstr "Используйте :func:`nearest_nodes`, когда таблице объектов нужен лишь идентификатор ближайшего существующего узла графа, и :func:`nearest_edges` для ближайшего ребра с расстоянием до него и положением вдоль него."
 
 msgid "Use :func:`project_objects2urban_graph` when objects should be inserted into the graph topology. The function prepares an :class:`UrbanGraphChanges` object with new nodes, new edges, and source edges to delete. Apply the changes with :func:`apply_urban_graph_changes`, or use :meth:`UrbanGraph.project_objects` for the in-memory shortcut."
 msgstr "Используйте :func:`project_objects2urban_graph`, когда объекты нужно встроить в топологию графа. Функция готовит объект :class:`UrbanGraphChanges` с новыми узлами, новыми рёбрами и исходными рёбрами для удаления. Примените изменения с помощью :func:`apply_urban_graph_changes` или воспользуйтесь сокращением в памяти :meth:`UrbanGraph.project_objects`."
@@ -170,11 +173,29 @@ msgstr ":py:obj:`to_undirected <iduedu.to_undirected>`"
 msgid "Return an undirected copy of ``UrbanGraph``."
 msgstr "Возвращает неориентированную копию ``UrbanGraph``."
 
+msgid ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
+msgstr ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
+
+msgid "Merge groups of nearby nodes, such as the several nodes of one junction of dual carriageways, into one."
+msgstr "Сливает группы близких узлов, например несколько узлов одного перекрёстка дорог с разделёнными проезжими частями, в один."
+
+msgid ":py:obj:`unique_segments <iduedu.unique_segments>`"
+msgstr ":py:obj:`unique_segments <iduedu.unique_segments>`"
+
+msgid "Return the straight segments the edge geometries are made of, each physical segment once."
+msgstr "Возвращает прямые отрезки, из которых состоят геометрии рёбер, каждый физический отрезок один раз."
+
 msgid ":py:obj:`nearest_nodes <iduedu.nearest_nodes>`"
 msgstr ":py:obj:`nearest_nodes <iduedu.nearest_nodes>`"
 
 msgid "Return the nearest graph node id for each input geometry."
 msgstr "Возвращает идентификатор ближайшего узла графа для каждой входной геометрии."
+
+msgid ":py:obj:`nearest_edges <iduedu.nearest_edges>`"
+msgstr ":py:obj:`nearest_edges <iduedu.nearest_edges>`"
+
+msgid "Return the nearest graph edge for each input geometry, with the distance and the position along it."
+msgstr "Возвращает ближайшее ребро графа для каждой входной геометрии вместе с расстоянием до него и положением вдоль него."
 
 msgid ":py:obj:`project_objects2urban_graph <iduedu.project_objects2urban_graph>`"
 msgstr ":py:obj:`project_objects2urban_graph <iduedu.project_objects2urban_graph>`"

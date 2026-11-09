@@ -569,6 +569,24 @@ msgstr "Series с тем же индексом, что ``objects_gdf``, и ид�
 msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
 
+msgid "Return the nearest graph edge for each object, with the distance and the position along it."
+msgstr "Возвращает ближайшее ребро графа для каждого объекта вместе с расстоянием до него и положением вдоль него."
+
+msgid "Functional equivalent: :func:`iduedu.nearest_edges`."
+msgstr "Функциональный аналог: :func:`iduedu.nearest_edges`."
+
+msgid "Return the straight segments of the edge geometries, each physical segment once."
+msgstr "Возвращает прямые отрезки геометрий рёбер, каждый физический отрезок один раз."
+
+msgid "Functional equivalent: :func:`iduedu.unique_segments`."
+msgstr "Функциональный аналог: :func:`iduedu.unique_segments`."
+
+msgid "Merge groups of nearby nodes, such as the nodes of one junction, into one node."
+msgstr "Сливает группы близких узлов, например узлы одного перекрёстка, в один узел."
+
+msgid "Functional equivalent: :func:`iduedu.consolidate_intersections`."
+msgstr "Функциональный аналог: :func:`iduedu.consolidate_intersections`."
+
 msgid "Project objects onto nearest graph edges and add them to the graph."
 msgstr "Проецирует объекты на ближайшие рёбра графа и добавляет их в граф."
 

@@ -3,6 +3,7 @@ from .adapters import (
     urban_graph2nx_graph,
 )
 from .transformers import (
+    consolidate_intersections,
     keep_largest_connected_component,
     simplify_multiedges,
     to_directed,
@@ -41,6 +42,7 @@ from .editors import (
     relabel_urban_graph,
     subgraph_by_nodes,
 )
-from .graph_inputs import nearest_nodes, resolve_graph_nodes_input
+from .graph_inputs import nearest_edges, nearest_nodes, resolve_graph_nodes_input
+from .segments import unique_segments
 from .io import read_urban_graph, write_urban_graph
 from .validation import validate_graph

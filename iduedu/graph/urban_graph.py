@@ -891,6 +891,38 @@ class UrbanGraph:
 
         return nearest_nodes(self, objects_gdf, graph_node_column=graph_node_column)
 
+    def nearest_edges(self, objects_gdf: gpd.GeoDataFrame, *, max_dist: float | None = None) -> pd.DataFrame:
+        """Return the nearest graph edge for each object, with the distance and the position along it.
+
+        Functional equivalent: :func:`iduedu.nearest_edges`.
+        """
+
+        from iduedu.graph.graph_inputs import nearest_edges
+
+        return nearest_edges(self, objects_gdf, max_dist=max_dist)
+
+    def unique_segments(self, *, precision: float = 0.01) -> gpd.GeoDataFrame:
+        """Return the straight segments of the edge geometries, each physical segment once.
+
+        Functional equivalent: :func:`iduedu.unique_segments`.
+        """
+
+        from iduedu.graph.segments import unique_segments
+
+        return unique_segments(self, precision=precision)
+
+    def consolidate_intersections(
+        self, tolerance: float = 10.0, *, max_span: float | None = None, return_mapping: bool = False
+    ):
+        """Merge groups of nearby nodes, such as the nodes of one junction, into one node.
+
+        Functional equivalent: :func:`iduedu.consolidate_intersections`.
+        """
+
+        from iduedu.graph.transformers import consolidate_intersections
+
+        return consolidate_intersections(self, tolerance, max_span=max_span, return_mapping=return_mapping)
+
     def project_objects(
         self,
         objects_gdf: gpd.GeoDataFrame,

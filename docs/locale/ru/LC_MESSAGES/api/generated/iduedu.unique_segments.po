@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-09 20:06+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.unique\\_segments"
+msgstr "iduedu.unique\\_segments"
+
+msgid "Return the straight segments the edge geometries are made of, each physical segment once."
+msgstr "Возвращает прямые отрезки, из которых состоят геометрии рёбер, каждый физический отрезок один раз."
+
+msgid "Every pair of consecutive coordinates of an edge geometry is one segment. Segments are compared without direction and after rounding their end points to ``precision``, so the two directions of a two-way street, parallel edges drawn over the same points, and stretches that a there-and-back pair of edges shares only in part are all counted once. Separately mapped carriageways, which have their own points, stay separate. The sum of ``length`` is the length of the network on the ground."
+msgstr "Каждая пара соседних координат геометрии ребра — один отрезок. Отрезки сравниваются без учёта направления после округления концов до ``precision``, поэтому два направления двусторонней улицы, параллельные рёбра по одним и тем же точкам и участки, которые пара рёбер туда и обратно делит лишь частично, учитываются один раз. Отдельно нанесённые проезжие части со своими точками остаются раздельными. Сумма ``length`` — длина сети на местности."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph with line geometries in a projected (metric) CRS."
+msgstr "Граф с линейными геометриями в проецированной (метрической) системе координат."
+
+msgid "Grid, in CRS units, that end points are rounded to before comparing segments."
+msgstr "Шаг сетки в единицах системы координат, до которого округляются концы перед сравнением отрезков."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "GeoDataFrame in the graph CRS with one two-point LineString per unique segment and columns ``length``, ``edge`` (label of the first edge in ``edges_gdf`` that contains the segment) and ``edge_count`` (how many edge pieces share it). Zero-length segments are left out."
+msgstr "GeoDataFrame в системе координат графа с одной двухточечной LineString на каждый уникальный отрезок и столбцами ``length``, ``edge`` (метка первого ребра в ``edges_gdf``, содержащего отрезок) и ``edge_count`` (сколько кусков рёбер его делят). Отрезки нулевой длины пропускаются."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``precision`` is not positive or the graph CRS is geographic."
+msgstr "Если ``precision`` не положительно или система координат графа географическая."
+
