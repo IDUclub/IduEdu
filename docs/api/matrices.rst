@@ -31,7 +31,7 @@ Use :func:`od_matrix` for specified origin and destination sets, with
 ``mode="all_to_all"`` or ``"pairwise"``. Use :func:`iter_od_matrix` to consume
 origin-row blocks. :func:`single_source_dijkstra_path` returns one route as a
 list. The legacy ``*_path_length`` helpers and ``multi_source_dijkstra_path``
-are deprecated (see `Deprecated helpers`_).
+were removed in 3.0 (see `Removed helpers`_).
 
 Use :func:`path_to_edges` to turn a node route into an ordered GeoDataFrame of
 the actual graph edges. This preserves curved edge geometry and transport
@@ -233,24 +233,16 @@ For object-to-edge projection before OD calculations, see
     single_source_dijkstra_path
     path_to_edges
 
-Deprecated helpers
-~~~~~~~~~~~~~~~~~~
+Removed helpers
+~~~~~~~~~~~~~~~
 
-These wrappers emit ``DeprecationWarning`` since 2.4.1 and will be removed in
-IduEdu 3.0. Each calls one general helper with a fixed ``output``:
+These wrappers were deprecated in 2.4.1 and removed in IduEdu 3.0 (functions
+and ``UrbanGraph`` methods). Each called one general helper with a fixed
+``output``:
 
 * ``single_source_dijkstra_path_length`` → ``single_source_dijkstra(..., output="distances")``
 * ``multi_source_dijkstra_path_length`` → ``multi_source_dijkstra(..., output="distances")``
 * ``dijkstra_path_length_parallel`` → ``dijkstra_parallel(..., output="distances")``
 * ``multi_source_dijkstra_path`` → ``od_matrix(..., output="paths")``. Despite
-  its name it computes independent origin-destination routes, not a
+  its name it computed independent origin-destination routes, not a
   nearest-source search.
-
-.. autosummary::
-    :toctree: generated
-    :nosignatures:
-
-    single_source_dijkstra_path_length
-    multi_source_dijkstra_path_length
-    dijkstra_path_length_parallel
-    multi_source_dijkstra_path

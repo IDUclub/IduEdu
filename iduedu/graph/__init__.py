@@ -26,14 +26,10 @@ from .shortest_paths import (
     iter_od_matrix,
     multi_source_dijkstra,
     single_source_dijkstra,
-    dijkstra_path_length_parallel,
-    multi_source_dijkstra_path,
     multi_source_dijkstra_nearest_source,
-    multi_source_dijkstra_path_length,
     od_matrix,
     path_to_edges,
     single_source_dijkstra_path,
-    single_source_dijkstra_path_length,
 )
 from .urban_graph import UrbanGraph
 from .editors import (

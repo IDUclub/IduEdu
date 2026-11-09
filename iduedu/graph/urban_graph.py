@@ -482,30 +482,6 @@ class UrbanGraph:
             batch_size=batch_size,
         )
 
-    def single_source_dijkstra_path_length(
-        self,
-        source_node: Any,
-        *,
-        weight: Literal["length_meter", "time_min"] = "time_min",
-        cutoff: float | None = None,
-        reverse: bool = False,
-        dtype: np.dtype = np.float32,
-    ) -> pd.Series:
-        """Return a sparse distance Series indexed by reachable graph nodes.
-
-        .. deprecated:: 2.4.1
-            Use ``single_source_dijkstra(..., output="distances")``.
-        """
-
-        from iduedu.graph.routing import warn_deprecated
-
-        warn_deprecated(
-            "UrbanGraph.single_source_dijkstra_path_length", 'single_source_dijkstra(..., output="distances")'
-        )
-        return self.single_source_dijkstra(
-            source_node, weight=weight, cutoff=cutoff, reverse=reverse, dtype=dtype, output="distances"
-        )
-
     def single_source_dijkstra_path(
         self,
         source_node: Any,
@@ -526,76 +502,6 @@ class UrbanGraph:
             weight=weight,
             cutoff=cutoff,
             reverse=reverse,
-        )
-
-    def multi_source_dijkstra_path_length(
-        self,
-        *,
-        source_nodes: Iterable[Any] | None = None,
-        gdf_sources: pd.DataFrame | None = None,
-        graph_node_column: str = "graph_node_id",
-        weight: Literal["length_meter", "time_min"] = "time_min",
-        cutoff: float | None = None,
-        reverse: bool = False,
-        dtype: np.dtype = np.float32,
-    ) -> pd.Series:
-        """Return nearest-source distances.
-
-        .. deprecated:: 2.4.1
-            Use ``multi_source_dijkstra(..., output="distances")``.
-        """
-
-        from iduedu.graph.routing import warn_deprecated
-
-        warn_deprecated(
-            "UrbanGraph.multi_source_dijkstra_path_length", 'multi_source_dijkstra(..., output="distances")'
-        )
-        return self.multi_source_dijkstra(
-            output="distances",
-            source_nodes=source_nodes,
-            gdf_sources=gdf_sources,
-            graph_node_column=graph_node_column,
-            weight=weight,
-            cutoff=cutoff,
-            reverse=reverse,
-            dtype=dtype,
-        )
-
-    def multi_source_dijkstra_path(
-        self,
-        *,
-        gdf_origins: pd.DataFrame | None = None,
-        gdf_destinations: pd.DataFrame | None = None,
-        origins_nodes: Iterable[Any] | None = None,
-        destination_nodes: Iterable[Any] | None = None,
-        graph_node_column: str = "graph_node_id",
-        weight: Literal["length_meter", "time_min"] = "time_min",
-        mode: Literal["all_to_all", "pairwise"] = "all_to_all",
-        threshold: float | None = None,
-        max_workers: int | None = None,
-        cutoff: float | None = None,
-    ) -> pd.DataFrame:
-        """Return shortest node paths between origin and destination inputs.
-
-        .. deprecated:: 2.4.1
-            Use ``od_matrix(..., output="paths")``.
-        """
-
-        from iduedu.graph.routing import warn_deprecated
-
-        warn_deprecated("UrbanGraph.multi_source_dijkstra_path", 'od_matrix(..., output="paths")')
-        return self.od_matrix(
-            output="paths",
-            gdf_origins=gdf_origins,
-            gdf_destinations=gdf_destinations,
-            origins_nodes=origins_nodes,
-            destination_nodes=destination_nodes,
-            graph_node_column=graph_node_column,
-            weight=weight,
-            mode=mode,
-            threshold=threshold,
-            max_workers=max_workers,
-            cutoff=cutoff,
         )
 
     def multi_source_dijkstra_nearest_source(
@@ -626,39 +532,6 @@ class UrbanGraph:
             cutoff=cutoff,
             reverse=reverse,
             dtype=dtype,
-        )
-
-    def dijkstra_path_length_parallel(
-        self,
-        *,
-        source_nodes: Iterable[Any] | None = None,
-        gdf_sources: pd.DataFrame | None = None,
-        graph_node_column: str = "graph_node_id",
-        weight: Literal["length_meter", "time_min"] = "time_min",
-        cutoff: float | None = None,
-        reverse: bool = False,
-        dtype: np.dtype = np.float32,
-        max_workers: int | None = None,
-    ) -> pd.DataFrame:
-        """Return independent distance rows for multiple source nodes.
-
-        .. deprecated:: 2.4.1
-            Use ``dijkstra_parallel(..., output="distances")``.
-        """
-
-        from iduedu.graph.routing import warn_deprecated
-
-        warn_deprecated("UrbanGraph.dijkstra_path_length_parallel", 'dijkstra_parallel(..., output="distances")')
-        return self.dijkstra_parallel(
-            output="distances",
-            source_nodes=source_nodes,
-            gdf_sources=gdf_sources,
-            graph_node_column=graph_node_column,
-            weight=weight,
-            cutoff=cutoff,
-            reverse=reverse,
-            dtype=dtype,
-            max_workers=max_workers,
         )
 
     def od_matrix(

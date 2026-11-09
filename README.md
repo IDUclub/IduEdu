@@ -214,9 +214,9 @@ Common entry points are available directly from `iduedu`:
   `largest_component`.
 - Shortest paths and matrices: `single_source_dijkstra`, `multi_source_dijkstra`, `dijkstra_parallel`,
   `od_matrix`, `iter_od_matrix`, `ShortestPathResult`, `single_source_dijkstra_path`,
-  `multi_source_dijkstra_nearest_source`, `path_to_edges`. Deprecated since 2.4.1 (removed in 3.0):
-  `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`, `dijkstra_path_length_parallel`,
-  `multi_source_dijkstra_path`.
+  `multi_source_dijkstra_nearest_source`, `path_to_edges`. Removed in 3.0 (use the general helpers with
+  `output=...`): `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`,
+  `dijkstra_path_length_parallel`, `multi_source_dijkstra_path`.
 - Optional NetworkX helpers (install `networkx` separately): `urban_graph2nx_graph`, `nx_graph2urban_graph`,
   `graph2gdf`, `gdf2graph`, `read_gml`, `write_gml`, `clip_nx_graph`, `reproject_graph`.
 

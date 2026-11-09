@@ -392,35 +392,11 @@ msgstr "Независимые поиски от нескольких источ
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
 
-msgid "Return a sparse distance Series indexed by reachable graph nodes."
-msgstr "Возвращает разреженную Series расстояний с индексом по достижимым узлам графа."
-
-msgid "Use ``single_source_dijkstra(..., output=\"distances\")``."
-msgstr "Используйте ``single_source_dijkstra(..., output=\"distances\")``."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
-
 msgid "Return one shortest path as an ordered list of graph node ids."
 msgstr "Возвращает один кратчайший путь как упорядоченный список идентификаторов узлов."
 
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
-
-msgid "Return nearest-source distances."
-msgstr "Возвращает расстояния до ближайшего источника."
-
-msgid "Use ``multi_source_dijkstra(..., output=\"distances\")``."
-msgstr "Используйте ``multi_source_dijkstra(..., output=\"distances\")``."
-
-msgid "Return shortest node paths between origin and destination inputs."
-msgstr "Возвращает кратчайшие пути по узлам между входными точками отправления и назначения."
-
-msgid "Use ``od_matrix(..., output=\"paths\")``."
-msgstr "Используйте ``od_matrix(..., output=\"paths\")``."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
 
 msgid "Find the nearest source node and distance for each reachable graph node."
 msgstr "Находит ближайший узел-источник и расстояние до него для каждого достижимого узла графа."
@@ -428,11 +404,8 @@ msgstr "Находит ближайший узел-источник и расс�
 msgid "https://iduclub.github.io/IduEdu/examples/shortest_paths.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/shortest_paths.html"
 
-msgid "Return independent distance rows for multiple source nodes."
-msgstr "Возвращает независимые строки расстояний для нескольких узлов-источников."
-
-msgid "Use ``dijkstra_parallel(..., output=\"distances\")``."
-msgstr "Используйте ``dijkstra_parallel(..., output=\"distances\")``."
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
 
 msgid "Calculate an OD matrix of shortest paths on this graph."
 msgstr "Рассчитывает OD-матрицу кратчайших путей на этом графе."
@@ -586,6 +559,9 @@ msgstr "GeoDataFrame с геометриями, сопоставляемыми �
 
 msgid "Name assigned to the returned ``Series``."
 msgstr "Имя возвращаемой ``Series``."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
 
 msgid "Series indexed like ``objects_gdf`` with nearest node ids as values."
 msgstr "Series с тем же индексом, что ``objects_gdf``, и идентификаторами ближайших узлов в значениях."

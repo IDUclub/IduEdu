@@ -15,12 +15,8 @@ from iduedu import (
 )
 from iduedu.graph import routing
 from iduedu.graph.shortest_paths import (
-    dijkstra_path_length_parallel,
     multi_source_dijkstra_nearest_source,
-    multi_source_dijkstra_path,
-    multi_source_dijkstra_path_length,
     single_source_dijkstra_path,
-    single_source_dijkstra_path_length,
 )
 from tests.factories import (
     directed_oneway_graph,
@@ -494,19 +490,19 @@ def test_isolated_nodes_unreachable_columns_and_float64_storage():
     assert nearest.nearest_sources.iloc[0] is None
 
 
-def test_legacy_path_matrix_preserves_labels_mode_and_threshold():
+def test_pairwise_path_table_preserves_labels_and_threshold():
     graph = undirected_line_graph()
     origins = pd.DataFrame({"graph_node_id": [0, 3]}, index=["left", "right"])
     destinations = pd.DataFrame({"graph_node_id": [2, 0]}, index=["near", "far"])
-    with pytest.warns(DeprecationWarning, match="od_matrix"):
-        result = multi_source_dijkstra_path(
-            graph,
-            gdf_origins=origins,
-            gdf_destinations=destinations,
-            mode="pairwise",
-            threshold=3,
-            max_workers=1,
-        )
+    result = od_matrix(
+        graph,
+        gdf_origins=origins,
+        gdf_destinations=destinations,
+        mode="pairwise",
+        threshold=3,
+        max_workers=1,
+        output="paths",
+    )
     assert result.index.tolist() == [("left", "near"), ("right", "far")]
     assert result.iloc[0, 0] == [0, 1, 2]
     assert pd.isna(result.iloc[1, 0])
@@ -554,55 +550,6 @@ def test_pairwise_repeated_unordered_origins_match_matrix_cells():
     for i in range(len(origins)):
         assert pairwise.distances.iloc[i, 0] == matrix.distances.iloc[i, i]
         assert pairwise.get_path_at(i) == matrix.get_path_at(i, i)
-
-
-@pytest.mark.parametrize(
-    "legacy,replacement",
-    [
-        (
-            lambda g: single_source_dijkstra_path_length(g, 0, cutoff=3),
-            lambda g: g.single_source_dijkstra(0, cutoff=3, output="distances"),
-        ),
-        (
-            lambda g: g.single_source_dijkstra_path_length(0, cutoff=3),
-            lambda g: g.single_source_dijkstra(0, cutoff=3, output="distances"),
-        ),
-        (
-            lambda g: multi_source_dijkstra_path_length(g, source_nodes=[0, 3]),
-            lambda g: g.multi_source_dijkstra(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: g.multi_source_dijkstra_path_length(source_nodes=[0, 3]),
-            lambda g: g.multi_source_dijkstra(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: dijkstra_path_length_parallel(g, source_nodes=[0, 3]),
-            lambda g: g.dijkstra_parallel(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: g.dijkstra_path_length_parallel(source_nodes=[0, 3]),
-            lambda g: g.dijkstra_parallel(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: multi_source_dijkstra_path(g, origins_nodes=[0], destination_nodes=[2, 3]),
-            lambda g: g.od_matrix(origins_nodes=[0], destination_nodes=[2, 3], output="paths"),
-        ),
-        (
-            lambda g: g.multi_source_dijkstra_path(origins_nodes=[0], destination_nodes=[2, 3]),
-            lambda g: g.od_matrix(origins_nodes=[0], destination_nodes=[2, 3], output="paths"),
-        ),
-    ],
-)
-def test_legacy_helpers_warn_and_match_replacements(legacy, replacement):
-    graph = undirected_line_graph()
-    with pytest.warns(DeprecationWarning, match="removed in IduEdu 3.0") as record:
-        result = legacy(graph)
-    # Count only IduEdu deprecations: dependencies may warn inside the same call.
-    legacy_warnings = [item for item in record if "removed in IduEdu 3.0" in str(item.message)]
-    assert len(legacy_warnings) == 1 and legacy_warnings[0].filename == __file__
-    expected = replacement(graph)
-    assert_equal = pd.testing.assert_series_equal if isinstance(expected, pd.Series) else pd.testing.assert_frame_equal
-    assert_equal(result, expected)
 
 
 def test_path_to_edges_out_and_back_route_reuses_edges_in_order():
