@@ -48,16 +48,20 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
    before removal, freeze reference results of the Numba kernels as test fixtures and compare the Rust kernels to them.
 5. [x] **Python wrappers**: drop the per-call `_prepare_numba_graph`; faster `_distance_frame` and result assembly
    (74–96 % of `dijkstra_parallel` / `single_source_dijkstra` time is Python today); remove the 2.4.1 deprecations.
-6. [~] **Other utilities in Rust** where measurements justify it (see "Survey of existing utilities" below):
+6. [x] **Other utilities in Rust** where measurements justify it (see "Survey of existing utilities" below):
    - [x] PT route segmentation: the cost was algorithmic (quadratic `substring`, `iterrows`, `Series.map(dict)`,
      a lambda per group), not computation; fixed in Python/numpy (`iduedu.graph.lines`), 89 → 28 s on
      St Petersburg with byte-identical output. Rust would add nothing here.
    - [x] `project_objects2urban_graph`: 2.1 s per 20k objects without the profiler, spread over pandas/shapely
      overhead; a vectorized rewrite gave identical output and no speed-up, so it stays as is.
-   - [ ] PBF reading: walk graph 51 s = 23 s reading through pyosmium Python callbacks + 4.3 s `line_merge` +
-     ~20 s other geometry work; drive 19 s = 12.8 s reading. A Rust reader (`osmpbf` crate) with the tag
-     filters and way geometry in Rust is the remaining big win; large scope (PbfSource answers the Overpass
-     queries of all builders, pyosmium also cuts extracts). Decision pending.
+   - [x] PBF reading of street ways in Rust (`rust/src/pbf.rs`, `osmpbf`): two parallel passes (filtered
+     ways, then their node locations), output identical to pyosmium; `PbfSource.ways_table` hands the builders
+     coordinate arrays instead of Overpass point dicts. St Petersburg: walk ways 20.2 → 0.64 s, `get_walk_graph`
+     49.6 → 28.5 s, `get_drive_graph` 16.2 → 5.5 s, identical graphs. `.osm`/`.opl` stay on pyosmium.
+   - [ ] Not done, measured: relations (`routes_by_poly` 4.2 s of the 28 s PT build, `boundary` 0.3 s) would
+     save ~4 s per city; pyosmium stays needed anyway for cutting extracts (`osmpbf` cannot write). The rest
+     of the walk build (~23 s: `line_merge` over all segments, `MultiLineString`, midpoint `sjoin_nearest` to
+     carry attributes) is a topological rewrite that changes results; decide separately.
 
 ## Stage 2. New functionality (new kernels in Rust from the start)
 
