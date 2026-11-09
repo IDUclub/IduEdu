@@ -23,7 +23,7 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 (numba + llvmlite). Prototype with identical results: `.claude/worktrees/agent-acf223dbc4b5c170f/bench/rust_prototype/`
 (`REPORT.md` there).
 
-1. [~] **Packaging and CI**, as in ObjectNat:
+1. [x] **Packaging and CI**, as in ObjectNat:
    - maturin build backend, crate `rust/` (`iduedu-rs`), extension module `iduedu._rust`, PyO3 abi3-py311, rayon;
      release profile `lto = "fat"`, `codegen-units = 1`;
    - `[tool.uv] cache-keys` so editable installs rebuild after Rust edits;
@@ -32,7 +32,7 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
      maturin) + five abi3 wheels (linux x86_64/aarch64, windows x64, macOS arm64/x86_64) + PyPI Trusted Publishing;
    - `quality.yml` / `docs.yml` also run on pushes to `dev`;
    - Makefile, AGENTS.md, CONTRIBUTING.md: Rust toolchain, `maturin develop`, rules for where kernels live.
-2. [ ] **Kernels** (from the prototype, cleaned up):
+2. [x] **Kernels** (from the prototype, cleaned up):
    - `CsrGraph` (`#[pyclass]`): owns the CSR arrays (validated once) and a pool of per-search scratch buffers;
      cached on `UrbanGraph` next to the SciPy matrix, a second one for the transposed matrix (reverse searches);
    - Dijkstra: one or many sources, cutoff, early exit on targets, predecessors, owner (nearest source), parallel
@@ -40,15 +40,15 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
      `max_workers`;
    - path reconstruction in batches;
    - connected / weakly / strongly connected components.
-3. [ ] **CSR builder in Rust** with min/max reduction of parallel edges. This fixes the bug where undirected
+3. [x] **CSR builder in Rust** with min/max reduction of parallel edges. This fixes the bug where undirected
    multigraphs summed parallel edges of different orientation (walk graph: 15→16 0.114 min + 16→15 2.213 min gave
    2.327 min). Vectorized node-id lookup in Python (`Index.get_indexer`) instead of a generator over a dict.
    Regression test with parallel edges in both orientations.
-4. [ ] **Remove Numba**: `iduedu/_numba/`, the dependency, `NUMBA_DISABLE_JIT` in `conftest.py`, `nb.set_num_threads`;
+4. [x] **Remove Numba**: `iduedu/_numba/`, the dependency, `NUMBA_DISABLE_JIT` in `conftest.py`, `nb.set_num_threads`;
    before removal, freeze reference results of the Numba kernels as test fixtures and compare the Rust kernels to them.
-5. [ ] **Python wrappers**: drop the per-call `_prepare_numba_graph`; faster `_distance_frame` and result assembly
+5. [x] **Python wrappers**: drop the per-call `_prepare_numba_graph`; faster `_distance_frame` and result assembly
    (74–96 % of `dijkstra_parallel` / `single_source_dijkstra` time is Python today); remove the 2.4.1 deprecations.
-6. [ ] **Other utilities in Rust** where measurements justify it (see "Survey of existing utilities" below):
+6. [~] **Other utilities in Rust** where measurements justify it (see "Survey of existing utilities" below):
    PT route segmentation, edge splitting in `project_objects2urban_graph`; PBF reading after a separate measurement.
 
 ## Stage 2. New functionality (new kernels in Rust from the start)
