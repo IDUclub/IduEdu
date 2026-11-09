@@ -15,6 +15,7 @@ from shapely.ops import substring
 from iduedu import config
 from iduedu.constants.highway_enums import HighwayType
 from iduedu.constants.transport_specs import canonical_transport_type
+from iduedu.graph.lines import cut_line, vertex_distances
 from iduedu.overpass.downloaders import fetch_member_tags
 
 logger = config.logger
@@ -523,33 +524,6 @@ def _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs):
     return items, matched_p, matched_s
 
 
-def _vertex_distances(coords: np.ndarray) -> np.ndarray:
-    """Distance of every vertex along the line, summed the way ``shapely.ops.substring`` sums it."""
-    # ``** 0.5`` per segment as in shapely, not np.sqrt: the two can differ in the last bit, which decides whether a
-    # vertex exactly at a stop is kept.
-    xy = coords.tolist()
-    lengths = [((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 for (x1, y1), (x2, y2) in zip(xy, xy[1:])]
-    return np.concatenate([[0.0], np.cumsum(lengths)])
-
-
-def _substring(coords: np.ndarray, vertex_dist: np.ndarray, start: float, end: float, start_point, end_point):
-    """``shapely.ops.substring(line, start, end)`` with its end points given (``line.interpolate`` of both).
-
-    Same vertices as shapely (those strictly between the two distances), found by binary search on precomputed
-    vertex distances instead of a walk over the whole line per call, which made route parsing quadratic.
-    """
-    if start == end:
-        point = (start_point.x, start_point.y)
-        return LineString([point, point])
-    low, high = (start, end) if start < end else (end, start)
-    first = np.searchsorted(vertex_dist, low, side="right")
-    last = min(np.searchsorted(vertex_dist, high, side="left"), len(coords) - 1)
-    inner = coords[first:last]
-    if start > end:
-        inner = inner[::-1]
-    return LineString(np.vstack([[(start_point.x, start_point.y)], inner, [(end_point.x, end_point.y)]]))
-
-
 def _speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
 
     if b < a:
@@ -764,7 +738,7 @@ def overpass_ground_transport2edgenode(
         path_coords = np.asarray(path.coords)
         steps = np.diff(path_coords, axis=0)
         cumdist = np.concatenate([[0.0], np.cumsum(np.hypot(steps[:, 0], steps[:, 1]))])
-        vertex_dist = _vertex_distances(path_coords)
+        vertex_dist = vertex_distances(path_coords)
         seg_speeds = np.asarray(parts[part_index]["speeds"][:-1], dtype=float)
         if part_index in reversed_parts:
             seg_speeds = seg_speeds[::-1]
@@ -795,7 +769,7 @@ def overpass_ground_transport2edgenode(
             add_node(node_id=stop_ref, point=projected_stop, node_type=transport_type)
 
             if last_dist is not None:
-                seg = _substring(path_coords, vertex_dist, last_dist, stop_dist, last_projected_stop, projected_stop)
+                seg = cut_line(path_coords, vertex_dist, last_dist, stop_dist, last_projected_stop, projected_stop)
                 v_avg = _speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
 
                 add_edge(
