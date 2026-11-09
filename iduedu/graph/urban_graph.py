@@ -59,6 +59,7 @@ class UrbanGraph:
         "adjacency_nodelist",
         "node_to_adjacency_pos",
         "adjacency_weight",
+        "_csr_cache",
     )
 
     def __init__(
@@ -86,8 +87,18 @@ class UrbanGraph:
         self.adjacency_nodelist = []
         self.node_to_adjacency_pos = {}
         self.adjacency_weight = adjacency_weight
+        self._csr_cache = None
 
         self.validate()
+
+    def __getstate__(self):
+        # The Rust view of the adjacency matrix is rebuilt on demand and is not pickled.
+        return {name: getattr(self, name) for name in self.__slots__ if name != "_csr_cache"}
+
+    def __setstate__(self, state):
+        for name, value in state.items():
+            setattr(self, name, value)
+        self._csr_cache = None
 
     def __repr__(self) -> str:
         crs = self.crs

@@ -20,7 +20,7 @@ OSMnx.
 - Static public-transport graph construction directly from OSM relations, without requiring GTFS. A separate
   GTFS builder is available, but it is not part of the reported benchmark workload.
 - Intermodal graph construction by projecting stops, platforms and subway access points onto the walking graph.
-- OD-matrix computation on Numba-backed CSR kernels with cutoff thresholds and adaptive graph reversal.
+- OD-matrix computation on compiled CSR kernels with cutoff thresholds and adaptive graph reversal.
 - Optional NetworkX adapters for interoperability without using NetworkX as the internal graph representation.
 
 ## Pedestrian Graph Construction
@@ -229,7 +229,7 @@ Raw results and environment captures are stored in:
 ## OD Matrices
 
 IduEdu computes OD matrices directly on the graph representation produced by its builders. The CSR
-adjacency is built from `UrbanGraph.edges_gdf`, cached, and passed to Numba kernels without converting the
+adjacency is built from `UrbanGraph.edges_gdf`, cached, and passed to compiled kernels without converting the
 graph into another library's format.
 
 Two mechanisms are important for accessibility workloads:

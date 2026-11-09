@@ -96,8 +96,8 @@ msgstr "**Общественный транспорт из GTFS**: `get_gtfs_pub
 msgid "**Intermodal graphs**: `get_intermodal_graph` combines public transport and walk networks by projecting stops, platforms and subway access points onto pedestrian edges."
 msgstr "**Интермодальные графы**: `get_intermodal_graph` объединяет общественный транспорт и пешеходную сеть, проецируя остановки, платформы и входы в метро на пешеходные рёбра."
 
-msgid "**Matrices and shortest paths**: `od_matrix` and Dijkstra helpers use Numba-backed CSR kernels, cutoff thresholds and adaptive graph reversal for large accessibility workloads. Ordered node routes can be converted back to their real edge geometries for map visualization."
-msgstr "**Матрицы и кратчайшие пути**: `od_matrix` и функции Дейкстры используют ядра CSR на Numba, пороги отсечения и адаптивное обращение графа для больших расчётов доступности. Упорядоченные маршруты по узлам можно превратить обратно в реальную геометрию рёбер для отображения на карте."
+msgid "**Matrices and shortest paths**: `od_matrix` and Dijkstra helpers run on CSR kernels written in Rust, cutoff thresholds and adaptive graph reversal for large accessibility workloads. Ordered node routes can be converted back to their real edge geometries for map visualization."
+msgstr "**Матрицы и кратчайшие пути**: `od_matrix` и функции Дейкстры работают на ядрах CSR, написанных на Rust, с порогами отсечения и адаптивным обращением графа для больших расчётов доступности. Упорядоченные маршруты по узлам можно превратить обратно в реальную геометрию рёбер для отображения на карте."
 
 msgid "**Interoperability**: optional NetworkX adapters are available for projects that need graph exchange or compatibility with older workflows."
 msgstr "**Совместимость**: необязательные адаптеры NetworkX нужны проектам, которым требуется обмен графами или совместимость со старыми сценариями."
@@ -108,8 +108,8 @@ msgstr "Сводку бенчмарка построения графов, ра�
 msgid "Installation"
 msgstr "Установка"
 
-msgid "Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy, Numba). Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from local `.osm.pbf` files instead of Overpass (see [Configuration](configuration.md)). NetworkX is not installed with IduEdu; install it separately to use the optional NetworkX helpers."
-msgstr "Поддерживаются Python с 3.11 по 3.14 и геопространственный стек (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy, Numba). Установите `iduedu[io]`, чтобы читать и записывать архивы `.urbangraph`, и `iduedu[pbf]`, чтобы читать данные OSM из локальных файлов `.osm.pbf` вместо Overpass (см. [Настройки](configuration.md)). NetworkX не устанавливается вместе с IduEdu; установите его отдельно, чтобы пользоваться необязательными функциями для NetworkX."
+msgid "Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy); the graph algorithms are compiled from Rust and ship inside the wheels. Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from local `.osm.pbf` files instead of Overpass (see [Configuration](configuration.md)). NetworkX is not installed with IduEdu; install it separately to use the optional NetworkX helpers."
+msgstr "Поддерживаются Python с 3.11 по 3.14 и геопространственный стек (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy); графовые алгоритмы скомпилированы из Rust и входят в колёса пакета. Установите `iduedu[io]`, чтобы читать и записывать архивы `.urbangraph`, и `iduedu[pbf]`, чтобы читать данные OSM из локальных файлов `.osm.pbf` вместо Overpass (см. [Настройки](configuration.md)). NetworkX не устанавливается вместе с IduEdu; установите его отдельно, чтобы пользоваться необязательными функциями для NetworkX."
 
 msgid "Quickstart"
 msgstr "Быстрый старт"

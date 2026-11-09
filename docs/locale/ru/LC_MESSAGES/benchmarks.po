@@ -47,8 +47,8 @@ msgstr "Построение статического графа обществ�
 msgid "Intermodal graph construction by projecting stops, platforms and subway access points onto the walking graph."
 msgstr "Построение интермодального графа проецированием остановок, платформ и входов в метро на пешеходный граф."
 
-msgid "OD-matrix computation on Numba-backed CSR kernels with cutoff thresholds and adaptive graph reversal."
-msgstr "Расчёт OD-матриц на ядрах CSR на Numba с порогами отсечения и адаптивным обращением графа."
+msgid "OD-matrix computation on compiled CSR kernels with cutoff thresholds and adaptive graph reversal."
+msgstr "Расчёт OD-матриц на скомпилированных ядрах CSR с порогами отсечения и адаптивным обращением графа."
 
 msgid "Optional NetworkX adapters for interoperability without using NetworkX as the internal graph representation."
 msgstr "Необязательные адаптеры NetworkX для совместимости, без использования NetworkX как внутреннего представления графа."
@@ -119,8 +119,8 @@ msgstr "`paper2026/results/env_build.json`"
 msgid "OD Matrices"
 msgstr "OD-матрицы"
 
-msgid "IduEdu computes OD matrices directly on the graph representation produced by its builders. The CSR adjacency is built from `UrbanGraph.edges_gdf`, cached, and passed to Numba kernels without converting the graph into another library's format."
-msgstr "IduEdu рассчитывает OD-матрицы прямо на представлении графа, которое строят её функции. Матрица смежности CSR строится из `UrbanGraph.edges_gdf`, кешируется и передаётся ядрам Numba без преобразования графа в формат другой библиотеки."
+msgid "IduEdu computes OD matrices directly on the graph representation produced by its builders. The CSR adjacency is built from `UrbanGraph.edges_gdf`, cached, and passed to compiled kernels without converting the graph into another library's format."
+msgstr "IduEdu рассчитывает OD-матрицы прямо на представлении графа, которое строят её функции. Матрица смежности CSR строится из `UrbanGraph.edges_gdf`, кешируется и передаётся скомпилированным ядрам без преобразования графа в формат другой библиотеки."
 
 msgid "Two mechanisms are important for accessibility workloads:"
 msgstr "Для расчётов доступности важны два механизма:"

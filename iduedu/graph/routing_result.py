@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from pandas._libs.sparse import IntIndex  # pylint: disable=no-name-in-module
 
-from iduedu._numba.shortest_paths import reconstruct_numba_compact_path
+from iduedu import _rust
 
 
 def _sparse_array(values, positions, length, dtype, fill_value):
@@ -66,7 +66,7 @@ class _PathTree:
     parents: np.ndarray
 
     def reconstruct(self, target: int, node_ids: np.ndarray, reverse: bool) -> list[Any] | None:
-        positions = reconstruct_numba_compact_path(self.nodes, self.parents, np.int32(target), reverse)
+        positions, _ = _rust.reconstruct_paths(self.nodes, self.parents, np.array([target], dtype=np.int32), reverse)
         return node_ids[positions].tolist() if len(positions) else None
 
 

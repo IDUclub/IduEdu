@@ -1,7 +1,7 @@
 """Offline routing benchmark: python -m benchmarks.bench_routing.
 
-Reports median times after JIT warmup and peak allocations visible to
-tracemalloc. The latter excludes Numba's native allocator and is not process
+Reports median times after a warm-up run and peak allocations visible to
+tracemalloc. The latter excludes native allocations of the Rust kernels and is not process
 peak RSS. There are no pass/fail timing thresholds.
 """
 
@@ -52,7 +52,7 @@ def main():
     }
     timings = {}
     for name, operation in operations.items():
-        operation()  # JIT and adjacency warmup, outside measurements.
+        operation()  # Adjacency warmup, outside measurements.
         elapsed = []
         for _ in range(5):
             gc.collect()

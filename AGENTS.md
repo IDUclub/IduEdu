@@ -39,16 +39,20 @@ Rules:
 **IduEdu** is a Python library for building and analyzing multi-modal city transport networks from OpenStreetMap and
 GTFS Schedule data. It downloads OSM data via Overpass API (or reads local `.osm.pbf` files with the optional `pbf`
 extra), reads local GTFS feeds, constructs `drive`, `walk`, and `public transport` graphs, joins them into intermodal
-networks, and computes OD-matrices and routes with Numba-accelerated Dijkstra.
+networks, and computes OD-matrices and routes with Dijkstra kernels written in Rust.
 
 Python 3.11–3.14. Package manager: **uv** (`uv.lock` is generated locally and not committed). Build
-backend: hatchling.
+backend: maturin; the graph kernels are a Rust crate in `rust/` compiled into the extension `iduedu._rust` (PyO3, abi3),
+so a stable Rust toolchain (1.82+) is needed to build from source.
 
 ## Commands
 
 ```bash
-# Install dev dependencies
-uv sync --group dev
+# Install dev dependencies (builds the Rust extension; rerun after editing rust/)
+uv sync --all-groups
+
+# Rust core: format, lint, unit tests (or: make rust-check)
+cd rust && cargo fmt --check && cargo clippy --release --all-targets -- -D warnings && cargo test --release
 
 # Run all unit tests (fast, no network)
 uv run pytest
@@ -86,8 +90,9 @@ uv run python docs/i18n.py update                   # or: make docs-i18n
 uv run python docs/i18n.py check                    # or: make docs-i18n-check (CI fails on untranslated text)
 ```
 
-**Numba JIT note:** When running tests under coverage (`--cov`), `conftest.py` automatically sets `NUMBA_DISABLE_JIT=1`
-to allow line-level coverage. Don't set this manually when you want to test actual Numba performance.
+**Rust note:** `uv sync` rebuilds the extension when `rust/Cargo.toml` or `rust/src/**/*.rs` change (`[tool.uv]
+cache-keys`); `uv run maturin develop --release` rebuilds it by hand. Coverage measures the Python layer only; the Rust
+kernels have their own `cargo test` and the Python-level checks in `tests/test_rust_unit.py`.
 
 ## Architecture
 
@@ -125,10 +130,7 @@ iduedu/
     validation.py    — node/edge schema validation, CRS sync
     graph_inputs.py  — nearest_nodes(), resolve_graph_nodes_input() helpers
     io.py            — .urbangraph archive read/write
-  _numba/
-    csr.py           — CSR builder (Numba-compiled)
-    components.py    — BFS/DFS traversal (Numba-compiled)
-    shortest_paths.py — Dijkstra kernels (Numba-compiled)
+  _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/
     drive_walk_builders.py      — get_drive_graph(), get_walk_graph()
     public_transport_builders.py — get_public_transport_graph()
@@ -152,6 +154,11 @@ iduedu/
     transport_specs.py — TransportSpec, TransportRegistry, DEFAULT_REGISTRY
     highway_enums.py   — HighwayType enum
     network_enums.py   — network type enums
+rust/                — Rust core, compiled into iduedu._rust (see rust/README.md)
+  src/csr.rs         — CSR view and validation, edge list → CSR (parallel arcs merged by min/max), transpose
+  src/dijkstra.rs    — Dijkstra (multi-source, cutoff, early exit, predecessors, nearest source), route rebuild
+  src/components.rs  — connected and strongly connected components
+  src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components
 ```
 
 ### Data flow
@@ -169,7 +176,7 @@ Local GTFS directory/ZIP
 UrbanGraph layers
   → intermodal_builders.py (UrbanGraph + UrbanGraph → joined UrbanGraph)
   → graph/editors.py (project objects onto graph)
-  → graph/routing.py → _numba/ (CSR Dijkstra → distances, paths, OD matrix)
+  → graph/routing.py → iduedu._rust (CSR Dijkstra → distances, paths, OD matrix)
 ```
 
 ### Public transport speed model
@@ -189,7 +196,7 @@ Overpass, or the test territory cut out of its Geofabrik extract (`northwestern-
 `.iduedu_cache/geofabrik/`, needs pyosmium) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
 Network tests check real data only; options and edge cases belong in the unit tests with mocked responses.
 
-Pytest markers: `unit`, `integration`, `network`, `slow`, `numba`.
+Pytest markers: `unit`, `integration`, `network`, `slow`, `rust`.
 
 Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `osm_source` (Overpass or the
 PBF fallback; a `pytest_runtest_protocol` hook switches to the file only around network tests, so unit tests in the
@@ -216,5 +223,7 @@ English; the update step keeps them so. Translations on MyST pages (`.md`, inclu
 - All public API must be reachable via `from iduedu import ...` through `_api.py`
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
-- Numba JIT functions live in `iduedu/_numba/` and are called only through the `graph/` layer, never directly from
-  builders or public API
+- Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`), never directly
+  from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
+  run parallel work on rayon; `max_workers` maps to the number of rayon threads

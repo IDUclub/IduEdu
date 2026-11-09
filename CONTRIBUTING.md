@@ -9,13 +9,15 @@ Never bump the version or create a tag by hand.
 ## Requirements
 
 - Python 3.11 through 3.14
+- a stable [Rust toolchain](https://rustup.rs/) (1.82 or newer): the graph kernels are a Rust crate in `rust/`,
+  compiled with maturin into `iduedu._rust` when the package is installed from source
 - [uv](https://docs.astral.sh/uv/) (package manager; `uv.lock` is generated locally and is not committed)
 - `make` (optional but every command below has a `make` shortcut)
 
 ## Setup
 
 ```bash
-uv sync --all-groups     # or: make install-dev
+uv sync --all-groups     # or: make install-dev; also rebuilds the Rust extension after changes in rust/
 ```
 
 ## Local development loop
@@ -31,6 +33,7 @@ uv sync --all-groups     # or: make install-dev
 | Format                  | `make format`       | isort + black                                     |
 | Format check            | `make format-check` | what CI enforces                                  |
 | Lint                    | `make lint`         | pylint                                            |
+| Rust core               | `make rust-check`   | `cargo fmt --check`, clippy, `cargo test` (CI)    |
 | Build docs              | `make docs`         | English and Russian → `docs/_build/html`, `/ru`   |
 | Update translations     | `make docs-i18n`    | new and changed text into `docs/locale/ru`        |
 | Check translations      | `make docs-i18n-check` | what CI enforces on pull requests              |
@@ -44,10 +47,9 @@ same search across every combination of unrelated options. Shared graph and
 GTFS factories live in `tests/factories.py`. Optional-dependency tests stay
 separate so missing an extra cannot skip core graph tests.
 
-Ordinary pytest runs execute actual Numba kernels and reuse a versioned cache
-under `.pytest_cache/numba`. Small synthetic graphs default to two worker threads;
-set `NUMBA_NUM_THREADS` to override this for a run. Coverage runs disable JIT for
-line/branch measurements. The early pytest plugin in `tests/__init__.py` loads
+The routing and component kernels are compiled Rust (`rust/`, see `rust/README.md`). `cargo test` covers them
+on their own, and `tests/test_rust_unit.py` checks the bindings against SciPy; coverage measures the Python layer.
+Keep `iduedu/_rust.pyi` in sync when the bindings change. The early pytest plugin in `tests/__init__.py` loads
 third-party numerical extensions before coverage tracing starts, including on
 Windows; imports and execution of `iduedu` remain measured.
 Branch coverage is explicitly enabled in pytest options so subprocesses inherit

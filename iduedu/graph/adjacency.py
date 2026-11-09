@@ -4,6 +4,45 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
+from iduedu import _rust
+
+
+def _positions_of(nodelist: list[Any], edges: pd.DataFrame) -> tuple[pd.Index, np.ndarray, np.ndarray]:
+    """Matrix positions of edge endpoints (``-1`` when an endpoint is not in ``nodelist``)."""
+    index = pd.Index(nodelist)
+    if index.has_duplicates:
+        raise ValueError("nodelist must not contain duplicate node ids")
+    return index, index.get_indexer(edges["u"]), index.get_indexer(edges["v"])
+
+
+def _arcs(graph, nodelist: list[Any], weight: str | None, *, weak: bool = False):
+    """Directed arcs ``rows -> cols`` (with weights) that the graph allows between nodes of ``nodelist``.
+
+    Undirected graphs and ``weak`` give both directions of every edge, graphs with a direction column give
+    the reverse of every two-way edge, other directed graphs only the stored direction. Parallel edges are
+    not merged here: the CSR builder merges every repeated arc, whatever orientation the edge was stored in.
+    """
+    edges = graph.edges_gdf
+    _, u, v = _positions_of(nodelist, edges)
+    inside = (u >= 0) & (v >= 0)
+    u, v = u[inside].astype(np.int64), v[inside].astype(np.int64)
+    w = (
+        np.ones(len(u), dtype=np.float32)
+        if weight is None
+        else edges[weight].to_numpy()[inside].astype(np.float32, copy=False)
+    )
+    if weak or not graph.is_directed:
+        return np.concatenate([u, v]), np.concatenate([v, u]), np.concatenate([w, w])
+    if graph.edge_direction_column is not None:
+        two_way = ~edges[graph.edge_direction_column].to_numpy()[inside].astype(bool)
+        return np.concatenate([u, v[two_way]]), np.concatenate([v, u[two_way]]), np.concatenate([w, w[two_way]])
+    return u, v, w
+
+
+def _csr(size: int, rows, cols, data, reduce: str = "min") -> sparse.csr_matrix:
+    indptr, indices, values = _rust.build_csr(size, rows, cols, data, reduce)
+    return sparse.csr_matrix((values, indices, indptr), shape=(size, size))
+
 
 def build_adjacency_matrix(
     graph,
@@ -14,6 +53,10 @@ def build_adjacency_matrix(
 ) -> sparse.csr_matrix:
     """Build a weighted adjacency matrix for an ``UrbanGraph``.
 
+    Every arc the graph allows becomes one matrix entry; several edges between the same pair of nodes
+    (parallel edges, or the two orientations of an undirected edge stored twice) are merged with
+    ``multigraph_rule``.
+
     Args:
         graph: Graph-like object with ``nodes_gdf``, ``edges_gdf`` and graph
             direction attributes.
@@ -22,19 +65,19 @@ def build_adjacency_matrix(
         multigraph_rule: Aggregation rule for parallel edges.
 
     Returns:
-        SciPy CSR matrix with shape ``(len(nodelist), len(nodelist))``.
+        SciPy CSR matrix with shape ``(len(nodelist), len(nodelist))`` and float32 values.
 
     Raises:
         KeyError: If ``weight`` is not present in ``edges_gdf``.
-        ValueError: If weights contain missing values or ``multigraph_rule`` is
-            unsupported.
+        ValueError: If weights contain missing values, ``multigraph_rule`` is
+            unsupported or ``nodelist`` has duplicates.
     """
     nodelist = list(nodelist)
 
     if len(nodelist) == 0:
-        return sparse.csr_matrix((0, 0))
+        return sparse.csr_matrix((0, 0), dtype=np.float32)
     if graph.edges_gdf.empty:
-        return sparse.csr_matrix((len(nodelist), len(nodelist)))
+        return sparse.csr_matrix((len(nodelist), len(nodelist)), dtype=np.float32)
     if weight not in graph.edges_gdf.columns:
         raise KeyError(f"edges_gdf has no weight column {weight!r}")
     if graph.edges_gdf[weight].isna().any():
@@ -42,50 +85,8 @@ def build_adjacency_matrix(
     if multigraph_rule not in {"min", "max"}:
         raise ValueError(f"Unsupported multigraph_rule={multigraph_rule!r}")
 
-    node_to_pos = {node: i for i, node in enumerate(nodelist)}
-
-    edges = graph.edges_gdf
-    mask = edges["u"].isin(nodelist) & edges["v"].isin(nodelist)
-    edge_cols = ["u", "v", weight]
-    if graph.edge_direction_column is not None:
-        edge_cols.append(graph.edge_direction_column)
-    edges = edges.loc[mask, edge_cols].copy()
-
-    if graph.edge_direction_column is not None:
-        forward_edges = edges[["u", "v", weight]].rename(columns={"u": "source", "v": "target"})
-        reverse_edges = edges.loc[~edges[graph.edge_direction_column].astype(bool), ["u", "v", weight]].rename(
-            columns={"v": "source", "u": "target"}
-        )
-        graph_edges = pd.concat([forward_edges, reverse_edges], ignore_index=True)
-        graph_edges = graph_edges.groupby(["source", "target"], as_index=False, sort=False)[weight].agg(multigraph_rule)
-        u = graph_edges["source"].to_numpy()
-        v = graph_edges["target"].to_numpy()
-        w = graph_edges[weight].to_numpy()
-    elif graph.is_multigraph:
-        edges = edges.groupby(["u", "v"], as_index=False, sort=False)[weight].agg(multigraph_rule)
-        u = edges["u"].to_numpy()
-        v = edges["v"].to_numpy()
-        w = edges[weight].to_numpy()
-    else:
-        u = edges["u"].to_numpy()
-        v = edges["v"].to_numpy()
-        w = edges[weight].to_numpy()
-
-    row = np.fromiter((node_to_pos[x] for x in u), dtype=np.int64, count=len(u))
-    col = np.fromiter((node_to_pos[x] for x in v), dtype=np.int64, count=len(v))
-
-    if graph.edge_direction_column is None and not graph.is_directed:
-        row, col = np.concatenate([row, col]), np.concatenate([col, row])
-        data = np.concatenate([w, w])
-    else:
-        data = w
-
-    data = np.asarray(data, dtype=np.float32)
-
-    return sparse.coo_matrix(
-        (data, (row, col)),
-        shape=(len(nodelist), len(nodelist)),
-    ).tocsr()
+    rows, cols, data = _arcs(graph, nodelist, weight)
+    return _csr(len(nodelist), rows, cols, data, multigraph_rule)
 
 
 def build_boolean_adjacency_matrix(graph, *, nodelist: Iterable[Any], weak: bool) -> sparse.csr_matrix:
@@ -105,26 +106,6 @@ def build_boolean_adjacency_matrix(graph, *, nodelist: Iterable[Any], weak: bool
     if size == 0 or graph.edges_gdf.empty:
         return sparse.csr_matrix((size, size), dtype=bool)
 
-    node_to_pos = {node: pos for pos, node in enumerate(nodelist)}
-    edges = graph.edges_gdf
-    edges = edges.loc[edges["u"].isin(nodelist) & edges["v"].isin(nodelist)]
-
-    if edges.empty:
-        return sparse.csr_matrix((size, size), dtype=bool)
-
-    u_pos = np.fromiter((node_to_pos[node] for node in edges["u"].to_numpy()), dtype=np.int64, count=len(edges))
-    v_pos = np.fromiter((node_to_pos[node] for node in edges["v"].to_numpy()), dtype=np.int64, count=len(edges))
-
-    if weak or not graph.is_directed:
-        rows = np.concatenate([u_pos, v_pos])
-        cols = np.concatenate([v_pos, u_pos])
-    elif graph.edge_direction_column is not None:
-        oneway = edges[graph.edge_direction_column].astype(bool).to_numpy()
-        rows = np.concatenate([u_pos, v_pos[~oneway]])
-        cols = np.concatenate([v_pos, u_pos[~oneway]])
-    else:
-        rows = u_pos
-        cols = v_pos
-
-    data = np.ones(len(rows), dtype=bool)
-    return sparse.coo_matrix((data, (rows, cols)), shape=(size, size), dtype=bool).tocsr()
+    rows, cols, data = _arcs(graph, nodelist, None, weak=weak)
+    matrix = _csr(size, rows, cols, data)
+    return sparse.csr_matrix((matrix.data.astype(bool), matrix.indices, matrix.indptr), shape=(size, size))

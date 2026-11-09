@@ -3,13 +3,11 @@
 import warnings
 from typing import Any, Iterable, Iterator, Literal
 
-import numba as nb
 import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from iduedu._numba.csr import sparse_row2numba_matrix
-from iduedu._numba.shortest_paths import dijkstra_numba_search, dijkstra_numba_search_parallel
+from iduedu import _rust
 from iduedu.config import config
 from iduedu.graph.graph_inputs import resolve_graph_nodes_input
 from iduedu.graph.routing_result import ShortestPathResult, _groups, _PathStore, _PathTree, _sparse_frame
@@ -58,7 +56,25 @@ def _cutoff_float(cutoff):
     return np.float32(np.inf if cutoff is None else cutoff)
 
 
-def _prepare_numba_graph(urban_graph, *, weight, cutoff, reverse):
+def _csr_graph(urban_graph, *, reverse):
+    """Rust view of the cached adjacency matrix (the transpose for reverse directed searches), built once."""
+    matrix = urban_graph.adjacency_matrix
+    cache = urban_graph._csr_cache  # pylint: disable=protected-access
+    if cache is None or cache[0] is not matrix:
+        forward = _rust.CsrGraph(
+            np.asarray(matrix.indptr, dtype=np.int32),
+            np.asarray(matrix.indices, dtype=np.int32),
+            np.asarray(matrix.data, dtype=np.float32),
+        )
+        cache = urban_graph._csr_cache = [matrix, forward, None]  # pylint: disable=protected-access
+    if not (reverse and urban_graph.is_directed):
+        return cache[1]
+    if cache[2] is None:
+        cache[2] = cache[1].transpose()
+    return cache[2]
+
+
+def _prepare_graph(urban_graph, *, weight, cutoff, reverse):
     if not isinstance(urban_graph, UrbanGraph):
         raise TypeError(f"graph must be UrbanGraph, got {type(urban_graph).__name__}")
     if len(urban_graph.nodes_gdf) == 0:
@@ -78,10 +94,7 @@ def _prepare_numba_graph(urban_graph, *, weight, cutoff, reverse):
         or urban_graph.adjacency_nodelist != nodelist
     ):
         urban_graph.update_adjacency_matrix(nodelist=nodelist, weight=weight)
-    matrix = urban_graph.adjacency_matrix
-    if reverse and urban_graph.is_directed:
-        matrix = matrix.transpose().tocsr()
-    return sparse_row2numba_matrix(matrix)
+    return _csr_graph(urban_graph, reverse=reverse)
 
 
 def _positions(graph, nodes):
@@ -194,7 +207,12 @@ def _finish(output, distances, store, path_storage, nearest_sources=None):
     return ShortestPathResult(distances, store, path_storage=path_storage, nearest_sources=nearest_sources)
 
 
-def _search_many(matrix, sources, targets, cutoff, output, max_workers, batch_size, *, target_offsets=None):
+def _kernel_search_many(graph, *args):
+    """One Rust search per source (a module-level seam, so tests can observe the kernel calls)."""
+    return graph.search_many(*args)
+
+
+def _search_many(graph, sources, targets, cutoff, output, max_workers, batch_size, *, target_offsets=None):
     # Source i searches for targets[starts[i]:ends[i]]; without offsets all
     # sources share the whole array, so it is never copied per source.
     targets = np.ascontiguousarray(targets, dtype=np.int32)
@@ -203,39 +221,31 @@ def _search_many(matrix, sources, targets, cutoff, output, max_workers, batch_si
     else:
         starts, ends = target_offsets[:-1], target_offsets[1:]
     searches = []
-    previous_threads = nb.get_num_threads()
-    if max_workers is not None:
-        nb.set_num_threads(max_workers)
-    try:
-        step = len(sources) if batch_size is None else batch_size
-        for start in range(0, len(sources), step):
-            batch = slice(start, start + step)
-            searches.extend(
-                dijkstra_numba_search_parallel(
-                    matrix,
-                    sources[batch],
-                    targets,
-                    np.ascontiguousarray(starts[batch], dtype=np.int64),
-                    np.ascontiguousarray(ends[batch], dtype=np.int64),
-                    _cutoff_float(cutoff),
-                    output != "distances",
-                )
+    step = len(sources) if batch_size is None else batch_size
+    for start in range(0, len(sources), step):
+        batch = slice(start, start + step)
+        searches.extend(
+            _kernel_search_many(
+                graph,
+                np.ascontiguousarray(sources[batch], dtype=np.int32),
+                targets,
+                np.ascontiguousarray(starts[batch], dtype=np.int64),
+                np.ascontiguousarray(ends[batch], dtype=np.int64),
+                _cutoff_float(cutoff),
+                output != "distances",
+                max_workers,
             )
-    finally:
-        if max_workers is not None:
-            nb.set_num_threads(previous_threads)
+        )
     return searches
 
 
 def _series_search(
     graph, sources, *, target_nodes, weight, cutoff, reverse, output, path_storage, dtype, nearest=False
 ):
-    matrix = _prepare_numba_graph(graph, weight=weight, cutoff=cutoff, reverse=reverse)
+    matrix = _prepare_graph(graph, weight=weight, cutoff=cutoff, reverse=reverse)
     source_positions = np.unique(_positions(graph, sources.to_numpy()))
     target_positions, index = _targets(graph, target_nodes)
-    search = dijkstra_numba_search(
-        matrix, source_positions, target_positions, _cutoff_float(cutoff), output != "distances"
-    )
+    search = matrix.search(source_positions, target_positions, _cutoff_float(cutoff), output != "distances")
     if index is None:
         target_positions = search[0]
         index = pd.Index(_node_ids(graph)[target_positions], name="node")
@@ -374,13 +384,13 @@ def dijkstra_parallel(
     Returns sparse tables with one row per input source and columns for
     target_nodes, or the union of reachable nodes when target_nodes is None.
     Source object labels and repeated node ids are preserved. Other options
-    follow single_source_dijkstra. max_workers controls Numba threads and is
-    restored after the searches. batch_size limits searches in flight; retained
+    follow single_source_dijkstra. max_workers caps the worker threads (default:
+    one per CPU). batch_size limits searches in flight; retained
     results and lazy trees still consume memory across all batches.
     """
     _validate_options(output, path_storage, max_workers, batch_size)
     sources = _sources(urban_graph, source_nodes, gdf_sources, graph_node_column)
-    matrix = _prepare_numba_graph(urban_graph, weight=weight, cutoff=cutoff, reverse=reverse)
+    matrix = _prepare_graph(urban_graph, weight=weight, cutoff=cutoff, reverse=reverse)
     source_positions = _positions(urban_graph, sources.to_numpy())
     unique_sources, inverse = np.unique(source_positions, return_inverse=True)
     target_positions, columns = _targets(urban_graph, target_nodes)
@@ -442,7 +452,7 @@ def _od_resolved(
     if mode == "pairwise" and len(origins) != len(destinations):
         raise ValueError("pairwise mode requires the same number of origins and destinations")
     transposed = mode == "all_to_all" and destinations.nunique() < origins.nunique()
-    matrix = _prepare_numba_graph(graph, weight=weight, cutoff=cutoff, reverse=transposed)
+    matrix = _prepare_graph(graph, weight=weight, cutoff=cutoff, reverse=transposed)
     origin_positions = _positions(graph, origins.to_numpy())
     destination_positions = _positions(graph, destinations.to_numpy())
     calc_origins, calc_targets = (
@@ -526,7 +536,7 @@ def od_matrix(
         weight: Edge cost column: time_min (minutes) or length_meter (meters).
         dtype: Returned distance dtype; kernel arithmetic remains float32.
         threshold: Compatible alias for cutoff. Passing both is an error.
-        max_workers: Numba thread count, restored on completion.
+        max_workers: Worker threads (default: one per CPU).
         cutoff: Inclusive maximum total cost, or None for no limit.
         output: distances (default, preserving existing calls), paths, or both.
         path_storage: eager or lazy. Lazy requires output=both and retains compact

@@ -50,8 +50,8 @@ msgstr "Тип возвращаемых расстояний; арифметик
 msgid "Compatible alias for cutoff. Passing both is an error."
 msgstr "Совместимый псевдоним cutoff. Передавать оба нельзя."
 
-msgid "Numba thread count, restored on completion."
-msgstr "Число потоков Numba, восстанавливается по завершении."
+msgid "Worker threads (default: one per CPU)."
+msgstr "Число рабочих потоков (по умолчанию по одному на ядро процессора)."
 
 msgid "Inclusive maximum total cost, or None for no limit."
 msgstr "Максимальная общая стоимость включительно или None без ограничения."

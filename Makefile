@@ -7,8 +7,8 @@ UV_RUN ?= $(UV) run
 COVERAGE_XML ?= coverage.xml
 COVERAGE_HTML ?= htmlcov
 
-.PHONY: help install install-dev lock update lint format format-check test test-unit test-numba test-network test-all \
-        coverage coverage-xml coverage-html coverage-numba docs docs-i18n docs-i18n-check clean build publish version version-next changelog
+.PHONY: help install install-dev lock update lint format format-check test test-unit test-rust test-network test-all \
+        rust-check coverage coverage-xml coverage-html docs docs-i18n docs-i18n-check clean build publish version version-next changelog
 
 help:
 	@echo "Available targets:"
@@ -19,13 +19,13 @@ help:
 	@echo "  format-check      - check code formatting with isort + black"
 	@echo "  test              - run fast default test suite (network tests excluded)"
 	@echo "  test-unit         - run unit tests only"
-	@echo "  test-numba        - run Numba tests only"
+	@echo "  test-rust         - run the Python tests of the Rust kernels"
 	@echo "  test-network      - run opt-in network tests only"
 	@echo "  test-all          - run all tests, including network tests"
+	@echo "  rust-check        - cargo fmt --check, clippy and cargo test for the Rust core (rust/)"
 	@echo "  coverage          - run fast tests with terminal coverage report"
 	@echo "  coverage-xml      - run all tests (incl. network) and write coverage.xml for CI"
 	@echo "  coverage-html     - run fast tests and write HTML coverage report"
-	@echo "  coverage-numba    - run Numba tests and show Numba coverage only"
 	@echo "  docs              - build the English and Russian documentation (docs/_build/html, .../html/ru)"
 	@echo "  docs-i18n         - add new and changed text to the Russian catalogues (docs/locale/ru)"
 	@echo "  docs-i18n-check   - fail while anything in the documentation is left untranslated"
@@ -64,8 +64,11 @@ test:
 test-unit:
 	$(UV_RUN) python -m pytest -q -m "unit and not network"
 
-test-numba:
-	$(UV_RUN) python -m pytest -q -m numba
+test-rust:
+	$(UV_RUN) python -m pytest -q -m rust
+
+rust-check:
+	cd rust && cargo fmt --check && cargo clippy --release --all-targets -- -D warnings && cargo test --release
 
 test-network:
 	$(UV_RUN) python -m pytest --run-network -q -m network
@@ -89,11 +92,6 @@ coverage-html:
 	$(UV_RUN) python -m coverage run -m pytest -q
 	$(UV_RUN) python -m coverage html -d $(COVERAGE_HTML)
 	$(UV_RUN) python -m coverage report -m
-
-coverage-numba:
-	$(UV_RUN) python -m coverage erase
-	$(UV_RUN) python -m coverage run -m pytest tests/test_numba_unit.py -q
-	$(UV_RUN) python -m coverage report --include="$(PACKAGE)/_numba/*" -m
 
 docs:
 	$(UV_RUN) sphinx-build -b html docs docs/_build/html

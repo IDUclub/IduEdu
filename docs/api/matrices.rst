@@ -186,13 +186,13 @@ retains their memory; do not edit the graph while consuming an iterator.
 Distance tables are built without a dense OD-sized intermediate. Searches are
 shared by objects matched to the same graph node, stop when all requested
 targets settle, and use the smaller unique OD side where possible.
-``max_workers`` temporarily controls Numba threads; the previous setting is
-restored, including when a search fails.
+``max_workers`` caps the number of worker threads of the searches (by default
+one per CPU).
 
 An offline synthetic benchmark is available with
 ``python -m benchmarks.bench_routing``. It compares separate calls with joint
-eager/lazy calculations after JIT warmup. Its allocation measurements use
-``tracemalloc`` and exclude Numba's native allocator; they are not process peak
+eager/lazy calculations after a warm-up run. Its allocation measurements use
+``tracemalloc`` and exclude native allocations of the compiled kernels; they are not process peak
 RSS measurements. Timing ratios depend on graph structure and requested paths.
 
 Tables retain node mappings as Series in ``attrs``. Before concatenating blocks

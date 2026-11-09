@@ -63,7 +63,7 @@ every setting in the [configuration guide](https://iduclub.github.io/IduEdu/conf
 - Reconstruct shortest routes as ordered nodes and edge geometries for mapping.
 - Combine pedestrian and public-transport layers into one intermodal graph by projecting stops, platforms
   and station access points onto the walking network.
-- Compute shortest paths and OD matrices with Numba-backed CSR routines, cutoff thresholds and adaptive
+- Compute shortest paths and OD matrices with CSR routines written in Rust, cutoff thresholds and adaptive
   graph reversal for unbalanced origin-destination sets.
 - Work with connected, weakly connected and strongly connected UrbanGraph components.
 - Convert to and from NetworkX through optional compatibility utilities.

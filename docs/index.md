@@ -42,7 +42,7 @@ Examples <examples/index>
   timetable-derived boarding waits.
 - **Intermodal graphs**: `get_intermodal_graph` combines public transport and walk networks by projecting
   stops, platforms and subway access points onto pedestrian edges.
-- **Matrices and shortest paths**: `od_matrix` and Dijkstra helpers use Numba-backed CSR kernels, cutoff
+- **Matrices and shortest paths**: `od_matrix` and Dijkstra helpers run on CSR kernels written in Rust, cutoff
   thresholds and adaptive graph reversal for large accessibility workloads. Ordered node routes can
   be converted back to their real edge geometries for map visualization.
 - **Interoperability**: optional NetworkX adapters are available for projects that need graph exchange or
@@ -59,8 +59,8 @@ locations and limitations of the static public-transport model.
 pip install iduedu
 ```
 
-> Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy,
-> Numba). Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from
+> Supports Python 3.11 through 3.14 and the geospatial stack (GeoPandas, Shapely, PyProj, NumPy, Pandas, SciPy);
+> the graph algorithms are compiled from Rust and ship inside the wheels. Install `iduedu[io]` to read and write `.urbangraph` archives, and `iduedu[pbf]` to read OSM data from
 > local `.osm.pbf` files instead of Overpass (see [Configuration](configuration.md)). NetworkX is not installed with
 > IduEdu; install it separately to use the optional NetworkX helpers.
 

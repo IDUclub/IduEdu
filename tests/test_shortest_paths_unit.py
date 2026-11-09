@@ -1,4 +1,3 @@
-import numba as nb
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,7 +13,6 @@ from iduedu import (
     path_to_edges,
     single_source_dijkstra,
 )
-from iduedu._numba.shortest_paths import dijkstra_numba_search
 from iduedu.graph import routing
 from iduedu.graph.shortest_paths import (
     dijkstra_path_length_parallel,
@@ -31,7 +29,7 @@ from tests.factories import (
     undirected_line_graph,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.numba]
+pytestmark = [pytest.mark.unit, pytest.mark.rust]
 
 
 def _dense(series: pd.Series) -> dict:
@@ -255,13 +253,13 @@ def test_zero_edges_ties_and_self_routes():
 def test_duplicate_labels_and_unique_source_optimization(monkeypatch):
     graph = undirected_line_graph()
     calls = []
-    original = routing.dijkstra_numba_search_parallel
+    original = routing._kernel_search_many
 
     def record(matrix, sources, *args):
         calls.append(len(sources))
         return original(matrix, sources, *args)
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", record)
+    monkeypatch.setattr(routing, "_kernel_search_many", record)
     result = graph.od_matrix(
         origins_nodes=[0, 0, 0], destination_nodes=[1, 2, 3, 1], output="both", path_storage="lazy", max_workers=1
     )
@@ -278,13 +276,13 @@ def test_duplicate_labels_and_unique_source_optimization(monkeypatch):
 def test_pairwise_duplicate_sources_share_one_search(monkeypatch):
     graph = undirected_line_graph()
     calls = []
-    original = routing.dijkstra_numba_search_parallel
+    original = routing._kernel_search_many
 
     def record(matrix, sources, targets, starts, ends, *args):
         calls.append((len(sources), sorted(targets[starts[0] : ends[0]])))
         return original(matrix, sources, targets, starts, ends, *args)
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", record)
+    monkeypatch.setattr(routing, "_kernel_search_many", record)
     origins = pd.DataFrame({"graph_node_id": [0, 0]}, index=["a", "b"])
     destinations = pd.DataFrame({"graph_node_id": [2, 3]}, index=["x", "y"])
     result = graph.od_matrix(
@@ -303,10 +301,10 @@ def test_pairwise_duplicate_sources_share_one_search(monkeypatch):
 
 def test_early_stop_discards_tentative_distances_and_distance_only_parents():
     graph = undirected_line_graph()
-    matrix = routing._prepare_numba_graph(graph, weight="time_min", cutoff=None, reverse=False)
+    matrix = routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False)
     sources, targets = np.array([0], dtype=np.int32), np.array([1], dtype=np.int32)
-    tree = dijkstra_numba_search(matrix, sources, targets, np.float32(np.inf), True)
-    distances = dijkstra_numba_search(matrix, sources, targets, np.float32(np.inf), False)
+    tree = matrix.search(sources, targets, np.float32(np.inf), True)
+    distances = matrix.search(sources, targets, np.float32(np.inf), False)
     assert tree[0].tolist() == [0, 1]
     assert distances[0].tolist() == [1]
     assert len(distances[2]) == 0
@@ -319,7 +317,7 @@ def test_lazy_lookup_does_not_repeat_search(monkeypatch):
     def fail(*args, **kwargs):
         raise AssertionError("Lazy route lookup must not search again")
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", fail)
+    monkeypatch.setattr(routing, "_kernel_search_many", fail)
     assert result.get_path(0, 3) == [0, 1, 2, 3]
     assert not result.paths_materialized
     assert result.paths.loc[0, 2] == [0, 1, 2]
@@ -446,24 +444,29 @@ def test_invalid_targets_inputs_and_lookup_positions():
         result.get_path(999)
 
 
-def test_worker_count_restored_on_success_and_failure(monkeypatch):
+def test_max_workers_reaches_the_kernel_and_kernel_errors_propagate(monkeypatch):
     graph = undirected_line_graph()
-    previous = nb.get_num_threads()
+    workers = []
+    original = routing._kernel_search_many
+
+    def record(matrix, *args):
+        workers.append(args[-1])
+        return original(matrix, *args)
+
+    monkeypatch.setattr(routing, "_kernel_search_many", record)
     graph.od_matrix(origins_nodes=[0], destination_nodes=[1], max_workers=1)
-    assert nb.get_num_threads() == previous
+    graph.od_matrix(origins_nodes=[0], destination_nodes=[1])
+    assert workers == [1, None]
 
     def fail(*args, **kwargs):
         raise RuntimeError("kernel failed")
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", fail)
+    monkeypatch.setattr(routing, "_kernel_search_many", fail)
     with pytest.raises(RuntimeError, match="kernel failed"):
         graph.od_matrix(origins_nodes=[0], destination_nodes=[1], max_workers=1)
-    assert nb.get_num_threads() == previous
 
 
 def test_parallel_workers_and_batches_preserve_results():
-    if nb.config.NUMBA_NUM_THREADS < 2:
-        pytest.skip("Two Numba workers are unavailable")
     graph = disconnected_graph()
     params = dict(origins_nodes=[0, 1, 2, 10, 11], destination_nodes=[0, 2, 10, 11], output="both")
     serial = graph.od_matrix(**params, max_workers=1)
