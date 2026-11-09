@@ -56,44 +56,73 @@ def _cutoff_float(cutoff):
     return np.float32(np.inf if cutoff is None else cutoff)
 
 
-def _csr_graph(urban_graph, *, reverse):
-    """Rust view of the cached adjacency matrix (the transpose for reverse directed searches), built once."""
+# UrbanGraph._csr_cache: [adjacency matrix, CsrGraph, transposed CsrGraph | None, node id array | None,
+# (nodes index, edges table, weight) last validated for this matrix | None]
+_MATRIX, _FORWARD, _REVERSE, _NODE_IDS, _CHECKED = range(5)
+
+
+def _cache(urban_graph):
+    """Rust view of the cached adjacency matrix, rebuilt only when the matrix object changes."""
     matrix = urban_graph.adjacency_matrix
     cache = urban_graph._csr_cache  # pylint: disable=protected-access
-    if cache is None or cache[0] is not matrix:
+    if cache is None or cache[_MATRIX] is not matrix:
         forward = _rust.CsrGraph(
             np.asarray(matrix.indptr, dtype=np.int32),
             np.asarray(matrix.indices, dtype=np.int32),
             np.asarray(matrix.data, dtype=np.float32),
         )
-        cache = urban_graph._csr_cache = [matrix, forward, None]  # pylint: disable=protected-access
+        cache = urban_graph._csr_cache = [matrix, forward, None, None, None]  # pylint: disable=protected-access
+    return cache
+
+
+def _csr_graph(urban_graph, *, reverse):
+    """The cached Rust graph, or its transpose for reverse searches of a directed graph."""
+    cache = _cache(urban_graph)
     if not (reverse and urban_graph.is_directed):
-        return cache[1]
-    if cache[2] is None:
-        cache[2] = cache[1].transpose()
-    return cache[2]
+        return cache[_FORWARD]
+    if cache[_REVERSE] is None:
+        cache[_REVERSE] = cache[_FORWARD].transpose()
+    return cache[_REVERSE]
+
+
+def _already_validated(urban_graph, weight):
+    cache = urban_graph._csr_cache  # pylint: disable=protected-access
+    if cache is None or cache[_CHECKED] is None or urban_graph.adjacency_matrix is None:
+        return False
+    nodes_index, edges, checked_weight = cache[_CHECKED]
+    return (
+        cache[_MATRIX] is urban_graph.adjacency_matrix
+        and urban_graph.adjacency_weight == weight == checked_weight
+        and nodes_index is urban_graph.nodes_gdf.index
+        and edges is urban_graph.edges_gdf
+    )
 
 
 def _prepare_graph(urban_graph, *, weight, cutoff, reverse):
     if not isinstance(urban_graph, UrbanGraph):
         raise TypeError(f"graph must be UrbanGraph, got {type(urban_graph).__name__}")
+    _resolve_cutoff(cutoff)
+    if _already_validated(urban_graph, weight):
+        # Same node and edge tables as the last validated call: skip the O(n + m) checks.
+        return _csr_graph(urban_graph, reverse=reverse)
+    nodes_index, edges = urban_graph.nodes_gdf.index, urban_graph.edges_gdf
     if len(urban_graph.nodes_gdf) == 0:
         raise ValueError("graph is empty")
-    if urban_graph.nodes_gdf.index.has_duplicates:
+    if nodes_index.has_duplicates:
         raise ValueError("graph.nodes_gdf.index must be unique")
-    if weight not in urban_graph.edges_gdf:
+    if weight not in edges:
         raise KeyError(f"graph.edges_gdf has no weight column {weight!r}")
-    weights = urban_graph.edges_gdf[weight]
+    weights = edges[weight]
     if weights.isna().any() or (weights < 0).any():
         raise ValueError(f"graph.edges_gdf[{weight!r}] must contain non-negative values without NaN")
-    _resolve_cutoff(cutoff)
-    nodelist = urban_graph.nodes_gdf.index.to_list()
+    nodelist = nodes_index.to_list()
     if (
         urban_graph.adjacency_matrix is None
         or urban_graph.adjacency_weight != weight
         or urban_graph.adjacency_nodelist != nodelist
     ):
         urban_graph.update_adjacency_matrix(nodelist=nodelist, weight=weight)
+    _cache(urban_graph)[_CHECKED] = (nodes_index, edges, weight)
     return _csr_graph(urban_graph, reverse=reverse)
 
 
@@ -106,8 +135,14 @@ def _positions(graph, nodes):
 
 
 def _node_ids(graph):
+    """Node ids in matrix order as an object array (cached with the matrix; treat it as read-only)."""
+    cache = graph._csr_cache  # pylint: disable=protected-access
+    if cache is not None and cache[_MATRIX] is graph.adjacency_matrix and cache[_NODE_IDS] is not None:
+        return cache[_NODE_IDS]
     result = np.empty(len(graph.adjacency_nodelist), dtype=object)
     result[:] = graph.adjacency_nodelist
+    if cache is not None and cache[_MATRIX] is graph.adjacency_matrix:
+        cache[_NODE_IDS] = result
     return result
 
 
@@ -150,16 +185,34 @@ def _distance_series(values, index, dtype, attrs, name="dist"):
     return result
 
 
-def _distance_frame(searches, targets, inverse, index, columns, dtype, attrs, *, transposed=False):
-    # Look up all requested targets once per tree. Explicit zero costs are
-    # stored; absent entries become infinity, not scipy's implicit zero.
-    data, column_indices, offsets = [], [], [0]
+def _target_columns(searches, targets):
+    """Per search: (column positions, costs) of the settled requested targets."""
+    targets = np.asarray(targets, dtype=np.int64)
+    if len(targets) == 0 or len(np.unique(targets)) != len(targets):
+        for search in searches:
+            values = _lookup(search, targets)
+            reachable = np.flatnonzero(np.isfinite(values))
+            yield reachable, values[reachable]
+        return
+    # Unique targets: one gather per search instead of a binary search for every target.
+    column_of = np.full(int(targets.max()) + 1, -1, dtype=np.int64)
+    column_of[targets] = np.arange(len(targets))
     for search in searches:
-        values = _lookup(search, targets)
-        reachable = np.flatnonzero(np.isfinite(values))
-        data.append(values[reachable].astype(dtype))
-        column_indices.append(reachable)
-        offsets.append(offsets[-1] + len(reachable))
+        nodes = search[0].astype(np.int64, copy=False)
+        columns = np.full(len(nodes), -1, dtype=np.int64)
+        inside = nodes < len(column_of)
+        columns[inside] = column_of[nodes[inside]]
+        keep = np.flatnonzero(columns >= 0)
+        yield columns[keep], search[1][keep]
+
+
+def _distance_frame(searches, targets, inverse, index, columns, dtype, attrs, *, transposed=False):
+    # Explicit zero costs are stored; absent entries become infinity, not scipy's implicit zero.
+    data, column_indices, offsets = [], [], [0]
+    for found, values in _target_columns(searches, targets):
+        data.append(values.astype(dtype))
+        column_indices.append(found)
+        offsets.append(offsets[-1] + len(found))
     matrix = sparse.csr_matrix(
         (np.concatenate(data), np.concatenate(column_indices), np.array(offsets)),
         shape=(len(searches), len(targets)),
