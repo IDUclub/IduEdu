@@ -158,7 +158,8 @@ rust/                — Rust core, compiled into iduedu._rust (see rust/README.
   src/csr.rs         — CSR view and validation, edge list → CSR (parallel arcs merged by min/max), transpose
   src/dijkstra.rs    — Dijkstra (multi-source, cutoff, early exit, predecessors, nearest source), route rebuild
   src/components.rs  — connected and strongly connected components
-  src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components
+  src/pbf.rs         — ways of a .pbf file by Overpass tag filter (osmpbf, parallel), used by osm_pbf/reader.py
+  src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, read_pbf_ways
 ```
 
 ### Data flow
@@ -224,6 +225,6 @@ English; the update step keeps them so. Translations on MyST pages (`.md`, inclu
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
 - Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
-  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`), never directly
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`) and `osm_pbf/reader.py`, never directly
   from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
   run parallel work on rayon; `max_workers` maps to the number of rayon threads

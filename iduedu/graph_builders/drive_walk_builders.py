@@ -130,9 +130,9 @@ def _build_edges_from_overpass(
     if len(ways) == 0:
         return gpd.GeoDataFrame()
 
-    # Collecting the coordinates of each line (lon, lat)
+    # Collecting the coordinates of each line (lon, lat): Overpass gives point dicts, a .pbf file arrays.
     coord_entries = [
-        (idx, np.asarray([(p["lon"], p["lat"]) for p in pts], dtype="f8"))
+        (idx, pts if isinstance(pts, np.ndarray) else np.asarray([(p["lon"], p["lat"]) for p in pts], dtype="f8"))
         for idx, pts in ways["geometry"].items()
         if len(pts) >= 2
     ]

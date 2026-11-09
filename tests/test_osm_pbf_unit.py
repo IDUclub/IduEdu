@@ -543,7 +543,8 @@ def test_way_shape_written_out_literally(city_pbf):
     }
 
 
-def test_poly_semantics_for_ways(tmp_path):
+@pytest.mark.parametrize("suffix", [".opl", ".osm.pbf"])  # pyosmium and the Rust reader
+def test_poly_semantics_for_ways(tmp_path, suffix):
     d = OsmData()
     d.node(1, 0.5, 0.5)  # inside
     d.node(2, 2.0, 0.5)
@@ -556,11 +557,13 @@ def test_poly_semantics_for_ways(tmp_path):
     d.way(12, [4, 5], {"highway": "c"})  # outside
     d.way(13, [6], {"highway": "d"})  # a single node on the boundary
     d.way(14, [2, 6, 4], {"highway": "e"})  # touches the boundary
-    path = d.write_opl(tmp_path / "poly.opl")
+    path = d.write_opl(tmp_path / "poly.opl") if suffix == ".opl" else d.write_pbf(tmp_path / "poly.osm.pbf")
     square = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)], holes=[[(0.4, 0.4), (0.6, 0.4), (0.6, 0.6), (0.4, 0.6)]])
     ids = [w["id"] for w in PbfSource(path).ways_by_filter(square, '["highway"]')]
     # Holes are ignored, as the Overpass downloaders send only the exterior ring.
     assert ids == [10, 11, 13, 14]
+    table = PbfSource(path).ways_table(square, '["highway"]')
+    assert table["id"].tolist() == ids and table["geometry"].iloc[2].shape == (1, 2)
 
 
 def test_routes_by_poly_reproduces_the_overpass_statements(city, city_pbf):

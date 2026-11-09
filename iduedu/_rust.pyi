@@ -60,3 +60,12 @@ def strongly_connected_components(
     rindptr: npt.NDArray[np.int32],
     rindices: npt.NDArray[np.int32],
 ) -> npt.NDArray[np.int32]: ...
+def read_pbf_ways(path: str, clauses: list[tuple[str, str, str | None, bool]]) -> tuple[
+    npt.NDArray[np.int64],
+    npt.NDArray[np.int64],
+    npt.NDArray[np.int64],
+    npt.NDArray[np.int64],
+    npt.NDArray[np.float64],
+    npt.NDArray[np.float64],
+    list[dict[str, str]],
+]: ...

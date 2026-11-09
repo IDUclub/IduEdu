@@ -7,6 +7,7 @@
 pub mod components;
 pub mod csr;
 pub mod dijkstra;
+pub mod pbf;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -15,6 +16,7 @@ use numpy::ndarray::Array2;
 use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use rayon::prelude::*;
 
 use csr::{Csr, Reduce};
@@ -389,6 +391,63 @@ fn strongly_connected_components<'py>(
         .into_pyarray(py))
 }
 
+/// Ways read from a ``.pbf`` file: ids, node-ref offsets, node refs, coordinate offsets, lon, lat, tags.
+type WaysPy<'py> = (
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<f64>>,
+    Vec<Bound<'py, PyDict>>,
+);
+
+/// Ways of an OSM ``.pbf`` file whose tags pass every clause ``(key, op, value, ignore_case)`` of an
+/// Overpass filter, in file order, with the coordinates of their nodes (degrees, as libosmium gives them).
+/// Way ``i`` has refs ``refs[ref_offsets[i]:ref_offsets[i + 1]]`` and coordinates
+/// ``lon/lat[coord_offsets[i]:coord_offsets[i + 1]]``; nodes missing from the file add no coordinate.
+#[pyfunction]
+fn read_pbf_ways<'py>(
+    py: Python<'py>,
+    path: std::path::PathBuf,
+    clauses: Vec<(String, String, Option<String>, bool)>,
+) -> PyResult<WaysPy<'py>> {
+    let clauses = clauses
+        .into_iter()
+        .map(|(key, op, value, ignore_case)| pbf::Clause::new(key, &op, value, ignore_case))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(PyValueError::new_err)?;
+    let ways = py
+        .detach(|| pbf::read_ways(&path, &clauses))
+        .map_err(pyo3::exceptions::PyOSError::new_err)?;
+    let degrees = |values: Vec<i32>| {
+        values
+            .into_iter()
+            .map(|v| f64::from(v) / 1e7)
+            .collect::<Vec<f64>>()
+    };
+    let tags = ways
+        .tags
+        .into_iter()
+        .map(|pairs| {
+            let dict = PyDict::new(py);
+            for (key, value) in pairs {
+                dict.set_item(key, value)?;
+            }
+            Ok(dict)
+        })
+        .collect::<PyResult<Vec<_>>>()?;
+    Ok((
+        ways.ids.into_pyarray(py),
+        ways.ref_offsets.into_pyarray(py),
+        ways.refs.into_pyarray(py),
+        ways.coord_offsets.into_pyarray(py),
+        degrees(ways.lon).into_pyarray(py),
+        degrees(ways.lat).into_pyarray(py),
+        tags,
+    ))
+}
+
 #[pymodule(name = "_rust")]
 fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CsrGraph>()?;
@@ -396,6 +455,7 @@ fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(build_csr, m)?)?;
     m.add_function(wrap_pyfunction!(connected_components, m)?)?;
     m.add_function(wrap_pyfunction!(strongly_connected_components, m)?)?;
+    m.add_function(wrap_pyfunction!(read_pbf_ways, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

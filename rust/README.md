@@ -11,10 +11,14 @@ building IduEdu from source builds it.
 - `src/dijkstra.rs`: Dijkstra searches (one or many sources, cutoff, early exit on targets, predecessors, nearest
   source) with packed heap keys and reusable per-search buffers; route reconstruction.
 - `src/components.rs`: connected and strongly connected components.
+- `src/pbf.rs`: reading ways from OSM `.pbf` files (`osmpbf` crate) with an Overpass tag filter, two passes with
+  blocks decoded in parallel; backs `PbfSource` for `.pbf` files (other formats go through pyosmium).
 - `src/lib.rs`: PyO3 bindings (`CsrGraph`, `build_csr`, `reconstruct_paths`, `connected_components`,
-  `strongly_connected_components`), abi3 for CPython 3.11+. Every kernel releases the GIL; parallel kernels use rayon.
+  `strongly_connected_components`, `read_pbf_ways`), abi3 for CPython 3.11+. Every kernel releases the GIL;
+  parallel kernels use rayon.
 
-The Python layer calls these only through `iduedu/graph/` (`adjacency.py`, `routing.py`, `components.py`).
+The Python layer calls these only through `iduedu/graph/` (`adjacency.py`, `routing.py`, `components.py`) and
+`iduedu/osm_pbf/reader.py`.
 
 ## Development
 

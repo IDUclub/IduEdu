@@ -26,10 +26,11 @@ from pathlib import Path
 from typing import Iterable, Mapping
 
 import numpy as np
+import pandas as pd
 import shapely
 from shapely import MultiPolygon, Polygon
 
-from iduedu import config
+from iduedu import _rust, config
 from iduedu.constants.transport_specs import osm_route_values
 from iduedu.osm_pbf.filters import parse_way_filter
 
@@ -377,21 +378,70 @@ class PbfSource:
         return sorted(selected)
 
     # ------------------------------------------------------------------ queries
-    def ways_by_filter(self, polygon: Polygon, way_filter: str) -> list[dict]:
-        """Ways matching an Overpass tag filter inside a polygon.
+    def _read_ways(self, polygon: Polygon, way_filter: str):
+        """Ways matching ``way_filter`` that touch ``polygon``, read by the Rust core in two parallel passes.
 
-        Equivalent to ``way<way_filter>(poly:"..."); out geom;``. Returns Overpass ``out geom`` way
-        elements ``{"type": "way", "id", "bounds", "nodes", "geometry": [{"lat", "lon"}], "tags"}``.
+        Returns ``(ids, refs, coords, tags)``: way ids in file order, per way the tuple of node refs and the
+        ``(k, 2)`` lon/lat array of the nodes found in the file, and the tag dicts.
         """
         predicate = parse_way_filter(way_filter)
         poly = _selection_polygon(polygon)
-        minx, miny, maxx, maxy = poly.bounds
+        if not self.path.name.lower().endswith(".pbf"):
+            return self._read_ways_osmium(poly, predicate)
+        clauses = [(c.key, c.op, c.value, c.ignore_case) for c in predicate.clauses]
+        try:
+            ids, ref_offsets, refs, coord_offsets, lon, lat, tags = _rust.read_pbf_ways(self.path, clauses)
+            keep = np.ones(len(ids), dtype=bool)
+        except ValueError:
+            # A regular expression Rust's engine does not support: read by the other clauses, then filter here.
+            plain = [c for c in clauses if c[1] not in {"~", "!~"}]
+            ids, ref_offsets, refs, coord_offsets, lon, lat, tags = _rust.read_pbf_ways(self.path, plain)
+            keep = np.fromiter((predicate(t) for t in tags), dtype=bool, count=len(tags))
 
+        counts = np.diff(coord_offsets)
+        keep &= counts > 0
+        candidates = np.flatnonzero(keep)
+        if len(candidates):
+            # Bounding-box prefilter, then the poly: test on the candidates only.
+            minx, miny, maxx, maxy = poly.bounds
+            starts = coord_offsets[:-1][candidates]
+            outside = (
+                (
+                    (np.minimum.reduceat(lon, starts) > maxx)
+                    | (np.maximum.reduceat(lon, starts) < minx)
+                    | (np.minimum.reduceat(lat, starts) > maxy)
+                    | (np.maximum.reduceat(lat, starts) < miny)
+                )
+                if len(starts) and starts[-1] < len(lon)
+                else np.zeros(len(candidates), dtype=bool)
+            )
+            candidates = candidates[~outside]
+        hits = np.zeros(len(candidates), dtype=bool)
+        lengths = counts[candidates]
+        multi, single = np.flatnonzero(lengths >= 2), np.flatnonzero(lengths == 1)
+        if multi.size:
+            spans = [np.arange(coord_offsets[w], coord_offsets[w + 1]) for w in candidates[multi]]
+            flat = np.concatenate(spans)
+            lines = shapely.linestrings(lon[flat], lat[flat], indices=np.repeat(np.arange(multi.size), lengths[multi]))
+            hits[multi] = shapely.intersects(poly, lines)
+        if single.size:
+            first = coord_offsets[candidates[single]]
+            hits[single] = shapely.intersects_xy(poly, lon[first], lat[first])
+        selected = candidates[hits]
+
+        xy = np.column_stack([lon, lat])
+        way_refs = refs.tolist()
+        out_refs = [tuple(way_refs[ref_offsets[w] : ref_offsets[w + 1]]) for w in selected]
+        out_coords = [xy[coord_offsets[w] : coord_offsets[w + 1]] for w in selected]
+        return ids[selected].tolist(), out_refs, out_coords, [tags[w] for w in selected]
+
+    def _read_ways_osmium(self, poly, predicate):
+        """:meth:`_read_ways` through pyosmium, for the formats other than ``.pbf`` (``.osm``, ``.opl``, ...)."""
+        minx, miny, maxx, maxy = poly.bounds
         fp = self._processor(osmium.osm.NODE | osmium.osm.WAY).with_locations(self.location_storage)
         fp.with_filter(osmium.filter.EntityFilter(osmium.osm.WAY))
         for key in predicate.required_keys:
             fp.with_filter(osmium.filter.KeyFilter(key))
-
         records = []
         for way in fp:
             tags = dict(way.tags)
@@ -405,16 +455,46 @@ class PbfSource:
             if min(lons) > maxx or max(lons) < minx or min(lats) > maxy or max(lats) < miny:
                 continue
             records.append((way.id, refs, coords, tags))
-
         hits = coords_intersect(poly, [r[2] for r in records])
+        kept = [r for r, hit in zip(records, hits) if hit]
+        return (
+            [r[0] for r in kept],
+            [r[1] for r in kept],
+            [np.asarray(r[2], dtype="f8").reshape(-1, 2) for r in kept],
+            [r[3] for r in kept],
+        )
+
+    def ways_by_filter(self, polygon: Polygon, way_filter: str) -> list[dict]:
+        """Ways matching an Overpass tag filter inside a polygon.
+
+        Equivalent to ``way<way_filter>(poly:"..."); out geom;``. Returns Overpass ``out geom`` way
+        elements ``{"type": "way", "id", "bounds", "nodes", "geometry": [{"lat", "lon"}], "tags"}``.
+        """
         store = _Store()
         out = []
-        for (wid, refs, coords, tags), hit in zip(records, hits):
-            if hit:
-                store.ways[wid] = (refs, coords, tags)
-                out.append(store.geom_way(wid))
+        for wid, refs, coords, tags in zip(*self._read_ways(polygon, way_filter)):
+            store.ways[wid] = (refs, [tuple(c) for c in coords.tolist()], tags)
+            out.append(store.geom_way(wid))
         logger.debug(f"Read {len(out)} ways matching <{way_filter}> from {self.path.name}")
         return out
+
+    def ways_table(self, polygon: Polygon, way_filter: str) -> pd.DataFrame:
+        """The ways of :meth:`ways_by_filter` as a table, without the per-point dictionaries.
+
+        Columns ``type`` (``"way"``), ``id``, ``nodes`` (list of node ids), ``geometry`` (``(k, 2)`` array of
+        lon/lat) and ``tags``. The street builders read this; it holds the same data as the Overpass elements.
+        """
+        ids, refs, coords, tags = self._read_ways(polygon, way_filter)
+        logger.debug(f"Read {len(ids)} ways matching <{way_filter}> from {self.path.name}")
+        return pd.DataFrame(
+            {
+                "type": ["way"] * len(ids),
+                "id": ids,
+                "nodes": [list(r) for r in refs],
+                "geometry": coords,
+                "tags": tags,
+            }
+        )
 
     def routes_by_poly(self, polygon: Polygon, public_transport_types: list[str]) -> list[dict]:
         """Public-transport route elements in a polygon, shaped as ``get_routes_by_poly`` returns them.

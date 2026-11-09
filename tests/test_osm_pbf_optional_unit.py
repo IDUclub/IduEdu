@@ -36,6 +36,9 @@ class _FakeSource:
         self.calls.append(("ways", way_filter))
         return [{"type": "way", "id": 1, "nodes": [1, 2], "geometry": [], "tags": {"highway": "x"}}]
 
+    def ways_table(self, polygon, way_filter):
+        return pd.DataFrame(self.ways_by_filter(polygon, way_filter))
+
     def routes_by_poly(self, polygon, types):
         self.calls.append(("routes", tuple(types)))
         return [{"type": "relation", "id": 7}]

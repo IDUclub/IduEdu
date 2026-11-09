@@ -17,8 +17,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 numpy = "0.30"
+osmpbf = "0.3.7"
 pyo3 = { version = "0.30", features = ["abi3-py311"] }
 rayon = "1.10"
+regex = "1.13.1"
 
 [profile.release]
 codegen-units = 1

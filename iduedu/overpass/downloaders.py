@@ -493,9 +493,9 @@ def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
     """
     if using_pbf():
         logger.debug(f"Reading network with filters <{way_filter}> from {osm_source_label()} ...")
-        elements = _pbf_source().ways_by_filter(polygon, way_filter)
+        ways = _pbf_source().ways_table(polygon, way_filter)
         logger.info("Network successfully read!")
-        return pd.DataFrame(elements)
+        return ways
 
     polygon_coords = _poly_to_overpass(polygon)
     header = config.overpass_header
