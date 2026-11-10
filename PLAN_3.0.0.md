@@ -132,7 +132,11 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
     - walk graph weights: parallel edges are no longer summed (shorter routes, the bug fix of step 3).
 15. [ ] 3.1.0: remove the shims deprecated in 3.0.0 (`location_storage` of `PbfSource`, `split_by_polygons`,
     `download_osm_pbf`; the empty `pbf` extra).
-16. [ ] Docs rework along ObjectNat's structure.
+16. [x] Docs rework along ObjectNat's structure: building / graph / routing / analysis pages (Overview, Inputs,
+    Method, Outputs, Functions, Figures, Limitations, References, Example notebook), figures from
+    `docs/figures/make_figures.py` on the `assets` branch, notebooks `routing_methods`, `network_analysis`,
+    `elevation`, function index, upgrade page; README / AGENTS / CONTRIBUTING updated; Russian complete.
+    The performance page is a stub until new benchmarks.
 17. [ ] Design document for schedule-based routing (CSA / RAPTOR in Rust).
 
 Not planned now: GTFS feed metrics (headways, frequency).
