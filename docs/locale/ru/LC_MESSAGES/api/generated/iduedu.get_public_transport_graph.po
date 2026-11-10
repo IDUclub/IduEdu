@@ -35,14 +35,14 @@ msgstr "Идентификатор отношения или области OSM 
 msgid "Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given."
 msgstr "Геометрия границы в EPSG:4326 (или GeoDataFrame). Используется, если ``osm_id`` не задан."
 
-msgid "Transport mode(s) to include. Accepts:   - ``None``: include all types available in ``transport_registry.rst``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
-msgstr "Transport mode(s) to include. Accepts:   - ``None``: include all types available in ``transport_registry.rst``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+msgid "Transport mode(s) to include. Accepts:   - ``None``: include every type of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+msgstr "Transport mode(s) to include. Accepts:   - ``None``: include every type of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
 
 msgid "Transport mode(s) to include. Accepts:"
 msgstr "Включаемые виды транспорта. Принимает:"
 
-msgid "``None``: include all types available in ``transport_registry.rst``;"
-msgstr "``None``: все виды, доступные в ``transport_registry.rst``;"
+msgid "``None``: include every type of ``transport_registry``;"
+msgstr "``None``: все виды из ``transport_registry``;"
 
 msgid "``str``: a single OSM route type, e.g. ``\"bus\"``;"
 msgstr "``str``: один тип маршрута OSM, например ``\"bus\"``;"
@@ -59,8 +59,8 @@ msgstr "Если True, итоговый граф обрезается по гр�
 msgid "Subset of OSM tags to retain on edges/nodes. If None, a default subset is used."
 msgstr "Набор тегов OSM, сохраняемых на рёбрах и узлах. Если None, используется набор по умолчанию."
 
-msgid "Transport registry used to validate transport types and to compute per-edge travel times (via each mode's parameters such as max speed, acceleration/braking distances, traffic coefficient, and average waiting time for boarding edges). If None, ``DEFAULT_REGISTRY`` is used."
-msgstr "Реестр видов транспорта для проверки видов и расчёта времени в пути на каждом ребре (по параметрам каждого вида, таким как максимальная скорость, расстояния разгона и торможения, коэффициент движения и среднее время ожидания на рёбрах посадки). Если None, используется ``DEFAULT_REGISTRY``."
+msgid "Transport registry used to validate transport types and to compute per-edge travel times (via each mode's parameters such as free speed, acceleration and braking distances, dwell time and average waiting time for boarding edges). If None, ``DEFAULT_REGISTRY`` is used."
+msgstr "Реестр транспорта для проверки видов транспорта и расчёта времени в пути по рёбрам (по параметрам каждого вида, таким как свободная скорость, расстояния разгона и торможения, время стоянки и среднее время ожидания на рёбрах посадки). Если None, используется ``DEFAULT_REGISTRY``."
 
 msgid "Return type"
 msgstr "Тип результата"

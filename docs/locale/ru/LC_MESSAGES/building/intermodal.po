@@ -17,6 +17,132 @@ msgstr ""
 msgid "Intermodal graphs"
 msgstr "Интермодальные графы"
 
-msgid "This page is being written."
-msgstr ""
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "An intermodal graph lets a route walk to a stop, wait, ride, change and walk on to the destination. It joins a walk graph and a public-transport graph at the platforms: every platform is attached to the nearest walkable street, so the shortest path decides by itself where walking ends and riding begins."
+msgstr "Интермодальный граф позволяет маршруту дойти до остановки, подождать, проехать, пересесть и дойти до цели. Он соединяет пешеходный граф и граф общественного транспорта на платформах: каждая платформа присоединяется к ближайшей пешеходной улице, и кратчайший путь сам решает, где кончается ходьба и начинается поездка."
+
+msgid "Function"
+msgstr "Функция"
+
+msgid "Result"
+msgstr "Результат"
+
+msgid ":func:`get_intermodal_graph`"
+msgstr ":func:`get_intermodal_graph`"
+
+msgid "Builds the walk graph and the OSM public-transport graph of a territory and joins them"
+msgstr "Строит пешеходный граф и граф общественного транспорта OSM для территории и соединяет их"
+
+msgid ":func:`join_pt_walk_graph`"
+msgstr ":func:`join_pt_walk_graph`"
+
+msgid "Joins graphs that already exist, for example a GTFS graph (:doc:`gtfs`) and a walk graph"
+msgstr "Соединяет уже существующие графы, например граф GTFS (:doc:`gtfs`) и пешеходный граф"
+
+msgid "Inputs"
+msgstr "Входные данные"
+
+msgid "``osm_id`` or ``territory``, ``clip_by_territory``, ``osm_edge_tags``"
+msgstr "``osm_id`` или ``territory``, ``clip_by_territory``, ``osm_edge_tags``"
+
+msgid "Passed on to both builders (see :doc:`sources` and :doc:`streets`)."
+msgstr "Передаются обоим построителям (см. :doc:`sources` и :doc:`streets`)."
+
+msgid "``walk_kwargs`` and ``pt_kwargs``"
+msgstr "``walk_kwargs`` и ``pt_kwargs``"
+
+msgid "Further arguments of :func:`get_walk_graph` (``walk_speed``, ``simplify``) and of :func:`get_public_transport_graph` (``transport_types``, ``transport_registry``). They override the shared arguments."
+msgstr "Дополнительные аргументы :func:`get_walk_graph` (``walk_speed``, ``simplify``) и :func:`get_public_transport_graph` (``transport_types``, ``transport_registry``). Они переопределяют общие аргументы."
+
+msgid "``max_dist``"
+msgstr "``max_dist``"
+
+msgid "The largest distance, in metres, from a platform to the walk graph: 30 m in :func:`get_intermodal_graph` and 20 m in :func:`join_pt_walk_graph`. Platforms farther away stay unconnected and are reported in the log."
+msgstr "Наибольшее расстояние в метрах от платформы до пешеходного графа: 30 м в :func:`get_intermodal_graph` и 20 м в :func:`join_pt_walk_graph`. Более далёкие платформы остаются неприсоединёнными, и это записывается в журнал."
+
+msgid "``add_link_edge``"
+msgstr "``add_link_edge``"
+
+msgid "``True`` (the default) adds a walking edge from the platform to the street; ``False`` places the platform on the street itself."
+msgstr "``True`` (по умолчанию) добавляет пешеходное ребро от платформы до улицы; ``False`` ставит платформу на саму улицу."
+
+msgid "``keep_largest_subgraph``"
+msgstr "``keep_largest_subgraph``"
+
+msgid "Keep the largest connected component of the joined graph. Public-transport nodes dropped with smaller components are logged by type, because they mean that a mode lost its connection to the streets."
+msgstr "Сохранить наибольшую компоненту связности объединённого графа. Узлы общественного транспорта, отброшенные вместе с меньшими компонентами, записываются в журнал по типам: это значит, что вид транспорта потерял связь с улицами."
+
+msgid "Both graphs must be in the same CRS. :func:`get_intermodal_graph` builds them for the same territory, so they are; for :func:`join_pt_walk_graph` pass the CRS of the walk graph to the second builder."
+msgstr "Оба графа должны быть в одной системе координат. :func:`get_intermodal_graph` строит их для одной территории, поэтому так и есть; для :func:`join_pt_walk_graph` передайте систему координат пешеходного графа второму построителю."
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "The two graphs are built; :func:`get_intermodal_graph` runs both builders in parallel."
+msgstr "Строятся два графа; :func:`get_intermodal_graph` запускает оба построителя параллельно."
+
+msgid "The walk graph is made directed, with every walking edge in both directions, because public-transport edges have a direction."
+msgstr "Пешеходный граф делается ориентированным, с каждым пешеходным ребром в обоих направлениях, потому что у рёбер общественного транспорта есть направление."
+
+msgid "Every platform-like node of the public-transport graph (``platform``, ``subway_entry_exit``, ``station_entry_exit``) is projected onto the nearest walking edge within ``max_dist`` with :func:`project_objects2urban_graph`. The edge is split at the projection point, and with ``add_link_edge`` a link edge at walking speed joins the platform to that point."
+msgstr "Каждый узел графа общественного транспорта, похожий на платформу (``platform``, ``subway_entry_exit``, ``station_entry_exit``), проецируется на ближайшее пешеходное ребро в пределах ``max_dist`` функцией :func:`project_objects2urban_graph`. Ребро разрезается в точке проекции, а с ``add_link_edge`` соединительное ребро со скоростью пешехода связывает платформу с этой точкой."
+
+msgid "Projected platforms take the ids of their walk nodes and keep their attributes; the other public-transport nodes get new ids after those of the walk graph. Public-transport edges are renumbered to match, and the two edge tables are joined."
+msgstr "Спроецированные платформы получают id своих пешеходных узлов и сохраняют свои атрибуты; остальные узлы общественного транспорта получают новые id после id пешеходного графа. Рёбра общественного транспорта перенумеровываются соответственно, и две таблицы рёбер объединяются."
+
+msgid "With ``keep_largest_subgraph`` the largest connected component is kept."
+msgstr "С ``keep_largest_subgraph`` сохраняется наибольшая компонента связности."
+
+msgid "Waiting is part of the graph: a ``boarding`` edge from a platform to a route carries the wait of that route, so a change between routes costs a walk between platforms, where needed, and a new wait (:doc:`public_transport`)."
+msgstr "Ожидание входит в граф: ребро ``boarding`` от платформы к маршруту несёт ожидание этого маршрута, поэтому пересадка между маршрутами стоит перехода между платформами, где он нужен, и нового ожидания (:doc:`public_transport`)."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+msgid "A directed :class:`UrbanGraph` of type ``intermodal`` whose edges have ``type`` ``walk`` or a public-transport type, and ``oneway``. Every walking edge is stored once per direction. Routing functions work on it like on any other graph, by ``time_min`` for travel times. For Vasilyevsky Island the joined graph has 23 665 nodes and 32 329 edges, with all 251 platforms attached to the streets."
+msgstr "Ориентированный :class:`UrbanGraph` типа ``intermodal``, рёбра которого имеют ``type`` ``walk`` или тип общественного транспорта, а также ``oneway``. Каждое пешеходное ребро хранится по одному разу на направление. Функции маршрутизации работают с ним как с любым другим графом, по ``time_min`` для времени в пути. Для Васильевского острова объединённый граф содержит 23 665 узлов и 32 329 рёбер, и все 251 платформы присоединены к улицам."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`get_intermodal_graph <iduedu.get_intermodal_graph>`"
+msgstr ":py:obj:`get_intermodal_graph <iduedu.get_intermodal_graph>`"
+
+msgid "Build an intermodal (PT+walking) ``UrbanGraph`` for a territory."
+msgstr "Строит интермодальный (общественный транспорт и пешие переходы) ``UrbanGraph`` для территории."
+
+msgid ":py:obj:`join_pt_walk_graph <iduedu.join_pt_walk_graph>`"
+msgstr ":py:obj:`join_pt_walk_graph <iduedu.join_pt_walk_graph>`"
+
+msgid "Join public-transport and pedestrian ``UrbanGraph`` objects into an intermodal graph."
+msgstr "Объединяет ``UrbanGraph`` общественного транспорта и пешеходный в интермодальный граф."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "The intermodal graph around Vasileostrovskaya station, and the minutes public transport saves from one place"
+msgstr "Интермодальный граф вокруг станции «Василеостровская» и минуты, которые общественный транспорт экономит от одного места"
+
+msgid "Left: the joined graph around Vasileostrovskaya subway station. Platforms (orange) sit at the streets, short black edges lead to the route stops of the lines, and the dashed edges lead from the entrances down to the station. Right: from one place in the west of the island, the minutes a route with public transport saves against walking only, for every node of the walk graph; in the east it exceeds 30 minutes."
+msgstr "Слева: объединённый граф вокруг станции метро «Василеостровская». Платформы (оранжевые) стоят у улиц, короткие чёрные рёбра ведут к остановкам маршрутов, а пунктирные рёбра ведут от входов вниз к станции. Справа: от одного места на западе острова — минуты, которые маршрут с общественным транспортом экономит по сравнению с ходьбой пешком, для каждого узла пешеходного графа; на востоке экономия превышает 30 минут."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "Boarding waits are averages; the graph does not know when the next departure leaves."
+msgstr "Время ожидания посадки — среднее; граф не знает, когда уходит следующий рейс."
+
+msgid "A platform farther than ``max_dist`` from any walkable street stays unconnected and, with ``keep_largest_subgraph``, is dropped with its routes when nothing else connects them."
+msgstr "Платформа дальше ``max_dist`` от любой пешеходной улицы остаётся неприсоединённой и с ``keep_largest_subgraph`` отбрасывается вместе со своими маршрутами, если их больше ничто не связывает."
+
+msgid "Changes between routes at one platform are free apart from the wait; walks inside large interchanges follow the mapped stop areas and pathways only."
+msgstr "Пересадки между маршрутами на одной платформе бесплатны, кроме ожидания; переходы внутри крупных пересадочных узлов следуют только нанесённым на карту зонам остановок и переходам."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/get_any_graph`"
+msgstr ":doc:`../examples/get_any_graph`"
 

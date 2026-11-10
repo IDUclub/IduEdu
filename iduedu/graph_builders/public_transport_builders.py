@@ -543,7 +543,7 @@ def get_public_transport_graph(
             Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given.
         transport_types:
             Transport mode(s) to include. Accepts:
-              - ``None``: include all types available in ``transport_registry.rst``;
+              - ``None``: include every type of ``transport_registry``;
               - ``str``: a single OSM route type, e.g. ``"bus"``;
               - ``Sequence[str]``: multiple types, e.g. ``["tram", "bus", "trolleybus", "subway"]``.
 
@@ -554,7 +554,7 @@ def get_public_transport_graph(
             Subset of OSM tags to retain on edges/nodes. If None, a default subset is used.
         transport_registry:
             Transport registry used to validate transport types and to compute per-edge travel times (via each mode's
-            parameters such as max speed, acceleration/braking distances, traffic coefficient, and average waiting
+            parameters such as free speed, acceleration and braking distances, dwell time and average waiting
             time for boarding edges).
             If None, ``DEFAULT_REGISTRY`` is used.
 

@@ -71,102 +71,26 @@ logged.
 
 ## Local OSM files instead of Overpass
 
-Every OSM-based builder can read its data from a local OpenStreetMap file instead of the Overpass API: the
-same street networks, public-transport routes, subway stop areas and boundaries, answered with the same
-filters and the same `poly:` selection rules, so the graphs come out the same. The files are read by
-IduEdu's Rust core, so nothing else has to be installed. Only `.osm.pbf` files are read; convert `.osm` or
-`.opl` files first, for example with `osmium cat city.osm -o city.osm.pbf`.
-
 ```python
-from iduedu import config, get_public_transport_graph, get_walk_graph, use_pbf
+from iduedu import config
 
-config.set_osm_source("pbf", path="city.osm.pbf")   # every following call reads the file
-walk = get_walk_graph(territory=city_polygon)
-config.set_osm_source("overpass")                   # back to the default
-
-with use_pbf("city.osm.pbf"):                       # or only inside a block (same as config.use_pbf)
-    pt = get_public_transport_graph(territory=city_polygon, transport_types=["bus", "tram", "subway"])
+config.set_osm_source("pbf", path="city.osm.pbf")  # every builder reads the file
+config.set_osm_source("overpass")                  # back to the default
 ```
 
-The environment variables `IDUEDU_OSM_SOURCE=pbf` and `IDUEDU_PBF_PATH=/data/city.osm.pbf` do the same at import
-time. In pbf mode the Overpass cache is not used and `overpass_date` is ignored: the file itself is the
-snapshot, and subway stop areas are always read. `snapshot_time(path)` returns the moment the file reflects,
-from its header (`osmosis_replication_timestamp`, set in Geofabrik extracts).
-
-### Downloading a territory from Geofabrik
-
-`download_osm_pbf` replaces the Overpass download with [Geofabrik](https://download.geofabrik.de/) extracts.
-Give it the territory as to the graph builders: it picks the smallest extract covering the territory,
-downloads it once (resuming an interrupted download and checking the md5 Geofabrik publishes), cuts the
-territory out with `split_by_polygons` and returns the small file. `use_pbf` takes the same arguments
-instead of a path, downloads the file and reads from it inside the block:
-
-```python
-import iduedu
-
-with iduedu.use_pbf(osm_id=1114252, region="northwestern-fed-district"):
-    boundary = iduedu.get_4326_boundary(osm_id=1114252)
-    graph = iduedu.get_intermodal_graph(territory=boundary, clip_by_territory=True)
-
-with iduedu.use_pbf(territory=city_polygon):        # the extract is chosen from the territory
-    walk = iduedu.get_walk_graph(territory=city_polygon)
-
-path = iduedu.download_osm_pbf(osm_id=1114252, region="northwestern-fed-district")  # or just the file
-```
-
-With `region` the boundary of `osm_id` is read from the extract and no Overpass request is made; without it
-the boundary is fetched once through Overpass to choose the extract. `territory=` (a polygon or a
-GeoDataFrame) needs neither. Extracts and cut files are cached under `config.overpass_cache_dir`
-(`geofabrik/` and `geofabrik/territories/`); an existing cut file is returned without any download, and a
-cached extract is reused until `update=True` asks for Geofabrik's newer file. `geofabrik_regions()` lists the
-extracts with their outlines, `find_geofabrik_region(territory)` names the smallest covering one.
-
-### Per-city files from a regional extract
-
-Querying a country-sized file scans all of it for every territory. Cut it into small city files once, for
-all cities of the region at the same time:
-
-```python
-from iduedu import snapshot_time, split_by_polygons
-
-paths = split_by_polygons(
-    "russia-northwestern-fed-district-latest.osm.pbf",
-    {"spb": spb_polygon, "petrozavodsk": ptz_polygon},
-    "cities/",
-)
-snapshot_time(paths["spb"])                  # the extract's replication timestamp is kept
-```
-
-Each city file keeps, complete and with tags: the street ways (`highway`, `railway`, `public_transport`)
-touching the polygon; the public-transport route relations touching it, with all their members also outside
-the polygon; for subways, every relation sharing a node with the line (its stop areas), their members and
-the stop-area groups containing them; and relations named in `keep_relations` (for instance the boundary, so
-`osm_id=` keeps working). Element metadata (versions, timestamps, users) is not copied. Building graphs
-from a city file then gives the same result as from the regional file, for the same polygon or any polygon
-inside it.
-
-### Differences from Overpass
-
-- Elements are returned in id order. Overpass returns route responses in quadtile order (`qt`), so node and
-  edge ids of a public-transport graph can be numbered differently even though the graph is the same.
-- Points on the polygon boundary count as inside. Overpass' handling of exact boundary hits and of very long
-  polygon edges may differ in rare cases.
-- Only tag filters are supported (`["k"]`, `[!"k"]`, `["k"="v"]`, `["k"!="v"]`, `["k"~"re"]`, `["k"!~"re"]`,
-  with an optional `,i` flag on regular expressions); other Overpass syntax in `custom_filter` raises
-  `UnsupportedFilterError`. Regular expressions use Python's `re` module.
-- Data missing from the file cannot be found: members of a relation that are not in the file have no
-  geometry. Use `split_by_polygons` (or a complete regional extract) rather than a tight clip.
-- `split_by_polygons` selects ways spatially only when they carry one of `way_keys`; a `custom_filter` on
-  other keys needs `way_keys=None` (or a list including them) when cutting the city files.
+In pbf mode the Overpass cache is not used and `overpass_date` is ignored. {doc}`building/sources` describes
+`use_pbf`, downloads from Geofabrik, per-city files and the differences from Overpass.
 
 ## OSM tags kept on edges
 
-Street and public-transport edges keep only a small set of OSM tags:
+Street and public-transport edges keep only a small set of OSM tags ({doc}`building/streets` lists the tags
+that are always kept and those that split edges):
 
 | Graph | Default tags | Global setter |
 | --- | --- | --- |
 | Drive | `highway`, `name`, `lanes` | `config.set_drive_useful_edges_attr(...)` |
 | Walk | `highway`, `name` | `config.set_walk_useful_edges_attr(...)` |
+| Bike | `highway`, `name`, `lanes`, `maxspeed`, `surface` | `config.set_bike_useful_edges_attr(...)` |
 | Public transport | `name` | `config.set_transport_useful_edges_attr(...)` |
 
 The builders' `osm_edge_tags` argument replaces the global set for a single call:

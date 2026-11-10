@@ -1,0 +1,70 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 21:16+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.merge\\_gtfs\\_feeds"
+msgstr "iduedu.merge\\_gtfs\\_feeds"
+
+msgid "Combine several GTFS feeds into one that the graph builder can consume."
+msgstr "Объединяет несколько фидов GTFS в один, пригодный для функции построения графа."
+
+msgid "Identifiers are qualified by their source, so a ``route_id`` of ``1`` in two feeds becomes two distinct routes. Definitions and references are rewritten together, and blank optional references stay blank."
+msgstr "Идентификаторы дополняются источником, поэтому ``route_id`` ``1`` в двух фидах становится двумя разными маршрутами. Определения и ссылки переписываются вместе, а пустые необязательные ссылки остаются пустыми."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Paths to GTFS directories or ZIP archives, or already-read feeds. A single source is returned unchanged unless stop merging is requested, so this function is a no-op where merging is not needed."
+msgstr "Пути к папкам или ZIP-архивам GTFS либо уже прочитанные фиды. Единственный источник возвращается без изменений, если не запрошено слияние остановок, поэтому там, где объединение не нужно, функция ничего не делает."
+
+msgid "One prefix per source. Defaults to each source's file name, with a numeric suffix where two sources share one."
+msgstr "По одному префиксу на источник. По умолчанию — имя файла каждого источника, с числовым суффиксом, если у двух источников оно совпадает."
+
+msgid "Distance in metres below which stops published by different feeds are treated as the same place and fused into one node. ``None`` (the default) keeps every stop distinct: fusing stops changes the topology of the network, and doing it silently would make an inferred transfer indistinguishable from a published one. Values around 15--25 m suit feeds from different agencies; the 1 m used for OSM platforms is far too tight here, because two agencies survey the same kerb independently."
+msgstr "Расстояние в метрах, ближе которого остановки разных фидов считаются одним местом и сливаются в один узел. ``None`` (по умолчанию) оставляет все остановки раздельными: слияние меняет топологию сети, а молчаливое слияние сделало бы выведенную пересадку неотличимой от опубликованной. Для фидов разных перевозчиков подходят значения около 15–25 м; 1 м, используемый для платформ OSM, здесь слишком мал, потому что два перевозчика снимают один и тот же бордюр независимо."
+
+msgid "Count once what several sources publish twice: fuse platforms of different sources within ``duplicate_platform_tolerance`` metres and drop trips another source already runs identically. See :func:`deduplicate_across_feeds`. Off by default: it changes the feed."
+msgstr "Учесть один раз то, что несколько источников публикуют дважды: слить платформы разных источников в пределах ``duplicate_platform_tolerance`` метров и отбросить рейсы, которые другой источник уже выполняет так же. См. :func:`deduplicate_across_feeds`. По умолчанию выключено: это изменяет фид."
+
+msgid "Metres within which two sources' platforms are treated as one when ``deduplicate`` is on."
+msgstr "Расстояние в метрах, в пределах которого платформы двух источников считаются одной, когда включён ``deduplicate``."
+
+msgid "Projected CRS in metres used for the distance test. Estimated from the stops when omitted."
+msgstr "Проецированная система координат в метрах для проверки расстояний. Если не задана, подбирается по остановкам."
+
+msgid "Run :func:`iduedu.gtfs.validate_gtfs_feed` on the result. Leave this on: it is what makes the merge verifiable rather than merely plausible."
+msgstr "Запустить :func:`iduedu.gtfs.validate_gtfs_feed` на результате. Не отключайте: именно это делает объединение проверяемым, а не просто правдоподобным."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.gtfs.reader.GTFSFeed\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.gtfs.reader.GTFSFeed\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "A :class:`iduedu.gtfs.GTFSFeed` whose ``source`` names the merged inputs."
+msgstr ":class:`iduedu.gtfs.GTFSFeed`, у которого ``source`` перечисляет объединённые источники."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If no sources are given, or the number of prefixes does not     match the number of sources."
+msgstr "Если источники не переданы или число префиксов не совпадает с числом источников."
+
+msgid "If the merged feed breaks a GTFS contract."
+msgstr "Если объединённый фид нарушает требования GTFS."
+

@@ -94,6 +94,19 @@ def intermodal_graph():
     return _cached("intermodal", lambda: _build(iduedu.get_intermodal_graph))
 
 
+def drive_graph():
+    return _cached("drive", lambda: _build(iduedu.get_drive_graph))
+
+
+def bike_graph():
+    return _cached("bike", lambda: _build(iduedu.get_bike_graph))
+
+
+def walk_segments():
+    """The walk graph without merging: one edge per straight segment of every way."""
+    return _cached("walk_segments", lambda: _build(iduedu.get_walk_graph, simplify=False))
+
+
 # --- drawing ----------------------------------------------------------------------------------------------------
 
 
@@ -621,6 +634,189 @@ def analysis_elevation():
     save(fig, "analysis_elevation")
 
 
+# --- building figures -------------------------------------------------------------------------------------------
+
+YELLOW = "#eda100"
+MODE_COLOURS = {"bus": BLUE, "trolleybus": ORANGE, "tram": AQUA, "subway": YELLOW}
+
+
+def building_streets():
+    """Drive graph by speed and bike graph by level of traffic stress."""
+    drive, bike = drive_graph(), bike_graph()
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7.5))
+    frame(axes[0], drive, streets=False)
+    edges = drive.edges_gdf.assign(speed=drive.edges_gdf["length_meter"] / drive.edges_gdf["time_min"] * 0.06)
+    edges = edges.sort_values("speed")
+    norm = plt.Normalize(edges["speed"].min(), edges["speed"].max())
+    edges.plot(ax=axes[0], column="speed", cmap=BLUES, norm=norm, linewidth=1.0, zorder=3)
+    colour_bar(fig, axes[0], plt.cm.ScalarMappable(cmap=BLUES, norm=norm), "km/h, length over time_min")
+    axes[0].set_title(f"get_drive_graph: {thousands(len(drive.edges_gdf))} directed edges")
+
+    frame(axes[1], bike, streets=False)
+    steps = ["#9ec5f4", "#3987e5", "#1c5cab", "#0d366b"]
+    for level, colour in zip(range(1, 5), steps):
+        part = bike.edges_gdf[bike.edges_gdf["lts"] == level]
+        share = part["length_meter"].sum() / bike.edges_gdf["length_meter"].sum()
+        part.plot(
+            ax=axes[1], color=colour, linewidth=0.5 + 0.35 * level, zorder=2 + level, label=f"{level}  ({share:.0%})"
+        )
+    axes[1].legend(loc="lower left", title="lts (share of length)")
+    axes[1].set_title("get_bike_graph: level of traffic stress")
+    fig.tight_layout()
+    save(fig, "building_streets")
+
+
+def building_simplify():
+    """A block of the walk graph with simplify=False and simplify=True."""
+    raw, merged = walk_segments(), walk_graph()
+    centre = merged.nodes_gdf.geometry.union_all().centroid
+    x0, y0 = centre.x + 900, centre.y - 300
+    half = 230
+    fig, axes = plt.subplots(1, 2, figsize=(14, 7))
+    for ax, graph, title in (
+        (axes[0], raw, "simplify=False"),
+        (axes[1], merged, "simplify=True"),
+    ):
+        nodes = graph.nodes_gdf.cx[x0 - half : x0 + half, y0 - half : y0 + half]
+        edges = graph.edges_gdf.cx[x0 - half : x0 + half, y0 - half : y0 + half]
+        on_structure = edges["bridge"].notna() | edges["tunnel"].notna()
+        edges[~on_structure].plot(ax=ax, color=INK_2, linewidth=1.0, zorder=2)
+        if on_structure.any():
+            edges[on_structure].plot(
+                ax=ax, color=ORANGE, linewidth=2.0, zorder=3, label="bridge or tunnel (building passages included)"
+            )
+        nodes.plot(ax=ax, color=BLUE, markersize=9, zorder=4, label="node")
+        ax.set_xlim(x0 - half, x0 + half)
+        ax.set_ylim(y0 - half, y0 + half)
+        ax.set_axis_off()
+        ax.set_aspect("equal")
+        whole = f"{thousands(len(graph.nodes_gdf))} nodes, {thousands(len(graph.edges_gdf))} edges in the district"
+        ax.set_title(f"{title}\n{whole}")
+    from matplotlib.lines import Line2D  # pylint: disable=import-outside-toplevel
+
+    handles = [
+        Line2D([], [], color=INK_2, linewidth=1.0, label="edge"),
+        Line2D([], [], color=ORANGE, linewidth=2.0, label="bridge or tunnel (building passages included)"),
+        Line2D([], [], color=BLUE, marker="o", linestyle="", markersize=5, label="node"),
+    ]
+    fig.tight_layout()
+    fig.legend(handles=handles, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 0.0))
+    save(fig, "building_simplify")
+
+
+def building_public_transport():
+    """Public-transport routes by mode, and the effective speed of the default registry."""
+    graph = intermodal_graph()
+    edges = graph.edges_gdf
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6.5), gridspec_kw={"width_ratios": [1.25, 1]})
+    walk = edges[edges["type"] == "walk"]
+    frame(axes[0], graph, edges=walk)
+    for mode, colour in MODE_COLOURS.items():
+        part = edges[edges["type"] == mode]
+        if len(part):
+            routes = part["route"].nunique()
+            part.plot(
+                ax=axes[0],
+                color=colour,
+                linewidth=2.2 if mode == "subway" else 1.4,
+                zorder=4,
+                label=f"{mode} ({routes} route{'s' if routes > 1 else ''})",
+            )
+    platforms = graph.nodes_gdf[graph.nodes_gdf["type"] == "platform"]
+    platforms.plot(ax=axes[0], color=INK, markersize=5, zorder=5, label="platform")
+    axes[0].legend(loc="lower left")
+    axes[0].set_title("get_public_transport_graph: routes by mode")
+
+    ax = axes[1]
+    lengths = np.linspace(50, 3000, 300)
+    for mode, colour in MODE_COLOURS.items():
+        spec = iduedu.DEFAULT_REGISTRY.get(mode)
+        minutes = np.array([spec.travel_time_min(length) for length in lengths])
+        ax.plot(lengths, lengths / minutes * 0.06, color=colour, linewidth=2, label=mode)
+    ax.set_xlabel("distance between stops, m")
+    ax.set_ylabel("km/h, distance over time_min (dwell included)")
+    ax.legend(loc="upper left")
+    ax.set_title("Speed between stops in DEFAULT_REGISTRY")
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    fig.tight_layout()
+    save(fig, "building_public_transport")
+
+
+def building_intermodal():
+    """The join around a subway station, and the minutes public transport saves against walking."""
+    graph = intermodal_graph()
+    nodes, edges = graph.nodes_gdf, graph.edges_gdf
+    station = nodes[(nodes["type"] == "subway_station") & (nodes["name"] == "Василеостровская")]
+    names = {"Горный институт": "Gorny Institut", "Василеостровская": "Vasileostrovskaya", "Приморская": "Primorskaya"}
+    x0, y0 = station.geometry.iloc[0].x, station.geometry.iloc[0].y
+    half = 260
+    window = edges.cx[x0 - half : x0 + half, y0 - half : y0 + half]
+
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7), gridspec_kw={"width_ratios": [1, 1.25]})
+    ax = axes[0]
+    window[window["type"] == "walk"].plot(ax=ax, color=STREETS, linewidth=1.0, zorder=1)
+    styles = [
+        ("boarding", INK, "-", 1.6, "boarding / alighting"),
+        ("subway_entrance", AQUA, "--", 1.6, "subway_entrance / subway_exit"),
+    ]
+    for kind, colour, style, width, label in styles:
+        part = window[window["type"] == kind]
+        if len(part):
+            part.plot(ax=ax, color=colour, linestyle=style, linewidth=width, zorder=3, label=label)
+    for mode, colour in MODE_COLOURS.items():
+        part = window[window["type"] == mode]
+        if len(part):
+            part.plot(ax=ax, color=colour, linewidth=2.2, zorder=2, label=mode)
+    near = nodes.cx[x0 - half : x0 + half, y0 - half : y0 + half]
+    near[near["type"] == "platform"].plot(ax=ax, color=ORANGE, edgecolor=INK, markersize=40, zorder=5, label="platform")
+    entry = near[near["type"] == "subway_entry_exit"]
+    if len(entry):
+        entry.plot(ax=ax, color=AQUA, edgecolor=INK, marker="^", markersize=70, zorder=5, label="subway entrance")
+    station.plot(ax=ax, color=YELLOW, edgecolor=INK, marker="s", markersize=80, zorder=5, label="subway_station")
+    ax.set_xlim(x0 - half, x0 + half)
+    ax.set_ylim(y0 - half, y0 + half)
+    ax.set_axis_off()
+    ax.set_aspect("equal")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.01), ncol=3, fontsize=9)
+    name = str(station["name"].iloc[0])
+    ax.set_title(f"Around {names.get(name, name)} station")
+
+    # Minutes saved: walking only against walking with public transport, from one place.
+    walk_edges = edges[edges["type"] == "walk"]
+    walk_nodes = np.unique(np.concatenate([walk_edges["u"].to_numpy(), walk_edges["v"].to_numpy()]))
+    walk_only = iduedu.subgraph_by_nodes(graph, walk_nodes)
+    walk_only = iduedu.UrbanGraph(
+        nodes_gdf=walk_only.nodes_gdf,
+        edges_gdf=walk_only.edges_gdf[walk_only.edges_gdf["type"] == "walk"],
+        is_multigraph=True,
+        is_directed=True,
+        edge_direction_column="oneway",
+        crs=graph.crs,
+    )
+    xs, ys = node_xy(graph)
+    ids = np.asarray(graph.adjacency_nodelist)
+    position = {node: i for i, node in enumerate(ids)}
+    x_med, y_med = np.median(xs[np.isin(ids, walk_nodes)]), np.median(ys[np.isin(ids, walk_nodes)])
+    candidates = [node for node in walk_nodes]
+    cx, cy = xs[[position[n] for n in candidates]], ys[[position[n] for n in candidates]]
+    source = candidates[nearest(cx, cy, x_med - 1500, y_med + 700)]
+    both = iduedu.single_source_dijkstra(graph, source, weight="time_min", output="distances").sparse.to_dense()
+    walking = iduedu.single_source_dijkstra(walk_only, source, weight="time_min", output="distances").sparse.to_dense()
+    saved = (walking - both.reindex(walking.index)).clip(lower=0)
+    saved = saved[np.isfinite(saved)]
+    ax = axes[1]
+    frame(ax, graph, edges=walk_edges)
+    order = saved.sort_values().index
+    p = [position[node] for node in order]
+    sc = ax.scatter(xs[p], ys[p], c=saved.loc[order].to_numpy(), cmap=BLUES, s=3, vmin=0, linewidths=0, zorder=3)
+    ax.scatter(xs[position[source]], ys[position[source]], s=80, color=ORANGE, edgecolor=INK, zorder=6)
+    colour_bar(fig, ax, sc, "minutes saved against walking only")
+    ax.set_title("What public transport adds, from one place")
+    fig.tight_layout()
+    save(fig, "building_intermodal")
+
+
 FIGURES = {
     "routing_search": routing_search,
     "routing_alternatives": routing_alternatives,
@@ -629,6 +825,10 @@ FIGURES = {
     "analysis_objects": analysis_objects,
     "analysis_centrality": analysis_centrality,
     "analysis_elevation": analysis_elevation,
+    "building_streets": building_streets,
+    "building_simplify": building_simplify,
+    "building_public_transport": building_public_transport,
+    "building_intermodal": building_intermodal,
 }
 
 if __name__ == "__main__":
