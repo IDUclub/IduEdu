@@ -9,6 +9,7 @@ from shapely.geometry import LineString, Point
 
 from iduedu import (
     UrbanGraph,
+    alternative_paths,
     k_shortest_paths,
     od_matrix,
     path_to_edges,
@@ -20,7 +21,7 @@ from tests.factories import CRS, directed_oneway_graph, disconnected_graph, undi
 
 pytestmark = [pytest.mark.unit, pytest.mark.rust]
 
-METHODS = ["bidirectional", "astar", "dijkstra"]
+METHODS = ["bidirectional", "astar", "alt", "dijkstra"]
 
 
 def _grid_graph(width=9, *, directed=True, seed=0, zero_every=None):
@@ -81,7 +82,7 @@ def test_shortest_path_matches_scipy(method, directed, weight):
             assert _path_cost(graph, path, weight) == pytest.approx(cost, rel=1e-5)
 
 
-@pytest.mark.parametrize("method", ["bidirectional", "astar"])
+@pytest.mark.parametrize("method", ["bidirectional", "astar", "alt"])
 def test_zero_cost_edges_keep_astar_and_bidirectional_exact(method):
     graph = _grid_graph(directed=True, seed=2, zero_every=11)
     expected = _reference(graph, "time_min")
@@ -114,7 +115,7 @@ def test_single_source_dijkstra_path_keeps_its_meaning():
     assert single_source_dijkstra_path(undirected_line_graph(), 0, 3, reverse=True) == [0, 1, 2, 3]
 
 
-@pytest.mark.parametrize("method", ["bidirectional", "astar", "dijkstra"])
+@pytest.mark.parametrize("method", METHODS)
 @pytest.mark.parametrize("storage", ["eager", "lazy"])
 def test_pairwise_methods_agree(method, storage):
     graph = _grid_graph(seed=3)
@@ -223,3 +224,77 @@ def test_k_shortest_paths_edges_and_method():
     with pytest.raises(TypeError, match="k must be int"):
         k_shortest_paths(graph, 0, 3, 2.0)
     assert graph.shortest_path(0, 3, method="astar") == (7.0, [0, 1, 2, 3])
+
+
+def _ladder():
+    """Two parallel streets 0-1-2-3 (cheap) and 4-5-6-7, joined at both ends and by rungs 1-5, 2-6."""
+    coords = {i: (100.0 * (i % 4), 0.0 if i < 4 else 50.0) for i in range(8)}
+    streets = [(0, 1, 1.0), (1, 2, 1.0), (2, 3, 1.0), (4, 5, 1.2), (5, 6, 1.2), (6, 7, 1.2)]
+    streets += [(0, 4, 0.5), (3, 7, 0.5), (1, 5, 0.5), (2, 6, 0.5)]
+    rows = [
+        {"u": u, "v": v, "geometry": LineString([coords[u], coords[v]]), "length_meter": 100.0 * w, "time_min": w}
+        for u, v, w in streets
+    ]
+    nodes = gpd.GeoDataFrame(
+        geometry=[Point(xy) for xy in coords.values()], index=pd.Index(list(coords), name="node"), crs=CRS
+    )
+    edges = gpd.GeoDataFrame(rows, geometry="geometry", crs=CRS)
+    return UrbanGraph(nodes, edges, is_multigraph=False, is_directed=False, crs=CRS, graph_type="walk")
+
+
+def test_alternative_paths_take_other_streets():
+    graph = _ladder()
+    result = alternative_paths(graph, 0, 3, 3, penalty=2.0, max_overlap=0.5, max_cost_ratio=2.0)
+    assert list(result.columns) == ["dist", "overlap", "path"] and result.index.name == "rank"
+    assert result["path"].iloc[0] == [0, 1, 2, 3] and result["dist"].iloc[0] == pytest.approx(3.0)
+    assert [0, 4, 5, 6, 7, 3] in result["path"].tolist()
+    assert result["dist"].is_monotonic_increasing
+    assert result["overlap"].between(0, 1).all()
+    for path, dist in zip(result["path"], result["dist"]):
+        assert _path_cost(graph, path, "time_min") == pytest.approx(dist)
+    # Limits: the cost ratio keeps only the shortest route, the cutoff even that one.
+    assert len(graph.alternative_paths(0, 3, 3, max_cost_ratio=1.2)) == 1
+    assert alternative_paths(graph, 0, 3, 3, cutoff=2.9).empty
+    assert alternative_paths(graph, 2, 2)["path"].tolist() == [[2]]
+    assert alternative_paths(disconnected_graph(), 0, 10).empty
+
+
+def test_alternative_paths_on_a_directed_graph_match_the_undirected_one():
+    graph = _grid_graph(width=7, directed=False, seed=8)
+    directed = graph.copy()
+    directed.is_directed = True
+    directed.edges_gdf = pd.concat(
+        [graph.edges_gdf, graph.edges_gdf.rename(columns={"u": "v", "v": "u"})], ignore_index=True
+    )
+    directed.update_adjacency_matrix(weight="time_min")
+    nodes = list(graph.nodes_gdf.index)
+    a = alternative_paths(graph, nodes[0], nodes[-1], 4)
+    b = alternative_paths(directed, nodes[0], nodes[-1], 4)
+    assert a["path"].tolist() == b["path"].tolist()
+    np.testing.assert_allclose(a["dist"], b["dist"], rtol=1e-6)
+
+
+def test_alternative_paths_are_validated():
+    graph = undirected_line_graph()
+    with pytest.raises(ValueError, match="penalty"):
+        alternative_paths(graph, 0, 3, penalty=1.0)
+    with pytest.raises(ValueError, match="max_overlap"):
+        alternative_paths(graph, 0, 3, max_overlap=1.5)
+    with pytest.raises(ValueError, match="max_cost_ratio"):
+        alternative_paths(graph, 0, 3, max_cost_ratio=0.9)
+    with pytest.raises(ValueError, match="k must be"):
+        alternative_paths(graph, 0, 3, 0)
+
+
+def test_alt_landmarks_are_cached_with_the_matrix():
+    graph = _grid_graph(seed=9)
+    nodes = list(graph.nodes_gdf.index)
+    graph.shortest_path(nodes[0], nodes[-1], method="alt")
+    tables = graph._csr_cache[routing._LANDMARKS]  # pylint: disable=protected-access
+    first = tables[routing.ALT_LANDMARKS]
+    assert 0 < len(first.nodes) <= routing.ALT_LANDMARKS and first.nbytes > 0
+    graph.shortest_path(nodes[1], nodes[-2], method="alt")
+    assert graph._csr_cache[routing._LANDMARKS][routing.ALT_LANDMARKS] is first  # pylint: disable=protected-access
+    # Another weight builds another matrix and new tables.
+    graph.shortest_path(nodes[0], nodes[-1], weight="length_meter", method="alt")
+    assert graph._csr_cache[routing._LANDMARKS][routing.ALT_LANDMARKS] is not first  # pylint: disable=protected-access

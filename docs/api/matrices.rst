@@ -30,8 +30,8 @@ or ``"both"``.
 Use :func:`od_matrix` for specified origin and destination sets, with
 ``mode="all_to_all"`` or ``"pairwise"``. Use :func:`iter_od_matrix` to consume
 origin-row blocks. :func:`shortest_path` returns the cost and the route between
-two nodes, and :func:`k_shortest_paths` several alternative routes (see
-`Point-to-point routes`_). The legacy ``*_path_length`` helpers and ``multi_source_dijkstra_path``
+two nodes, and :func:`alternative_paths` and :func:`k_shortest_paths` several
+alternative routes (see `Point-to-point routes`_). The legacy ``*_path_length`` helpers and ``multi_source_dijkstra_path``
 were removed in 3.0 (see `Removed helpers`_).
 
 Use :func:`path_to_edges` to turn a node route into an ordered GeoDataFrame of
@@ -125,8 +125,8 @@ MultiIndex and one column: ``dist`` for costs or ``path`` for routes. This
 avoids constructing all origin-destination combinations.
 
 ``method`` chooses the search. ``"dijkstra"`` runs one search per unique origin
-that stops once all destinations paired with it are reached. ``"bidirectional"``
-and ``"astar"`` run one point-to-point search per pair (see
+that stops once all destinations paired with it are reached. ``"bidirectional"``,
+``"astar"`` and ``"alt"`` run one point-to-point search per pair (see
 `Point-to-point routes`_). The default ``"auto"`` takes ``"bidirectional"``
 when most origins occur once and ``"dijkstra"`` when they repeat. All-to-all
 tables always use Dijkstra.
@@ -137,8 +137,8 @@ Point-to-point routes
 .. code-block:: python
 
     cost, route = graph.shortest_path(source, target, weight="time_min")
-    cost, route = graph.shortest_path(source, target, method="astar")
-    alternatives = graph.k_shortest_paths(source, target, 3, weight="length_meter")
+    cost, route = graph.shortest_path(source, target, method="alt")
+    alternatives = graph.alternative_paths(source, target, 3, weight="length_meter")
 
 :func:`shortest_path` returns ``(cost, route)`` for one pair, or
 ``(inf, [])`` when the target is not reached within ``cutoff``. Its methods
@@ -160,22 +160,80 @@ return a shortest route and differ only in speed:
     fastest edge (metro) sets the scale and A* gains little. It needs a point
     geometry for every node.
 
+``"alt"``
+    A* whose estimate comes from the network itself (ALT: A*, landmarks and the
+    triangle inequality). Sixteen landmark nodes are spread along the edges of
+    the graph, and the costs from each of them to every node and back are
+    computed on the first call and kept with the graph until it changes (0.7 s
+    and 33 MB for the walk graph below). The difference of these costs bounds
+    the remaining cost from below on any graph, including intermodal ones, and
+    no node coordinates are needed. It pays off for many queries on one graph.
+
 ``"dijkstra"``
     One search from the source that stops at the target.
 
-On the St Petersburg walk graph (518 thousand nodes), pairs 4 km apart take
-2.3 ms with Dijkstra, 1.0 ms with the bidirectional search and 0.5 ms with A*
-by length (0.8 ms by time). Paths of equal cost may come out differently from
-different methods; their costs are equal up to float32 rounding.
+.. list-table:: Milliseconds per pair on St Petersburg graphs, one thread
+    :header-rows: 1
+
+    * - Graph, weight, pairs
+      - Dijkstra
+      - bidirectional
+      - A*
+      - ALT
+    * - walk (518 thousand nodes), length, 4 km
+      - 2.6
+      - 1.1
+      - 0.56
+      - 0.28
+    * - walk, time, 10 km
+      - 11.7
+      - 4.8
+      - 3.7
+      - 0.83
+    * - walk, time, random pairs
+      - 18.0
+      - 14.4
+      - 10.9
+      - 1.9
+    * - drive (32 thousand nodes), time, random pairs
+      - 0.77
+      - 0.51
+      - 0.54
+      - 0.10
+    * - intermodal (533 thousand nodes), time, 10 km
+      - 21.3
+      - 4.5
+      - 23.7
+      - 5.1
+
+Random pairs lie across the whole city, where a one-sided search is cut by the
+city border and the bidirectional search gains little. Paths of equal cost may
+come out differently from different methods; their costs are equal up to
+float32 rounding.
+
+Alternative routes
+~~~~~~~~~~~~~~~~~~
+
+:func:`alternative_paths` finds routes that differ by whole streets (the
+penalty method). After the shortest route, the costs of its edges are
+multiplied by ``penalty`` (1.5 by default) in both directions and the search
+runs again, so the next route leaves those streets wherever a detour exists
+and keeps them where it does not, as on a bridge. A route is kept when its
+cost is at most ``max_cost_ratio`` times the shortest one and at most
+``max_overlap`` of its cost runs on the streets of a route kept before. The
+table is indexed by ``rank`` with ``dist``, ``overlap`` (the largest share of
+the cost on the streets of another route of the table) and ``path``.
+Streets are graph edges: on a walk graph the sidewalk on the other side of an
+avenue is another street.
 
 :func:`k_shortest_paths` returns up to ``k`` loopless routes, cheapest first,
 in a table indexed by ``rank`` with ``dist`` and ``path`` columns (Yen's
 algorithm). Every next route leaves an earlier one at some node and takes the
 shortest way on from there that repeats no node of the shared part and no way
-taken before. On street graphs such routes are often small variations of one
-another, such as the sidewalk on the other side of the street; for distinct
-alternatives, raise the weights of the edges of the first route and search
-again.
+taken before. These are exactly the next shortest routes, and on street graphs
+they are small variations of one another: for a 4.9 km walk in St Petersburg
+the first three differ by 1.7 m, while :func:`alternative_paths` gives 4.9,
+5.3 and 5.5 km with 0 to 12 per cent of shared streets, in 2 to 8 ms.
 
 Lazy route storage
 ~~~~~~~~~~~~~~~~~~
@@ -285,6 +343,7 @@ For object-to-edge projection before OD calculations, see
     iter_od_matrix
     ShortestPathResult
     shortest_path
+    alternative_paths
     k_shortest_paths
     single_source_dijkstra_path
     path_to_edges

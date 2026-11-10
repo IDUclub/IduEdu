@@ -10,6 +10,16 @@ __version__: str
 
 Compact = tuple[npt.NDArray[np.int32], npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int32]]
 
+class LandmarkTable:
+    """Landmarks of a graph with the costs from and to every node, for ALT searches."""
+
+    @property
+    def nodes(self) -> npt.NDArray[np.int32]: ...
+    @property
+    def nbytes(self) -> int: ...
+    @property
+    def slack(self) -> float: ...
+
 class CsrGraph:
     """Weighted CSR graph owned by Rust, with pooled search buffers."""
 
@@ -57,6 +67,27 @@ class CsrGraph:
         routes: bool,
         n_threads: int | None = None,
     ) -> tuple[tuple[npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int64]], tuple[float, float]]: ...
+    def landmarks(self, reverse: "CsrGraph", count: int, n_threads: int | None = None) -> "LandmarkTable": ...
+    def alt_pairs(
+        self,
+        landmarks: "LandmarkTable",
+        sources: npt.NDArray[np.int32],
+        targets: npt.NDArray[np.int32],
+        cutoff: float,
+        routes: bool,
+        n_threads: int | None = None,
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int64]]: ...
+    def alternatives(
+        self,
+        reverse: "CsrGraph",
+        source: int,
+        target: int,
+        k: int,
+        penalty: float,
+        max_overlap: float,
+        max_cost_ratio: float,
+        cutoff: float,
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int64]]: ...
     def k_shortest(
         self,
         reverse: "CsrGraph",

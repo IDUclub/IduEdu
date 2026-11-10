@@ -20,8 +20,8 @@ msgstr "iduedu.k\\_shortest\\_paths"
 msgid "Return up to k shortest loopless paths from source_node to target_node (Yen's algorithm)."
 msgstr "Вернуть до k кратчайших путей без циклов из source_node в target_node (алгоритм Йена)."
 
-msgid "Every next path leaves an earlier one at some node and takes the shortest way on from there that repeats no node of the shared part and no way taken before. The paths are often small variations of one another (another sidewalk, the other side of a square); for distinct alternatives, raise the weights of the edges of the first path and search again."
-msgstr "Каждый следующий путь отходит от одного из предыдущих в каком-то узле и идёт дальше кратчайшей дорогой, которая не повторяет ни одного узла общей части и ни одного уже пройденного продолжения. Такие пути часто лишь немного отличаются друг от друга (другой тротуар, другая сторона площади); чтобы получить заметно разные варианты, увеличьте веса рёбер первого пути и повторите поиск."
+msgid "Every next path leaves an earlier one at some node and takes the shortest way on from there that repeats no node of the shared part and no way taken before. The paths are often small variations of one another (another sidewalk, the other side of a square); for routes along other streets use :func:`alternative_paths`."
+msgstr "Каждый следующий путь отходит от одного из предыдущих в каком-то узле и идёт дальше кратчайшей дорогой, которая не повторяет ни одного узла общей части и ни одного уже пройденного продолжения. Такие пути часто лишь немного отличаются друг от друга (другой тротуар, другая сторона площади); для маршрутов по другим улицам используйте :func:`alternative_paths`."
 
 msgid "Parameters"
 msgstr "Параметры"

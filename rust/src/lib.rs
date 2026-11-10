@@ -4,6 +4,7 @@
 //! kernel releases the GIL; parallel kernels run on a rayon pool of `n_threads` workers (`None`: one
 //! worker per CPU).
 
+pub mod alt;
 pub mod analysis;
 pub mod astar;
 pub mod bidirectional;
@@ -13,6 +14,7 @@ pub mod csr;
 pub mod dijkstra;
 pub mod pbf;
 pub mod pbf_write;
+pub mod penalty;
 pub mod yen;
 
 use std::collections::HashMap;
@@ -109,6 +111,41 @@ type NearestPy<'py> = (
     Bound<'py, PyArray1<f32>>,
     Bound<'py, PyArray1<i64>>,
 );
+
+/// Costs, overlaps, and routes as a flat node array with offsets.
+type AlternativesPy<'py> = (
+    Bound<'py, PyArray1<f32>>,
+    Bound<'py, PyArray1<f32>>,
+    Bound<'py, PyArray1<i32>>,
+    Bound<'py, PyArray1<i64>>,
+);
+
+/// Landmarks of a graph and their cost tables, built by :meth:`CsrGraph.landmarks` for ALT searches.
+#[pyclass(frozen, module = "iduedu._rust")]
+struct LandmarkTable {
+    table: alt::Landmarks,
+}
+
+#[pymethods]
+impl LandmarkTable {
+    /// Node positions of the landmarks.
+    #[getter]
+    fn nodes<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<i32>> {
+        self.table.nodes.clone().into_pyarray(py)
+    }
+
+    /// Bytes held by the cost tables.
+    #[getter]
+    fn nbytes(&self) -> usize {
+        self.table.nbytes()
+    }
+
+    /// The most an estimate can exceed the real cost by through float32 rounding.
+    #[getter]
+    fn slack(&self) -> f32 {
+        self.table.slack
+    }
+}
 
 /// Costs of point-to-point queries, and their routes as a flat node array with offsets.
 type PairsPy<'py> = (
@@ -548,6 +585,129 @@ impl CsrGraph {
             out.map(|o| (o, (h.scale, h.slack)))
         })?;
         Ok((pairs_py(py, out), heuristic))
+    }
+
+    /// Landmarks of this graph for :meth:`alt_pairs`: up to ``count`` nodes, each the farthest from
+    /// those picked before, with the costs from and to every node. ``reverse`` as in
+    /// :meth:`shortest_pairs` (this graph itself when undirected).
+    #[pyo3(signature = (reverse, count, n_threads=None))]
+    fn landmarks(
+        &self,
+        py: Python<'_>,
+        reverse: &CsrGraph,
+        count: usize,
+        n_threads: Option<usize>,
+    ) -> PyResult<LandmarkTable> {
+        let (g, r) = (self.view(), self.reverse_of(reverse)?);
+        let undirected = std::ptr::eq(self, reverse);
+        let table = py.detach(|| {
+            in_pool(n_threads, || {
+                alt::Landmarks::build(g, (!undirected).then_some(r), count)
+            })
+        })?;
+        Ok(LandmarkTable { table })
+    }
+
+    /// Like :meth:`shortest_pairs`, by A* with the landmark estimate of ``landmarks`` (ALT).
+    #[pyo3(signature = (landmarks, sources, targets, cutoff, routes, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn alt_pairs<'py>(
+        &self,
+        py: Python<'py>,
+        landmarks: &LandmarkTable,
+        sources: PyReadonlyArray1<'py, i32>,
+        targets: PyReadonlyArray1<'py, i32>,
+        cutoff: f32,
+        routes: bool,
+        n_threads: Option<usize>,
+    ) -> PyResult<PairsPy<'py>> {
+        let g = self.view();
+        let lm = &landmarks.table;
+        if lm.n() != g.n() && !lm.nodes.is_empty() {
+            return Err(PyValueError::new_err("landmarks belong to another graph"));
+        }
+        let (s, t) = pair_nodes(&sources, &targets, g.n())?;
+        let out = py.detach(|| {
+            in_pool(n_threads, || {
+                solve_pairs(s.len(), routes, |start, costs, flat, lengths| {
+                    self.with_astar_scratch(|sc| {
+                        for (k, slot) in costs.iter_mut().enumerate() {
+                            let before = flat.len();
+                            let (a, b) = (s[start + k], t[start + k]);
+                            let estimate = |v: usize| lm.estimate(v, b as usize);
+                            *slot = astar::search(
+                                g,
+                                estimate,
+                                lm.slack,
+                                a,
+                                b,
+                                cutoff,
+                                sc,
+                                routes.then_some(&mut *flat),
+                            );
+                            if routes {
+                                lengths.push((flat.len() - before) as i64);
+                            }
+                        }
+                    })
+                })
+            })
+        })?;
+        Ok(pairs_py(py, out))
+    }
+
+    /// Alternative routes from ``source`` to ``target`` by the penalty method: real costs, the
+    /// largest share of each cost on streets of an earlier route, and the routes as a flat node array
+    /// with offsets. ``reverse`` as in :meth:`shortest_pairs`.
+    #[pyo3(signature = (reverse, source, target, k, penalty, max_overlap, max_cost_ratio, cutoff))]
+    #[allow(clippy::too_many_arguments)]
+    fn alternatives<'py>(
+        &self,
+        py: Python<'py>,
+        reverse: &CsrGraph,
+        source: i32,
+        target: i32,
+        k: usize,
+        penalty: f32,
+        max_overlap: f32,
+        max_cost_ratio: f32,
+        cutoff: f32,
+    ) -> PyResult<AlternativesPy<'py>> {
+        let (g, r) = (self.view(), self.reverse_of(reverse)?);
+        check_nodes(&[source, target], g.n(), "source and target")?;
+        let undirected = std::ptr::eq(self, reverse);
+        let found = py.detach(|| {
+            self.with_bi_scratch(|sc| {
+                penalty::alternatives(
+                    g,
+                    (!undirected).then_some(r),
+                    source,
+                    target,
+                    k,
+                    penalty,
+                    max_overlap,
+                    max_cost_ratio,
+                    cutoff,
+                    sc,
+                )
+            })
+        });
+        let mut costs = Vec::with_capacity(found.len());
+        let mut overlaps = Vec::with_capacity(found.len());
+        let mut flat = Vec::new();
+        let mut offsets = vec![0i64];
+        for (cost, overlap, route) in found {
+            costs.push(cost);
+            overlaps.push(overlap);
+            flat.extend_from_slice(&route);
+            offsets.push(flat.len() as i64);
+        }
+        Ok((
+            costs.into_pyarray(py),
+            overlaps.into_pyarray(py),
+            flat.into_pyarray(py),
+            offsets.into_pyarray(py),
+        ))
     }
 
     /// Up to ``k`` shortest loopless routes from ``source`` to ``target`` (Yen), cheapest first:
@@ -1338,6 +1498,7 @@ fn merge_chains<'py>(
 #[pymodule(name = "_rust")]
 fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CsrGraph>()?;
+    m.add_class::<LandmarkTable>()?;
     m.add_function(wrap_pyfunction!(reconstruct_paths, m)?)?;
     m.add_function(wrap_pyfunction!(build_csr, m)?)?;
     m.add_function(wrap_pyfunction!(connected_components, m)?)?;

@@ -410,6 +410,9 @@ msgstr "Вернуть до k кратчайших путей без цикло�
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
 
+msgid "Return up to k distinct routes by the penalty method. See :func:`iduedu.alternative_paths`."
+msgstr "Вернуть до k разных маршрутов методом штрафов. См. :func:`iduedu.alternative_paths`."
+
 msgid "Find the nearest source node and distance for each reachable graph node."
 msgstr "Находит ближайший узел-источник и расстояние до него для каждого достижимого узла графа."
 

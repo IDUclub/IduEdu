@@ -49,6 +49,7 @@ from .graph import (
 )
 from .graph.shortest_paths import (
     ShortestPathResult,
+    alternative_paths,
     dijkstra_parallel,
     iter_od_matrix,
     k_shortest_paths,

@@ -1,0 +1,67 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:18+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.alternative\\_paths"
+msgstr "iduedu.alternative\\_paths"
+
+msgid "Return up to k distinct routes from source_node to target_node by the penalty method."
+msgstr "Вернуть до k разных маршрутов из source_node в target_node методом штрафов."
+
+msgid "The shortest route comes first. Then the costs of the edges it uses are multiplied by ``penalty`` in both directions and the search runs again, so the next route leaves those streets wherever a detour exists; every route found is penalised in turn. A route is kept when its real cost is at most ``max_cost_ratio`` times the shortest one and at most ``max_overlap`` of that cost runs on the streets of a route kept earlier. Unlike :func:`k_shortest_paths`, whose routes on a street graph often differ by a sidewalk, the routes differ by whole streets. Streets are graph edges: on a walk graph the sidewalk on the other side of an avenue is another street."
+msgstr "Первым идёт кратчайший маршрут. Затем стоимости его рёбер умножаются на ``penalty`` в обоих направлениях и поиск повторяется, поэтому следующий маршрут уходит с этих улиц везде, где есть объезд; каждый найденный маршрут тоже получает штраф. Маршрут сохраняется, если его настоящая стоимость не больше чем в ``max_cost_ratio`` раз превышает кратчайшую и не больше ``max_overlap`` этой стоимости приходится на улицы маршрутов, сохранённых раньше. В отличие от :func:`k_shortest_paths`, чьи маршруты на уличном графе часто отличаются одним тротуаром, эти маршруты отличаются целыми улицами. Улицы здесь — рёбра графа: на пешеходном графе тротуар на другой стороне проспекта считается другой улицей."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Urban graph to search."
+msgstr "Городской граф для поиска."
+
+msgid "Graph id of the start node."
+msgstr "Идентификатор начального узла графа."
+
+msgid "Graph id of the end node."
+msgstr "Идентификатор конечного узла графа."
+
+msgid "Maximum number of routes, at least 1. At most ``4 * k`` searches run."
+msgstr "Наибольшее число маршрутов, не меньше 1. Выполняется не больше ``4 * k`` поисков."
+
+msgid "Edge cost column: time_min (minutes) or length_meter (meters)."
+msgstr "Столбец стоимости рёбер: time_min (минуты) или length_meter (метры)."
+
+msgid "Factor applied to the edges of every route found, above 1."
+msgstr "Множитель для рёбер каждого найденного маршрута, больше 1."
+
+msgid "Largest share of a route's cost on the streets of an earlier route, from 0 (nothing shared) to 1 (no limit)."
+msgstr "Наибольшая доля стоимости маршрута на улицах более раннего маршрута, от 0 (ничего общего) до 1 (без ограничения)."
+
+msgid "Largest cost of a route relative to the shortest one, at least 1."
+msgstr "Наибольшая стоимость маршрута относительно кратчайшего, не меньше 1."
+
+msgid "Inclusive maximum cost of a route, or None for no limit."
+msgstr "Наибольшая стоимость маршрута включительно или None без ограничения."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame indexed by ``rank`` (0 is the shortest route, then by cost) with columns ``dist`` (real cost in the units of ``weight``), ``overlap`` (the largest share of it on the streets of another route of the table) and ``path`` (node ids from source_node to target_node). It has fewer than k rows when no more routes meet the limits, and none when the end is not reached."
+msgstr "DataFrame с индексом ``rank`` (0 — кратчайший маршрут, дальше по стоимости) и столбцами ``dist`` (настоящая стоимость в единицах ``weight``), ``overlap`` (наибольшая её доля на улицах другого маршрута таблицы) и ``path`` (идентификаторы узлов от source_node до target_node). Строк меньше k, если больше нет маршрутов в заданных пределах, и нет совсем, если конечный узел недостижим."
+

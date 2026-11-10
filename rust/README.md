@@ -15,6 +15,8 @@ building IduEdu from source builds it.
 - `src/astar.rs`: A* with the straight distance between node coordinates as the estimate, scaled by the smallest
   cost per metre of the graph's own arcs; arcs of zero cost add a slack that keeps the answers exact.
 - `src/yen.rs`: Yen's k shortest loopless routes (Lawler's rule, spur searches in parallel).
+- `src/alt.rs`: ALT, A* with landmarks: landmark choice (farthest first) and the cost tables to and from them.
+- `src/penalty.rs`: alternative routes by the penalty method (the streets of every route found get dearer).
 - `src/components.rs`: connected and strongly connected components.
 - `src/analysis.rs`: cut-off searches that sum node values around every source (with distance decay), spread values
   from their own nodes, find the nearest objects, and Brandes betweenness for nodes and arcs in several cost bands.

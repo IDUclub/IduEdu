@@ -108,6 +108,14 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
     the city gain less (the one-sided search is cut by the city border). Intermodal graph by time: bidirectional
     2.2x, A* none (metro sets the scale). Yen on the walk graph: 0.57 s for k=3 on a 536-node route; the
     alternatives differ by tenths of a metre (other sidewalk).
+    - [x] **ALT** (`rust/src/alt.rs`, `method="alt"`): 16 landmarks, farthest first, tables cached with the
+      matrix (walk graph 0.7 s, 33 MB). Walk by time: 10 km pairs 0.83 ms (Dijkstra 11.7, bidirectional 4.8,
+      A* 3.7), random pairs 1.9 ms (18.0); drive 2–5x faster than bidirectional; intermodal by time on par
+      with bidirectional, 1.7x on random pairs.
+    - [x] **Penalty alternatives** (`rust/src/penalty.rs`, `alternative_paths`): edges of every route x1.5 in
+      both directions, kept within 1.4x the shortest cost and 0.7 shared cost. 4.9 km walk: 4.9 / 5.3 / 5.5 km
+      with 0–12 % shared streets (Yen: three routes within 1.7 m), 2–8 ms. Sidewalks on both sides of an
+      avenue are separate edges, so a route along the other sidewalk counts as another street.
 
 ## Stage 3. Release and after
 

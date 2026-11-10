@@ -118,11 +118,28 @@ pub fn shortest_pair(
     sc: &mut AStarScratch,
     route: Option<&mut Vec<i32>>,
 ) -> f32 {
-    let (s, t) = (source as usize, target as usize);
-    let (tx, ty) = (xs[t], ys[t]);
+    let (tx, ty) = (xs[target as usize], ys[target as usize]);
     let estimate = |v: usize| (h.scale * (xs[v] - tx).hypot(ys[v] - ty)) as f32;
+    search(g, estimate, h.slack, source, target, cutoff, sc, route)
+}
+
+/// A* from `source` to `target` with any `estimate` of the remaining cost that exceeds the real one
+/// by at most `slack` (infinity: the target cannot be reached from that node). Returns the cost and
+/// appends the route as [`shortest_pair`] does.
+#[allow(clippy::too_many_arguments)]
+pub fn search(
+    g: Csr,
+    estimate: impl Fn(usize) -> f32,
+    slack: f32,
+    source: i32,
+    target: i32,
+    cutoff: f32,
+    sc: &mut AStarScratch,
+    route: Option<&mut Vec<i32>>,
+) -> f32 {
+    let (s, t) = (source as usize, target as usize);
     // A node is not worth queueing when even its estimate less the slack exceeds the cutoff.
-    let limit = cutoff + h.slack;
+    let limit = cutoff + slack;
     sc.dist[s] = 0.0;
     sc.estimate[s] = estimate(s);
     sc.touched.push(s as u32);
@@ -130,7 +147,7 @@ pub fn shortest_pair(
     let mut best = f32::INFINITY;
     while let Some(Reverse(k)) = sc.heap.pop() {
         let priority = f32::from_bits((k >> 32) as u32);
-        if priority >= best + h.slack {
+        if priority >= best + slack {
             break;
         }
         let u = (k as u32) as usize;

@@ -513,7 +513,7 @@ class UrbanGraph:
         *,
         weight: Literal["length_meter", "time_min"] = "time_min",
         cutoff: float | None = None,
-        method: Literal["bidirectional", "astar", "dijkstra"] = "bidirectional",
+        method: Literal["bidirectional", "astar", "alt", "dijkstra"] = "bidirectional",
     ) -> tuple[float, list[Any]]:
         """Return the cost and node route of one shortest path. See :func:`iduedu.shortest_path`."""
 
@@ -537,6 +537,34 @@ class UrbanGraph:
 
         return k_shortest_paths(
             self, source_node, target_node, k, weight=weight, cutoff=cutoff, max_workers=max_workers
+        )
+
+    def alternative_paths(
+        self,
+        source_node: Any,
+        target_node: Any,
+        k: int = 3,
+        *,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        penalty: float = 1.5,
+        max_overlap: float = 0.7,
+        max_cost_ratio: float = 1.4,
+        cutoff: float | None = None,
+    ) -> pd.DataFrame:
+        """Return up to k distinct routes by the penalty method. See :func:`iduedu.alternative_paths`."""
+
+        from iduedu.graph.shortest_paths import alternative_paths
+
+        return alternative_paths(
+            self,
+            source_node,
+            target_node,
+            k,
+            weight=weight,
+            penalty=penalty,
+            max_overlap=max_overlap,
+            max_cost_ratio=max_cost_ratio,
+            cutoff=cutoff,
         )
 
     def multi_source_dijkstra_nearest_source(

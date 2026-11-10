@@ -21,7 +21,7 @@ from iduedu.graph.urban_graph import UrbanGraph
 
 Output = Literal["distances", "paths", "both"]
 PathStorage = Literal["eager", "lazy"]
-PairMethod = Literal["bidirectional", "astar", "dijkstra"]
+PairMethod = Literal["bidirectional", "astar", "alt", "dijkstra"]
 RoutingTable = pd.Series | pd.DataFrame
 RoutingOutput = RoutingTable | ShortestPathResult
 
@@ -56,9 +56,13 @@ def _cutoff_float(cutoff):
 
 # UrbanGraph._csr_cache: [adjacency matrix, CsrGraph, transposed CsrGraph | None, node id array | None,
 # (nodes index, edges table, weight) last validated for this matrix | None,
-# (nodes table, its geometry array, x, y) of the node coordinates in matrix order | None]
-_MATRIX, _FORWARD, _REVERSE, _NODE_IDS, _CHECKED, _COORDS = range(6)
-PAIR_METHODS = ("bidirectional", "astar", "dijkstra")
+# (nodes table, its geometry array, x, y) of the node coordinates in matrix order | None,
+# {landmark count: LandmarkTable} for ALT searches | None]
+_MATRIX, _FORWARD, _REVERSE, _NODE_IDS, _CHECKED, _COORDS, _LANDMARKS = range(7)
+PAIR_METHODS = ("bidirectional", "astar", "alt", "dijkstra")
+#: Landmarks of method="alt": more make the estimate sharper and the tables larger (8 bytes per node
+#: and landmark on a directed graph, 4 on an undirected one).
+ALT_LANDMARKS = 16
 
 
 def _cache(urban_graph):
@@ -71,7 +75,15 @@ def _cache(urban_graph):
             np.asarray(matrix.indices, dtype=np.int32),
             np.asarray(matrix.data, dtype=np.float32),
         )
-        cache = urban_graph._csr_cache = [matrix, forward, None, None, None, None]  # pylint: disable=protected-access
+        cache = urban_graph._csr_cache = [
+            matrix,
+            forward,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]  # pylint: disable=protected-access
     return cache
 
 
@@ -144,6 +156,18 @@ def _node_coordinates(graph):
     return xs, ys
 
 
+def _landmarks(graph, max_workers=None):
+    """Landmark tables of the current matrix for ALT searches, built on first use and cached with it."""
+    cache = _cache(graph)
+    if cache[_LANDMARKS] is None:
+        cache[_LANDMARKS] = {}
+    table = cache[_LANDMARKS].get(ALT_LANDMARKS)
+    if table is None:
+        table = cache[_FORWARD].landmarks(_csr_graph(graph, reverse=True), ALT_LANDMARKS, max_workers)
+        cache[_LANDMARKS][ALT_LANDMARKS] = table
+    return table
+
+
 def _check_pair_method(method):
     if method not in PAIR_METHODS:
         raise ValueError(f"method must be one of {PAIR_METHODS}, got {method!r}")
@@ -158,6 +182,9 @@ def _kernel_pairs(graph, sources, targets, *, weight, cutoff, method, routes, ma
         xs, ys = _node_coordinates(graph)
         result, _ = matrix.astar_pairs(xs, ys, sources, targets, _cutoff_float(cutoff), routes, max_workers)
         return result
+    if method == "alt":
+        table = _landmarks(graph, max_workers)
+        return matrix.alt_pairs(table, sources, targets, _cutoff_float(cutoff), routes, max_workers)
     if method == "bidirectional":
         reverse = _csr_graph(graph, reverse=True)
         return matrix.shortest_pairs(reverse, sources, targets, _cutoff_float(cutoff), routes, max_workers)
@@ -180,8 +207,8 @@ def _kernel_pairs(graph, sources, targets, *, weight, cutoff, method, routes, ma
         rows = order[offsets[tree_index] : offsets[tree_index + 1]]
         costs[rows] = _lookup(search, targets[rows])
         if routes:
-            found = _rust.reconstruct_paths(search[0], search[2], targets[rows], False)
-            flat, bounds = found[0], found[1]
+            # pylint: disable-next=unpacking-non-sequence
+            flat, bounds = _rust.reconstruct_paths(search[0], search[2], targets[rows], False)
             for row, start, end in zip(rows, bounds[:-1], bounds[1:]):
                 paths[row] = flat[start:end]
     if not routes:
@@ -740,8 +767,8 @@ def od_matrix(
             not the full returned table or retained lazy trees. Use iter_od_matrix
             to consume bounded blocks of origin rows instead.
         method: Search of pairwise tables. ``dijkstra`` runs one search per unique
-            origin that stops at its destinations; ``bidirectional`` and ``astar``
-            run one point-to-point search per pair (see :func:`shortest_path`).
+            origin that stops at its destinations; ``bidirectional``, ``astar`` and
+            ``alt`` run one point-to-point search per pair (see :func:`shortest_path`).
             ``auto`` (default) picks ``bidirectional`` when most origins occur once
             and ``dijkstra`` otherwise. All-to-all tables always use ``dijkstra``.
 
@@ -837,35 +864,8 @@ def _auto_pair_method(origins):
     return "bidirectional" if 2 * origins.nunique() > len(origins) else "dijkstra"
 
 
-def shortest_path(
-    urban_graph: UrbanGraph,
-    source_node: Any,
-    target_node: Any,
-    *,
-    weight: Literal["length_meter", "time_min"] = "time_min",
-    cutoff: float | None = None,
-    method: PairMethod = "bidirectional",
-) -> tuple[float, list[Any]]:
-    """Return the cost and the node route of one shortest path from source_node to target_node.
-
-    Args:
-        urban_graph: Urban graph to search.
-        source_node: Graph id of the start node.
-        target_node: Graph id of the end node.
-        weight: Edge cost column: time_min (minutes) or length_meter (meters).
-        cutoff: Inclusive maximum cost, or None for no limit.
-        method: ``bidirectional`` (default) searches from both ends at once and
-            stops where they meet. ``astar`` searches from the start towards the
-            straight-line direction of the end; it needs point geometries of the
-            nodes. ``dijkstra`` is a one-sided search that stops at the end. All
-            three return a shortest path; they differ in speed only, and a tie
-            between paths of equal cost may be resolved differently.
-
-    Returns:
-        ``(cost, path)``: the cost in the units of ``weight`` and the node ids from
-        source_node to target_node, or ``(inf, [])`` when the end is not reached
-        within cutoff.
-    """
+def _pair_route(urban_graph, source_node, target_node, *, weight, cutoff, method):
+    """Cost and node-id route of one pair by a point-to-point search: (inf, []) when not reached."""
     _check_pair_method(method)
     cutoff = _resolve_cutoff(cutoff)
     _prepare_graph(urban_graph, weight=weight, cutoff=cutoff, reverse=False)
@@ -885,61 +885,6 @@ def shortest_path(
     return float(costs[0]), _node_ids(urban_graph)[flat[offsets[0] : offsets[1]]].tolist()
 
 
-def k_shortest_paths(
-    urban_graph: UrbanGraph,
-    source_node: Any,
-    target_node: Any,
-    k: int,
-    *,
-    weight: Literal["length_meter", "time_min"] = "time_min",
-    cutoff: float | None = None,
-    max_workers: int | None = None,
-) -> pd.DataFrame:
-    """Return up to k shortest loopless paths from source_node to target_node (Yen's algorithm).
-
-    Every next path leaves an earlier one at some node and takes the shortest way
-    on from there that repeats no node of the shared part and no way taken
-    before. The paths are often small variations of one another (another
-    sidewalk, the other side of a square); for distinct alternatives, raise the
-    weights of the edges of the first path and search again.
-
-    Args:
-        urban_graph: Urban graph to search.
-        source_node: Graph id of the start node.
-        target_node: Graph id of the end node.
-        k: Maximum number of paths, at least 1.
-        weight: Edge cost column: time_min (minutes) or length_meter (meters).
-        cutoff: Inclusive maximum cost of a path, or None for no limit.
-        max_workers: Worker threads for the searches of each step (default: one per CPU).
-
-    Returns:
-        DataFrame indexed by ``rank`` (0 is the shortest path) with columns
-        ``dist`` (cost in the units of ``weight``) and ``path`` (node ids from
-        source_node to target_node), cheapest first. It has fewer than k rows when
-        there are fewer loopless paths within cutoff, and none when the end is
-        not reached.
-    """
-    if isinstance(k, bool) or not isinstance(k, (int, np.integer)):
-        raise TypeError(f"k must be int, got {type(k).__name__}")
-    if k < 1:
-        raise ValueError(f"k must be >= 1, got {k}")
-    _validate_options("distances", "eager", max_workers)
-    cutoff = _resolve_cutoff(cutoff)
-    matrix = _prepare_graph(urban_graph, weight=weight, cutoff=cutoff, reverse=False)
-    source, target = _positions(urban_graph, [source_node, target_node])
-    costs, flat, offsets = matrix.k_shortest(
-        _csr_graph(urban_graph, reverse=True), int(source), int(target), int(k), _cutoff_float(cutoff), max_workers
-    )
-    ids = _node_ids(urban_graph)
-    paths = [ids[flat[start:end]].tolist() for start, end in zip(offsets[:-1], offsets[1:])]
-    result = pd.DataFrame(
-        {"dist": costs.astype(np.float64), "path": pd.Series(paths, dtype=object)},
-        index=pd.RangeIndex(len(paths), name="rank"),
-    )
-    result.attrs.update({"source_node": source_node, "target_node": target_node, "weight": weight})
-    return result
-
-
 def single_source_dijkstra_path(
     urban_graph: UrbanGraph,
     source_node: Any,
@@ -955,8 +900,8 @@ def single_source_dijkstra_path(
     along the edge directions. The search is bidirectional (see :func:`shortest_path`).
     """
     if reverse and urban_graph.is_directed:
-        return shortest_path(urban_graph, target_node, source_node, weight=weight, cutoff=cutoff)[1]
-    return shortest_path(urban_graph, source_node, target_node, weight=weight, cutoff=cutoff)[1]
+        source_node, target_node = target_node, source_node
+    return _pair_route(urban_graph, source_node, target_node, weight=weight, cutoff=cutoff, method="bidirectional")[1]
 
 
 def multi_source_dijkstra_nearest_source(
