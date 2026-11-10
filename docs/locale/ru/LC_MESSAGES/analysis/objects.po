@@ -15,8 +15,189 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 msgid "Objects around origins"
-msgstr "Объекты вокруг исходных точек"
+msgstr "Объекты вокруг точек отправления"
 
-msgid "This page is being written."
-msgstr ""
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "These functions answer what lies near a place along the network: the nearest school of every home, the number of residents within a 10-minute walk of every street corner, how mixed the shops around a station are."
+msgstr "Эти функции отвечают на вопрос, что лежит рядом с местом по сети: ближайшая школа для каждого дома, число жителей в 10 минутах ходьбы от каждого перекрёстка, насколько разнообразны магазины вокруг станции."
+
+msgid "Function"
+msgstr "Функция"
+
+msgid "Result"
+msgstr "Результат"
+
+msgid ":func:`nearest_objects`"
+msgstr ":func:`nearest_objects`"
+
+msgid "The ``k`` nearest objects of every origin and the travel cost to each"
+msgstr "``k`` ближайших объектов каждой точки отправления и стоимость пути до каждого"
+
+msgid ":func:`aggregate_objects`"
+msgstr ":func:`aggregate_objects`"
+
+msgid "The count of objects and the sums and means of their values within one or several travel costs"
+msgstr "Число объектов, суммы и средние их значений в пределах одной или нескольких стоимостей пути"
+
+msgid ":func:`diversity`"
+msgstr ":func:`diversity`"
+
+msgid "The number of categories, the Shannon entropy and the Hill number of the objects within a travel cost"
+msgstr "Число категорий, энтропия Шеннона и число Хилла для объектов в пределах стоимости пути"
+
+msgid "Inputs"
+msgstr "Входные данные"
+
+msgid "Origins and objects are graph nodes. They are given as node ids (``origins_nodes``, ``object_nodes``) or as tables (``gdf_origins``, ``gdf_objects``). A table with a ``graph_node_id`` column (the name is set by ``graph_node_column``) is used as is; otherwise every geometry is matched to its nearest graph node by its representative point, a point inside the geometry. Travel costs are measured between those nodes. To measure from the entrance of a building on the nearest street, insert the objects into the graph with :func:`project_objects2urban_graph` first (see :doc:`../graph/operations`)."
+msgstr "Точки отправления и объекты — это узлы графа. Они задаются id узлов (``origins_nodes``, ``object_nodes``) или таблицами (``gdf_origins``, ``gdf_objects``). Таблица со столбцом ``graph_node_id`` (имя задаёт ``graph_node_column``) используется как есть; иначе каждая геометрия сопоставляется с ближайшим узлом графа по своей представительной точке, точке внутри геометрии. Стоимости пути измеряются между этими узлами. Чтобы мерить от входа в здание на ближайшей улице, сначала вставьте объекты в граф функцией :func:`project_objects2urban_graph` (см. :doc:`../graph/operations`)."
+
+msgid "``weight`` is ``time_min`` (minutes, the default) or ``length_meter`` (metres), and ``cutoff`` is inclusive in the same units. ``direction=\"from\"`` measures the way from the origin to the object and ``direction=\"to\"`` the way back. The two differ on directed graphs, such as a drive graph with one-way streets or an intermodal graph with boarding waits."
+msgstr "``weight`` — это ``time_min`` (минуты, по умолчанию) или ``length_meter`` (метры), а ``cutoff`` включает границу и задаётся в тех же единицах. ``direction=\"from\"`` измеряет путь от точки отправления к объекту, а ``direction=\"to\"`` — обратный. Они различаются на ориентированных графах, например на автомобильном графе с односторонними улицами или на интермодальном графе с ожиданием посадки."
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "Nearest objects"
+msgstr "Ближайшие объекты"
+
+msgid ":func:`nearest_objects` runs one search from every origin node and stops it once ``k`` objects are settled or ``cutoff`` is passed. The time therefore depends on how far the objects are, not on how many there are. Several objects on one node are returned in the order of the object table."
+msgstr ":func:`nearest_objects` запускает один поиск от каждого узла отправления и останавливает его, как только найдено ``k`` объектов или превышен ``cutoff``. Поэтому время зависит от того, как далеко объекты, а не от того, сколько их. Несколько объектов на одном узле возвращаются в порядке таблицы объектов."
+
+msgid "Sums within a travel cost"
+msgstr "Суммы в пределах стоимости пути"
+
+msgid ":func:`aggregate_objects` adds up the objects within ``cutoff`` of every origin. It searches from the smaller side. With fewer origins than objects, one cut-off search from every origin collects the objects it settles. With fewer objects, one search from every object runs on the reversed graph and hands the values of the object to every origin it reaches. Both give the same numbers. Several cutoffs are computed from the same searches."
+msgstr ":func:`aggregate_objects` суммирует объекты в пределах ``cutoff`` от каждой точки отправления. Поиск идёт с меньшей стороны. Если точек отправления меньше, чем объектов, один поиск с отсечкой от каждой точки собирает найденные объекты. Если объектов меньше, один поиск от каждого объекта идёт по обращённому графу и передаёт значения объекта каждой достигнутой точке отправления. Оба способа дают одинаковые числа. Несколько отсечек считаются по одним и тем же поискам."
+
+msgid "With ``decay`` every object counts with a weight that falls with its travel cost ``d``:"
+msgstr "С ``decay`` каждый объект учитывается с весом, который убывает со стоимостью пути до него ``d``:"
+
+msgid "``decay``"
+msgstr "``decay``"
+
+msgid "Weight"
+msgstr "Вес"
+
+msgid "Note"
+msgstr "Примечание"
+
+msgid "``None``"
+msgstr "``None``"
+
+msgid "1"
+msgstr "1"
+
+msgid "Every object in reach counts in full"
+msgstr "Каждый объект в пределах досягаемости учитывается полностью"
+
+msgid "``\"linear\"``"
+msgstr "``\"linear\"``"
+
+msgid "``1 - d / cutoff``"
+msgstr "``1 - d / cutoff``"
+
+msgid "0 at the cutoff"
+msgstr "0 на отсечке"
+
+msgid "``\"exp\"``"
+msgstr "``\"exp\"``"
+
+msgid "``exp(-beta · d)``"
+msgstr "``exp(-beta · d)``"
+
+msgid "``beta`` is ``4 / cutoff`` by default, which leaves 0.018 at the cutoff"
+msgstr "По умолчанию ``beta`` равна ``4 / cutoff``, что оставляет 0,018 на отсечке"
+
+msgid "``\"inverse\"``"
+msgstr "``\"inverse\"``"
+
+msgid "``1 / d``"
+msgstr "``1 / d``"
+
+msgid "Objects at cost 0 are left out"
+msgstr "Объекты со стоимостью 0 не учитываются"
+
+msgid "Counts and sums are then weighted, and means are weighted means."
+msgstr "Тогда число и суммы взвешиваются, а средние становятся взвешенными средними."
+
+msgid "Diversity"
+msgstr "Разнообразие"
+
+msgid ":func:`diversity` takes the shares ``p`` of the categories of ``category`` among the objects in reach, from their counts or from the sums of ``values`` (for example floor area), with the same decay. It returns the number of categories, the Shannon entropy ``-Σ p ln p`` and the Hill number of order ``q`` (``hill_order``), the effective number of equally common categories (Hill, 1973). Order 0 counts the categories, order 1 is the exponential of the Shannon entropy, and order 2 (the default) is the inverse Simpson index ``1 / Σ p²``, which gives less weight to rare categories."
+msgstr ":func:`diversity` берёт доли ``p`` категорий ``category`` среди объектов в пределах досягаемости, по их числу или по суммам ``values`` (например, площади), с тем же затуханием. Она возвращает число категорий, энтропию Шеннона ``-Σ p ln p`` и число Хилла порядка ``q`` (``hill_order``), то есть эффективное число одинаково частых категорий (Hill, 1973). Порядок 0 считает категории, порядок 1 — экспонента энтропии Шеннона, порядок 2 (по умолчанию) — обратный индекс Симпсона ``1 / Σ p²``, в котором редкие категории весят меньше."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+msgid "Table"
+msgstr "Таблица"
+
+msgid "``(origin, rank)`` MultiIndex (``rank`` from 1) with the columns ``object`` (the label of the object in its table, or its node id) and ``dist``; origins with fewer than ``k`` objects in reach have fewer rows"
+msgstr "MultiIndex ``(origin, rank)`` (``rank`` с 1) со столбцами ``object`` (метка объекта в его таблице или id его узла) и ``dist``; у точек, до которых досягаемо меньше ``k`` объектов, строк меньше"
+
+msgid "Indexed like the origins; for every cutoff ``c`` the columns ``count_c`` and, for each of ``columns``, ``<column>_sum_c`` and ``<column>_mean_c``"
+msgstr "Индекс как у точек отправления; для каждой отсечки ``c`` столбцы ``count_c`` и для каждого из ``columns`` — ``<column>_sum_c`` и ``<column>_mean_c``"
+
+msgid "Indexed like the origins; for every cutoff ``c`` the columns ``richness_c``, ``shannon_c`` and ``hill_c``"
+msgstr "Индекс как у точек отправления; для каждой отсечки ``c`` столбцы ``richness_c``, ``shannon_c`` и ``hill_c``"
+
+msgid "On the walk graph of Vasilyevsky Island (22 289 nodes), the residents of 433 homes within 5, 10 and 15 minutes of every node take 0.03 s on 16 threads, and the three nearest of 251 public-transport platforms for 1 258 buildings take 0.01 s."
+msgstr "На пешеходном графе Васильевского острова (22 289 узлов) жители 433 домов в пределах 5, 10 и 15 минут от каждого узла считаются за 0,03 с в 16 потоках, а три ближайшие из 251 остановочной платформы для 1 258 зданий — за 0,01 с."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`nearest_objects <iduedu.nearest_objects>`"
+msgstr ":py:obj:`nearest_objects <iduedu.nearest_objects>`"
+
+msgid "Find the ``k`` nearest objects of every origin along the network."
+msgstr "Находит ``k`` ближайших по сети объектов для каждой исходной точки."
+
+msgid ":py:obj:`aggregate_objects <iduedu.aggregate_objects>`"
+msgstr ":py:obj:`aggregate_objects <iduedu.aggregate_objects>`"
+
+msgid "Count objects and sum their values within a travel cost of every origin."
+msgstr "Считает объекты и суммирует их значения в пределах затрат на путь от каждой исходной точки."
+
+msgid ":py:obj:`diversity <iduedu.diversity>`"
+msgstr ":py:obj:`diversity <iduedu.diversity>`"
+
+msgid "Diversity of object categories within a travel cost of every origin."
+msgstr "Разнообразие категорий объектов в пределах затрат на путь от каждой исходной точки."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "Residents within a 10-minute walk of every node, and the walk from every building to the nearest platform"
+msgstr "Жители в 10 минутах ходьбы от каждого узла и путь пешком от каждого здания до ближайшей платформы"
+
+#, python-format
+msgid "Vasilyevsky Island with the buildings of the example data, which cover its south-eastern part (1 258 buildings, 433 of them with 34 471 residents). Left: ``resident_number_sum_10`` of :func:`aggregate_objects` for every node of the walk graph. Right: :func:`nearest_objects` with ``k=1`` from every building to the platforms of the intermodal graph, by the walking edges of that graph; the median walk is 2.7 minutes, and 93 % of the buildings are within 5 minutes."
+msgstr "Васильевский остров со зданиями из данных примера, которые покрывают его юго-восточную часть (1 258 зданий, из них 433 с 34 471 жителем). Слева: ``resident_number_sum_10`` из :func:`aggregate_objects` для каждого узла пешеходного графа. Справа: :func:`nearest_objects` с ``k=1`` от каждого здания до платформ интермодального графа по его пешеходным рёбрам; медиана пути пешком — 2,7 минуты, и 93 % зданий находятся в пределах 5 минут."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "Objects are represented by graph nodes. Without :func:`project_objects2urban_graph` the walk from an object to its nearest node is not counted."
+msgstr "Объекты представлены узлами графа. Без :func:`project_objects2urban_graph` путь от объекта до ближайшего узла не учитывается."
+
+msgid "Near the border of the graph the objects beyond it are missing; build the graph and select the objects with a margin as wide as the largest cutoff."
+msgstr "У границы графа объектов за ней нет; стройте граф и отбирайте объекты с запасом шириной в наибольшую отсечку."
+
+msgid "``\"inverse\"`` decay leaves out objects on the origin node, whose weight would be infinite."
+msgstr "Затухание ``\"inverse\"`` не учитывает объекты на узле отправления, вес которых был бы бесконечным."
+
+msgid "References"
+msgstr "Литература"
+
+msgid "Hill, M. O. (1973). Diversity and evenness: a unifying notation and its consequences. *Ecology*, 54(2), 427–432."
+msgstr "Hill, M. O. (1973). Diversity and evenness: a unifying notation and its consequences. *Ecology*, 54(2), 427–432."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/network_analysis`"
+msgstr ":doc:`../examples/network_analysis`"
 

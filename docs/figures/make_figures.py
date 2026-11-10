@@ -395,10 +395,240 @@ def routing_single_source():
     save(fig, "routing_single_source")
 
 
+# --- network analysis figures -----------------------------------------------------------------------------------
+
+
+def buildings():
+    """Buildings of the example data (Vasilyevsky Island) with ``resident_number``, in the graph CRS."""
+    return gpd.read_parquet(ROOT / "docs" / "examples" / "data" / "spb_buildings.parquet")
+
+
+def colour_bar(fig, ax, mappable, label):
+    cbar = fig.colorbar(mappable, ax=ax, shrink=0.6, pad=0.01)
+    cbar.set_label(label)
+    cbar.outline.set_visible(False)
+
+
+def square_grid(graph, size):
+    """Squares of ``size`` metres over the district, clipped to its boundary."""
+    from shapely.geometry import box  # pylint: disable=import-outside-toplevel
+
+    area = boundary().to_crs(graph.crs).geometry.iloc[0]
+    minx, miny, maxx, maxy = area.bounds
+    cells = [box(x, y, x + size, y + size) for x in np.arange(minx, maxx, size) for y in np.arange(miny, maxy, size)]
+    grid = gpd.GeoDataFrame(geometry=cells, crs=graph.crs)
+    grid = grid[grid.intersects(area)].copy()
+    grid["geometry"] = grid.intersection(area)
+    # Cells mostly outside the land give unstable densities.
+    return grid[grid.area > 0.5 * size * size].reset_index(drop=True)
+
+
+def analysis_statistics():
+    """graph_stats by zones and local_stats around every node of the walk graph."""
+    graph = walk_graph()
+    grid = square_grid(graph, 500)
+    zones = iduedu.graph_stats(graph, zones=grid)
+    grid["intersection_density"] = zones["intersection_density"].to_numpy()
+    local = iduedu.local_stats(graph, 400)
+    xs, ys = node_xy(graph)
+    position = {node: i for i, node in enumerate(graph.adjacency_nodelist)}
+
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7.5))
+    frame(axes[0], graph, streets=False)
+    grid.plot(ax=axes[0], column="intersection_density", cmap=BLUES, edgecolor=SURFACE, linewidth=1.5, zorder=1)
+    graph.edges_gdf.plot(ax=axes[0], color=INK, linewidth=0.15, alpha=0.35, zorder=2)
+    sm = plt.cm.ScalarMappable(cmap=BLUES, norm=plt.Normalize(*grid["intersection_density"].agg(["min", "max"])))
+    colour_bar(fig, axes[0], sm, "intersections per km²")
+    axes[0].set_title("graph_stats by 500 m squares: intersection density")
+
+    frame(axes[1], graph)
+    p = [position[node] for node in local.index]
+    values = local["street_length_400"].to_numpy() / 1000
+    sc = axes[1].scatter(xs[p], ys[p], c=values, cmap=BLUES, s=2.5, linewidths=0, zorder=3)
+    colour_bar(fig, axes[1], sc, "km of walkable street within 400 m")
+    axes[1].set_title("local_stats: street length within 400 m of every node")
+    fig.tight_layout()
+    save(fig, "analysis_statistics")
+
+
+def analysis_objects():
+    """Residents within a 10-minute walk, and the walk to the nearest public-transport platform."""
+    walk = walk_graph()
+    homes = buildings().to_crs(walk.crs)
+    homes = homes[homes["resident_number"].fillna(0) > 0].copy()
+    homes["geometry"] = homes.geometry.representative_point()
+    xs, ys = node_xy(walk)
+    position = {node: i for i, node in enumerate(walk.adjacency_nodelist)}
+    residents = iduedu.aggregate_objects(
+        walk, 10, origins_nodes=walk.adjacency_nodelist, gdf_objects=homes, columns=["resident_number"]
+    )
+
+    graph = intermodal_graph()
+    platforms = graph.nodes_gdf[graph.nodes_gdf["type"] == "platform"]
+    walk_part = iduedu.subgraph_by_nodes(
+        graph, np.unique(graph.edges_gdf.loc[graph.edges_gdf["type"] == "walk", ["u", "v"]].to_numpy())
+    )
+    stops = platforms[platforms.index.isin(walk_part.nodes_gdf.index)]
+    origins = buildings().to_crs(walk.crs)
+    origins["geometry"] = origins.geometry.representative_point()
+    nearest_stop = iduedu.nearest_objects(
+        walk_part, gdf_origins=origins, object_nodes=stops.index, k=1, weight="time_min"
+    )
+    minutes = nearest_stop.xs(1, level="rank")["dist"]
+
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7.5))
+    frame(axes[0], walk)
+    p = [position[node] for node in residents.index]
+    sc = axes[0].scatter(
+        xs[p],
+        ys[p],
+        c=residents["resident_number_sum_10"].fillna(0).to_numpy(),
+        cmap=BLUES,
+        s=2.5,
+        linewidths=0,
+        zorder=3,
+    )
+    colour_bar(fig, axes[0], sc, "residents within a 10-minute walk")
+    axes[0].set_title("aggregate_objects: residents within 10 min")
+
+    frame(axes[1], walk)
+    footprints = buildings().to_crs(walk.crs)
+    footprints["minutes"] = minutes.reindex(footprints.index).to_numpy()
+    footprints.plot(ax=axes[1], column="minutes", cmap=BLUES, vmin=0, vmax=8, zorder=3)
+    stops.plot(ax=axes[1], color=ORANGE, markersize=10, zorder=4, label="platform")
+    sm = plt.cm.ScalarMappable(cmap=BLUES, norm=plt.Normalize(0, 8))
+    colour_bar(fig, axes[1], sm, "minutes to the nearest platform")
+    axes[1].legend(loc="lower left")
+    axes[1].set_title("nearest_objects: walk from every building to the nearest stop")
+    fig.tight_layout()
+    save(fig, "analysis_objects")
+
+
+def analysis_centrality():
+    """Harmonic closeness of the nodes and betweenness of the edges of the walk graph."""
+    graph = walk_graph()
+    closeness = iduedu.centrality(graph, ["harmonic"], cutoffs=[800])
+    betweenness = iduedu.edge_betweenness(graph, cutoffs=[2000])
+    xs, ys = node_xy(graph)
+    position = {node: i for i, node in enumerate(graph.adjacency_nodelist)}
+
+    fig, axes = plt.subplots(1, 2, figsize=(15, 7.5))
+    frame(axes[0], graph)
+    p = [position[node] for node in closeness.index]
+    sc = axes[0].scatter(
+        xs[p], ys[p], c=closeness["harmonic_800"].to_numpy(), cmap=BLUES, s=2.5, linewidths=0, zorder=3
+    )
+    colour_bar(fig, axes[0], sc, "Σ 1 / d over the nodes within 800 m (1/m)")
+    axes[0].set_title("centrality: harmonic closeness within 800 m")
+
+    frame(axes[1], graph, streets=False)
+    edges = graph.edges_gdf.assign(b=betweenness["betweenness_2000"].to_numpy() / 1000)
+    edges = edges.sort_values("b")
+    top = edges["b"].quantile(0.995)
+    norm = plt.Normalize(0, top)
+    edges.plot(
+        ax=axes[1],
+        column="b",
+        cmap=BLUES,
+        norm=norm,
+        linewidth=0.3 + 2.7 * np.clip(edges["b"].to_numpy() / top, 0, 1),
+        zorder=3,
+    )
+    colour_bar(
+        fig, axes[1], plt.cm.ScalarMappable(cmap=BLUES, norm=norm), "thousand shortest paths within 2 km along the edge"
+    )
+    axes[1].set_title("edge_betweenness within 2 km")
+    fig.tight_layout()
+    save(fig, "analysis_centrality")
+
+
+def analysis_elevation():
+    """Profile of a walk across a bridge: raster heights against the graph, and the grade speed models."""
+    import rasterio  # pylint: disable=import-outside-toplevel
+
+    from iduedu.graph.elevation import cycling, tobler  # pylint: disable=import-outside-toplevel
+
+    raster = ROOT / ".iduedu_cache" / "dem" / "spb_glo30.tif"
+    graph = walk_graph()
+    graph = iduedu.add_elevation(graph, raster)
+    bridges = graph.edges_gdf[graph.edges_gdf["bridge"].fillna("no").astype(str) != "no"]
+    xs, ys = node_xy(graph)
+    ids = graph.adjacency_nodelist
+    # The longest bridge that a walk of 250 m before and after it actually crosses.
+    for _, bridge in bridges.sort_values("length_meter", ascending=False).iterrows():
+        u, v = ids.index(bridge["u"]), ids.index(bridge["v"])
+        unit = np.array([xs[v] - xs[u], ys[v] - ys[u]]) / bridge["length_meter"]
+        s = ids[nearest(xs, ys, *(np.array([xs[u], ys[u]]) - 250 * unit))]
+        t = ids[nearest(xs, ys, *(np.array([xs[v], ys[v]]) + 250 * unit))]
+        _, route = iduedu.shortest_path(graph, s, t, weight="length_meter")
+        edges = graph.path_to_edges(route, weight="length_meter")
+        if edges["bridge"].fillna("no").astype(str).ne("no").any():
+            break
+    from shapely.geometry import LineString  # pylint: disable=import-outside-toplevel
+
+    # Edge geometries turned to the direction of the walk and joined into one line.
+    coords = []
+    for node, geom in zip(route, edges.geometry):
+        part = np.asarray(geom.coords)
+        start = np.array([xs[ids.index(node)], ys[ids.index(node)]])
+        if np.hypot(*(part[0] - start)) > np.hypot(*(part[-1] - start)):
+            part = part[::-1]
+        coords.append(part)
+    line = LineString(np.concatenate(coords))
+    distances = np.arange(0, line.length, 5.0)
+    points = [line.interpolate(d) for d in distances]
+    coords = gpd.GeoSeries(points, crs=graph.crs).to_crs(rasterio.open(raster).crs)
+    with rasterio.open(raster) as src:
+        surface = np.array([value[0] for value in src.sample([(p.x, p.y) for p in coords])], dtype=float)
+    node_distance = np.concatenate([[0.0], np.cumsum(edges["length_meter"].to_numpy())])
+    node_height = graph.nodes_gdf.loc[route, "elevation"].to_numpy()
+    on_bridge = edges["bridge"].fillna("no").astype(str).ne("no").to_numpy()
+
+    fig, axes = plt.subplots(1, 2, figsize=(15, 5.5), gridspec_kw={"width_ratios": [1.6, 1]})
+    ax = axes[0]
+    ax.plot(distances, surface, color=INK_2, linewidth=1.2, label="raster (Copernicus GLO-30 surface model)")
+    ax.plot(node_distance, node_height, color=BLUE, linewidth=2.2, label="graph nodes after add_elevation")
+    for i in np.flatnonzero(on_bridge):
+        ax.axvspan(node_distance[i], node_distance[i + 1], color=ORANGE, alpha=0.12, linewidth=0)
+    span = np.flatnonzero(on_bridge)
+    ax.text(
+        (node_distance[span[0]] + node_distance[span[-1] + 1]) / 2,
+        0.45 * ax.get_ylim()[1],
+        "bridge",
+        color=ORANGE,
+        ha="center",
+        va="center",
+    )
+    ax.set_xlabel("distance along the walk, m")
+    ax.set_ylabel("height, m")
+    ax.legend(loc="upper right")
+    ax.set_title(f"Walk across a bridge of {bridge['length_meter']:.0f} m")
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+
+    ax = axes[1]
+    grades = np.linspace(-0.15, 0.15, 301)
+    ax.plot(grades * 100, tobler(grades), color=BLUE, linewidth=2, label="tobler (walking)")
+    ax.plot(grades * 100, cycling(grades), color=ORANGE, linewidth=2, label="cycling")
+    ax.axhline(1, color=INK_2, linewidth=0.8)
+    ax.set_xlabel("grade, %")
+    ax.set_ylabel("speed relative to flat ground")
+    ax.legend(loc="upper right")
+    ax.set_title("Speed models of apply_grade_speed")
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    fig.tight_layout()
+    save(fig, "analysis_elevation")
+
+
 FIGURES = {
     "routing_search": routing_search,
     "routing_alternatives": routing_alternatives,
     "routing_single_source": routing_single_source,
+    "analysis_statistics": analysis_statistics,
+    "analysis_objects": analysis_objects,
+    "analysis_centrality": analysis_centrality,
+    "analysis_elevation": analysis_elevation,
 }
 
 if __name__ == "__main__":
