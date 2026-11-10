@@ -132,6 +132,7 @@ iduedu/
     segments.py      — unique_segments(): every physical segment of the geometry once
     within.py        — sums of node values within a travel cost (shared by stats, aggregations, centralities)
     stats.py         — graph_stats(), edge_stats(), transport_stats(), local_stats(), route_directness()
+    aggregations.py  — nearest_objects(), aggregate_objects(), diversity(): objects around origins along the network
     io.py            — .urbangraph archive read/write
   _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/

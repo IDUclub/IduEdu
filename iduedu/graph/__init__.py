@@ -44,6 +44,7 @@ from .editors import (
 )
 from .graph_inputs import nearest_edges, nearest_nodes, resolve_graph_nodes_input
 from .segments import unique_segments
+from .aggregations import aggregate_objects, diversity, nearest_objects
 from .stats import edge_stats, graph_stats, local_stats, route_directness, streets_per_node, transport_stats
 from .io import read_urban_graph, write_urban_graph
 from .validation import validate_graph
