@@ -71,10 +71,30 @@ to each other from the sidebar. A change of English text is not finished until i
 4. Run `make docs-i18n-check` (CI runs it on every pull request) and `make docs`, and look at the changed pages in
    both languages.
 
-Translations of a MyST page (`index.md`, `configuration.md`, ...) are parsed as Markdown, including the docstrings
+Translations of a MyST page (`configuration.md`, `performance.md`) are parsed as Markdown, including the docstrings
 that page shows through `autoclass`: write a role there as `` {func}`name` ``, not `` :func:`name` ``, or it renders
 as plain text. A parameter description with a nested list appears in a catalogue as a whole and as its parts;
 `make docs-i18n` keeps the whole one unchanged so that Sphinx translates the parts, which you translate.
+
+### Pages, figures and notebooks
+
+The pages follow the topics of the sidebar: `docs/building/`, `docs/graph/`, `docs/routing/` and `docs/analysis/`.
+A method page has the sections Overview, Inputs, Method, Outputs, Functions, Figures, Limitations, References and
+Example notebook; its functions are listed in an `autosummary` with `:toctree: ../api/generated`, so every function
+has its own reference page and its docstring is translated once.
+
+The figures are drawn by `docs/figures/make_figures.py` from Vasilyevsky Island (OSM relation 1114252), read from
+the Geofabrik extract of the Northwestern Federal District (about 650 MB, downloaded once into `.iduedu_cache`):
+
+```bash
+uv run python docs/figures/make_figures.py                  # every figure
+uv run python docs/figures/make_figures.py routing_search   # only the named ones
+```
+
+The PNG files land in `docs/figures/out/` (not committed). Pages link them from the `assets` branch,
+`https://raw.githubusercontent.com/IDUclub/IduEdu/assets/<name>.png`; a maintainer commits new or changed figures
+there. The example notebooks are stored with their outputs (`nb_execution_mode = "off"`); run a changed notebook
+before committing it.
 
 ## Commit messages (Conventional Commits)
 

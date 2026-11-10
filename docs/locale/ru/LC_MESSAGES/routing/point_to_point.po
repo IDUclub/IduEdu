@@ -261,6 +261,6 @@ msgstr "Yen, J. Y. (1971). Finding the K shortest loopless paths in a network. *
 msgid "Example notebook"
 msgstr "Пример"
 
-msgid ":doc:`../examples/shortest_paths`"
-msgstr ":doc:`../examples/shortest_paths`"
+msgid ":doc:`../examples/routing_methods`"
+msgstr ":doc:`../examples/routing_methods`"
 

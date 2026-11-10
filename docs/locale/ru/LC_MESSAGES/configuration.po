@@ -60,8 +60,8 @@ msgstr "Overpass может ответить на запрос по состоя
 msgid "While a date is set, subway routes are queried as plain route relations: stop areas, stations and entrances are skipped because Overpass does not reliably support those queries at arbitrary timestamps, and a warning is logged."
 msgstr "Пока дата задана, маршруты метро запрашиваются как обычные отношения-маршруты: зоны остановок, станции и входы пропускаются, потому что Overpass ненадёжно выполняет такие запросы на произвольный момент времени, и в журнал пишется предупреждение."
 
-msgid "Local OSM files instead of Overpass"
-msgstr "Локальные файлы OSM вместо Overpass"
+msgid "Local OSM files"
+msgstr "Локальные файлы OSM"
 
 #, python-brace-format
 msgid "In pbf mode the Overpass cache is not used and `overpass_date` is ignored. {doc}`building/sources` describes `use_pbf`, downloads from Geofabrik, per-city files and the differences from Overpass."
@@ -248,8 +248,8 @@ msgstr "`IDUEDU_PBF_PATH`"
 msgid "`set_osm_source(\"pbf\", path=...)`"
 msgstr "`set_osm_source(\"pbf\", path=...)`"
 
-msgid "An invalid `OVERPASS_DATE` is ignored with a warning rather than failing the import."
-msgstr "Неверное значение `OVERPASS_DATE` игнорируется с предупреждением, импорт при этом не прерывается."
+msgid "An invalid `OVERPASS_DATE` is ignored with a warning, and the import goes on."
+msgstr "Неверное значение `OVERPASS_DATE` игнорируется с предупреждением, и импорт продолжается."
 
 msgid "API reference"
 msgstr "Справочник API"

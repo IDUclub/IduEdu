@@ -15,8 +15,500 @@ msgstr ""
 "Generated-By: Babel 2.18.0\n"
 
 msgid "Function index"
-msgstr ""
+msgstr "Указатель функций"
 
-msgid "This page is being written."
-msgstr ""
+msgid "Every public name is imported from the package itself, ``from iduedu import ...``. The tables link to the reference page of each function; the topic pages explain how they work."
+msgstr "Каждое публичное имя импортируется из самого пакета, ``from iduedu import ...``. Таблицы ведут на справочную страницу каждой функции, а тематические страницы объясняют, как они работают."
+
+msgid "Building graphs"
+msgstr "Построение графов"
+
+msgid ":doc:`building/sources`, :doc:`building/streets`, :doc:`building/public_transport`, :doc:`building/gtfs`, :doc:`building/intermodal`"
+msgstr ":doc:`building/sources`, :doc:`building/streets`, :doc:`building/public_transport`, :doc:`building/gtfs`, :doc:`building/intermodal`"
+
+msgid ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+msgstr ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+
+msgid "Build a drivable UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит автомобильный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
+msgstr ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
+
+msgid "Build a pedestrian UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит пешеходный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
+msgstr ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
+
+msgid "Build a cycling UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит велосипедный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
+msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
+
+msgid "Build a directed public-transport graph for one or multiple transport modes within a territory."
+msgstr "Строит ориентированный граф общественного транспорта для одного или нескольких видов транспорта в пределах территории."
+
+msgid ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
+msgstr ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
+
+msgid "Build a static public-transport ``UrbanGraph`` from a local GTFS feed."
+msgstr "Строит статический ``UrbanGraph`` общественного транспорта по локальному фиду GTFS."
+
+msgid ":py:obj:`get_intermodal_graph <iduedu.get_intermodal_graph>`"
+msgstr ":py:obj:`get_intermodal_graph <iduedu.get_intermodal_graph>`"
+
+msgid "Build an intermodal (PT+walking) ``UrbanGraph`` for a territory."
+msgstr "Строит интермодальный (общественный транспорт и пешие переходы) ``UrbanGraph`` для территории."
+
+msgid ":py:obj:`join_pt_walk_graph <iduedu.join_pt_walk_graph>`"
+msgstr ":py:obj:`join_pt_walk_graph <iduedu.join_pt_walk_graph>`"
+
+msgid "Join public-transport and pedestrian ``UrbanGraph`` objects into an intermodal graph."
+msgstr "Объединяет ``UrbanGraph`` общественного транспорта и пешеходный в интермодальный граф."
+
+msgid ":py:obj:`merge_gtfs_feeds <iduedu.merge_gtfs_feeds>`"
+msgstr ":py:obj:`merge_gtfs_feeds <iduedu.merge_gtfs_feeds>`"
+
+msgid "Combine several GTFS feeds into one that the graph builder can consume."
+msgstr "Объединяет несколько фидов GTFS в один, пригодный для функции построения графа."
+
+msgid ":py:obj:`deduplicate_across_feeds <iduedu.deduplicate_across_feeds>`"
+msgstr ":py:obj:`deduplicate_across_feeds <iduedu.deduplicate_across_feeds>`"
+
+msgid "Count once what several merged feeds publish twice."
+msgstr "Учесть один раз то, что несколько объединённых фидов публикуют дважды."
+
+msgid ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
+msgstr ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
+
+msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
+msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+
+msgid ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
+msgstr ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
+
+msgid "Registry of available public-transport modes and their specifications."
+msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+
+msgid ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
+msgstr ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
+
+msgid "Normalize a territory boundary to a single EPSG:4326 Polygon."
+msgstr "Приводит границу территории к одному полигону Polygon в EPSG:4326."
+
+msgid ":py:obj:`use_pbf <iduedu.use_pbf>`"
+msgstr ":py:obj:`use_pbf <iduedu.use_pbf>`"
+
+msgid "Temporarily read OSM data from a local file, or from a territory downloaded from Geofabrik."
+msgstr "Временно читает данные OSM из локального файла или из территории, скачанной из Geofabrik."
+
+msgid ":py:obj:`download_osm_pbf <iduedu.download_osm_pbf>`"
+msgstr ":py:obj:`download_osm_pbf <iduedu.download_osm_pbf>`"
+
+msgid "OSM file for a territory, cut out of a Geofabrik extract: a drop-in replacement for Overpass downloads."
+msgstr "Файл OSM для территории, вырезанный из выгрузки Geofabrik: прямая замена загрузки из Overpass."
+
+msgid ":py:obj:`download_geofabrik_region <iduedu.download_geofabrik_region>`"
+msgstr ":py:obj:`download_geofabrik_region <iduedu.download_geofabrik_region>`"
+
+msgid "Download the Geofabrik extract ``region`` (an id from :func:`geofabrik_regions`)."
+msgstr "Скачивает выгрузку Geofabrik ``region`` (идентификатор из :func:`geofabrik_regions`)."
+
+msgid ":py:obj:`find_geofabrik_region <iduedu.find_geofabrik_region>`"
+msgstr ":py:obj:`find_geofabrik_region <iduedu.find_geofabrik_region>`"
+
+msgid "Id of the smallest Geofabrik extract that fully covers ``territory`` (EPSG:4326 for shapely input)."
+msgstr "Идентификатор наименьшей выгрузки Geofabrik, полностью покрывающей ``territory`` (EPSG:4326 для объектов shapely)."
+
+msgid ":py:obj:`geofabrik_regions <iduedu.geofabrik_regions>`"
+msgstr ":py:obj:`geofabrik_regions <iduedu.geofabrik_regions>`"
+
+msgid "Geofabrik extracts as a GeoDataFrame in EPSG:4326."
+msgstr "Выгрузки Geofabrik в виде GeoDataFrame в EPSG:4326."
+
+msgid ":py:obj:`PbfSource <iduedu.PbfSource>`"
+msgstr ":py:obj:`PbfSource <iduedu.PbfSource>`"
+
+msgid "A local OpenStreetMap ``.osm.pbf`` file answering the queries IduEdu otherwise sends to Overpass."
+msgstr "Локальный файл OpenStreetMap ``.osm.pbf``, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
+
+msgid ":py:obj:`split_by_polygons <iduedu.split_by_polygons>`"
+msgstr ":py:obj:`split_by_polygons <iduedu.split_by_polygons>`"
+
+msgid "Write one compact, referentially complete ``<name>.osm.pbf`` per polygon from a regional extract."
+msgstr "Записывает по одному компактному, полному по ссылкам ``<name>.osm.pbf`` на каждый полигон из региональной выгрузки."
+
+msgid ":py:obj:`snapshot_time <iduedu.snapshot_time>`"
+msgstr ":py:obj:`snapshot_time <iduedu.snapshot_time>`"
+
+msgid "Return the moment an OSM file reflects, from its header, as an aware UTC ``datetime``."
+msgstr "Возвращает момент, на который составлен файл OSM, из его заголовка, как ``datetime`` в UTC с часовым поясом."
+
+msgid "The graph model"
+msgstr "Модель графа"
+
+msgid ":doc:`graph/urban_graph`, :doc:`graph/operations`"
+msgstr ":doc:`graph/urban_graph`, :doc:`graph/operations`"
+
+msgid ":py:obj:`UrbanGraph <iduedu.UrbanGraph>`"
+msgstr ":py:obj:`UrbanGraph <iduedu.UrbanGraph>`"
+
+msgid "Tabular representation of an urban transport graph."
+msgstr "Табличное представление городского транспортного графа."
+
+msgid ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
+msgstr ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
+
+msgid "Read an ``UrbanGraph`` from an ``.urbangraph`` archive."
+msgstr "Читает ``UrbanGraph`` из архива ``.urbangraph``."
+
+msgid ":py:obj:`write_urban_graph <iduedu.write_urban_graph>`"
+msgstr ":py:obj:`write_urban_graph <iduedu.write_urban_graph>`"
+
+msgid "Write an ``UrbanGraph`` to an ``.urbangraph`` archive."
+msgstr "Записывает ``UrbanGraph`` в архив ``.urbangraph``."
+
+msgid ":py:obj:`validate_graph <iduedu.validate_graph>`"
+msgstr ":py:obj:`validate_graph <iduedu.validate_graph>`"
+
+msgid "Validate all node, edge, topology and CRS contracts of an ``UrbanGraph``."
+msgstr "Проверяет все требования к узлам, рёбрам, топологии и системе координат ``UrbanGraph``."
+
+msgid ":py:obj:`subgraph_by_nodes <iduedu.subgraph_by_nodes>`"
+msgstr ":py:obj:`subgraph_by_nodes <iduedu.subgraph_by_nodes>`"
+
+msgid "Return an induced ``UrbanGraph`` subgraph for the provided node ids."
+msgstr "Возвращает подграф ``UrbanGraph``, порождённый переданными идентификаторами узлов."
+
+msgid ":py:obj:`clip_urban_graph <iduedu.clip_urban_graph>`"
+msgstr ":py:obj:`clip_urban_graph <iduedu.clip_urban_graph>`"
+
+msgid "Clip graph nodes by geometry and keep only edges with retained endpoints."
+msgstr "Обрезает узлы графа по геометрии и оставляет только рёбра с сохранившимися концами."
+
+msgid ":py:obj:`join_urban_graphs <iduedu.join_urban_graphs>`"
+msgstr ":py:obj:`join_urban_graphs <iduedu.join_urban_graphs>`"
+
+msgid "Join two compatible ``UrbanGraph`` objects by concatenating node and edge tables."
+msgstr "Объединяет два совместимых ``UrbanGraph``, соединяя таблицы узлов и рёбер."
+
+msgid ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
+msgstr ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
+
+msgid "Relabel node ids to a dense ``RangeIndex`` and update edge endpoints."
+msgstr "Перенумеровывает идентификаторы узлов в плотный ``RangeIndex`` и обновляет концы рёбер."
+
+msgid ":py:obj:`to_directed <iduedu.to_directed>`"
+msgstr ":py:obj:`to_directed <iduedu.to_directed>`"
+
+msgid "Return a directed copy of ``UrbanGraph`` using a boolean edge direction column."
+msgstr "Возвращает ориентированную копию ``UrbanGraph`` по логическому столбцу направления рёбер."
+
+msgid ":py:obj:`to_undirected <iduedu.to_undirected>`"
+msgstr ":py:obj:`to_undirected <iduedu.to_undirected>`"
+
+msgid "Return an undirected copy of ``UrbanGraph``."
+msgstr "Возвращает неориентированную копию ``UrbanGraph``."
+
+msgid ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
+msgstr ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
+
+msgid "Collapse a multigraph ``UrbanGraph`` into a simple graph."
+msgstr "Сводит мультиграф ``UrbanGraph`` к простому графу."
+
+msgid ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
+msgstr ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
+
+msgid "Merge groups of nearby nodes, such as the several nodes of one junction of dual carriageways, into one."
+msgstr "Сливает группы близких узлов, например несколько узлов одного перекрёстка дорог с разделёнными проезжими частями, в один."
+
+msgid ":py:obj:`unique_segments <iduedu.unique_segments>`"
+msgstr ":py:obj:`unique_segments <iduedu.unique_segments>`"
+
+msgid "Return the straight segments the edge geometries are made of, each physical segment once."
+msgstr "Возвращает прямые отрезки, из которых состоят геометрии рёбер, каждый физический отрезок один раз."
+
+msgid ":py:obj:`connected_components <iduedu.connected_components>`"
+msgstr ":py:obj:`connected_components <iduedu.connected_components>`"
+
+msgid "Return connected components of an undirected ``UrbanGraph``."
+msgstr "Возвращает компоненты связности неориентированного ``UrbanGraph``."
+
+msgid ":py:obj:`weakly_connected_components <iduedu.weakly_connected_components>`"
+msgstr ":py:obj:`weakly_connected_components <iduedu.weakly_connected_components>`"
+
+msgid "Return weakly connected components."
+msgstr "Возвращает компоненты слабой связности."
+
+msgid ":py:obj:`strongly_connected_components <iduedu.strongly_connected_components>`"
+msgstr ":py:obj:`strongly_connected_components <iduedu.strongly_connected_components>`"
+
+msgid "Return strongly connected components."
+msgstr "Возвращает компоненты сильной связности."
+
+msgid ":py:obj:`keep_largest_connected_component <iduedu.keep_largest_connected_component>`"
+msgstr ":py:obj:`keep_largest_connected_component <iduedu.keep_largest_connected_component>`"
+
+msgid "Keep only the largest component of an ``UrbanGraph``."
+msgstr "Оставляет только наибольшую компоненту ``UrbanGraph``."
+
+msgid ":py:obj:`nearest_nodes <iduedu.nearest_nodes>`"
+msgstr ":py:obj:`nearest_nodes <iduedu.nearest_nodes>`"
+
+msgid "Return the nearest graph node id for each input geometry."
+msgstr "Возвращает идентификатор ближайшего узла графа для каждой входной геометрии."
+
+msgid ":py:obj:`nearest_edges <iduedu.nearest_edges>`"
+msgstr ":py:obj:`nearest_edges <iduedu.nearest_edges>`"
+
+msgid "Return the nearest graph edge for each input geometry, with the distance and the position along it."
+msgstr "Возвращает ближайшее ребро графа для каждой входной геометрии вместе с расстоянием до него и положением вдоль него."
+
+msgid ":py:obj:`project_objects2urban_graph <iduedu.project_objects2urban_graph>`"
+msgstr ":py:obj:`project_objects2urban_graph <iduedu.project_objects2urban_graph>`"
+
+msgid "Prepare graph changes that connect objects to their nearest edges."
+msgstr "Готовит изменения графа, присоединяющие объекты к ближайшим рёбрам."
+
+msgid ":py:obj:`apply_urban_graph_changes <iduedu.apply_urban_graph_changes>`"
+msgstr ":py:obj:`apply_urban_graph_changes <iduedu.apply_urban_graph_changes>`"
+
+msgid "Apply prepared changes to an ``UrbanGraph``."
+msgstr "Применяет подготовленные изменения к ``UrbanGraph``."
+
+msgid ":py:obj:`UrbanGraphChanges <iduedu.UrbanGraphChanges>`"
+msgstr ":py:obj:`UrbanGraphChanges <iduedu.UrbanGraphChanges>`"
+
+msgid "Set of table changes that can be applied to an ``UrbanGraph``."
+msgstr "Набор изменений таблиц, который можно применить к ``UrbanGraph``."
+
+msgid "Routing"
+msgstr "Маршруты"
+
+msgid ":doc:`routing/shortest_paths`, :doc:`routing/point_to_point`"
+msgstr ":doc:`routing/shortest_paths`, :doc:`routing/point_to_point`"
+
+msgid ":py:obj:`single_source_dijkstra <iduedu.single_source_dijkstra>`"
+msgstr ":py:obj:`single_source_dijkstra <iduedu.single_source_dijkstra>`"
+
+msgid "Search from one node; return distances, paths, or both from one traversal."
+msgstr "Поиск от одного узла; возвращает расстояния, пути или и то и другое за один обход."
+
+msgid ":py:obj:`multi_source_dijkstra <iduedu.multi_source_dijkstra>`"
+msgstr ":py:obj:`multi_source_dijkstra <iduedu.multi_source_dijkstra>`"
+
+msgid "Search from the nearest member of one combined source set."
+msgstr "Поиск от ближайшего элемента одного общего множества источников."
+
+msgid ":py:obj:`multi_source_dijkstra_nearest_source <iduedu.multi_source_dijkstra_nearest_source>`"
+msgstr ":py:obj:`multi_source_dijkstra_nearest_source <iduedu.multi_source_dijkstra_nearest_source>`"
+
+msgid "Return nearest source_node and dist columns for each reachable node."
+msgstr "Возвращает столбцы ближайшего source_node и dist для каждого достижимого узла."
+
+msgid ":py:obj:`dijkstra_parallel <iduedu.dijkstra_parallel>`"
+msgstr ":py:obj:`dijkstra_parallel <iduedu.dijkstra_parallel>`"
+
+msgid "Run independent searches, sharing work for sources mapped to the same node."
+msgstr "Выполняет независимые поиски, объединяя работу для источников, сопоставленных с одним узлом."
+
+msgid ":py:obj:`single_source_dijkstra_path <iduedu.single_source_dijkstra_path>`"
+msgstr ":py:obj:`single_source_dijkstra_path <iduedu.single_source_dijkstra_path>`"
+
+msgid "Return one shortest node route, or [] when unreachable or beyond cutoff."
+msgstr "Возвращает один кратчайший маршрут по узлам или [], если цель недостижима или за порогом."
+
+msgid ":py:obj:`od_matrix <iduedu.od_matrix>`"
+msgstr ":py:obj:`od_matrix <iduedu.od_matrix>`"
+
+msgid "Compute OD distances, node routes, or both with one search per unique source."
+msgstr "Рассчитывает расстояния OD, маршруты по узлам или и то и другое — по одному поиску на уникальный источник."
+
+msgid ":py:obj:`iter_od_matrix <iduedu.iter_od_matrix>`"
+msgstr ":py:obj:`iter_od_matrix <iduedu.iter_od_matrix>`"
+
+msgid "Yield OD results in origin-row blocks, using the same options as od_matrix."
+msgstr "Выдаёт результаты OD блоками строк по точкам отправления, с теми же параметрами, что od_matrix."
+
+msgid ":py:obj:`path_to_edges <iduedu.path_to_edges>`"
+msgstr ":py:obj:`path_to_edges <iduedu.path_to_edges>`"
+
+msgid "Convert an ordered node path to ordered graph edges."
+msgstr "Преобразует упорядоченный путь по узлам в упорядоченные рёбра графа."
+
+msgid ":py:obj:`ShortestPathResult <iduedu.ShortestPathResult>`"
+msgstr ":py:obj:`ShortestPathResult <iduedu.ShortestPathResult>`"
+
+msgid "Distances and paths from the same Dijkstra searches."
+msgstr "Расстояния и пути из одних и тех же поисков Дейкстры."
+
+msgid ":py:obj:`shortest_path <iduedu.shortest_path>`"
+msgstr ":py:obj:`shortest_path <iduedu.shortest_path>`"
+
+msgid "Return the cost and the node route of one shortest path from source_node to target_node."
+msgstr "Вернуть стоимость и маршрут по узлам одного кратчайшего пути из source_node в target_node."
+
+msgid ":py:obj:`alternative_paths <iduedu.alternative_paths>`"
+msgstr ":py:obj:`alternative_paths <iduedu.alternative_paths>`"
+
+msgid "Return up to k distinct routes from source_node to target_node by the penalty method."
+msgstr "Вернуть до k разных маршрутов из source_node в target_node методом штрафов."
+
+msgid ":py:obj:`k_shortest_paths <iduedu.k_shortest_paths>`"
+msgstr ":py:obj:`k_shortest_paths <iduedu.k_shortest_paths>`"
+
+msgid "Return up to k shortest loopless paths from source_node to target_node (Yen's algorithm)."
+msgstr "Вернуть до k кратчайших путей без циклов из source_node в target_node (алгоритм Йена)."
+
+msgid "Network analysis"
+msgstr "Анализ сети"
+
+msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`"
+msgstr ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`"
+
+msgid ":py:obj:`graph_stats <iduedu.graph_stats>`"
+msgstr ":py:obj:`graph_stats <iduedu.graph_stats>`"
+
+msgid "Measures of size, density, shape and connectivity of a street network."
+msgstr "Показатели размера, плотности, формы и связности уличной сети."
+
+msgid ":py:obj:`local_stats <iduedu.local_stats>`"
+msgstr ":py:obj:`local_stats <iduedu.local_stats>`"
+
+msgid "Network measures around every node, within a travel cost along the network."
+msgstr "Показатели сети вокруг каждого узла в пределах затрат на путь по сети."
+
+msgid ":py:obj:`edge_stats <iduedu.edge_stats>`"
+msgstr ":py:obj:`edge_stats <iduedu.edge_stats>`"
+
+msgid "Edge counts, lengths and speeds for every value of an edge column."
+msgstr "Количества рёбер, длины и скорости для каждого значения столбца рёбер."
+
+msgid ":py:obj:`transport_stats <iduedu.transport_stats>`"
+msgstr ":py:obj:`transport_stats <iduedu.transport_stats>`"
+
+msgid "Stops, routes and stop spacing of every public-transport mode of a graph."
+msgstr "Остановки, маршруты и расстояние между остановками для каждого вида общественного транспорта в графе."
+
+msgid ":py:obj:`streets_per_node <iduedu.streets_per_node>`"
+msgstr ":py:obj:`streets_per_node <iduedu.streets_per_node>`"
+
+msgid "Number of streets that meet at every node."
+msgstr "Число улиц, сходящихся в каждом узле."
+
+msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgstr ":py:obj:`route_directness <iduedu.route_directness>`"
+
+msgid "Ratio of the shortest network distance to the straight distance between origins and destinations."
+msgstr "Отношение кратчайшего расстояния по сети к расстоянию по прямой между исходными точками и точками назначения."
+
+msgid ":py:obj:`nearest_objects <iduedu.nearest_objects>`"
+msgstr ":py:obj:`nearest_objects <iduedu.nearest_objects>`"
+
+msgid "Find the ``k`` nearest objects of every origin along the network."
+msgstr "Находит ``k`` ближайших по сети объектов для каждой исходной точки."
+
+msgid ":py:obj:`aggregate_objects <iduedu.aggregate_objects>`"
+msgstr ":py:obj:`aggregate_objects <iduedu.aggregate_objects>`"
+
+msgid "Count objects and sum their values within a travel cost of every origin."
+msgstr "Считает объекты и суммирует их значения в пределах затрат на путь от каждой исходной точки."
+
+msgid ":py:obj:`diversity <iduedu.diversity>`"
+msgstr ":py:obj:`diversity <iduedu.diversity>`"
+
+msgid "Diversity of object categories within a travel cost of every origin."
+msgstr "Разнообразие категорий объектов в пределах затрат на путь от каждой исходной точки."
+
+msgid ":py:obj:`centrality <iduedu.centrality>`"
+msgstr ":py:obj:`centrality <iduedu.centrality>`"
+
+msgid "Centralities of the nodes of a graph within travel-cost thresholds."
+msgstr "Центральности узлов графа в пределах порогов затрат на путь."
+
+msgid ":py:obj:`edge_betweenness <iduedu.edge_betweenness>`"
+msgstr ":py:obj:`edge_betweenness <iduedu.edge_betweenness>`"
+
+msgid "Betweenness of the edges of a graph: how many shortest paths within a threshold run along each edge."
+msgstr "Промежуточность рёбер графа: сколько кратчайших путей в пределах порога проходит по каждому ребру."
+
+msgid ":py:obj:`add_elevation <iduedu.add_elevation>`"
+msgstr ":py:obj:`add_elevation <iduedu.add_elevation>`"
+
+msgid "Add node heights and edge grades to a graph."
+msgstr "Добавляет в граф высоты узлов и уклоны рёбер."
+
+msgid ":py:obj:`apply_grade_speed <iduedu.apply_grade_speed>`"
+msgstr ":py:obj:`apply_grade_speed <iduedu.apply_grade_speed>`"
+
+msgid "Rescale the travel times of a graph with elevation by a speed model that depends on the grade."
+msgstr "Пересчитывает время в пути графа с высотами по модели скорости, зависящей от уклона."
+
+msgid "NetworkX"
+msgstr "NetworkX"
+
+msgid "Optional; install ``networkx`` separately (see :doc:`graph/operations`)."
+msgstr "Необязательная зависимость; установите ``networkx`` отдельно (см. :doc:`graph/operations`)."
+
+msgid ":py:obj:`urban_graph2nx_graph <iduedu.urban_graph2nx_graph>`"
+msgstr ":py:obj:`urban_graph2nx_graph <iduedu.urban_graph2nx_graph>`"
+
+msgid "Convert an ``UrbanGraph`` to a NetworkX graph."
+msgstr "Преобразует ``UrbanGraph`` в граф NetworkX."
+
+msgid ":py:obj:`nx_graph2urban_graph <iduedu.nx_graph2urban_graph>`"
+msgstr ":py:obj:`nx_graph2urban_graph <iduedu.nx_graph2urban_graph>`"
+
+msgid "Convert a NetworkX graph to an ``UrbanGraph``."
+msgstr "Преобразует граф NetworkX в ``UrbanGraph``."
+
+msgid ":py:obj:`graph2gdf <iduedu.graph2gdf>`"
+msgstr ":py:obj:`graph2gdf <iduedu.graph2gdf>`"
+
+msgid "Convert a NetworkX graph to GeoDataFrames for nodes and/or edges."
+msgstr "Преобразует граф NetworkX в GeoDataFrame узлов и/или рёбер."
+
+msgid ":py:obj:`gdf2graph <iduedu.gdf2graph>`"
+msgstr ":py:obj:`gdf2graph <iduedu.gdf2graph>`"
+
+msgid "Convert a GeoDataFrame of LineStrings into a directed graph (nx.DiGraph)."
+msgstr "Преобразует GeoDataFrame линий LineString в ориентированный граф (nx.DiGraph)."
+
+msgid ":py:obj:`keep_largest_nx_component <iduedu.keep_largest_nx_component>`"
+msgstr ":py:obj:`keep_largest_nx_component <iduedu.keep_largest_nx_component>`"
+
+msgid "Keep only the largest connected component of a NetworkX graph."
+msgstr "Оставляет только наибольшую компоненту связности графа NetworkX."
+
+msgid ":py:obj:`clip_nx_graph <iduedu.clip_nx_graph>`"
+msgstr ":py:obj:`clip_nx_graph <iduedu.clip_nx_graph>`"
+
+msgid "Clip a NetworkX graph by a polygon and return the induced subgraph."
+msgstr "Обрезает граф NetworkX по полигону и возвращает порождённый подграф."
+
+msgid ":py:obj:`read_gml <iduedu.read_gml>`"
+msgstr ":py:obj:`read_gml <iduedu.read_gml>`"
+
+msgid "Read a GML file into a NetworkX graph and cast edge `geometry` from WKT strings to shapely."
+msgstr "Читает файл GML в граф NetworkX и преобразует `geometry` рёбер из строк WKT в объекты shapely."
+
+msgid ":py:obj:`write_gml <iduedu.write_gml>`"
+msgstr ":py:obj:`write_gml <iduedu.write_gml>`"
+
+msgid "Write a NetworkX graph to GML, coercing node coordinates to plain floats."
+msgstr "Записывает граф NetworkX в GML, приводя координаты узлов к обычным числам с плавающей точкой."
+
+msgid ":py:obj:`reproject_graph <iduedu.reproject_graph>`"
+msgstr ":py:obj:`reproject_graph <iduedu.reproject_graph>`"
+
+msgid "Reproject node coordinates (`x`, `y`) and edge geometries to a new CRS (in place)."
+msgstr "Перепроецирует координаты узлов (`x`, `y`) и геометрии рёбер в новую систему координат (на месте)."
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "``iduedu.config`` holds the Overpass endpoint, the cache, the OSM source and logging; see :doc:`configuration`."
+msgstr "``iduedu.config`` хранит адрес Overpass, кэш, источник OSM и журналирование; см. :doc:`configuration`."
 

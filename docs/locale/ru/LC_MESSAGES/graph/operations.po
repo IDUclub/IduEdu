@@ -14,56 +14,74 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-msgid "Graph utilities"
-msgstr "Утилиты для графов"
+msgid "Graph operations"
+msgstr "Операции с графами"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "The editing functions inspect, cut, join and transform :class:`UrbanGraph` objects, and attach objects such as buildings or stops to them. They return new graphs and leave the source unchanged; the matching :class:`UrbanGraph` methods change the graph itself with ``inplace=True``."
+msgstr "Функции редактирования проверяют, режут, объединяют и преобразуют объекты :class:`UrbanGraph` и присоединяют к ним объекты, например здания или остановки. Они возвращают новые графы и не меняют исходный; соответствующие методы :class:`UrbanGraph` меняют сам граф при ``inplace=True``."
+
+msgid "Task"
+msgstr "Задача"
+
+msgid "Functions"
+msgstr "Функции"
 
 msgid "Connectivity"
 msgstr "Связность"
 
-msgid "Connectivity helpers inspect graph components and are useful before routing or OD-matrix calculations. For undirected graphs use :func:`connected_components`; for directed graphs choose between :func:`weakly_connected_components` and :func:`strongly_connected_components`."
-msgstr "Функции связности изучают компоненты графа и полезны перед маршрутизацией или расчётом OD-матриц. Для неориентированных графов используйте :func:`connected_components`; для ориентированных выбирайте между :func:`weakly_connected_components` и :func:`strongly_connected_components`."
+msgid ":func:`connected_components`, :func:`strongly_connected_components`, :func:`keep_largest_connected_component`"
+msgstr ":func:`connected_components`, :func:`strongly_connected_components`, :func:`keep_largest_connected_component`"
 
-msgid "The ``largest_*`` helpers return node-id sets. To actually keep only the largest component, use :meth:`UrbanGraph.keep_largest_connected_component` or the ``keep_largest_subgraph`` parameter in graph builders."
-msgstr "Функции ``largest_*`` возвращают множества идентификаторов узлов. Чтобы действительно оставить только наибольшую компоненту, используйте :meth:`UrbanGraph.keep_largest_connected_component` или параметр ``keep_largest_subgraph`` функций построения."
+msgid "Cutting and joining"
+msgstr "Обрезка и объединение"
 
-msgid "See :doc:`../examples/connectivity` for a runnable connectivity workflow."
-msgstr "Работающий пример анализа связности — в :doc:`../examples/connectivity`."
+msgid ":func:`subgraph_by_nodes`, :func:`clip_urban_graph`, :func:`join_urban_graphs`, :func:`relabel_urban_graph`"
+msgstr ":func:`subgraph_by_nodes`, :func:`clip_urban_graph`, :func:`join_urban_graphs`, :func:`relabel_urban_graph`"
 
-msgid "Editing and transformation"
-msgstr "Редактирование и преобразование"
+msgid "Topology"
+msgstr "Топология"
 
-msgid "The editing helpers return new ``UrbanGraph`` objects and do not mutate the source graph unless you use the corresponding ``UrbanGraph`` method with ``inplace=True``."
-msgstr "Функции редактирования возвращают новые объекты ``UrbanGraph`` и не меняют исходный граф, если только вы не используете соответствующий метод ``UrbanGraph`` с ``inplace=True``."
+msgid ":func:`to_directed`, :func:`to_undirected`, :func:`simplify_multiedges`, :func:`consolidate_intersections`, :func:`unique_segments`"
+msgstr ":func:`to_directed`, :func:`to_undirected`, :func:`simplify_multiedges`, :func:`consolidate_intersections`, :func:`unique_segments`"
 
-msgid "Use :func:`subgraph_by_nodes` for node-induced subgraphs, :func:`clip_urban_graph` for geometry-based clipping (a shapely polygon is read in EPSG:4326, as ``territory`` in the graph builders; pass a GeoSeries or GeoDataFrame for a polygon in another CRS), :func:`relabel_urban_graph` for dense node indexes, and :func:`join_urban_graphs` for concatenating compatible graph tables."
-msgstr "Используйте :func:`subgraph_by_nodes` для подграфов по узлам, :func:`clip_urban_graph` для обрезки по геометрии (полигон shapely читается в EPSG:4326, как ``territory`` в функциях построения графов; для полигона в другой системе координат передайте GeoSeries или GeoDataFrame), :func:`relabel_urban_graph` для плотных индексов узлов и :func:`join_urban_graphs` для объединения совместимых таблиц графов."
+msgid "Objects"
+msgstr "Объекты"
 
-msgid "Use :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected`, and :meth:`UrbanGraph.simplify_multiedges` for topology transformations."
-msgstr "Используйте :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected` и :meth:`UrbanGraph.simplify_multiedges` для преобразований топологии."
+msgid ":func:`nearest_nodes`, :func:`nearest_edges`, :func:`project_objects2urban_graph`, :func:`apply_urban_graph_changes`"
+msgstr ":func:`nearest_nodes`, :func:`nearest_edges`, :func:`project_objects2urban_graph`, :func:`apply_urban_graph_changes`"
 
-msgid ":func:`consolidate_intersections` merges groups of nearby nodes, such as the several nodes OSM draws for one junction of dual carriageways, into one node. Use it before network statistics or centralities, not for routing graphs. :func:`unique_segments` returns the straight pieces of the edge geometries with every physical segment once, also where two edges of a two-way street or a there-and-back pair share their points; its total length is the network length on the ground."
-msgstr ":func:`consolidate_intersections` сливает группы близких узлов, например несколько узлов, которыми OSM рисует один перекрёсток дорог с разделёнными проезжими частями, в один узел. Используйте её перед статистикой сети или центральностями, а не для графов маршрутизации. :func:`unique_segments` возвращает прямые куски геометрий рёбер, каждый физический отрезок один раз, в том числе там, где два ребра двусторонней улицы или пара туда и обратно делят свои точки; их общая длина — длина сети на местности."
+msgid "Storage and checks"
+msgstr "Хранение и проверка"
 
-msgid "See :doc:`../examples/graph_operations` for editing examples."
-msgstr "Примеры редактирования — в :doc:`../examples/graph_operations`."
+msgid ":func:`read_urban_graph`, :func:`write_urban_graph`, :func:`validate_graph`"
+msgstr ":func:`read_urban_graph`, :func:`write_urban_graph`, :func:`validate_graph`"
 
-msgid "Object matching and projection"
-msgstr "Сопоставление и проецирование объектов"
+msgid "A route exists only inside one connected component. :func:`connected_components` finds the components of an undirected graph; on a directed graph, :func:`weakly_connected_components` ignores the direction and :func:`strongly_connected_components` keeps it, so every node of a strong component reaches every other. The ``number_*`` functions count the components and the ``largest_*`` functions return the node ids of the largest one. :func:`keep_largest_connected_component` returns the graph cut to it, strong components on directed graphs. The builders do the same with ``keep_largest_subgraph=True``. Components are computed in the Rust core."
+msgstr "Маршрут существует только внутри одной компоненты связности. :func:`connected_components` находит компоненты неориентированного графа; на ориентированном графе :func:`weakly_connected_components` не учитывает направление, а :func:`strongly_connected_components` учитывает, так что каждый узел сильной компоненты достижим из любого другого. Функции ``number_*`` считают компоненты, а функции ``largest_*`` возвращают id узлов наибольшей. :func:`keep_largest_connected_component` возвращает граф, обрезанный до неё, на ориентированных графах — до компоненты сильной связности. Построители делают то же при ``keep_largest_subgraph=True``. Компоненты считаются в Rust-ядре."
 
-msgid "Use :func:`nearest_nodes` when an object table only needs a nearest existing graph node id, and :func:`nearest_edges` for the nearest edge with the distance to it and the position along it."
-msgstr "Используйте :func:`nearest_nodes`, когда таблице объектов нужен лишь идентификатор ближайшего существующего узла графа, и :func:`nearest_edges` для ближайшего ребра с расстоянием до него и положением вдоль него."
+msgid ":func:`subgraph_by_nodes` keeps the given nodes and the edges between them. :func:`clip_urban_graph` keeps the part of a graph inside a polygon; a bare shapely polygon is read in EPSG:4326, as ``territory`` in the graph builders, and a GeoSeries or GeoDataFrame in its own CRS. :func:`join_urban_graphs` concatenates the tables of compatible graphs, and :func:`relabel_urban_graph` renumbers the nodes ``0 .. n-1``."
+msgstr ":func:`subgraph_by_nodes` сохраняет заданные узлы и рёбра между ними. :func:`clip_urban_graph` сохраняет часть графа внутри полигона; полигон shapely без обёртки читается в EPSG:4326, как ``territory`` в построителях графов, а GeoSeries или GeoDataFrame — в своей системе координат. :func:`join_urban_graphs` объединяет таблицы совместимых графов, а :func:`relabel_urban_graph` перенумеровывает узлы ``0 .. n-1``."
 
-msgid "Use :func:`project_objects2urban_graph` when objects should be inserted into the graph topology. The function prepares an :class:`UrbanGraphChanges` object with new nodes, new edges, and source edges to delete. Apply the changes with :func:`apply_urban_graph_changes`, or use :meth:`UrbanGraph.project_objects` for the in-memory shortcut."
-msgstr "Используйте :func:`project_objects2urban_graph`, когда объекты нужно встроить в топологию графа. Функция готовит объект :class:`UrbanGraphChanges` с новыми узлами, новыми рёбрами и исходными рёбрами для удаления. Примените изменения с помощью :func:`apply_urban_graph_changes` или воспользуйтесь сокращением в памяти :meth:`UrbanGraph.project_objects`."
+msgid ":func:`to_directed` returns a directed graph whose direction comes from a boolean column, ``oneway`` by default; edges without a value get ``default_direction_value`` (``False``: both directions). :func:`to_undirected` drops the direction. :func:`simplify_multiedges` keeps one of the parallel edges between two nodes, the cheapest by ``weight`` with ``rule=\"min\"`` (the default)."
+msgstr ":func:`to_directed` возвращает ориентированный граф, направление которого берётся из логического столбца, по умолчанию ``oneway``; рёбра без значения получают ``default_direction_value`` (``False``: в обе стороны). :func:`to_undirected` убирает направление. :func:`simplify_multiedges` сохраняет одно из параллельных рёбер между двумя узлами, самое дешёвое по ``weight`` при ``rule=\"min\"`` (по умолчанию)."
 
-msgid "See :doc:`../examples/objects_and_nearest_nodes` for both workflows, including ``add_link_edge=True`` and ``add_link_edge=False``."
-msgstr "Оба сценария, включая ``add_link_edge=True`` и ``add_link_edge=False``, — в :doc:`../examples/objects_and_nearest_nodes`."
+msgid ":func:`consolidate_intersections` merges the nodes OSM draws for one junction, for example where two dual carriageways cross. Nodes closer than ``tolerance`` form clusters (single linkage), and a cluster is split into the parts that edges inside it connect, so a bridge above a road stays apart. Each part becomes one node at the mean position of its members, and the edges keep their geometry with moved end points. Parts wider than ``max_span`` (four times the tolerance by default) stay unmerged. The function serves network statistics and centralities; it changes routing, because turns and one-way links inside a junction disappear."
+msgstr ":func:`consolidate_intersections` объединяет узлы, которыми OSM рисует один перекрёсток, например где пересекаются две дороги с разделительной полосой. Узлы ближе ``tolerance`` образуют кластеры (одиночная связь), и кластер делится на части, которые связывают рёбра внутри него, поэтому мост над дорогой остаётся отдельным. Каждая часть становится одним узлом в среднем положении её членов, а рёбра сохраняют геометрию со сдвинутыми концами. Части шире ``max_span`` (по умолчанию четыре допуска) не объединяются. Функция служит статистике сети и центральностям; она меняет маршруты, потому что повороты и односторонние связи внутри перекрёстка исчезают."
 
-msgid "Persistence"
-msgstr "Сохранение"
+msgid ":func:`unique_segments` returns the straight pieces of the edge geometries with every physical segment once, also where two edges of a two-way street or a there-and-back pair share their points. Its total length is the network length on the ground, which :func:`graph_stats` uses."
+msgstr ":func:`unique_segments` возвращает прямые куски геометрий рёбер, каждый физический отрезок по одному разу, в том числе там, где два ребра двусторонней улицы или пара «туда и обратно» делят свои точки. Их общая длина — длина сети на местности, которую использует :func:`graph_stats`."
 
-msgid "Use :func:`write_urban_graph` and :func:`read_urban_graph` to store and restore ``.urbangraph`` archives. Archives contain node and edge tables and can optionally include the cached adjacency matrix. See :doc:`../examples/urban_graph_basics`."
-msgstr "Используйте :func:`write_urban_graph` и :func:`read_urban_graph`, чтобы сохранять и восстанавливать архивы ``.urbangraph``. Архивы содержат таблицы узлов и рёбер и могут включать закешированную матрицу смежности. См. :doc:`../examples/urban_graph_basics`."
+msgid ":func:`nearest_nodes` returns the nearest graph node of every object, and :func:`nearest_edges` the nearest edge with the distance to it and the position along it. Objects are matched by their representative point, a point inside the geometry. Routing and analysis functions take objects with a ``graph_node_id`` column as they are and match the others to their nearest nodes themselves."
+msgstr ":func:`nearest_nodes` возвращает ближайший узел графа для каждого объекта, а :func:`nearest_edges` — ближайшее ребро с расстоянием до него и положением вдоль него. Объекты сопоставляются по представительной точке, точке внутри геометрии. Функции маршрутизации и анализа принимают объекты со столбцом ``graph_node_id`` как есть, а остальные сами сопоставляют с ближайшими узлами."
+
+msgid ":func:`project_objects2urban_graph` inserts objects into the graph. The nearest edge of every object within ``max_dist`` is split at the projection point, and with ``add_link_edge=True`` (the default) a new node for the object and a link edge at ``speed_m_per_min`` join it to that point. The function returns the changes, an :class:`UrbanGraphChanges` with the nodes and edges to add and the edges to delete, and the node of every object. :func:`apply_urban_graph_changes` applies them; :meth:`UrbanGraph.project_objects` does both in one call. Keeping the changes apart lets a service store them in its own tables."
+msgstr ":func:`project_objects2urban_graph` вставляет объекты в граф. Ближайшее ребро каждого объекта в пределах ``max_dist`` разрезается в точке проекции, а с ``add_link_edge=True`` (по умолчанию) новый узел объекта и соединительное ребро со скоростью ``speed_m_per_min`` связывают его с этой точкой. Функция возвращает изменения, :class:`UrbanGraphChanges` с добавляемыми узлами и рёбрами и удаляемыми рёбрами, и узел каждого объекта. :func:`apply_urban_graph_changes` применяет их; :meth:`UrbanGraph.project_objects` делает и то и другое за один вызов. Раздельные изменения позволяют сервису хранить их в своих таблицах."
+
+msgid ":func:`write_urban_graph` and :func:`read_urban_graph` store and read ``.urbangraph`` archives, and :func:`validate_graph` checks the tables after your own edits (see :doc:`urban_graph`)."
+msgstr ":func:`write_urban_graph` и :func:`read_urban_graph` записывают и читают архивы ``.urbangraph``, а :func:`validate_graph` проверяет таблицы после ваших правок (см. :doc:`urban_graph`)."
 
 msgid ":py:obj:`connected_components <iduedu.connected_components>`"
 msgstr ":py:obj:`connected_components <iduedu.connected_components>`"
@@ -131,12 +149,6 @@ msgstr ":py:obj:`keep_largest_connected_component <iduedu.keep_largest_connected
 msgid "Keep only the largest component of an ``UrbanGraph``."
 msgstr "Оставляет только наибольшую компоненту ``UrbanGraph``."
 
-msgid ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
-msgstr ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
-
-msgid "Relabel node ids to a dense ``RangeIndex`` and update edge endpoints."
-msgstr "Перенумеровывает идентификаторы узлов в плотный ``RangeIndex`` и обновляет концы рёбер."
-
 msgid ":py:obj:`subgraph_by_nodes <iduedu.subgraph_by_nodes>`"
 msgstr ":py:obj:`subgraph_by_nodes <iduedu.subgraph_by_nodes>`"
 
@@ -155,11 +167,11 @@ msgstr ":py:obj:`join_urban_graphs <iduedu.join_urban_graphs>`"
 msgid "Join two compatible ``UrbanGraph`` objects by concatenating node and edge tables."
 msgstr "Объединяет два совместимых ``UrbanGraph``, соединяя таблицы узлов и рёбер."
 
-msgid ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
-msgstr ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
+msgid ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
+msgstr ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
 
-msgid "Collapse a multigraph ``UrbanGraph`` into a simple graph."
-msgstr "Сводит мультиграф ``UrbanGraph`` к простому графу."
+msgid "Relabel node ids to a dense ``RangeIndex`` and update edge endpoints."
+msgstr "Перенумеровывает идентификаторы узлов в плотный ``RangeIndex`` и обновляет концы рёбер."
 
 msgid ":py:obj:`to_directed <iduedu.to_directed>`"
 msgstr ":py:obj:`to_directed <iduedu.to_directed>`"
@@ -172,6 +184,12 @@ msgstr ":py:obj:`to_undirected <iduedu.to_undirected>`"
 
 msgid "Return an undirected copy of ``UrbanGraph``."
 msgstr "Возвращает неориентированную копию ``UrbanGraph``."
+
+msgid ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
+msgstr ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
+
+msgid "Collapse a multigraph ``UrbanGraph`` into a simple graph."
+msgstr "Сводит мультиграф ``UrbanGraph`` к простому графу."
 
 msgid ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
 msgstr ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
@@ -233,9 +251,6 @@ msgstr ":py:obj:`validate_graph <iduedu.validate_graph>`"
 msgid "Validate all node, edge, topology and CRS contracts of an ``UrbanGraph``."
 msgstr "Проверяет все требования к узлам, рёбрам, топологии и системе координат ``UrbanGraph``."
 
-msgid "Optional NetworkX utilities"
-msgstr "Необязательные утилиты NetworkX"
-
 msgid "NetworkX is not installed with IduEdu. Install it separately (``pip install networkx``) to use the helpers below; without it they raise ``ImportError`` when called."
 msgstr "NetworkX не устанавливается вместе с IduEdu. Установите его отдельно (``pip install networkx``), чтобы пользоваться функциями ниже; без него они при вызове вызывают ``ImportError``."
 
@@ -292,4 +307,28 @@ msgstr ":py:obj:`reproject_graph <iduedu.reproject_graph>`"
 
 msgid "Reproject node coordinates (`x`, `y`) and edge geometries to a new CRS (in place)."
 msgstr "Перепроецирует координаты узлов (`x`, `y`) и геометрии рёбер в новую систему координат (на месте)."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "Junctions of the drive graph before and after consolidate_intersections, and buildings joined to streets"
+msgstr "Перекрёстки автомобильного графа до и после consolidate_intersections и здания, присоединённые к улицам"
+
+msgid "Vasilyevsky Island. Left and middle: junctions of the drive graph before and after ``consolidate_intersections(drive, 15)``, which reduces the district from 900 to 678 nodes; carriageways more than 15 m apart stay separate. Right: buildings joined to the nearest walkable edge by :meth:`UrbanGraph.project_objects`; orange lines are the new link edges."
+msgstr "Васильевский остров. Слева и в центре: перекрёстки автомобильного графа до и после ``consolidate_intersections(drive, 15)``, что сокращает район с 900 до 678 узлов; проезжие части дальше 15 м друг от друга остаются раздельными. Справа: здания, присоединённые к ближайшему пешеходному ребру методом :meth:`UrbanGraph.project_objects`; оранжевые линии — новые соединительные рёбра."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid ":func:`consolidate_intersections` works with distances only and can join nodes that are close but belong to different junctions; check the result on a map and set ``tolerance`` to the width of the junctions."
+msgstr ":func:`consolidate_intersections` работает только с расстояниями и может объединить узлы, которые близки, но принадлежат разным перекрёсткам; проверяйте результат на карте и задавайте ``tolerance`` по ширине перекрёстков."
+
+msgid ":func:`project_objects2urban_graph` attaches every object to one edge; an object far from any edge (beyond ``max_dist``) stays unattached."
+msgstr ":func:`project_objects2urban_graph` присоединяет каждый объект к одному ребру; объект далеко от всех рёбер (дальше ``max_dist``) остаётся неприсоединённым."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/graph_operations`, :doc:`../examples/connectivity`, :doc:`../examples/objects_and_nearest_nodes`"
+msgstr ":doc:`../examples/graph_operations`, :doc:`../examples/connectivity`, :doc:`../examples/objects_and_nearest_nodes`"
 

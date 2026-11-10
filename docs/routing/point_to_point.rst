@@ -216,4 +216,4 @@ References
 Example notebook
 ----------------
 
-:doc:`../examples/shortest_paths`
+:doc:`../examples/routing_methods`

@@ -817,6 +817,58 @@ def building_intermodal():
     save(fig, "building_intermodal")
 
 
+def graph_operations():
+    """Junctions merged by consolidate_intersections, and buildings attached by project_objects2urban_graph."""
+    drive = drive_graph()
+    merged = iduedu.consolidate_intersections(drive, 15)
+    nodes = drive.nodes_gdf
+    # The square of the drive graph with the most nodes that merging removes.
+    gone = nodes.index.difference(merged.nodes_gdf.index)
+    xy = np.column_stack([nodes.loc[gone].geometry.x, nodes.loc[gone].geometry.y])
+    cells = np.floor(xy / 400).astype(int)
+    keys, counts = np.unique(cells, axis=0, return_counts=True)
+    cx, cy = (keys[counts.argmax()] + 0.5) * 400
+    half = 260
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6.6))
+    for ax, graph, title in (
+        (axes[0], drive, f"drive graph: {thousands(len(drive.nodes_gdf))} nodes"),
+        (axes[1], merged, f"consolidate_intersections(15 m): {thousands(len(merged.nodes_gdf))} nodes"),
+    ):
+        graph.edges_gdf.cx[cx - half : cx + half, cy - half : cy + half].plot(ax=ax, color=INK_2, linewidth=1.0)
+        graph.nodes_gdf.cx[cx - half : cx + half, cy - half : cy + half].plot(
+            ax=ax, color=BLUE, markersize=22, zorder=3
+        )
+        ax.set_xlim(cx - half, cx + half)
+        ax.set_ylim(cy - half, cy + half)
+        ax.set_axis_off()
+        ax.set_aspect("equal")
+        ax.set_title(title)
+
+    walk = walk_graph()
+    homes = buildings().to_crs(walk.crs)
+    centre = homes.geometry.union_all().centroid
+    x0, y0, half = centre.x, centre.y, 150
+    homes = homes.cx[x0 - half : x0 + half, y0 - half : y0 + half]
+    projected, home_nodes = walk.project_objects(homes, 5 * 1000 / 60, max_dist=200)
+    ax = axes[2]
+    homes.plot(ax=ax, color="#e7e5df", edgecolor=STREETS, linewidth=0.6, zorder=1)
+    edges = projected.edges_gdf.cx[x0 - half : x0 + half, y0 - half : y0 + half]
+    new = (edges["u"].isin(home_nodes.to_numpy()) | edges["v"].isin(home_nodes.to_numpy())).to_numpy()
+    edges[~new].plot(ax=ax, color=INK_2, linewidth=0.9, zorder=2)
+    edges[new].plot(ax=ax, color=ORANGE, linewidth=1.6, zorder=3)
+    gpd.GeoSeries(homes.geometry.representative_point(), crs=walk.crs).plot(
+        ax=ax, color=ORANGE, edgecolor=INK, markersize=18, zorder=4
+    )
+    ax.set_xlim(x0 - half, x0 + half)
+    ax.set_ylim(y0 - half, y0 + half)
+    ax.set_axis_off()
+    ax.set_aspect("equal")
+    ax.set_title("project_objects2urban_graph: buildings joined to streets")
+    fig.tight_layout()
+    save(fig, "graph_operations")
+
+
 FIGURES = {
     "routing_search": routing_search,
     "routing_alternatives": routing_alternatives,
@@ -829,6 +881,7 @@ FIGURES = {
     "building_simplify": building_simplify,
     "building_public_transport": building_public_transport,
     "building_intermodal": building_intermodal,
+    "graph_operations": graph_operations,
 }
 
 if __name__ == "__main__":

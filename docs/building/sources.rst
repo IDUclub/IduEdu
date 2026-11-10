@@ -80,8 +80,8 @@ Downloading from Geofabrik
 :func:`download_osm_pbf` takes the territory in the same form as the builders and returns a small file of that
 territory. It picks the smallest `Geofabrik <https://download.geofabrik.de/>`__ extract that covers the territory,
 downloads it once (an interrupted download resumes, and the md5 sum Geofabrik publishes is checked), and cuts the
-territory out with :func:`split_by_polygons`. :func:`use_pbf` takes the same arguments instead of a path,
-downloads the file and reads from it inside the block.
+territory out with :func:`split_by_polygons`. :func:`use_pbf` accepts the same arguments, downloads the file
+and reads from it inside the block.
 
 .. code-block:: python
 
@@ -132,8 +132,8 @@ Differences from Overpass
 
 - Elements are returned in id order. Overpass returns route responses in quadtile order, so the node and edge ids
   of a public-transport graph can be numbered differently although the graph is the same.
-- Points on the polygon boundary count as inside. Overpass can treat exact boundary hits and very long polygon
-  edges differently in rare cases.
+- Points on the polygon boundary count as inside. Overpass can treat exact boundary hits and long polygon edges
+  differently in rare cases.
 - Only tag filters are supported (``["k"]``, ``[!"k"]``, ``["k"="v"]``, ``["k"!="v"]``, ``["k"~"re"]``,
   ``["k"!~"re"]``, with an optional ``,i`` flag on regular expressions); other Overpass syntax in ``custom_filter``
   raises :class:`~iduedu.osm_pbf.UnsupportedFilterError`. Regular expressions use the Python ``re`` module.

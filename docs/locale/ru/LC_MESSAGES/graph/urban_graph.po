@@ -14,110 +14,116 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-msgid "Graph data model"
-msgstr "Модель данных графа"
+msgid "The UrbanGraph model"
+msgstr "Модель UrbanGraph"
 
-msgid "IduEdu represents transport networks with :class:`iduedu.UrbanGraph`. An ``UrbanGraph`` stores graph topology and geometry in two pandas-compatible tables: ``nodes_gdf`` and ``edges_gdf``."
-msgstr "IduEdu представляет транспортные сети классом :class:`iduedu.UrbanGraph`. ``UrbanGraph`` хранит топологию и геометрию графа в двух таблицах, совместимых с pandas: ``nodes_gdf`` и ``edges_gdf``."
+msgid "Overview"
+msgstr "Обзор"
 
-msgid "See :doc:`../examples/urban_graph_basics` for a runnable introduction to graph tables, validation, adjacency matrices, empty graphs, and ``.urbangraph`` IO."
-msgstr "Работающее введение в таблицы графа, проверку, матрицы смежности, пустые графы и чтение и запись ``.urbangraph`` — в :doc:`../examples/urban_graph_basics`."
+msgid "Every network in IduEdu is an :class:`UrbanGraph`: a table of nodes and a table of edges, both GeoDataFrames in one projected CRS, plus a few flags that say how to read them. Tables are what urban data already is: they filter, join, plot and save with pandas and GeoPandas. The graph algorithms read a compressed sparse row (CSR) matrix built from the edge table and run in the Rust core."
+msgstr "Каждая сеть в IduEdu — это :class:`UrbanGraph`: таблица узлов и таблица рёбер, обе GeoDataFrame в одной проекционной системе координат, и несколько флагов, которые говорят, как их читать. Таблицы — это то, чем городские данные уже являются: их фильтруют, объединяют, рисуют и сохраняют средствами pandas и GeoPandas. Графовые алгоритмы читают матрицу в сжатом построчном формате (CSR), построенную по таблице рёбер, и работают в Rust-ядре."
 
-msgid "Nodes table"
-msgstr "Таблица узлов"
+msgid "Tables"
+msgstr "Таблицы"
 
-msgid "``nodes_gdf`` is a ``pandas.DataFrame`` or ``geopandas.GeoDataFrame`` whose index is the node identifier used by all graph algorithms."
-msgstr "``nodes_gdf`` — это ``pandas.DataFrame`` или ``geopandas.GeoDataFrame``, индекс которого служит идентификатором узла во всех алгоритмах на графе."
+msgid "Nodes"
+msgstr "Узлы"
 
-msgid "For spatial graphs, ``nodes_gdf`` should be a ``GeoDataFrame`` with point geometries. The node index must be unique."
-msgstr "Для пространственных графов ``nodes_gdf`` должен быть ``GeoDataFrame`` с точечными геометриями. Индекс узлов должен быть уникальным."
+msgid "``nodes_gdf`` is a DataFrame or GeoDataFrame whose index is the node id used by every function. The index must be unique. Spatial graphs store a point geometry for every node; builders add columns such as ``type``, ``route`` or ``name`` where a node stands for something."
+msgstr "``nodes_gdf`` — DataFrame или GeoDataFrame, индекс которого служит id узла во всех функциях. Индекс должен быть уникальным. Пространственные графы хранят точечную геометрию для каждого узла; построители добавляют столбцы, такие как ``type``, ``route`` или ``name``, там, где узел что-то обозначает."
 
-msgid "Edges table"
-msgstr "Таблица рёбер"
+msgid "Edges"
+msgstr "Рёбра"
 
-msgid "``edges_gdf`` is a ``pandas.DataFrame`` or ``geopandas.GeoDataFrame`` with one row per graph edge. Spatial graphs use ``LineString`` geometries."
-msgstr "``edges_gdf`` — это ``pandas.DataFrame`` или ``geopandas.GeoDataFrame`` с одной строкой на ребро графа. Пространственные графы используют геометрии ``LineString``."
+msgid "``edges_gdf`` has one row per edge and these required columns:"
+msgstr "``edges_gdf`` содержит по строке на ребро и обязательные столбцы:"
 
-msgid "Required columns:"
-msgstr "Обязательные столбцы:"
+msgid "Column"
+msgstr "Столбец"
 
-msgid "``u``"
-msgstr "``u``"
+msgid "Meaning"
+msgstr "Значение"
 
-msgid "Source node id. Must reference ``nodes_gdf.index``."
-msgstr "Идентификатор начального узла. Должен ссылаться на ``nodes_gdf.index``."
+msgid "``u``, ``v``"
+msgstr "``u``, ``v``"
 
-msgid "``v``"
-msgstr "``v``"
+msgid "Source and target node ids, present in ``nodes_gdf.index``"
+msgstr "id начального и конечного узлов, присутствующие в ``nodes_gdf.index``"
 
-msgid "Target node id. Must reference ``nodes_gdf.index``."
-msgstr "Идентификатор конечного узла. Должен ссылаться на ``nodes_gdf.index``."
+msgid "``k``"
+msgstr "``k``"
+
+msgid "Key of parallel edges, required when ``is_multigraph`` is true; ``(u, v, k)`` identifies an edge"
+msgstr "Ключ параллельных рёбер, обязателен, когда ``is_multigraph`` истинно; ``(u, v, k)`` определяет ребро"
 
 msgid "``geometry``"
 msgstr "``geometry``"
 
-msgid "Edge geometry. For geospatial graphs this is a ``LineString``."
-msgstr "Геометрия ребра. Для геопространственных графов это ``LineString``."
+msgid "Line geometry of the edge"
+msgstr "Линейная геометрия ребра"
 
 msgid "``length_meter``"
 msgstr "``length_meter``"
 
-msgid "Edge length in meters."
-msgstr "Длина ребра в метрах."
+msgid "Length in metres"
+msgstr "Длина в метрах"
 
 msgid "``time_min``"
 msgstr "``time_min``"
 
-msgid "Edge traversal time in minutes."
-msgstr "Время прохождения ребра в минутах."
+msgid "Travel time in minutes"
+msgstr "Время в пути в минутах"
 
-msgid "Multigraphs"
-msgstr "Мультиграфы"
+msgid "Without ``is_multigraph`` every ``(u, v)`` pair must be unique. Any other column (OSM tags, ``type``, ``route``, ``grade``) can be added and used as a weight if it holds non-negative numbers."
+msgstr "Без ``is_multigraph`` каждая пара ``(u, v)`` должна быть уникальной. Любой другой столбец (теги OSM, ``type``, ``route``, ``grade``) можно добавить и использовать как вес, если в нём неотрицательные числа."
 
-msgid "If ``UrbanGraph.is_multigraph`` is true, ``edges_gdf`` must also contain ``k``. The tuple ``(u, v, k)`` uniquely identifies an edge. Non-multigraphs require ``(u, v)`` pairs to be unique."
-msgstr "Если ``UrbanGraph.is_multigraph`` истинно, ``edges_gdf`` должен также содержать ``k``. Кортеж ``(u, v, k)`` однозначно определяет ребро. В графах без кратных рёбер пары ``(u, v)`` должны быть уникальными."
+msgid "Direction"
+msgstr "Направление"
 
-msgid "Directed edges"
-msgstr "Ориентированные рёбра"
+msgid "``is_directed`` makes adjacency-based algorithms respect the order of ``u`` and ``v``. A directed graph can carry an ``edge_direction_column``, usually ``oneway``: ``True`` allows movement only from ``u`` to ``v`` and ``False`` in both directions, so a two-way street is stored once. Walk graphs are undirected; drive, bike, public-transport and intermodal graphs are directed."
+msgstr "``is_directed`` заставляет алгоритмы на матрице смежности учитывать порядок ``u`` и ``v``. Ориентированный граф может иметь ``edge_direction_column``, обычно ``oneway``: ``True`` разрешает движение только от ``u`` к ``v``, а ``False`` — в обе стороны, так что двусторонняя улица хранится один раз. Пешеходные графы неориентированные; автомобильные, велосипедные, транспортные и интермодальные — ориентированные."
 
-msgid "Directed graphs are represented by ``UrbanGraph.is_directed``. Some builders also provide an edge direction column, usually ``oneway``."
-msgstr "Ориентированность графа задаёт ``UrbanGraph.is_directed``. Некоторые функции построения также добавляют столбец направления рёбер, обычно ``oneway``."
+msgid "CRS"
+msgstr "Система координат"
 
-msgid "When ``edge_direction_column`` is set:"
-msgstr "Когда задан ``edge_direction_column``:"
+msgid "When nodes and edges are GeoDataFrames, their CRS must equal the graph CRS. Builders choose a local projected CRS (UTM) from the territory, so that lengths are metres. Functions that take areas or objects in another CRS reproject them to the graph CRS."
+msgstr "Если узлы и рёбра — GeoDataFrame, их система координат должна совпадать с системой координат графа. Построители выбирают локальную проекционную систему (UTM) по территории, чтобы длины были в метрах. Функции, принимающие территории или объекты в другой системе координат, перепроецируют их в систему графа."
 
-msgid "``True`` means movement is allowed only from ``u`` to ``v``;"
-msgstr "``True`` означает, что движение разрешено только от ``u`` к ``v``;"
+msgid "Adjacency matrix"
+msgstr "Матрица смежности"
 
-msgid "``False`` means movement is allowed in both directions."
-msgstr "``False`` означает, что движение разрешено в обоих направлениях."
+msgid "Routing and analysis functions turn the edge table into a CSR matrix of one weight, ``time_min`` by default:"
+msgstr "Функции маршрутизации и анализа превращают таблицу рёбер в матрицу CSR одного веса, по умолчанию ``time_min``:"
 
-msgid "Coordinate reference systems"
-msgstr "Системы координат"
+msgid "The rows and columns follow ``nodes_gdf.index`` (``graph.adjacency_nodelist``)."
+msgstr "Строки и столбцы следуют ``nodes_gdf.index`` (``graph.adjacency_nodelist``)."
 
-msgid "When nodes and edges are ``GeoDataFrame`` objects, their CRS must match the graph CRS. Builders usually estimate a local projected CRS for metric lengths and travel-time calculations."
-msgstr "Если узлы и рёбра — объекты ``GeoDataFrame``, их система координат должна совпадать с системой координат графа. Функции построения обычно подбирают локальную проецированную систему координат для расчёта длин в метрах и времени в пути."
+msgid "Parallel edges between two nodes, in either orientation of an undirected graph, become one entry with the smallest cost (``multigraph_rule=\"max\"`` takes the largest)."
+msgstr "Параллельные рёбра между двумя узлами, в любой ориентации на неориентированном графе, становятся одной записью с наименьшей стоимостью (``multigraph_rule=\"max\"`` берёт наибольшую)."
+
+msgid "Every edge of an undirected graph and every two-way edge of a directed one gives entries in both directions."
+msgstr "Каждое ребро неориентированного графа и каждое двустороннее ребро ориентированного дают записи в обоих направлениях."
+
+msgid "The matrix is stored on the graph (``graph.adjacency_matrix``) with a copy for the Rust core and is reused by later calls with the same weight. :meth:`UrbanGraph.update_adjacency_matrix` rebuilds it, and :meth:`UrbanGraph.to_csr` builds a matrix without storing it. After changing the values of an edge column that a graph has already been routed on, call ``graph.update_adjacency_matrix(weight=...)`` before the next query. Functions that return a new graph (the editors, :func:`add_elevation`, :func:`apply_grade_speed`) need no such call."
+msgstr "Матрица хранится в графе (``graph.adjacency_matrix``) вместе с копией для Rust-ядра и повторно используется последующими вызовами с тем же весом. :meth:`UrbanGraph.update_adjacency_matrix` перестраивает её, а :meth:`UrbanGraph.to_csr` строит матрицу без сохранения. После изменения значений столбца рёбер у графа, по которому уже искали маршруты, вызовите ``graph.update_adjacency_matrix(weight=...)`` перед следующим запросом. Функциям, которые возвращают новый граф (редакторы, :func:`add_elevation`, :func:`apply_grade_speed`), такой вызов не нужен."
 
 msgid "Node and edge types"
 msgstr "Типы узлов и рёбер"
 
-msgid "Builders record what a node or an edge stands for in a ``type`` column. Routing ignores it, but it tells graph layers apart after they are joined, for example to colour a route by mode or to select boarding edges."
-msgstr "Функции построения записывают, что обозначает узел или ребро, в столбец ``type``. Маршрутизация его не учитывает, но он позволяет различить слои графа после объединения, например чтобы раскрасить маршрут по видам транспорта или выбрать рёбра посадки."
+msgid "Builders record what a node or an edge stands for in a ``type`` column. Routing ignores it, but it tells the layers apart after they are joined, for example to colour a route by mode or to select boarding edges."
+msgstr "Построители записывают, что обозначает узел или ребро, в столбец ``type``. Маршрутизация его не учитывает, но он различает слои после объединения, например чтобы раскрасить маршрут по видам транспорта или выбрать рёбра посадки."
 
-msgid "Walk and drive graphs"
-msgstr "Пешеходные и автомобильные графы"
+msgid "Streets"
+msgstr "Улицы"
 
-msgid ":func:`iduedu.get_walk_graph` returns an undirected multigraph whose edges have ``type=\"walk\"``. :func:`iduedu.get_drive_graph` returns a directed multigraph with ``type=\"drive\"`` edges, the ``oneway`` direction column and, with ``add_road_category=True``, a road ``category``. Street nodes carry only their geometry. Edges also keep a configurable set of OSM tags: ``highway`` and ``name`` for walking, plus ``lanes`` for driving (see :doc:`../configuration`)."
-msgstr ":func:`iduedu.get_walk_graph` возвращает неориентированный мультиграф с рёбрами ``type=\"walk\"``. :func:`iduedu.get_drive_graph` возвращает ориентированный мультиграф с рёбрами ``type=\"drive\"``, столбцом направления ``oneway`` и, при ``add_road_category=True``, категорией дороги ``category``. Узлы улиц хранят только геометрию. На рёбрах также сохраняется настраиваемый набор тегов OSM: ``highway`` и ``name`` для пешеходов и дополнительно ``lanes`` для автомобилей (см. :doc:`../configuration`)."
+msgid ":func:`get_walk_graph` returns an undirected multigraph with ``type=\"walk\"`` edges. :func:`get_drive_graph` returns a directed multigraph with ``type=\"drive\"`` edges, the ``oneway`` direction column and, with ``add_road_category=True``, a road ``category``. :func:`get_bike_graph` adds ``cycle_infra`` and ``lts``. Street nodes carry only their geometry (see :doc:`../building/streets`)."
+msgstr ":func:`get_walk_graph` возвращает неориентированный мультиграф с рёбрами ``type=\"walk\"``. :func:`get_drive_graph` возвращает ориентированный мультиграф с рёбрами ``type=\"drive\"``, столбцом направления ``oneway`` и, при ``add_road_category=True``, категорией дороги ``category``. :func:`get_bike_graph` добавляет ``cycle_infra`` и ``lts``. Узлы улиц хранят только геометрию (см. :doc:`../building/streets`)."
 
 msgid "Public transport from OSM"
 msgstr "Общественный транспорт из OSM"
 
 msgid "Type"
 msgstr "Тип"
-
-msgid "Meaning"
-msgstr "Значение"
 
 msgid "``bus``, ``trolleybus``, ``tram``, ``subway``, ``monorail``, ``taxi``, ``train``"
 msgstr "``bus``, ``trolleybus``, ``tram``, ``subway``, ``monorail``, ``taxi``, ``train``"
@@ -134,8 +140,8 @@ msgstr "Узел, где пассажиры ждут; в интермодаль�
 msgid "``boarding``"
 msgstr "``boarding``"
 
-msgid "Edge from a platform to a route stop, with zero length. Its ``time_min`` is the mode's ``avg_wait_time_min`` from the transport registry."
-msgstr "Ребро от платформы к остановке маршрута нулевой длины. Его ``time_min`` — значение ``avg_wait_time_min`` для вида транспорта из реестра."
+msgid "Edge from a platform to a route stop, with zero length. Its ``time_min`` is the ``avg_wait_time_min`` of the mode in the transport registry."
+msgstr "Ребро от платформы к остановке маршрута с нулевой длиной. Его ``time_min`` — это ``avg_wait_time_min`` вида транспорта в реестре транспорта."
 
 msgid "``alighting``"
 msgstr "``alighting``"
@@ -146,8 +152,8 @@ msgstr "Ребро от остановки маршрута обратно к е
 msgid "``subway_station``"
 msgstr "``subway_station``"
 
-msgid "Node for a station, with OSM ``name`` and ``depth`` when mapped. As an edge type, the bidirectional link between a station and its platform."
-msgstr "Узел станции с OSM-тегами ``name`` и ``depth``, если они отмечены. Как тип ребра — двунаправленная связь между станцией и её платформой."
+msgid "Node for a station, with OSM ``name`` and ``depth`` when mapped. As an edge type, the link in both directions between a station and its platform."
+msgstr "Узел станции с OSM ``name`` и ``depth``, если они нанесены. Как тип ребра — связь в обоих направлениях между станцией и её платформой."
 
 msgid "``subway_platform``"
 msgstr "``subway_platform``"
@@ -170,8 +176,8 @@ msgstr "Рёбра от входа внутрь станции и от стан�
 msgid "``subway_transfer``"
 msgstr "``subway_transfer``"
 
-msgid "Bidirectional edge between the stations of one interchange."
-msgstr "Двунаправленное ребро между станциями одного пересадочного узла."
+msgid "Edge in both directions between the stations of one interchange."
+msgstr "Ребро в обоих направлениях между станциями одного пересадочного узла."
 
 msgid "Public transport from GTFS"
 msgstr "Общественный транспорт из GTFS"
@@ -212,498 +218,117 @@ msgstr "Ребро из ``pathways.txt`` с ``pathway_id`` и ``pathway_mode``; 
 msgid "``station_link``"
 msgstr "``station_link``"
 
-msgid "Zero-cost, bidirectional edge from a stop to its ``parent_station``."
-msgstr "Двунаправленное ребро нулевой стоимости от остановки к её ``parent_station``."
+msgid "Edge of zero cost in both directions from a stop to its ``parent_station``."
+msgstr "Ребро нулевой стоимости в обоих направлениях от остановки к её ``parent_station``."
 
 msgid "Intermodal graphs"
 msgstr "Интермодальные графы"
 
-msgid ":func:`iduedu.get_intermodal_graph` and :func:`iduedu.join_pt_walk_graph` keep the types of both layers. Walking edges, including the connectors that attach platforms and entrances to the street, have ``type=\"walk\"``, and walking nodes have no type. See :doc:`../examples/gtfs_public_transport` and :doc:`../examples/shortest_paths` for routes coloured by edge type."
-msgstr ":func:`iduedu.get_intermodal_graph` и :func:`iduedu.join_pt_walk_graph` сохраняют типы обоих слоёв. Пешеходные рёбра, включая соединители, которые присоединяют платформы и входы к улице, имеют ``type=\"walk\"``, а у пешеходных узлов типа нет. Маршруты, раскрашенные по типу рёбер, — в :doc:`../examples/gtfs_public_transport` и :doc:`../examples/shortest_paths`."
+msgid ":func:`get_intermodal_graph` and :func:`join_pt_walk_graph` keep the types of both layers. Walking edges, including the connectors that attach platforms and entrances to the street, have ``type=\"walk\"``, and walking nodes have no type (see :doc:`../building/intermodal`)."
+msgstr ":func:`get_intermodal_graph` и :func:`join_pt_walk_graph` сохраняют типы обоих слоёв. Пешеходные рёбра, включая соединители, которые присоединяют платформы и входы к улице, имеют ``type=\"walk\"``, а у пешеходных узлов типа нет (см. :doc:`../building/intermodal`)."
 
-msgid "API reference"
-msgstr "Справочник API"
+msgid "Methods"
+msgstr "Методы"
+
+msgid "Most functions of the library are also methods of the graph, with the graph as the first argument left out:"
+msgstr "Большинство функций библиотеки — также методы графа, у которых граф как первый аргумент опущен:"
+
+msgid "Editing methods (``clip``, ``relabel``, ``join``, ``to_directed``, ``to_undirected``, ``simplify_multiedges``, ``project_objects``) return a new graph, or change the graph itself with ``inplace=True``."
+msgstr "Методы редактирования (``clip``, ``relabel``, ``join``, ``to_directed``, ``to_undirected``, ``simplify_multiedges``, ``project_objects``) возвращают новый граф или меняют сам граф при ``inplace=True``."
+
+msgid "Validation"
+msgstr "Проверка"
+
+msgid "The constructor checks the tables: unique node ids, edge ends present among the nodes, the required columns, line geometries and one CRS. :meth:`UrbanGraph.validate` and :func:`validate_graph` repeat the checks after your own edits:"
+msgstr "Конструктор проверяет таблицы: уникальные id узлов, концы рёбер среди узлов, обязательные столбцы, линейные геометрии и одну систему координат. :meth:`UrbanGraph.validate` и :func:`validate_graph` повторяют проверки после ваших правок:"
+
+msgid "Storage"
+msgstr "Хранение"
+
+msgid "A ``.urbangraph`` archive stores a graph without converting it: ``metadata.json``, ``nodes.parquet`` and ``edges.parquet``, and optionally the adjacency matrix as a cache."
+msgstr "Архив ``.urbangraph`` хранит граф без преобразования: ``metadata.json``, ``nodes.parquet`` и ``edges.parquet``, а также, по желанию, матрицу смежности как кэш."
+
+msgid "Install ``iduedu[io]`` when parquet support is not already available."
+msgstr "Установите ``iduedu[io]``, если поддержки parquet ещё нет."
+
+msgid "NetworkX"
+msgstr "NetworkX"
+
+msgid "NetworkX is an optional dependency. :func:`urban_graph2nx_graph` (``graph.to_nx_graph()``) and :func:`nx_graph2urban_graph` (``UrbanGraph.from_nx_graph``) convert at the boundary with code that needs NetworkX; the other NetworkX helpers are listed in :doc:`operations`. Code written for IduEdu 1.x maps as follows:"
+msgstr "NetworkX — необязательная зависимость. :func:`urban_graph2nx_graph` (``graph.to_nx_graph()``) и :func:`nx_graph2urban_graph` (``UrbanGraph.from_nx_graph``) выполняют преобразование на границе с кодом, которому нужен NetworkX; остальные помощники NetworkX перечислены в :doc:`operations`. Код для IduEdu 1.x переносится так:"
+
+msgid "Before (NetworkX graph)"
+msgstr "Раньше (граф NetworkX)"
+
+msgid "Now (UrbanGraph)"
+msgstr "Теперь (UrbanGraph)"
+
+msgid "Read nodes and edges from a NetworkX graph"
+msgstr "Читать узлы и рёбра из графа NetworkX"
+
+msgid "Use ``graph.nodes_gdf`` and ``graph.edges_gdf``"
+msgstr "Используйте ``graph.nodes_gdf`` и ``graph.edges_gdf``"
+
+msgid "Convert GeoDataFrames to NetworkX before an OD matrix"
+msgstr "Преобразовать GeoDataFrame в NetworkX перед матрицей OD"
+
+msgid "Pass the ``UrbanGraph`` to :func:`od_matrix`"
+msgstr "Передайте ``UrbanGraph`` в :func:`od_matrix`"
+
+msgid "Snap objects to node ids before every matrix call"
+msgstr "Привязывать объекты к id узлов перед каждым вызовом матрицы"
+
+msgid "Pass the objects as ``gdf_origins`` / ``gdf_destinations``, or store ``graph_node_id`` from :func:`nearest_nodes` once"
+msgstr "Передайте объекты как ``gdf_origins`` / ``gdf_destinations`` или один раз сохраните ``graph_node_id`` из :func:`nearest_nodes`"
+
+msgid "Keep NetworkX as the graph in memory"
+msgstr "Хранить граф в памяти как NetworkX"
+
+msgid "Keep ``UrbanGraph``; convert to NetworkX only where another library needs it"
+msgstr "Храните ``UrbanGraph``; преобразуйте в NetworkX только там, где это нужно другой библиотеке"
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`UrbanGraph <iduedu.UrbanGraph>`"
+msgstr ":py:obj:`UrbanGraph <iduedu.UrbanGraph>`"
 
 msgid "Tabular representation of an urban transport graph."
 msgstr "Табличное представление городского транспортного графа."
 
-msgid "``UrbanGraph`` stores nodes and edges as pandas-compatible tables and builds SciPy CSR adjacency matrices for shortest-path and OD-matrix calculations. Spatial graphs use ``GeoDataFrame`` tables: nodes are points, edges are lines, and both tables share the graph CRS."
-msgstr "``UrbanGraph`` хранит узлы и рёбра в таблицах, совместимых с pandas, и строит матрицы смежности SciPy CSR для расчёта кратчайших путей и OD-матриц. Пространственные графы используют таблицы ``GeoDataFrame``: узлы — точки, рёбра — линии, и обе таблицы имеют систему координат графа."
-
-msgid "Parameters"
-msgstr "Параметры"
-
-msgid "Node table. Its index is the node id and must be unique. Spatial graphs should use point geometries."
-msgstr "Таблица узлов. Её индекс — идентификатор узла и должен быть уникальным. Для пространственных графов используйте точечные геометрии."
-
-msgid "Edge table. Required columns are ``u``, ``v``, ``geometry``, ``length_meter`` and ``time_min``. Multigraphs also require ``k``. Edge endpoint columns reference ``nodes_gdf.index``."
-msgstr "Таблица рёбер. Обязательные столбцы: ``u``, ``v``, ``geometry``, ``length_meter`` и ``time_min``. Для мультиграфов нужен также ``k``. Столбцы концов рёбер ссылаются на ``nodes_gdf.index``."
-
-msgid "Whether multiple edges may exist between the same node pair. If true, ``(u, v, k)`` uniquely identifies an edge."
-msgstr "Могут ли между одной парой узлов быть несколько рёбер. Если да, ребро однозначно определяется ``(u, v, k)``."
-
-msgid "Whether edge direction is respected by adjacency-based algorithms."
-msgstr "Учитывают ли алгоритмы на матрице смежности направление рёбер."
-
-msgid "Optional boolean edge column. ``True`` means movement is allowed only from ``u`` to ``v``; ``False`` means both directions are allowed."
-msgstr "Необязательный логический столбец рёбер. ``True`` означает, что движение разрешено только от ``u`` к ``v``; ``False`` — в обоих направлениях."
-
-msgid "Default edge column used when building weighted adjacency matrices."
-msgstr "Столбец рёбер по умолчанию для построения взвешенных матриц смежности."
-
-msgid "Optional graph CRS. If omitted, it is inferred from GeoDataFrames when possible."
-msgstr "Необязательная система координат графа. Если не задана, по возможности берётся из GeoDataFrame."
-
-msgid "Optional semantic graph type such as ``\"drive\"``, ``\"walk\"`` or ``\"intermodal\"``."
-msgstr "Необязательный смысловой тип графа, например ``\"drive\"``, ``\"walk\"`` или ``\"intermodal\"``."
-
-msgid "Raises"
-msgstr "Исключения"
-
-msgid "If node or edge tables use unsupported types."
-msgstr "Если таблицы узлов или рёбер имеют неподдерживаемый тип."
-
-msgid "If graph table contracts are violated."
-msgstr "Если нарушены требования к таблицам графа."
-
-msgid "https://iduclub.github.io/IduEdu/examples/urban_graph_basics.html"
-msgstr "https://iduclub.github.io/IduEdu/examples/urban_graph_basics.html"
-
-msgid "Create an empty graph with the requested topology metadata."
-msgstr "Создаёт пустой граф с заданными метаданными топологии."
-
-msgid "Return type"
-msgstr "Тип результата"
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
-
-msgid "Validate node, edge, topology and CRS contracts of the graph."
-msgstr "Проверяет требования к узлам, рёбрам, топологии и системе координат графа."
-
-msgid "If graph tables use unsupported types."
-msgstr "Если таблицы графа имеют неподдерживаемый тип."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
-
-msgid "Return an independent copy of the graph and cached adjacency state."
-msgstr "Возвращает независимую копию графа и закешированного состояния смежности."
-
-msgid "Write the graph to an ``.urbangraph`` archive."
-msgstr "Записывает граф в архив ``.urbangraph``."
-
-msgid "Destination path with the ``.urbangraph`` suffix."
-msgstr "Путь назначения с расширением ``.urbangraph``."
-
-msgid "Whether to persist the cached adjacency matrix."
-msgstr "Сохранять ли закешированную матрицу смежности."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pathlib.Path\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pathlib.Path\\``"
-
-msgid "Returns"
-msgstr "Результат"
-
-msgid "Path to the written archive."
-msgstr "Путь к записанному архиву."
+msgid ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
+msgstr ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
 
 msgid "Read an ``UrbanGraph`` from an ``.urbangraph`` archive."
 msgstr "Читает ``UrbanGraph`` из архива ``.urbangraph``."
 
-msgid "Source path with the ``.urbangraph`` suffix."
-msgstr "Путь к исходному файлу с расширением ``.urbangraph``."
+msgid ":py:obj:`write_urban_graph <iduedu.write_urban_graph>`"
+msgstr ":py:obj:`write_urban_graph <iduedu.write_urban_graph>`"
 
-msgid "Whether to validate the graph after reading."
-msgstr "Проверять ли граф после чтения."
+msgid "Write an ``UrbanGraph`` to an ``.urbangraph`` archive."
+msgstr "Записывает ``UrbanGraph`` в архив ``.urbangraph``."
 
-msgid "Restored graph instance."
-msgstr "Восстановленный граф."
+msgid ":py:obj:`validate_graph <iduedu.validate_graph>`"
+msgstr ":py:obj:`validate_graph <iduedu.validate_graph>`"
 
-msgid "Rebuild and store the graph adjacency matrix."
-msgstr "Заново строит и сохраняет матрицу смежности графа."
+msgid "Validate all node, edge, topology and CRS contracts of an ``UrbanGraph``."
+msgstr "Проверяет все требования к узлам, рёбрам, топологии и системе координат ``UrbanGraph``."
 
-msgid "Node ids to include in matrix order. If omitted, all graph nodes are used."
-msgstr "Идентификаторы узлов в порядке строк матрицы. Если не заданы, используются все узлы графа."
+msgid "Limitations"
+msgstr "Ограничения"
 
-msgid "Edge weight column. If omitted, ``adjacency_weight`` is used."
-msgstr "Столбец весов рёбер. Если не задан, используется ``adjacency_weight``."
+msgid "The adjacency matrix is not rebuilt when edge values change inside a graph that has been routed on; call :meth:`UrbanGraph.update_adjacency_matrix` after such edits."
+msgstr "Матрица смежности не перестраивается, когда значения рёбер меняются в графе, по которому уже искали маршруты; после таких правок вызывайте :meth:`UrbanGraph.update_adjacency_matrix`."
 
-msgid "Aggregation rule for parallel edges."
-msgstr "Правило агрегации кратных рёбер."
+msgid "Weights must be non-negative and without missing values."
+msgstr "Веса должны быть неотрицательными и без пропусков."
 
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~scipy.sparse.\\_csr.csr\\_matrix\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~scipy.sparse.\\_csr.csr\\_matrix\\``"
+msgid "Node ids can be any hashable values, but integer ids keep the tables and the archives compact."
+msgstr "id узлов могут быть любыми хешируемыми значениями, но целые id делают таблицы и архивы компактнее."
 
-msgid "Built SciPy CSR adjacency matrix."
-msgstr "Построенная матрица смежности SciPy CSR."
+msgid "Example notebook"
+msgstr "Пример в блокноте"
 
-msgid "If ``weight`` is not present in ``edges_gdf``."
-msgstr "Если ``weight`` нет в ``edges_gdf``."
-
-msgid "If edge weights are invalid."
-msgstr "Если веса рёбер недопустимы."
-
-msgid "Build a CSR adjacency matrix without changing graph state."
-msgstr "Строит матрицу смежности CSR, не меняя состояние графа."
-
-msgid "Return connected components for an undirected graph."
-msgstr "Возвращает компоненты связности неориентированного графа."
-
-msgid "https://iduclub.github.io/IduEdu/examples/connectivity.html"
-msgstr "https://iduclub.github.io/IduEdu/examples/connectivity.html"
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`set\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`set\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]\\]`"
-
-msgid "Return weakly connected components, ignoring edge direction."
-msgstr "Возвращает компоненты слабой связности без учёта направления рёбер."
-
-msgid "Return strongly connected components."
-msgstr "Возвращает компоненты сильной связности."
-
-msgid "Return the largest component according to the selected mode."
-msgstr "Возвращает наибольшую компоненту в выбранном режиме."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`set\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`set\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
-
-msgid "Return the node-induced subgraph for ``nodes``."
-msgstr "Возвращает подграф, порождённый узлами ``nodes``."
-
-msgid "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
-msgstr "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
-
-msgid "Keep only the largest graph component."
-msgstr "Оставляет только наибольшую компоненту графа."
-
-msgid "Search once for distances and/or routes. See :func:`iduedu.single_source_dijkstra`."
-msgstr "Один поиск расстояний и/или маршрутов. См. :func:`iduedu.single_source_dijkstra`."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-
-msgid "Search from the nearest source. See :func:`iduedu.multi_source_dijkstra`."
-msgstr "Поиск от ближайшего источника. См. :func:`iduedu.multi_source_dijkstra`."
-
-msgid "Run independent source searches. See :func:`iduedu.dijkstra_parallel`."
-msgstr "Независимые поиски от нескольких источников. См. :func:`iduedu.dijkstra_parallel`."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-
-msgid "Return one shortest path as an ordered list of graph node ids."
-msgstr "Возвращает один кратчайший путь как упорядоченный список идентификаторов узлов."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
-
-msgid "Return the cost and node route of one shortest path. See :func:`iduedu.shortest_path`."
-msgstr "Вернуть стоимость и маршрут по узлам одного кратчайшего пути. См. :func:`iduedu.shortest_path`."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`float\\`\\, \\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`float\\`\\, \\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]\\]`"
-
-msgid "Return up to k shortest loopless paths. See :func:`iduedu.k_shortest_paths`."
-msgstr "Вернуть до k кратчайших путей без циклов. См. :func:`iduedu.k_shortest_paths`."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-
-msgid "Return up to k distinct routes by the penalty method. See :func:`iduedu.alternative_paths`."
-msgstr "Вернуть до k разных маршрутов методом штрафов. См. :func:`iduedu.alternative_paths`."
-
-msgid "Find the nearest source node and distance for each reachable graph node."
-msgstr "Находит ближайший узел-источник и расстояние до него для каждого достижимого узла графа."
-
-msgid "https://iduclub.github.io/IduEdu/examples/shortest_paths.html"
-msgstr "https://iduclub.github.io/IduEdu/examples/shortest_paths.html"
-
-msgid "Calculate an OD matrix of shortest paths on this graph."
-msgstr "Рассчитывает OD-матрицу кратчайших путей на этом графе."
-
-msgid "Yield OD origin-row blocks. See :func:`iduedu.iter_od_matrix`."
-msgstr "Выдаёт блоки строк OD-матрицы по точкам отправления. См. :func:`iduedu.iter_od_matrix`."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\`\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\`\\]`"
-
-msgid "Convert an ordered node path to ordered graph edges."
-msgstr "Преобразует упорядоченный путь по узлам в упорядоченные рёбра графа."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
-
-msgid "Create an ``UrbanGraph`` from a NetworkX graph."
-msgstr "Создаёт ``UrbanGraph`` из графа NetworkX."
-
-msgid "This constructor is useful for graphs received from external libraries when they already contain node coordinates, CRS metadata and edge attributes such as ``length_meter`` and ``time_min``. The conversion itself is performed by :func:`iduedu.nx_graph2urban_graph`."
-msgstr "Этот конструктор полезен для графов из внешних библиотек, в которых уже есть координаты узлов, метаданные системы координат и атрибуты рёбер, такие как ``length_meter`` и ``time_min``. Само преобразование выполняет :func:`iduedu.nx_graph2urban_graph`."
-
-msgid "NetworkX graph, directed graph, multigraph or multidigraph."
-msgstr "Граф NetworkX: неориентированный, ориентированный, мультиграф или ориентированный мультиграф."
-
-msgid "If ``True``, empty edge geometries are restored as straight segments between endpoint nodes."
-msgstr "Если ``True``, пустые геометрии рёбер восстанавливаются как прямые отрезки между концевыми узлами."
-
-msgid "If ``True`` and ``oneway_column`` exists on edges, that column is used as the edge direction column."
-msgstr "Если ``True`` и у рёбер есть столбец ``oneway_column``, он используется как столбец направления рёбер."
-
-msgid "Boolean edge attribute that marks one-way movement."
-msgstr "Логический атрибут ребра, отмечающий одностороннее движение."
-
-msgid "Converted ``UrbanGraph`` instance."
-msgstr "Преобразованный ``UrbanGraph``."
-
-msgid "Convert this graph to a NetworkX graph."
-msgstr "Преобразует этот граф в граф NetworkX."
-
-msgid "The method delegates to :func:`iduedu.urban_graph2nx_graph` and preserves node and edge attributes where possible."
-msgstr "Метод вызывает :func:`iduedu.urban_graph2nx_graph` и по возможности сохраняет атрибуты узлов и рёбер."
-
-msgid "NetworkX graph type matching this graph topology."
-msgstr "Граф NetworkX того типа, который соответствует топологии этого графа."
-
-msgid "Collapse a multigraph to a simple graph."
-msgstr "Сводит мультиграф к простому графу."
-
-msgid "For each node pair, one edge is selected by the ``weight`` column. ``rule=\"min\"`` keeps the smallest weight and ``rule=\"max\"`` keeps the largest weight. Functional equivalent: :func:`iduedu.simplify_multiedges`."
-msgstr "Для каждой пары узлов выбирается одно ребро по столбцу ``weight``. ``rule=\"min\"`` оставляет наименьший вес, ``rule=\"max\"`` — наибольший. Функциональный аналог: :func:`iduedu.simplify_multiedges`."
-
-msgid "Edge column used to choose the representative edge."
-msgstr "Столбец рёбер, по которому выбирается оставляемое ребро."
-
-msgid "Selection rule, either ``\"min\"`` or ``\"max\"``."
-msgstr "Правило выбора: ``\"min\"`` или ``\"max\"``."
-
-msgid "If ``True``, replace this object with the simplified graph."
-msgstr "Если ``True``, этот объект заменяется упрощённым графом."
-
-msgid "Simplified ``UrbanGraph``."
-msgstr "Упрощённый ``UrbanGraph``."
-
-msgid "Relabel graph nodes to a dense ``RangeIndex``."
-msgstr "Перенумеровывает узлы графа в плотный ``RangeIndex``."
-
-msgid "Functional equivalent: :func:`iduedu.relabel_urban_graph`."
-msgstr "Функциональный аналог: :func:`iduedu.relabel_urban_graph`."
-
-msgid "If ``True``, replace this object with the relabeled graph."
-msgstr "Если ``True``, этот объект заменяется перенумерованным графом."
-
-msgid "``UrbanGraph`` with updated node indexes and edge endpoints."
-msgstr "``UrbanGraph`` с обновлёнными индексами узлов и концами рёбер."
-
-msgid "Clip the graph by geometry and keep only nodes inside it."
-msgstr "Обрезает граф по геометрии и оставляет только узлы внутри неё."
-
-msgid "Edges are retained only when both endpoints remain in the graph. Node ids are preserved; call :meth:`relabel` if dense labels are needed. Functional equivalent: :func:`iduedu.clip_urban_graph`."
-msgstr "Ребро сохраняется, только если оба его конца остаются в графе. Идентификаторы узлов сохраняются; вызовите :meth:`relabel`, если нужна плотная нумерация. Функциональный аналог: :func:`iduedu.clip_urban_graph`."
-
-msgid "Shapely geometry in EPSG:4326 (as ``territory`` of the graph builders), or a GeoSeries / GeoDataFrame in any CRS."
-msgstr "Геометрия shapely в EPSG:4326 (как ``territory`` в функциях построения графов) либо GeoSeries / GeoDataFrame в любой системе координат."
-
-msgid "If ``True``, replace this object with the clipped graph."
-msgstr "Если ``True``, этот объект заменяется обрезанным графом."
-
-msgid "Clipped ``UrbanGraph``."
-msgstr "Обрезанный ``UrbanGraph``."
-
-msgid "Join this graph with another compatible ``UrbanGraph``."
-msgstr "Объединяет этот граф с другим совместимым ``UrbanGraph``."
-
-msgid "Shared node indexes are allowed and resolved with ``node_conflict``. Duplicate edge keys are treated as conflicts."
-msgstr "Общие индексы узлов допускаются и разрешаются по ``node_conflict``. Совпадающие ключи рёбер считаются конфликтом."
-
-msgid "Graph to append."
-msgstr "Добавляемый граф."
-
-msgid "Optional graph type for the result. If ``None``, keep this graph type."
-msgstr "Необязательный тип графа-результата. Если ``None``, сохраняется тип этого графа."
-
-msgid "Which side wins when node indexes overlap: ``\"left\"`` or ``\"right\"``."
-msgstr "Чья сторона побеждает при совпадении индексов узлов: ``\"left\"`` или ``\"right\"``."
-
-msgid "If ``True``, replace this object with the joined graph."
-msgstr "Если ``True``, этот объект заменяется объединённым графом."
-
-msgid "Joined ``UrbanGraph``."
-msgstr "Объединённый ``UrbanGraph``."
-
-msgid "Return a directed version of the graph with an edge direction column."
-msgstr "Возвращает ориентированную версию графа со столбцом направления рёбер."
-
-msgid "Functional equivalent: :func:`iduedu.to_directed`."
-msgstr "Функциональный аналог: :func:`iduedu.to_directed`."
-
-msgid "Name of the boolean one-way edge column."
-msgstr "Имя логического столбца одностороннего движения."
-
-msgid "Value used for edges where the column is missing or null."
-msgstr "Значение для рёбер, где столбец отсутствует или пуст."
-
-msgid "If ``True``, replace this object with the directed graph."
-msgstr "Если ``True``, этот объект заменяется ориентированным графом."
-
-msgid "Directed ``UrbanGraph``."
-msgstr "Ориентированный ``UrbanGraph``."
-
-msgid "Return an undirected version of the graph."
-msgstr "Возвращает неориентированную версию графа."
-
-msgid "Functional equivalent: :func:`iduedu.to_undirected`."
-msgstr "Функциональный аналог: :func:`iduedu.to_undirected`."
-
-msgid "If ``True``, replace this object with the undirected graph."
-msgstr "Если ``True``, этот объект заменяется неориентированным графом."
-
-msgid "Undirected ``UrbanGraph``."
-msgstr "Неориентированный ``UrbanGraph``."
-
-msgid "Return nearest graph node ids for object geometries."
-msgstr "Возвращает идентификаторы ближайших узлов графа для геометрий объектов."
-
-msgid "Functional equivalent: :func:`iduedu.nearest_nodes`."
-msgstr "Функциональный аналог: :func:`iduedu.nearest_nodes`."
-
-msgid "GeoDataFrame with geometries to match to graph nodes."
-msgstr "GeoDataFrame с геометриями, сопоставляемыми с узлами графа."
-
-msgid "Name assigned to the returned ``Series``."
-msgstr "Имя возвращаемой ``Series``."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\``"
-
-msgid "Series indexed like ``objects_gdf`` with nearest node ids as values."
-msgstr "Series с тем же индексом, что ``objects_gdf``, и идентификаторами ближайших узлов в значениях."
-
-msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
-msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
-
-msgid "Return the nearest graph edge for each object, with the distance and the position along it."
-msgstr "Возвращает ближайшее ребро графа для каждого объекта вместе с расстоянием до него и положением вдоль него."
-
-msgid "Functional equivalent: :func:`iduedu.nearest_edges`."
-msgstr "Функциональный аналог: :func:`iduedu.nearest_edges`."
-
-msgid "Return the straight segments of the edge geometries, each physical segment once."
-msgstr "Возвращает прямые отрезки геометрий рёбер, каждый физический отрезок один раз."
-
-msgid "Functional equivalent: :func:`iduedu.unique_segments`."
-msgstr "Функциональный аналог: :func:`iduedu.unique_segments`."
-
-msgid "Merge groups of nearby nodes, such as the nodes of one junction, into one node."
-msgstr "Сливает группы близких узлов, например узлы одного перекрёстка, в один узел."
-
-msgid "Functional equivalent: :func:`iduedu.consolidate_intersections`."
-msgstr "Функциональный аналог: :func:`iduedu.consolidate_intersections`."
-
-msgid "Project objects onto nearest graph edges and add them to the graph."
-msgstr "Проецирует объекты на ближайшие рёбра графа и добавляет их в граф."
-
-msgid "The method creates graph nodes for objects, projects their representative points onto nearest edges, splits those edges when needed and adds connector edges. It is convenient for in-memory preparation of buildings, services or other objects before OD-matrix calculations. For backend workflows where graph changes should be persisted separately, use :func:`iduedu.project_objects2urban_graph`."
-msgstr "Метод создаёт узлы графа для объектов, проецирует их представительные точки на ближайшие рёбра, при необходимости разбивает эти рёбра и добавляет соединительные рёбра. Это удобно для подготовки зданий, сервисов и других объектов в памяти перед расчётом OD-матриц. Для серверных сценариев, где изменения графа нужно сохранять отдельно, используйте :func:`iduedu.project_objects2urban_graph`."
-
-msgid "Objects with a unique index and geometry. The index becomes the ``object2node_map`` index."
-msgstr "Объекты с уникальным индексом и геометрией. Индекс становится индексом ``object2node_map``."
-
-msgid "Movement speed on connector edges, in meters per minute. For 5 km/h use ``5 * 1000 / 60``."
-msgstr "Скорость движения по соединительным рёбрам в метрах в минуту. Для 5 км/ч используйте ``5 * 1000 / 60``."
-
-msgid "Optional maximum distance to the nearest edge. If ``None``, no distance limit is applied."
-msgstr "Необязательное максимальное расстояние до ближайшего ребра. Если ``None``, ограничения нет."
-
-msgid "If ``True``, create a dedicated object node and connector edge. If ``False``, map objects to projection nodes on the graph."
-msgstr "Если ``True``, создаются отдельный узел объекта и соединительное ребро. Если ``False``, объекты сопоставляются с узлами проекций на графе."
-
-msgid "If ``True``, apply changes to this graph."
-msgstr "Если ``True``, изменения применяются к этому графу."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\`\\, \\:py\\:class\\:\\`\\~pandas.Series\\`\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\`\\, \\:py\\:class\\:\\`\\~pandas.Series\\`\\]`"
-
-msgid "Pair ``(graph, object2node_map)``. ``object2node_map`` is indexed by the original object index and contains graph node ids."
-msgstr "Пара ``(graph, object2node_map)``. ``object2node_map`` проиндексирована исходным индексом объектов и содержит идентификаторы узлов графа."
-
-msgid "Measures of size, density, shape and connectivity of the street network."
-msgstr "Показатели размера, плотности, формы и связности уличной сети."
-
-msgid "Functional equivalent: :func:`iduedu.graph_stats`."
-msgstr "Функциональный аналог: :func:`iduedu.graph_stats`."
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-
-msgid "Edge counts, lengths and speeds for every value of an edge column."
-msgstr "Количества рёбер, длины и скорости для каждого значения столбца рёбер."
-
-msgid "Functional equivalent: :func:`iduedu.edge_stats`."
-msgstr "Функциональный аналог: :func:`iduedu.edge_stats`."
-
-msgid "Stops, routes and stop spacing of every public-transport mode."
-msgstr "Остановки, маршруты и расстояние между остановками для каждого вида общественного транспорта."
-
-msgid "Functional equivalent: :func:`iduedu.transport_stats`."
-msgstr "Функциональный аналог: :func:`iduedu.transport_stats`."
-
-msgid "Network measures around every node, within a travel cost along the network."
-msgstr "Показатели сети вокруг каждого узла в пределах затрат на путь по сети."
-
-msgid "Functional equivalent: :func:`iduedu.local_stats`."
-msgstr "Функциональный аналог: :func:`iduedu.local_stats`."
-
-msgid "Number of streets that meet at every node."
-msgstr "Число улиц, сходящихся в каждом узле."
-
-msgid "Functional equivalent: :func:`iduedu.streets_per_node`."
-msgstr "Функциональный аналог: :func:`iduedu.streets_per_node`."
-
-msgid "Ratio of network to straight distance between origins and destinations."
-msgstr "Отношение расстояния по сети к расстоянию по прямой между исходными точками и точками назначения."
-
-msgid "Functional equivalent: :func:`iduedu.route_directness`."
-msgstr "Функциональный аналог: :func:`iduedu.route_directness`."
-
-msgid "Find the ``k`` nearest objects of every origin along the network."
-msgstr "Находит ``k`` ближайших по сети объектов для каждой исходной точки."
-
-msgid "Functional equivalent: :func:`iduedu.nearest_objects`."
-msgstr "Функциональный аналог: :func:`iduedu.nearest_objects`."
-
-msgid "Count objects and sum their values within a travel cost of every origin."
-msgstr "Считает объекты и суммирует их значения в пределах затрат на путь от каждой исходной точки."
-
-msgid "Functional equivalent: :func:`iduedu.aggregate_objects`."
-msgstr "Функциональный аналог: :func:`iduedu.aggregate_objects`."
-
-msgid "Diversity of object categories within a travel cost of every origin."
-msgstr "Разнообразие категорий объектов в пределах затрат на путь от каждой исходной точки."
-
-msgid "Functional equivalent: :func:`iduedu.diversity`."
-msgstr "Функциональный аналог: :func:`iduedu.diversity`."
-
-msgid "Centralities of the nodes within travel-cost thresholds."
-msgstr "Центральности узлов в пределах порогов затрат на путь."
-
-msgid "Functional equivalent: :func:`iduedu.centrality`."
-msgstr "Функциональный аналог: :func:`iduedu.centrality`."
-
-msgid "Betweenness of the edges within travel-cost thresholds."
-msgstr "Промежуточность рёбер в пределах порогов затрат на путь."
-
-msgid "Functional equivalent: :func:`iduedu.edge_betweenness`."
-msgstr "Функциональный аналог: :func:`iduedu.edge_betweenness`."
-
-msgid "Return a copy of the graph with node heights and edge grades."
-msgstr "Возвращает копию графа с высотами узлов и уклонами рёбер."
-
-msgid "Functional equivalent: :func:`iduedu.add_elevation`."
-msgstr "Функциональный аналог: :func:`iduedu.add_elevation`."
-
-msgid "Return a copy of the graph with travel times that depend on the grade."
-msgstr "Возвращает копию графа со временем в пути, зависящим от уклона."
-
-msgid "Functional equivalent: :func:`iduedu.apply_grade_speed`."
-msgstr "Функциональный аналог: :func:`iduedu.apply_grade_speed`."
+msgid ":doc:`../examples/urban_graph_basics`"
+msgstr ":doc:`../examples/urban_graph_basics`"
 

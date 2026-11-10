@@ -55,8 +55,9 @@ Method
 
 1. The graph is turned into a compressed sparse row (CSR) adjacency matrix of the selected weight. Parallel edges
    between two nodes, in either orientation of an undirected graph, are merged into one arc with the smallest
-   cost. The matrix and its Rust copy are cached on the graph and rebuilt only when the node or edge table
-   changes.
+   cost. The matrix and its Rust copy are cached on the graph and reused for the same weight; after
+   changing edge values of a graph already routed on, call :meth:`UrbanGraph.update_adjacency_matrix`
+   (see :doc:`../graph/urban_graph`).
 2. Every unique source runs one Dijkstra search in the Rust extension, ``iduedu._rust``. The searches of
    different sources run in parallel threads (``max_workers``, one per CPU by default) and stop once every
    requested target is settled or the next node lies beyond ``cutoff``.

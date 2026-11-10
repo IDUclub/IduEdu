@@ -69,7 +69,7 @@ While a date is set, subway routes are queried as plain route relations: stop ar
 are skipped because Overpass does not reliably support those queries at arbitrary timestamps, and a warning is
 logged.
 
-## Local OSM files instead of Overpass
+## Local OSM files
 
 ```python
 from iduedu import config
@@ -140,7 +140,7 @@ export OVERPASS_CACHE_DIR="/tmp/overpass_cache"
 export LOG_LEVEL="INFO"
 ```
 
-An invalid `OVERPASS_DATE` is ignored with a warning rather than failing the import.
+An invalid `OVERPASS_DATE` is ignored with a warning, and the import goes on.
 
 ## API reference
 

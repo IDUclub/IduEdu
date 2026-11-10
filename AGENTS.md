@@ -234,6 +234,15 @@ and finish with `docs/i18n.py check`.** Containers of nested lists (`Text:  - a 
 English; the update step keeps them so. Translations on MyST pages (`.md`, including the `Config` docstrings on
 `configuration.md`) are parsed as Markdown: roles there are `{func}`, not `:func:`.
 
+### Documentation pages and figures
+
+Pages are grouped as `docs/building/`, `docs/graph/`, `docs/routing/` and `docs/analysis/`; a method page has the
+sections Overview, Inputs, Method, Outputs, Functions (autosummary with `:toctree: ../api/generated`), Figures,
+Limitations, References and Example notebook. Figures come from `docs/figures/make_figures.py` (output in the
+git-ignored `docs/figures/out/`) and are published on the `assets` branch, linked as
+`https://raw.githubusercontent.com/IDUclub/IduEdu/assets/<name>.png`. Notebooks in `docs/examples/` are stored with
+their outputs (`nb_execution_mode = "off"`).
+
 ### Coding conventions
 
 - Line length: 120 characters (black + pylint)

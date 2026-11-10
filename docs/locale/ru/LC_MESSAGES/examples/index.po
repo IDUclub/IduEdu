@@ -17,6 +17,78 @@ msgstr ""
 msgid "Examples"
 msgstr "Примеры"
 
-msgid "The notebooks below cover the main IduEdu workflows: graph construction, graph inspection, graph editing, object projection, connectivity diagnostics, shortest-path calculations, public-transport registry configuration, and GTFS feeds. The shortest-path notebook includes separate and combined distance/route outputs, nearest-source versus independent searches, lazy paths, pairwise OD queries, and processing OD matrices in blocks."
-msgstr "Ноутбуки ниже охватывают основные сценарии работы с IduEdu: построение графов, их изучение и редактирование, проецирование объектов, диагностику связности, расчёт кратчайших путей, настройку реестра видов общественного транспорта и фиды GTFS. Ноутбук о кратчайших путях показывает раздельный и совместный вывод расстояний и маршрутов, поиск от ближайшего источника в сравнении с независимыми поисками, ленивые пути, попарные запросы OD и обработку OD-матриц блоками."
+msgid "Every notebook runs on Vasilyevsky Island in Saint Petersburg (OSM relation 1114252) and ends with the changes needed for your own area. The notebooks are stored with their outputs; to run one, install IduEdu and open it in Jupyter."
+msgstr "Каждый блокнот работает на Васильевском острове в Санкт-Петербурге (отношение OSM 1114252) и заканчивается тем, что нужно изменить для своей территории. Блокноты хранятся с результатами; чтобы запустить блокнот, установите IduEdu и откройте его в Jupyter."
+
+msgid "Notebook"
+msgstr "Блокнот"
+
+msgid "Contents"
+msgstr "Содержание"
+
+msgid ":doc:`get_any_graph`"
+msgstr ":doc:`get_any_graph`"
+
+msgid "Drive, walk, public-transport and intermodal graphs; ``simplify`` and clipping"
+msgstr "Автомобильный, пешеходный, транспортный и интермодальный графы; ``simplify`` и обрезка"
+
+msgid ":doc:`urban_graph_basics`"
+msgstr ":doc:`urban_graph_basics`"
+
+msgid "The node and edge tables, validation, adjacency matrices, ``.urbangraph`` archives"
+msgstr "Таблицы узлов и рёбер, проверка, матрицы смежности, архивы ``.urbangraph``"
+
+msgid ":doc:`graph_operations`"
+msgstr ":doc:`graph_operations`"
+
+msgid "Subgraphs, clipping, joins, relabelling, direction and parallel edges"
+msgstr "Подграфы, обрезка, объединение, перенумерация, направление и параллельные рёбра"
+
+msgid ":doc:`connectivity`"
+msgstr ":doc:`connectivity`"
+
+msgid "Connected, weakly and strongly connected components"
+msgstr "Компоненты связности, слабой и сильной связности"
+
+msgid ":doc:`objects_and_nearest_nodes`"
+msgstr ":doc:`objects_and_nearest_nodes`"
+
+msgid "Nearest nodes and edges, objects projected onto the graph"
+msgstr "Ближайшие узлы и рёбра, объекты, спроецированные на граф"
+
+msgid ":doc:`shortest_paths`"
+msgstr ":doc:`shortest_paths`"
+
+msgid "Costs and routes from one or many sources, OD matrices, lazy paths, matrices in blocks"
+msgstr "Стоимости и маршруты от одного или многих источников, матрицы OD, ленивые пути, матрицы блоками"
+
+msgid ":doc:`routing_methods`"
+msgstr ":doc:`routing_methods`"
+
+msgid "Bidirectional search, A* and ALT compared; alternative routes and k shortest routes"
+msgstr "Сравнение двунаправленного поиска, A* и ALT; альтернативные маршруты и k кратчайших маршрутов"
+
+msgid ":doc:`network_analysis`"
+msgstr ":doc:`network_analysis`"
+
+msgid "Network statistics by zone and around nodes, residents within a walking time, nearest objects, diversity, centralities"
+msgstr "Статистика сети по зонам и вокруг узлов, жители в пределах времени ходьбы, ближайшие объекты, разнообразие, центральности"
+
+msgid ":doc:`elevation`"
+msgstr ":doc:`elevation`"
+
+msgid "Heights and grades, walking times on slopes, a bike graph with its level of traffic stress"
+msgstr "Высоты и уклоны, время ходьбы на склонах, велосипедный граф с уровнем транспортного стресса"
+
+msgid ":doc:`transport_registry`"
+msgstr ":doc:`transport_registry`"
+
+msgid "The default speeds and waits of public transport, a custom registry"
+msgstr "Скорости и ожидание общественного транспорта по умолчанию, собственный реестр"
+
+msgid ":doc:`gtfs_public_transport`"
+msgstr ":doc:`gtfs_public_transport`"
+
+msgid "A graph from GTFS feeds: service days, waits, merging feeds, joining with a walk graph"
+msgstr "Граф по фидам GTFS: дни обслуживания, ожидание, объединение фидов, соединение с пешеходным графом"
 
