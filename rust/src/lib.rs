@@ -5,12 +5,15 @@
 //! worker per CPU).
 
 pub mod analysis;
+pub mod astar;
+pub mod bidirectional;
 pub mod chains;
 pub mod components;
 pub mod csr;
 pub mod dijkstra;
 pub mod pbf;
 pub mod pbf_write;
+pub mod yen;
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -23,6 +26,8 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use rayon::prelude::*;
 
+use astar::AStarScratch;
+use bidirectional::BiScratch;
 use csr::{Csr, Reduce};
 use dijkstra::{Compact, Scratch};
 
@@ -105,6 +110,72 @@ type NearestPy<'py> = (
     Bound<'py, PyArray1<i64>>,
 );
 
+/// Costs of point-to-point queries, and their routes as a flat node array with offsets.
+type PairsPy<'py> = (
+    Bound<'py, PyArray1<f32>>,
+    Bound<'py, PyArray1<i32>>,
+    Bound<'py, PyArray1<i64>>,
+);
+
+/// Equal-length `sources` and `targets`, checked to be node positions.
+fn pair_nodes<'a>(
+    sources: &'a PyReadonlyArray1<'_, i32>,
+    targets: &'a PyReadonlyArray1<'_, i32>,
+    n: usize,
+) -> PyResult<(&'a [i32], &'a [i32])> {
+    let (s, t) = (sources.as_slice()?, targets.as_slice()?);
+    if s.len() != t.len() {
+        return Err(PyValueError::new_err(
+            "sources and targets must have the same length",
+        ));
+    }
+    check_nodes(s, n, "sources")?;
+    check_nodes(t, n, "targets")?;
+    Ok((s, t))
+}
+
+/// Costs, flat routes and offsets of `n` point-to-point queries, solved in parallel chunks:
+/// `solve(start, costs, flat, lengths)` fills the costs of pairs `start..start + costs.len()` and,
+/// with `routes`, appends their routes to `flat` and their lengths to `lengths`.
+fn solve_pairs(
+    n: usize,
+    routes: bool,
+    solve: impl Fn(usize, &mut [f32], &mut Vec<i32>, &mut Vec<i64>) + Sync,
+) -> (Vec<f32>, Vec<i32>, Vec<i64>) {
+    const CHUNK: usize = 64;
+    let mut costs = vec![f32::INFINITY; n];
+    let chunks: Vec<(Vec<i32>, Vec<i64>)> = costs
+        .par_chunks_mut(CHUNK)
+        .enumerate()
+        .map(|(c, out)| {
+            let (mut flat, mut lengths) = (Vec::new(), Vec::new());
+            solve(c * CHUNK, out, &mut flat, &mut lengths);
+            (flat, lengths)
+        })
+        .collect();
+    let mut flat = Vec::new();
+    let mut offsets = Vec::new();
+    if routes {
+        offsets.reserve(n + 1);
+        offsets.push(0i64);
+        for (nodes, lengths) in chunks {
+            flat.extend_from_slice(&nodes);
+            for len in lengths {
+                offsets.push(offsets.last().unwrap() + len);
+            }
+        }
+    }
+    (costs, flat, offsets)
+}
+
+fn pairs_py(py: Python<'_>, (costs, flat, offsets): (Vec<f32>, Vec<i32>, Vec<i64>)) -> PairsPy<'_> {
+    (
+        costs.into_pyarray(py),
+        flat.into_pyarray(py),
+        offsets.into_pyarray(py),
+    )
+}
+
 /// Betweenness sums of nodes and, when asked for, of arcs.
 type BetweennessPy<'py> = (Bound<'py, PyArray2<f64>>, Option<Bound<'py, PyArray2<f64>>>);
 
@@ -166,6 +237,8 @@ struct CsrGraph {
     indices: Vec<i32>,
     data: Vec<f32>,
     scratch: Mutex<Vec<Scratch>>,
+    bi_scratch: Mutex<Vec<BiScratch>>,
+    astar_scratch: Mutex<Vec<AStarScratch>>,
 }
 
 impl CsrGraph {
@@ -185,6 +258,35 @@ impl CsrGraph {
             self.scratch.lock().unwrap().push(sc);
         }
         out
+    }
+
+    /// Run `f` with a pooled bidirectional scratch buffer.
+    fn with_bi_scratch<T>(&self, f: impl FnOnce(&mut BiScratch) -> T) -> T {
+        let popped = self.bi_scratch.lock().unwrap().pop();
+        let mut sc = popped.unwrap_or_else(|| BiScratch::new(self.view().n()));
+        let out = f(&mut sc);
+        self.bi_scratch.lock().unwrap().push(sc);
+        out
+    }
+
+    /// Run `f` with a pooled A* scratch buffer.
+    fn with_astar_scratch<T>(&self, f: impl FnOnce(&mut AStarScratch) -> T) -> T {
+        let popped = self.astar_scratch.lock().unwrap().pop();
+        let mut sc = popped.unwrap_or_else(|| AStarScratch::new(self.view().n()));
+        let out = f(&mut sc);
+        self.astar_scratch.lock().unwrap().push(sc);
+        out
+    }
+
+    /// The view of `reverse`, checked to be the transpose of this graph (or this graph itself).
+    fn reverse_of<'a>(&self, reverse: &'a CsrGraph) -> PyResult<Csr<'a>> {
+        let r = reverse.view();
+        if r.n() != self.view().n() || r.indices.len() != self.indices.len() {
+            return Err(PyValueError::new_err(
+                "reverse must be the transposed graph",
+            ));
+        }
+        Ok(r)
     }
 
     /// Run `step` for every index in `0..n` on the workers of the current pool. Each worker sums into
@@ -237,6 +339,8 @@ impl CsrGraph {
             indices: g.indices.to_vec(),
             data: g.data.to_vec(),
             scratch: Mutex::new(Vec::new()),
+            bi_scratch: Mutex::new(Vec::new()),
+            astar_scratch: Mutex::new(Vec::new()),
         })
     }
 
@@ -260,6 +364,8 @@ impl CsrGraph {
             indices,
             data,
             scratch: Mutex::new(Vec::new()),
+            bi_scratch: Mutex::new(Vec::new()),
+            astar_scratch: Mutex::new(Vec::new()),
         }
     }
 
@@ -338,6 +444,143 @@ impl CsrGraph {
             })
         })?;
         Ok(results.into_iter().map(|c| compact_py(py, c)).collect())
+    }
+
+    /// Shortest route of every pair ``sources[i] -> targets[i]`` by bidirectional Dijkstra, in
+    /// parallel. ``reverse`` is this graph with every arc reversed (this graph itself when it is
+    /// undirected). Returns the float32 costs (infinity beyond ``cutoff``) and, with ``routes``, the
+    /// routes as a flat node array with ``len(sources) + 1`` offsets (empty for a pair without one).
+    #[pyo3(signature = (reverse, sources, targets, cutoff, routes, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn shortest_pairs<'py>(
+        &self,
+        py: Python<'py>,
+        reverse: &CsrGraph,
+        sources: PyReadonlyArray1<'py, i32>,
+        targets: PyReadonlyArray1<'py, i32>,
+        cutoff: f32,
+        routes: bool,
+        n_threads: Option<usize>,
+    ) -> PyResult<PairsPy<'py>> {
+        let (g, r) = (self.view(), self.reverse_of(reverse)?);
+        let (s, t) = pair_nodes(&sources, &targets, g.n())?;
+        let out = py.detach(|| {
+            in_pool(n_threads, || {
+                solve_pairs(s.len(), routes, |start, costs, flat, lengths| {
+                    self.with_bi_scratch(|sc| {
+                        for (k, slot) in costs.iter_mut().enumerate() {
+                            let before = flat.len();
+                            let (a, b) = (s[start + k], t[start + k]);
+                            *slot = bidirectional::shortest_pair(
+                                g,
+                                r,
+                                a,
+                                b,
+                                cutoff,
+                                sc,
+                                routes.then_some(&mut *flat),
+                            );
+                            if routes {
+                                lengths.push((flat.len() - before) as i64);
+                            }
+                        }
+                    })
+                })
+            })
+        })?;
+        Ok(pairs_py(py, out))
+    }
+
+    /// Like :meth:`shortest_pairs`, by A* with the straight distance between the node coordinates
+    /// ``xs``, ``ys`` (planar, in node order) as the estimate. Also returns the estimate's scale (the
+    /// smallest cost per unit of straight distance over the arcs of non-zero cost; ``0``: plain
+    /// Dijkstra) and slack (the most the estimate can overestimate by, through arcs of zero cost).
+    #[pyo3(signature = (xs, ys, sources, targets, cutoff, routes, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn astar_pairs<'py>(
+        &self,
+        py: Python<'py>,
+        xs: PyReadonlyArray1<'py, f64>,
+        ys: PyReadonlyArray1<'py, f64>,
+        sources: PyReadonlyArray1<'py, i32>,
+        targets: PyReadonlyArray1<'py, i32>,
+        cutoff: f32,
+        routes: bool,
+        n_threads: Option<usize>,
+    ) -> PyResult<(PairsPy<'py>, (f64, f32))> {
+        let g = self.view();
+        let (x, y) = (xs.as_slice()?, ys.as_slice()?);
+        if x.len() != g.n() || y.len() != g.n() {
+            return Err(PyValueError::new_err(
+                "xs and ys must have one value per node",
+            ));
+        }
+        if x.iter().chain(y).any(|v| !v.is_finite()) {
+            return Err(PyValueError::new_err("node coordinates must be finite"));
+        }
+        let (s, t) = pair_nodes(&sources, &targets, g.n())?;
+        let (out, heuristic) = py.detach(|| {
+            let h = astar::Heuristic::of(g, x, y);
+            let out = in_pool(n_threads, || {
+                solve_pairs(s.len(), routes, |start, costs, flat, lengths| {
+                    self.with_astar_scratch(|sc| {
+                        for (k, slot) in costs.iter_mut().enumerate() {
+                            let before = flat.len();
+                            let (a, b) = (s[start + k], t[start + k]);
+                            *slot = astar::shortest_pair(
+                                g,
+                                x,
+                                y,
+                                h,
+                                a,
+                                b,
+                                cutoff,
+                                sc,
+                                routes.then_some(&mut *flat),
+                            );
+                            if routes {
+                                lengths.push((flat.len() - before) as i64);
+                            }
+                        }
+                    })
+                })
+            });
+            out.map(|o| (o, (h.scale, h.slack)))
+        })?;
+        Ok((pairs_py(py, out), heuristic))
+    }
+
+    /// Up to ``k`` shortest loopless routes from ``source`` to ``target`` (Yen), cheapest first:
+    /// their costs, and the routes as a flat node array with offsets. ``reverse`` as in
+    /// :meth:`shortest_pairs`.
+    #[pyo3(signature = (reverse, source, target, k, cutoff, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn k_shortest<'py>(
+        &self,
+        py: Python<'py>,
+        reverse: &CsrGraph,
+        source: i32,
+        target: i32,
+        k: usize,
+        cutoff: f32,
+        n_threads: Option<usize>,
+    ) -> PyResult<PairsPy<'py>> {
+        let (g, r) = (self.view(), self.reverse_of(reverse)?);
+        check_nodes(&[source, target], g.n(), "source and target")?;
+        let found = py.detach(|| {
+            in_pool(n_threads, || {
+                yen::k_shortest(g, r, source, target, k, cutoff, &self.bi_scratch)
+            })
+        })?;
+        let mut costs = Vec::with_capacity(found.len());
+        let mut flat = Vec::new();
+        let mut offsets = vec![0i64];
+        for (cost, route) in found {
+            costs.push(cost);
+            flat.extend_from_slice(&route);
+            offsets.push(flat.len() as i64);
+        }
+        Ok(pairs_py(py, (costs, flat, offsets)))
     }
 
     /// Dense ``(len(sources), len(targets))`` float32 cost matrix, infinity where a target is not

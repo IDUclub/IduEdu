@@ -398,14 +398,23 @@ msgstr "Возвращает один кратчайший путь как уп�
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]`"
 
+msgid "Return the cost and node route of one shortest path. See :func:`iduedu.shortest_path`."
+msgstr "Вернуть стоимость и маршрут по узлам одного кратчайшего пути. См. :func:`iduedu.shortest_path`."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`float\\`\\, \\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`float\\`\\, \\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:data\\:\\`\\~typing.Any\\`\\]\\]`"
+
+msgid "Return up to k shortest loopless paths. See :func:`iduedu.k_shortest_paths`."
+msgstr "Вернуть до k кратчайших путей без циклов. См. :func:`iduedu.k_shortest_paths`."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
 msgid "Find the nearest source node and distance for each reachable graph node."
 msgstr "Находит ближайший узел-источник и расстояние до него для каждого достижимого узла графа."
 
 msgid "https://iduclub.github.io/IduEdu/examples/shortest_paths.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/shortest_paths.html"
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
 
 msgid "Calculate an OD matrix of shortest paths on this graph."
 msgstr "Рассчитывает OD-матрицу кратчайших путей на этом графе."

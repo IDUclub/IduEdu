@@ -51,10 +51,12 @@ from .graph.shortest_paths import (
     ShortestPathResult,
     dijkstra_parallel,
     iter_od_matrix,
+    k_shortest_paths,
     multi_source_dijkstra,
     multi_source_dijkstra_nearest_source,
     od_matrix,
     path_to_edges,
+    shortest_path,
     single_source_dijkstra,
     single_source_dijkstra_path,
 )

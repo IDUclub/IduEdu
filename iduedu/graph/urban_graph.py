@@ -506,6 +506,39 @@ class UrbanGraph:
             reverse=reverse,
         )
 
+    def shortest_path(
+        self,
+        source_node: Any,
+        target_node: Any,
+        *,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        cutoff: float | None = None,
+        method: Literal["bidirectional", "astar", "dijkstra"] = "bidirectional",
+    ) -> tuple[float, list[Any]]:
+        """Return the cost and node route of one shortest path. See :func:`iduedu.shortest_path`."""
+
+        from iduedu.graph.shortest_paths import shortest_path
+
+        return shortest_path(self, source_node, target_node, weight=weight, cutoff=cutoff, method=method)
+
+    def k_shortest_paths(
+        self,
+        source_node: Any,
+        target_node: Any,
+        k: int,
+        *,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        cutoff: float | None = None,
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Return up to k shortest loopless paths. See :func:`iduedu.k_shortest_paths`."""
+
+        from iduedu.graph.shortest_paths import k_shortest_paths
+
+        return k_shortest_paths(
+            self, source_node, target_node, k, weight=weight, cutoff=cutoff, max_workers=max_workers
+        )
+
     def multi_source_dijkstra_nearest_source(
         self,
         *,
@@ -553,6 +586,7 @@ class UrbanGraph:
         path_storage: Literal["eager", "lazy"] = "eager",
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         batch_size: int | None = None,
+        method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
     ) -> pd.DataFrame | ShortestPathResult:
         """Calculate an OD matrix of shortest paths on this graph.
 
@@ -578,6 +612,7 @@ class UrbanGraph:
             path_storage=path_storage,
             mode=mode,
             batch_size=batch_size,
+            method=method,
         )
 
     def iter_od_matrix(
@@ -597,6 +632,7 @@ class UrbanGraph:
         path_storage: Literal["eager", "lazy"] = "eager",
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         batch_size: int = 256,
+        method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
     ) -> Iterator[pd.DataFrame | ShortestPathResult]:
         """Yield OD origin-row blocks. See :func:`iduedu.iter_od_matrix`."""
         from iduedu.graph.routing import iter_od_matrix
@@ -617,6 +653,7 @@ class UrbanGraph:
             path_storage=path_storage,
             mode=mode,
             batch_size=batch_size,
+            method=method,
         )
 
     def path_to_edges(

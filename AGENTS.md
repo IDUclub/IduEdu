@@ -122,7 +122,8 @@ iduedu/
     components.py    — connected/weakly/strongly connected component algorithms
     editors.py       — subgraph_by_nodes, clip, join, relabel, project_objects2urban_graph
     transformers.py  — keep_largest_component, simplify_multiedges, to_directed/undirected
-    routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both)
+    routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both),
+                       point-to-point shortest_path (bidirectional, A*), k_shortest_paths (Yen)
     routing_result.py — ShortestPathResult: distances with eager or lazy (predecessor-tree) paths
     shortest_paths.py — public re-exports of the routing API, path_to_edges()
     adapters.py      — UrbanGraph ↔ NetworkX conversion
@@ -164,6 +165,9 @@ iduedu/
 rust/                — Rust core, compiled into iduedu._rust (see rust/README.md)
   src/csr.rs         — CSR view and validation, edge list → CSR (parallel arcs merged by min/max), transpose
   src/dijkstra.rs    — Dijkstra (multi-source, cutoff, early exit, predecessors, nearest source), route rebuild
+  src/bidirectional.rs — bidirectional Dijkstra for point-to-point queries (optionally avoiding nodes and arcs)
+  src/astar.rs       — A* with a straight-distance estimate scaled by the graph's own cheapest cost per metre
+  src/yen.rs         — Yen's k shortest loopless routes
   src/components.rs  — connected and strongly connected components
   src/analysis.rs    — sums of node values within a travel cost (gather/scatter, decay), nearest objects, betweenness
   src/chains.rs      — merging street segments into junction-to-junction edges, only across equal tags

@@ -11,9 +11,11 @@ from iduedu.graph.routing import (
     ShortestPathResult,
     dijkstra_parallel,
     iter_od_matrix,
+    k_shortest_paths,
     multi_source_dijkstra,
     multi_source_dijkstra_nearest_source,
     od_matrix,
+    shortest_path,
     single_source_dijkstra,
     single_source_dijkstra_path,
 )

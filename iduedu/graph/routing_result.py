@@ -99,13 +99,42 @@ class _PathTree:
 
 
 @dataclass
+class _Route:
+    """One ready route of a point-to-point query, standing in for a search tree."""
+
+    routes: "_RouteList"
+    position: int
+
+    def reconstruct(self, target: int, node_ids: np.ndarray, reverse: bool) -> list[Any] | None:
+        start, end = self.routes.offsets[self.position], self.routes.offsets[self.position + 1]
+        if end == start or self.routes.flat[end - 1] != target:
+            return None
+        route = node_ids[self.routes.flat[start:end]].tolist()
+        return route[::-1] if reverse else route
+
+
+@dataclass
+class _RouteList:
+    """Routes of point-to-point queries as flat node positions with offsets, one per query."""
+
+    flat: np.ndarray
+    offsets: np.ndarray
+
+    def __len__(self) -> int:
+        return len(self.offsets) - 1
+
+    def __getitem__(self, position: int) -> _Route:
+        return _Route(self, int(position))
+
+
+@dataclass
 class _PathStore:
     """Snapshot of search trees and the mapping to public result cells."""
 
     # The store explicitly records both search orientation and public layout.
     # pylint: disable=too-many-instance-attributes
 
-    trees: list[_PathTree]
+    trees: list[_PathTree] | _RouteList
     node_ids: np.ndarray
     tree_indices: np.ndarray
     origins: np.ndarray

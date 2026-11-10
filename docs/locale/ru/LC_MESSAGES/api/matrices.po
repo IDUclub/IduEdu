@@ -44,8 +44,8 @@ msgstr "Выбор функции"
 msgid "Use :func:`single_source_dijkstra` for one source, :func:`multi_source_dijkstra` for the nearest member of a source set, or :func:`dijkstra_parallel` for an independent row per source. Each accepts ``output=\"distances\"``, ``\"paths\"`` or ``\"both\"``."
 msgstr "Используйте :func:`single_source_dijkstra` для одного источника, :func:`multi_source_dijkstra` для ближайшего из множества источников или :func:`dijkstra_parallel` для отдельной строки на каждый источник. Каждая принимает ``output=\"distances\"``, ``\"paths\"`` или ``\"both\"``."
 
-msgid "Use :func:`od_matrix` for specified origin and destination sets, with ``mode=\"all_to_all\"`` or ``\"pairwise\"``. Use :func:`iter_od_matrix` to consume origin-row blocks. :func:`single_source_dijkstra_path` returns one route as a list. The legacy ``*_path_length`` helpers and ``multi_source_dijkstra_path`` were removed in 3.0 (see `Removed helpers`_)."
-msgstr "Используйте :func:`od_matrix` для заданных множеств точек отправления и назначения, с ``mode=\"all_to_all\"`` или ``\"pairwise\"``. Используйте :func:`iter_od_matrix`, чтобы обрабатывать блоки строк по точкам отправления. :func:`single_source_dijkstra_path` возвращает один маршрут в виде списка. Прежние функции ``*_path_length`` и ``multi_source_dijkstra_path`` удалены в 3.0 (см. `Удалённые функции <Removed helpers_>`_)."
+msgid "Use :func:`od_matrix` for specified origin and destination sets, with ``mode=\"all_to_all\"`` or ``\"pairwise\"``. Use :func:`iter_od_matrix` to consume origin-row blocks. :func:`shortest_path` returns the cost and the route between two nodes, and :func:`k_shortest_paths` several alternative routes (see `Point-to-point routes`_). The legacy ``*_path_length`` helpers and ``multi_source_dijkstra_path`` were removed in 3.0 (see `Removed helpers`_)."
+msgstr "Используйте :func:`od_matrix` для заданных множеств точек отправления и назначения, с ``mode=\"all_to_all\"`` или ``\"pairwise\"``. Используйте :func:`iter_od_matrix`, чтобы обрабатывать блоки строк по точкам отправления. :func:`shortest_path` возвращает стоимость и маршрут между двумя узлами, а :func:`k_shortest_paths` — несколько альтернативных маршрутов (см. `Маршруты между двумя точками <Point-to-point routes_>`_). Прежние функции ``*_path_length`` и ``multi_source_dijkstra_path`` удалены в 3.0 (см. `Удалённые функции <Removed helpers_>`_)."
 
 msgid "Use :func:`path_to_edges` to turn a node route into an ordered GeoDataFrame of the actual graph edges. This preserves curved edge geometry and transport attributes for mapping."
 msgstr "Используйте :func:`path_to_edges`, чтобы превратить маршрут по узлам в упорядоченный GeoDataFrame реальных рёбер графа. Так сохраняются изогнутая геометрия рёбер и атрибуты транспорта для отображения на карте."
@@ -85,6 +85,39 @@ msgstr "Попарные запросы OD"
 
 msgid "Pairwise inputs must have equal lengths. Each origin is matched to the destination at the same position. Results use an ``(origin, destination)`` MultiIndex and one column: ``dist`` for costs or ``path`` for routes. This avoids constructing all origin-destination combinations."
 msgstr "Попарные входные данные должны иметь одинаковую длину. Каждая точка отправления сопоставляется с точкой назначения на той же позиции. Результаты имеют MultiIndex ``(origin, destination)`` и один столбец: ``dist`` для стоимостей или ``path`` для маршрутов. Так не строятся все комбинации отправлений и назначений."
+
+msgid "``method`` chooses the search. ``\"dijkstra\"`` runs one search per unique origin that stops once all destinations paired with it are reached. ``\"bidirectional\"`` and ``\"astar\"`` run one point-to-point search per pair (see `Point-to-point routes`_). The default ``\"auto\"`` takes ``\"bidirectional\"`` when most origins occur once and ``\"dijkstra\"`` when they repeat. All-to-all tables always use Dijkstra."
+msgstr "``method`` выбирает поиск. ``\"dijkstra\"`` запускает один поиск на каждую уникальную точку отправления и останавливает его, когда достигнуты все её точки назначения. ``\"bidirectional\"`` и ``\"astar\"`` запускают отдельный поиск для каждой пары (см. `Маршруты между двумя точками <Point-to-point routes_>`_). По умолчанию ``\"auto\"`` выбирает ``\"bidirectional\"``, если большинство точек отправления встречается один раз, и ``\"dijkstra\"``, если они повторяются. Таблицы «все со всеми» всегда считаются алгоритмом Дейкстры."
+
+msgid "Point-to-point routes"
+msgstr "Маршруты между двумя точками"
+
+msgid ":func:`shortest_path` returns ``(cost, route)`` for one pair, or ``(inf, [])`` when the target is not reached within ``cutoff``. Its methods return a shortest route and differ only in speed:"
+msgstr ":func:`shortest_path` возвращает ``(cost, route)`` для одной пары или ``(inf, [])``, если цель не достигнута в пределах ``cutoff``. Все методы возвращают кратчайший маршрут и отличаются только скоростью:"
+
+msgid "``\"bidirectional\"`` (default)"
+msgstr "``\"bidirectional\"`` (по умолчанию)"
+
+msgid "Searches from the source and, on the reversed graph, from the target at the same time and stops where the two searches meet. Each search covers about half of the route cost, so on a street network it is two to three times faster than one search from the source. It works on any graph and weight."
+msgstr "Ищет одновременно от источника и, по развёрнутому графу, от цели и останавливается там, где два поиска встретились. Каждый поиск покрывает примерно половину стоимости маршрута, поэтому на уличной сети он в два-три раза быстрее одного поиска от источника. Работает на любом графе и с любым весом."
+
+msgid "``\"astar\"``"
+msgstr "``\"astar\"``"
+
+msgid "Searches from the source and prefers nodes in the direction of the target. The estimate of the remaining cost is the straight distance to the target times the smallest cost per unit of straight distance over the edges of the graph, so it never exceeds the real cost and the result is exact whatever the weight. It pays off when costs follow distance: walking and driving by ``length_meter``, or walking by ``time_min``. On an intermodal graph the fastest edge (metro) sets the scale and A* gains little. It needs a point geometry for every node."
+msgstr "Ищет от источника, предпочитая узлы в направлении цели. Оценка оставшейся стоимости равна расстоянию до цели по прямой, умноженному на наименьшую стоимость единицы прямого расстояния по рёбрам графа, поэтому она никогда не превышает настоящую стоимость, и результат точен при любом весе. Метод выгоден, когда стоимость следует за расстоянием: пешком и на автомобиле по ``length_meter`` или пешком по ``time_min``. На интермодальном графе масштаб задаёт самое быстрое ребро (метро), и A* выигрывает мало. Нужна точечная геометрия у каждого узла."
+
+msgid "``\"dijkstra\"``"
+msgstr "``\"dijkstra\"``"
+
+msgid "One search from the source that stops at the target."
+msgstr "Один поиск от источника, который останавливается на цели."
+
+msgid "On the St Petersburg walk graph (518 thousand nodes), pairs 4 km apart take 2.3 ms with Dijkstra, 1.0 ms with the bidirectional search and 0.5 ms with A* by length (0.8 ms by time). Paths of equal cost may come out differently from different methods; their costs are equal up to float32 rounding."
+msgstr "На пешеходном графе Санкт-Петербурга (518 тысяч узлов) пара точек в 4 км друг от друга считается за 2,3 мс алгоритмом Дейкстры, за 1,0 мс двунаправленным поиском и за 0,5 мс A* по длине (0,8 мс по времени). Разные методы могут вернуть разные пути равной стоимости; их стоимости совпадают с точностью до округления float32."
+
+msgid ":func:`k_shortest_paths` returns up to ``k`` loopless routes, cheapest first, in a table indexed by ``rank`` with ``dist`` and ``path`` columns (Yen's algorithm). Every next route leaves an earlier one at some node and takes the shortest way on from there that repeats no node of the shared part and no way taken before. On street graphs such routes are often small variations of one another, such as the sidewalk on the other side of the street; for distinct alternatives, raise the weights of the edges of the first route and search again."
+msgstr ":func:`k_shortest_paths` возвращает до ``k`` маршрутов без циклов, от самого дешёвого, в таблице с индексом ``rank`` и столбцами ``dist`` и ``path`` (алгоритм Йена). Каждый следующий маршрут отходит от одного из предыдущих в каком-то узле и идёт дальше кратчайшей дорогой, которая не повторяет ни одного узла общей части и ни одного уже пройденного продолжения. На уличных графах такие маршруты часто лишь немного отличаются друг от друга, например тротуаром на другой стороне улицы; чтобы получить заметно разные варианты, увеличьте веса рёбер первого маршрута и повторите поиск."
 
 msgid "Lazy route storage"
 msgstr "Ленивое хранение маршрутов"
@@ -163,6 +196,18 @@ msgstr ":py:obj:`ShortestPathResult <iduedu.ShortestPathResult>`"
 
 msgid "Distances and paths from the same Dijkstra searches."
 msgstr "Расстояния и пути из одних и тех же поисков Дейкстры."
+
+msgid ":py:obj:`shortest_path <iduedu.shortest_path>`"
+msgstr ":py:obj:`shortest_path <iduedu.shortest_path>`"
+
+msgid "Return the cost and the node route of one shortest path from source_node to target_node."
+msgstr "Вернуть стоимость и маршрут по узлам одного кратчайшего пути из source_node в target_node."
+
+msgid ":py:obj:`k_shortest_paths <iduedu.k_shortest_paths>`"
+msgstr ":py:obj:`k_shortest_paths <iduedu.k_shortest_paths>`"
+
+msgid "Return up to k shortest loopless paths from source_node to target_node (Yen's algorithm)."
+msgstr "Вернуть до k кратчайших путей без циклов из source_node в target_node (алгоритм Йена)."
 
 msgid ":py:obj:`single_source_dijkstra_path <iduedu.single_source_dijkstra_path>`"
 msgstr ":py:obj:`single_source_dijkstra_path <iduedu.single_source_dijkstra_path>`"

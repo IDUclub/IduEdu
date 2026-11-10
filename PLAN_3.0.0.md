@@ -98,7 +98,16 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 12. [x] **`get_bike_graph`** (`iduedu/graph_builders/bike_builders.py`): `cycle_infra`, `lts` 1–4 (simplified
     Mekuria, Furth and Nixon 2012), bicycle one-way rules, `max_lts`, `elevation`. St Petersburg: 10.8 s,
     360k nodes, 20.3k km.
-13. [ ] **Bidirectional Dijkstra** for point-to-point queries.
+13. [x] **Point-to-point routes** (`rust/src/bidirectional.rs`, `astar.rs`, `yen.rs`): `shortest_path` with
+    `method="bidirectional"` (default), `"astar"` or `"dijkstra"`; `k_shortest_paths` (Yen, Lawler's rule, spur
+    searches in parallel on the bidirectional search); `od_matrix(mode="pairwise", method=...)`, where `"auto"`
+    takes the bidirectional search when most origins occur once. A* estimates the rest as straight distance times
+    the smallest cost per metre over the graph's own edges of non-zero cost; edges of zero cost (four 1–4 cm edges
+    of the walk graph whose rounded time is 0) add a slack that keeps it exact. St Petersburg walk graph, pairs
+    4 km apart: Dijkstra 2.3 ms, bidirectional 1.0 ms, A* 0.5 ms by length / 0.8 ms by time; random pairs across
+    the city gain less (the one-sided search is cut by the city border). Intermodal graph by time: bidirectional
+    2.2x, A* none (metro sets the scale). Yen on the walk graph: 0.57 s for k=3 on a 536-node route; the
+    alternatives differ by tenths of a metre (other sidewalk).
 
 ## Stage 3. Release and after
 

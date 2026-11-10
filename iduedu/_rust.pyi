@@ -38,6 +38,34 @@ class CsrGraph:
         store_predecessors: bool,
         n_threads: int | None = None,
     ) -> list[Compact]: ...
+    def shortest_pairs(
+        self,
+        reverse: "CsrGraph",
+        sources: npt.NDArray[np.int32],
+        targets: npt.NDArray[np.int32],
+        cutoff: float,
+        routes: bool,
+        n_threads: int | None = None,
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int64]]: ...
+    def astar_pairs(
+        self,
+        xs: npt.NDArray[np.float64],
+        ys: npt.NDArray[np.float64],
+        sources: npt.NDArray[np.int32],
+        targets: npt.NDArray[np.int32],
+        cutoff: float,
+        routes: bool,
+        n_threads: int | None = None,
+    ) -> tuple[tuple[npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int64]], tuple[float, float]]: ...
+    def k_shortest(
+        self,
+        reverse: "CsrGraph",
+        source: int,
+        target: int,
+        k: int,
+        cutoff: float,
+        n_threads: int | None = None,
+    ) -> tuple[npt.NDArray[np.float32], npt.NDArray[np.int32], npt.NDArray[np.int64]]: ...
     def distance_matrix(
         self,
         sources: npt.NDArray[np.int32],

@@ -1,0 +1,55 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 17:54+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.shortest\\_path"
+msgstr "iduedu.shortest\\_path"
+
+msgid "Return the cost and the node route of one shortest path from source_node to target_node."
+msgstr "Вернуть стоимость и маршрут по узлам одного кратчайшего пути из source_node в target_node."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Urban graph to search."
+msgstr "Городской граф для поиска."
+
+msgid "Graph id of the start node."
+msgstr "Идентификатор начального узла графа."
+
+msgid "Graph id of the end node."
+msgstr "Идентификатор конечного узла графа."
+
+msgid "Edge cost column: time_min (minutes) or length_meter (meters)."
+msgstr "Столбец стоимости рёбер: time_min (минуты) или length_meter (метры)."
+
+msgid "Inclusive maximum cost, or None for no limit."
+msgstr "Наибольшая стоимость включительно или None без ограничения."
+
+msgid "``bidirectional`` (default) searches from both ends at once and stops where they meet. ``astar`` searches from the start towards the straight-line direction of the end; it needs point geometries of the nodes. ``dijkstra`` is a one-sided search that stops at the end. All three return a shortest path; they differ in speed only, and a tie between paths of equal cost may be resolved differently."
+msgstr "``bidirectional`` (по умолчанию) ищет сразу с обоих концов и останавливается там, где поиски встретились. ``astar`` ищет от начала, предпочитая направление на конечную точку по прямой; ему нужны точечные геометрии узлов. ``dijkstra`` — поиск с одной стороны, который останавливается на конечном узле. Все три возвращают кратчайший путь и отличаются только скоростью; из нескольких путей равной стоимости разные методы могут выбрать разные."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "the cost in the units of ``weight`` and the node ids from source_node to target_node, or ``(inf, [])`` when the end is not reached within cutoff."
+msgstr "стоимость в единицах ``weight`` и идентификаторы узлов от source_node до target_node либо ``(inf, [])``, если конечный узел не достигнут в пределах cutoff."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "``(cost, path)``"
+msgstr "``(cost, path)``"
+
