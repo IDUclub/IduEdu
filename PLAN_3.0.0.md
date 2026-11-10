@@ -104,6 +104,15 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 
 14. [ ] "Upgrading to 3.0" docs page, README/AGENTS/CONTRIBUTING updated, Russian translation (`docs-i18n`,
     `docs-i18n-check`), delete this file, squash `dev` → `main` as `feat!: ...` → 3.0.0.
+    Breaking changes to list there (so far):
+    - the four 2.4.1 routing helpers are removed;
+    - `.osm.pbf` only (no `.osm` / `.opl`), split files carry no element metadata; `location_storage` and the
+      `pbf` extra are deprecated;
+    - simplified drive / walk graphs: an edge per run of equal tags (more nodes and edges), `bridge` and `tunnel`
+      always kept;
+    - `clip_urban_graph`, `UrbanGraph.clip`, `clip_nx_graph`: a bare shapely polygon is read in EPSG:4326
+      (pass `gpd.GeoSeries([polygon], crs=graph.crs)` for metres);
+    - walk graph weights: parallel edges are no longer summed (shorter routes, the bug fix of step 3).
 15. [ ] 3.1.0: remove the shims deprecated in 3.0.0 (`location_storage` of `PbfSource`, `split_by_polygons`,
     `download_osm_pbf`; the empty `pbf` extra).
 16. [ ] Docs rework along ObjectNat's structure.
