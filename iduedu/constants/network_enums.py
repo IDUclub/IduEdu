@@ -7,6 +7,7 @@ class Network(Enum):
     DRIVE = "drive"
     DRIVE_SERVICE = "drive_service"
     WALK = "walk"
+    BIKE = "bike"
 
     @property
     def filter(self) -> str:
@@ -27,6 +28,12 @@ class Network(Enum):
                 f'["foot"!~"no"]["service"!~"private"]'
                 f'["sidewalk"!~"separate"]["sidewalk:both"!~"separate"]'
                 f'["sidewalk:left"!~"separate"]["sidewalk:right"!~"separate"]'
+            ),
+            Network.BIKE: (
+                f'["highway"]["area"!~"yes"]["access"!~"private"]'
+                f'["highway"!~"abandoned|bus_guideway|construction|corridor|elevator|escalator|motor|no|'
+                f'planned|platform|proposed|raceway|razed|steps"]'
+                f'["bicycle"!~"no"]["service"!~"private"]'
             ),
             Network.DRIVE_SERVICE: (
                 f'["highway"]["area"!~"yes"]["access"!~"private"]'

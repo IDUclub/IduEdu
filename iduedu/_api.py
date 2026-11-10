@@ -58,6 +58,7 @@ from .graph.shortest_paths import (
     single_source_dijkstra,
     single_source_dijkstra_path,
 )
+from .graph_builders.bike_builders import get_bike_graph
 from .graph_builders.drive_walk_builders import get_drive_graph, get_walk_graph
 from .graph_builders.gtfs_builders import get_gtfs_public_transport_graph
 from .graph_builders.intermodal_builders import get_intermodal_graph, join_pt_walk_graph

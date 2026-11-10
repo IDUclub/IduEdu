@@ -139,6 +139,7 @@ iduedu/
   _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/
     drive_walk_builders.py      — get_drive_graph(), get_walk_graph()
+    bike_builders.py            — get_bike_graph(): cycle infrastructure and level of traffic stress
     public_transport_builders.py — get_public_transport_graph()
     gtfs_builders.py            — get_gtfs_public_transport_graph()
     intermodal_builders.py      — get_intermodal_graph(), join_pt_walk_graph()
