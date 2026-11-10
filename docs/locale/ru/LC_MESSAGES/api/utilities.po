@@ -35,8 +35,8 @@ msgstr "Редактирование и преобразование"
 msgid "The editing helpers return new ``UrbanGraph`` objects and do not mutate the source graph unless you use the corresponding ``UrbanGraph`` method with ``inplace=True``."
 msgstr "Функции редактирования возвращают новые объекты ``UrbanGraph`` и не меняют исходный граф, если только вы не используете соответствующий метод ``UrbanGraph`` с ``inplace=True``."
 
-msgid "Use :func:`subgraph_by_nodes` for node-induced subgraphs, :func:`clip_urban_graph` for geometry-based clipping, :func:`relabel_urban_graph` for dense node indexes, and :func:`join_urban_graphs` for concatenating compatible graph tables."
-msgstr "Используйте :func:`subgraph_by_nodes` для подграфов, порождённых узлами, :func:`clip_urban_graph` для обрезки по геометрии, :func:`relabel_urban_graph` для плотной нумерации узлов и :func:`join_urban_graphs` для объединения таблиц совместимых графов."
+msgid "Use :func:`subgraph_by_nodes` for node-induced subgraphs, :func:`clip_urban_graph` for geometry-based clipping (a shapely polygon is read in EPSG:4326, as ``territory`` in the graph builders; pass a GeoSeries or GeoDataFrame for a polygon in another CRS), :func:`relabel_urban_graph` for dense node indexes, and :func:`join_urban_graphs` for concatenating compatible graph tables."
+msgstr "Используйте :func:`subgraph_by_nodes` для подграфов по узлам, :func:`clip_urban_graph` для обрезки по геометрии (полигон shapely читается в EPSG:4326, как ``territory`` в функциях построения графов; для полигона в другой системе координат передайте GeoSeries или GeoDataFrame), :func:`relabel_urban_graph` для плотных индексов узлов и :func:`join_urban_graphs` для объединения совместимых таблиц графов."
 
 msgid "Use :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected`, and :meth:`UrbanGraph.simplify_multiedges` for topology transformations."
 msgstr "Используйте :meth:`UrbanGraph.to_directed`, :meth:`UrbanGraph.to_undirected` и :meth:`UrbanGraph.simplify_multiedges` для преобразований топологии."

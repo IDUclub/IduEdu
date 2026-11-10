@@ -781,3 +781,11 @@ def test_snapshot_time_from_header(tmp_path):
     opl.write_text("n1 v1 x0 y0\n", encoding="utf-8")
     with pytest.raises(ValueError, match="osm.pbf"):
         snapshot_time(opl)
+
+
+def test_public_transport_graph_clipped_to_the_territory(city_pbf, no_overpass):
+    with config.use_pbf(city_pbf):
+        whole = get_public_transport_graph(territory=POLY, transport_types=PT_TYPES)
+        clipped = get_public_transport_graph(territory=POLY, transport_types=PT_TYPES, clip_by_territory=True)
+    inside = clipped.nodes_gdf.to_crs(4326).geometry.intersects(POLY)
+    assert len(clipped.nodes_gdf) < len(whole.nodes_gdf) and inside.all()

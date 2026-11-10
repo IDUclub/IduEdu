@@ -488,8 +488,8 @@ msgstr "Обрезает граф по геометрии и оставляет 
 msgid "Edges are retained only when both endpoints remain in the graph. Node ids are preserved; call :meth:`relabel` if dense labels are needed. Functional equivalent: :func:`iduedu.clip_urban_graph`."
 msgstr "Ребро сохраняется, только если оба его конца остаются в графе. Идентификаторы узлов сохраняются; вызовите :meth:`relabel`, если нужна плотная нумерация. Функциональный аналог: :func:`iduedu.clip_urban_graph`."
 
-msgid "Shapely geometry in the graph CRS."
-msgstr "Геометрия Shapely в системе координат графа."
+msgid "Shapely geometry in EPSG:4326 (as ``territory`` of the graph builders), or a GeoSeries / GeoDataFrame in any CRS."
+msgstr "Геометрия shapely в EPSG:4326 (как ``territory`` в функциях построения графов) либо GeoSeries / GeoDataFrame в любой системе координат."
 
 msgid "If ``True``, replace this object with the clipped graph."
 msgstr "Если ``True``, этот объект заменяется обрезанным графом."

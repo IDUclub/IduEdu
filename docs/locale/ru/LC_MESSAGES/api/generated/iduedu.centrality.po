@@ -62,8 +62,8 @@ msgstr "Веса узлов: столбец ``nodes_gdf``, Series с индек�
 msgid "On directed graphs, ``\"from\"`` measures the way from the node to the others, ``\"to\"`` towards the node. Betweenness does not depend on it."
 msgstr "На ориентированных графах ``\"from\"`` измеряет путь от узла к остальным, ``\"to\"`` — к узлу. Промежуточность от этого не зависит."
 
-msgid "Report only the nodes inside (a shapely geometry in the graph CRS, or a GeoSeries / GeoDataFrame). The searches still use the whole graph."
-msgstr "Вернуть только узлы внутри области (геометрия shapely в системе координат графа либо GeoSeries / GeoDataFrame). Обходы по-прежнему используют весь граф."
+msgid "Report only the nodes inside: a shapely geometry in EPSG:4326, as ``territory`` of the graph builders, or a GeoSeries / GeoDataFrame in any CRS. The searches still use the whole graph."
+msgstr "Вернуть только узлы внутри области: геометрия shapely в EPSG:4326, как ``territory`` в функциях построения графов, либо GeoSeries / GeoDataFrame в любой системе координат. Обходы по-прежнему используют весь граф."
 
 msgid "For betweenness, the number of randomly chosen source nodes; the result is scaled up to all nodes. ``None`` uses every node."
 msgstr "Для промежуточности — число случайно выбранных узлов-источников; результат масштабируется на все узлы. ``None`` использует все узлы."

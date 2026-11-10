@@ -69,11 +69,13 @@ def test_subgraph_by_nodes_rejects_unknown_node():
 
 def test_clip_urban_graph_keeps_nodes_inside_polygon():
     graph = undirected_line_graph()  # nodes at x = 0, 10, 20, 30 (y = 0)
-    polygon = box(-5.0, -5.0, 15.0, 5.0)
+    polygon = gpd.GeoSeries([box(-5.0, -5.0, 15.0, 5.0)], crs=CRS)  # metres, in the graph CRS
 
     clipped = clip_urban_graph(graph, polygon)
 
     assert set(clipped.nodes_gdf.index) == {0, 1}
+    # A bare shapely geometry is in EPSG:4326, as territory in the graph builders.
+    assert set(clip_urban_graph(graph, polygon.to_crs(4326).iloc[0]).nodes_gdf.index) == {0, 1}
     edge_pairs = set(zip(clipped.edges_gdf["u"], clipped.edges_gdf["v"]))
     assert edge_pairs == {(0, 1)}
 

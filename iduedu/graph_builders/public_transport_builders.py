@@ -512,8 +512,7 @@ def _build_public_transport_graph(
     )
 
     if clip_by_territory:
-        poly_proj = gpd.GeoSeries([polygon], crs=4326).to_crs(local_crs).union_all()
-        urban_graph = urban_graph.clip(poly_proj).relabel()
+        urban_graph = urban_graph.clip(polygon).relabel()
 
     return urban_graph
 

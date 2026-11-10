@@ -138,7 +138,7 @@ def test_reproject_graph_updates_coords(simple_graph_4326):
 
 def test_clip_nx_graph(simple_graph_3857):
     G = simple_graph_3857
-    poly = Polygon([(-10, -10), (110, -10), (110, 10), (-10, 10)])
+    poly = gpd.GeoSeries([Polygon([(-10, -10), (110, -10), (110, 10), (-10, 10)])], crs="EPSG:3857")
     clipped = clip_nx_graph(G, poly)
     assert set(clipped.nodes()) == {1, 2}
     assert clipped.has_edge(1, 2)

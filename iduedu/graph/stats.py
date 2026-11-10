@@ -17,7 +17,7 @@ from scipy.sparse import csgraph
 from shapely.geometry.base import BaseGeometry
 
 from iduedu.constants.transport_specs import DEFAULT_REGISTRY_W_TRAIN
-from iduedu.graph.graph_inputs import resolve_graph_nodes_input
+from iduedu.graph.graph_inputs import area_in_crs, geometries_in_crs, resolve_graph_nodes_input
 from iduedu.graph.routing import _positions, _prepare_graph
 from iduedu.graph.segments import segment_arrays
 from iduedu.graph.urban_graph import UrbanGraph
@@ -33,19 +33,6 @@ def _projected(urban_graph: UrbanGraph, what: str):
     if crs is not None and getattr(crs, "is_geographic", False):
         raise ValueError(f"{what} needs a projected CRS; reproject the graph first")
     return crs
-
-
-def _in_graph_crs(geometry, crs, name: str):
-    """Geometries as a GeoSeries in the graph CRS; bare shapely geometries are taken to be in it already."""
-    if isinstance(geometry, BaseGeometry):
-        return gpd.GeoSeries([geometry], crs=crs)
-    if isinstance(geometry, gpd.GeoDataFrame):
-        geometry = geometry.geometry
-    if not isinstance(geometry, gpd.GeoSeries):
-        raise TypeError(f"{name} must be a shapely geometry, GeoSeries or GeoDataFrame, got {type(geometry).__name__}")
-    if geometry.crs is not None and crs is not None and geometry.crs != crs:
-        geometry = geometry.to_crs(crs)
-    return geometry
 
 
 def _zone_of(xy: np.ndarray, zones: np.ndarray) -> np.ndarray:
@@ -173,10 +160,10 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
 
     Args:
         urban_graph: Graph in a projected (metric) CRS.
-        area: Study area. A shapely geometry is taken to be in the graph CRS; a GeoSeries or GeoDataFrame is
-            reprojected and merged into one area.
-        zones: Zones to measure separately (GeoSeries or GeoDataFrame, reprojected to the graph CRS). The
-            result has one row per zone, indexed like ``zones``.
+        area: Study area: a shapely geometry in EPSG:4326, as ``territory`` of the graph builders, or a
+            GeoSeries / GeoDataFrame in any CRS. Several geometries are merged into one area.
+        zones: Zones to measure separately: a GeoSeries or GeoDataFrame in any CRS. The result has one row
+            per zone, indexed like ``zones``.
         edge_types: Measure only edges whose ``type`` is one of these, and the nodes they touch.
         boundary_buffer: With ``area``: nodes with one street closer than this to the area boundary are not
             counted as dead ends (streets cut by clipping the graph to the area). ``None`` counts them.
@@ -197,10 +184,10 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
 
     boundary = None
     if zones is not None:
-        zone_series = _in_graph_crs(zones, crs, "zones")
+        zone_series = geometries_in_crs(zones, crs, "zones")
         zone_geoms, zone_index = zone_series.values, zone_series.index
     elif area is not None:
-        area_geom = shapely.union_all(_in_graph_crs(area, crs, "area").values)
+        area_geom = area_in_crs(area, crs)
         zone_geoms, zone_index, boundary = np.array([area_geom], dtype=object), None, area_geom.boundary
     else:
         zone_geoms, zone_index = None, None
@@ -219,10 +206,9 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
     edge_zone = assign(streets.midpoints())
     street_zone = edge_zone[streets.first]
     if len(edges):
-        seg_start, seg_end, seg_owner, _ = segment_arrays(edges, precision)
+        seg_start, seg_end, _, _ = segment_arrays(edges, precision)
     else:
         seg_start = seg_end = np.zeros((0, 2))
-        seg_owner = np.zeros(0, dtype=np.int64)
     seg_length = np.hypot(*(seg_end - seg_start).T) if len(seg_start) else np.zeros(0)
     seg_zone = assign((seg_start + seg_end) / 2.0)
 
@@ -393,7 +379,7 @@ def edge_stats(
     seg_length = np.hypot(*(seg_end - seg_start).T)
     inside_edge, inside_seg = np.ones(len(edges), dtype=bool), np.ones(len(seg_owner), dtype=bool)
     if area is not None:
-        zone = np.array([shapely.union_all(_in_graph_crs(area, crs, "area").values)], dtype=object)
+        zone = np.array([area_in_crs(area, crs)], dtype=object)
         midpoints = shapely.get_coordinates(shapely.line_interpolate_point(edges.geometry.values, 0.5, normalized=True))
         inside_edge = _zone_of(midpoints, zone) >= 0
         inside_seg = _zone_of((seg_start + seg_end) / 2.0, zone) >= 0

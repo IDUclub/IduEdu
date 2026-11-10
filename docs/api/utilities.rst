@@ -25,7 +25,9 @@ source graph unless you use the corresponding ``UrbanGraph`` method with
 ``inplace=True``.
 
 Use :func:`subgraph_by_nodes` for node-induced subgraphs,
-:func:`clip_urban_graph` for geometry-based clipping,
+:func:`clip_urban_graph` for geometry-based clipping (a shapely polygon is read
+in EPSG:4326, as ``territory`` in the graph builders; pass a GeoSeries or
+GeoDataFrame for a polygon in another CRS),
 :func:`relabel_urban_graph` for dense node indexes, and
 :func:`join_urban_graphs` for concatenating compatible graph tables.
 

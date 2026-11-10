@@ -4,8 +4,39 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.urban_graph import UrbanGraph
+
+#: CRS of bare shapely geometries passed as areas, as in the graph builders' ``territory``.
+AREA_CRS = 4326
+
+
+def geometries_in_crs(geometry, crs, name: str = "area") -> gpd.GeoSeries:
+    """Area geometries as a GeoSeries in ``crs``.
+
+    The rule of every function that takes an area or a clipping polygon, the same as for ``territory`` in the
+    graph builders: a bare shapely geometry is in EPSG:4326 (longitude, latitude); a GeoSeries or GeoDataFrame
+    carries its own CRS and is reprojected.
+    """
+    if isinstance(geometry, BaseGeometry):
+        geometry = gpd.GeoSeries([geometry], crs=AREA_CRS)
+    elif isinstance(geometry, gpd.GeoDataFrame):
+        geometry = geometry.geometry
+    if not isinstance(geometry, gpd.GeoSeries):
+        raise TypeError(
+            f"{name} must be a shapely geometry (EPSG:4326), GeoSeries or GeoDataFrame, got {type(geometry).__name__}"
+        )
+    if geometry.crs is None:
+        raise ValueError(f"{name} has no CRS; set it, or pass a shapely geometry in EPSG:4326")
+    if crs is not None and geometry.crs != crs:
+        geometry = geometry.to_crs(crs)
+    return geometry
+
+
+def area_in_crs(geometry, crs, name: str = "area") -> BaseGeometry:
+    """One area geometry in ``crs`` (see :func:`geometries_in_crs`); several geometries are merged."""
+    return shapely.union_all(geometries_in_crs(geometry, crs, name).values)
 
 
 def _object_points(urban_graph: UrbanGraph, gdf: gpd.GeoDataFrame, what: str) -> gpd.GeoSeries:

@@ -68,11 +68,11 @@ msgstr "Параметры"
 msgid "Graph in a projected (metric) CRS."
 msgstr "Граф в проецированной (метрической) системе координат."
 
-msgid "Study area. A shapely geometry is taken to be in the graph CRS; a GeoSeries or GeoDataFrame is reprojected and merged into one area."
-msgstr "Область исследования. Геометрия shapely считается заданной в системе координат графа; GeoSeries или GeoDataFrame перепроецируется и объединяется в одну область."
+msgid "Study area: a shapely geometry in EPSG:4326, as ``territory`` of the graph builders, or a GeoSeries / GeoDataFrame in any CRS. Several geometries are merged into one area."
+msgstr "Область исследования: геометрия shapely в EPSG:4326, как ``territory`` в функциях построения графов, либо GeoSeries / GeoDataFrame в любой системе координат. Несколько геометрий объединяются в одну область."
 
-msgid "Zones to measure separately (GeoSeries or GeoDataFrame, reprojected to the graph CRS). The result has one row per zone, indexed like ``zones``."
-msgstr "Зоны, которые измеряются по отдельности (GeoSeries или GeoDataFrame, перепроецируются в систему координат графа). В результате одна строка на зону с тем же индексом, что у ``zones``."
+msgid "Zones to measure separately: a GeoSeries or GeoDataFrame in any CRS. The result has one row per zone, indexed like ``zones``."
+msgstr "Зоны, которые измеряются по отдельности: GeoSeries или GeoDataFrame в любой системе координат. В результате одна строка на зону с тем же индексом, что у ``zones``."
 
 msgid "Measure only edges whose ``type`` is one of these, and the nodes they touch."
 msgstr "Измерять только рёбра, у которых ``type`` входит в этот список, и узлы, которых они касаются."

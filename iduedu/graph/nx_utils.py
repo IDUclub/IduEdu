@@ -357,7 +357,8 @@ def clip_nx_graph(graph: nx.Graph, polygon: Polygon) -> nx.Graph:
 
     Parameters:
         graph (nx.Graph): Graph with node coords stored as `x`, `y` and a CRS in `graph.graph["crs"]`.
-        polygon (Polygon): Clipping polygon in the same CRS as the graph.
+        polygon (Polygon | gpd.GeoSeries | gpd.GeoDataFrame): Clipping polygon: a shapely geometry in
+            EPSG:4326, as ``territory`` of the graph builders, or a GeoSeries / GeoDataFrame in any CRS.
 
     Returns:
         (nx.Graph): Subgraph containing only nodes whose points fall inside the polygon.
@@ -365,7 +366,11 @@ def clip_nx_graph(graph: nx.Graph, polygon: Polygon) -> nx.Graph:
     Notes:
         Edges are preserved only if both endpoints remain in the subgraph.
     """
+    # Imported here: graph_inputs pulls in UrbanGraph, which this optional module does not otherwise need.
+    from iduedu.graph.graph_inputs import area_in_crs  # pylint: disable=import-outside-toplevel
+
     crs = graph.graph["crs"]
+    polygon = area_in_crs(polygon, crs, "polygon")
     points = gpd.GeoDataFrame(
         data=[{"id": p_id, "geometry": Point(data["x"], data["y"])} for p_id, data in graph.nodes(data=True)], crs=crs
     ).clip(polygon, True)

@@ -20,8 +20,8 @@ msgstr "iduedu.clip\\_urban\\_graph"
 msgid "Clip graph nodes by geometry and keep only edges with retained endpoints."
 msgstr "Обрезает узлы графа по геометрии и оставляет только рёбра с сохранившимися концами."
 
-msgid "``polygon`` is expected to be in the same CRS as ``graph_gdf``. Node ids are preserved; call :func:`relabel_urban_graph` if dense labels are needed."
-msgstr "``polygon`` должен быть в той же системе координат, что и ``graph_gdf``. Идентификаторы узлов сохраняются; вызовите :func:`relabel_urban_graph`, если нужна плотная нумерация."
+msgid "``polygon`` follows the rule of ``territory`` in the graph builders: a shapely geometry is in EPSG:4326 (longitude, latitude); a GeoSeries or GeoDataFrame carries its own CRS. Either is reprojected to the graph CRS. Node ids are preserved; call :func:`relabel_urban_graph` if dense labels are needed."
+msgstr "``polygon`` задаётся по тому же правилу, что ``territory`` в функциях построения графов: геометрия shapely считается в EPSG:4326 (долгота, широта), а GeoSeries или GeoDataFrame несут свою систему координат. В любом случае полигон перепроецируется в систему координат графа. Идентификаторы узлов сохраняются; вызовите :func:`relabel_urban_graph`, если нужны плотные метки."
 
 msgid "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/graph_operations.html"

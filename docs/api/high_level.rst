@@ -44,6 +44,57 @@ Use :func:`get_drive_graph` for car-accessible street networks and
 The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and
 ``simplify=False`` side by side and highlights edges affected by clipping.
 
+Edge tags and merging
+~~~~~~~~~~~~~~~~~~~~~
+
+The drive, walk and bike builders cut every OSM way into its straight
+segments. With ``simplify=True`` the segments are joined back into edges at
+the points where exactly two segments meet, follow one another in the same
+direction, and carry the same values of every tag the builder reads. So an
+edge runs from junction to junction, and it ends earlier wherever a tag
+changes: an edge always has the tags of all its ways, never a mix of
+different ways.
+
+The builder reads three groups of tags:
+
+- the tags kept as edge columns, set with ``osm_edge_tags`` or, by default,
+  with ``config.drive_useful_edges_attr``, ``config.walk_useful_edges_attr``
+  and ``config.bike_useful_edges_attr``;
+- ``bridge`` and ``tunnel``, which are always read and always kept, whatever
+  ``osm_edge_tags`` holds, because a bridge or a tunnel does not follow the
+  ground and must not be merged with the road it continues
+  (:func:`add_elevation` relies on them);
+- tags the builder needs for its own calculations; they split edges too but
+  are not kept as columns.
+
+.. list-table::
+    :header-rows: 1
+
+    * - Graph
+      - Kept tags (default, changed with ``config`` or ``osm_edge_tags``)
+      - Always kept
+      - Read but not kept
+    * - drive
+      - ``highway``, ``name``, ``lanes``
+      - ``bridge``, ``tunnel``, ``oneway``, ``category``
+      - ``maxspeed`` (for the travel time)
+    * - walk
+      - ``highway``, ``name``
+      - ``bridge``, ``tunnel``
+      - none
+    * - bike
+      - ``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``
+      - ``bridge``, ``tunnel``, ``oneway``, ``cycle_infra``, ``lts``
+      - ``cycleway``, ``cycleway:left``, ``cycleway:right``,
+        ``cycleway:both``, ``bicycle``, ``oneway:bicycle``
+
+The drive builder also always reads ``highway`` and ``oneway``, and the bike
+builder ``highway``, ``maxspeed``, ``lanes`` and ``oneway``, even when
+``osm_edge_tags`` leaves them out. Fewer kept tags therefore give longer
+edges: with ``osm_edge_tags=[]`` a walk graph is split only at junctions,
+bridges and tunnels, while a drive graph is still split where the speed limit
+or the road class changes.
+
 Bike graphs
 ~~~~~~~~~~~
 

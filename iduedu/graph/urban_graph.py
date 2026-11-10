@@ -747,7 +747,8 @@ class UrbanGraph:
         equivalent: :func:`iduedu.clip_urban_graph`.
 
         Args:
-            polygon: Shapely geometry in the graph CRS.
+            polygon: Shapely geometry in EPSG:4326 (as ``territory`` of the graph builders), or a
+                GeoSeries / GeoDataFrame in any CRS.
             inplace: If ``True``, replace this object with the clipped graph.
 
         Returns:

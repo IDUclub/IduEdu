@@ -16,6 +16,7 @@ import shapely
 from scipy import sparse
 from shapely.geometry.base import BaseGeometry
 
+from iduedu.graph.graph_inputs import area_in_crs
 from iduedu.graph.routing import _prepare_graph
 from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.graph.within import band_betas, band_label, cost_bands, sum_within, value_rows
@@ -50,16 +51,9 @@ def _inside(urban_graph: UrbanGraph, area) -> np.ndarray:
     nodes = urban_graph.nodes_gdf
     if area is None:
         return np.arange(len(nodes))
-    if isinstance(area, gpd.GeoDataFrame):
-        area = area.geometry
-    if isinstance(area, gpd.GeoSeries):
-        if area.crs is not None and nodes.crs is not None and area.crs != nodes.crs:
-            area = area.to_crs(nodes.crs)
-        area = shapely.union_all(area.values)
-    if not isinstance(area, BaseGeometry):
-        raise TypeError(f"area must be a shapely geometry, GeoSeries or GeoDataFrame, got {type(area).__name__}")
-    shapely.prepare(area)
-    return np.flatnonzero(shapely.intersects(area, nodes.geometry.values))
+    polygon = area_in_crs(area, nodes.crs or urban_graph.crs)
+    shapely.prepare(polygon)
+    return np.flatnonzero(shapely.intersects(polygon, nodes.geometry.values))
 
 
 def _sample(n: int, sample, seed) -> tuple[np.ndarray, float]:
@@ -112,8 +106,8 @@ def centrality(  # pylint: disable=too-many-locals
             array in node order. Missing values count as 0.
         direction: On directed graphs, ``"from"`` measures the way from the node to the others, ``"to"``
             towards the node. Betweenness does not depend on it.
-        area: Report only the nodes inside (a shapely geometry in the graph CRS, or a GeoSeries /
-            GeoDataFrame). The searches still use the whole graph.
+        area: Report only the nodes inside: a shapely geometry in EPSG:4326, as ``territory`` of the graph
+            builders, or a GeoSeries / GeoDataFrame in any CRS. The searches still use the whole graph.
         sample: For betweenness, the number of randomly chosen source nodes; the result is scaled up to all
             nodes. ``None`` uses every node.
         seed: Seed of the sample.

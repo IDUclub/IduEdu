@@ -8,6 +8,11 @@ connectivity, what can be reached from a place, which streets carry the
 shortest paths, and how steep the network is. They read an ``UrbanGraph`` in a
 projected CRS and return pandas tables indexed by node, edge, zone or origin.
 
+Areas (``area``, ``zones``) follow the rule of ``territory`` in the graph
+builders: a bare shapely geometry is in EPSG:4326 (longitude, latitude), and a
+GeoSeries or GeoDataFrame carries its own CRS; both are reprojected to the
+graph CRS.
+
 Thresholds are given in the units of ``weight``. Statistics and centralities
 measure by ``length_meter`` (metres) by default, as is usual for street
 networks; the functions that work with objects measure by ``time_min``

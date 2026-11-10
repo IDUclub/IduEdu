@@ -29,8 +29,8 @@ msgstr "`subgraph_by_nodes` сохраняет исходные идентифи
 msgid "Clip by geometry"
 msgstr "Обрезка по геометрии"
 
-msgid "`clip` keeps nodes inside a polygon and then keeps edges whose endpoints remain in the graph. The polygon must be in the graph CRS."
-msgstr "`clip` оставляет узлы внутри полигона, а затем рёбра, оба конца которых остались в графе. Полигон должен быть в системе координат графа."
+msgid "`clip` keeps nodes inside a polygon and then keeps edges whose endpoints remain in the graph. As `territory` in the graph builders, a bare shapely polygon is read in EPSG:4326 (longitude, latitude); a polygon in other coordinates goes in a GeoSeries or GeoDataFrame with its CRS, and is reprojected to the graph CRS."
+msgstr "`clip` оставляет узлы внутри полигона, а затем рёбра, оба конца которых остались в графе. Как и `territory` в функциях построения графов, полигон shapely сам по себе читается в EPSG:4326 (долгота, широта); полигон в других координатах передаётся в GeoSeries или GeoDataFrame со своей системой координат и перепроецируется в систему координат графа."
 
 msgid "Multiedge simplification"
 msgstr "Упрощение кратных рёбер"

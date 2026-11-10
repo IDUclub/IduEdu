@@ -65,6 +65,75 @@ msgstr "Удалять несвязные фрагменты. Для ориен�
 msgid "The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and ``simplify=False`` side by side and highlights edges affected by clipping."
 msgstr "Ноутбук :doc:`../examples/get_any_graph` показывает ``simplify=True`` и ``simplify=False`` рядом и выделяет рёбра, затронутые обрезкой."
 
+msgid "Edge tags and merging"
+msgstr "Теги рёбер и объединение отрезков"
+
+msgid "The drive, walk and bike builders cut every OSM way into its straight segments. With ``simplify=True`` the segments are joined back into edges at the points where exactly two segments meet, follow one another in the same direction, and carry the same values of every tag the builder reads. So an edge runs from junction to junction, and it ends earlier wherever a tag changes: an edge always has the tags of all its ways, never a mix of different ways."
+msgstr "Функции построения автомобильного, пешеходного и велосипедного графов режут каждую линию OSM на прямые отрезки. С ``simplify=True`` отрезки снова объединяются в рёбра в тех точках, где сходятся ровно два отрезка, они продолжают друг друга в одном направлении и у них совпадают значения всех тегов, которые читает функция. Поэтому ребро идёт от перекрёстка до перекрёстка и заканчивается раньше там, где меняется тег: у ребра всегда теги всех его линий, а не смесь разных линий."
+
+msgid "The builder reads three groups of tags:"
+msgstr "Функция читает три группы тегов:"
+
+msgid "the tags kept as edge columns, set with ``osm_edge_tags`` or, by default, with ``config.drive_useful_edges_attr``, ``config.walk_useful_edges_attr`` and ``config.bike_useful_edges_attr``;"
+msgstr "теги, сохраняемые как столбцы рёбер: задаются через ``osm_edge_tags`` или по умолчанию через ``config.drive_useful_edges_attr``, ``config.walk_useful_edges_attr`` и ``config.bike_useful_edges_attr``;"
+
+msgid "``bridge`` and ``tunnel``, which are always read and always kept, whatever ``osm_edge_tags`` holds, because a bridge or a tunnel does not follow the ground and must not be merged with the road it continues (:func:`add_elevation` relies on them);"
+msgstr "``bridge`` и ``tunnel``: читаются и сохраняются всегда, что бы ни было в ``osm_edge_tags``, потому что мост или тоннель не следует рельефу и не должен объединяться с дорогой, которую продолжает (на них опирается :func:`add_elevation`);"
+
+msgid "tags the builder needs for its own calculations; they split edges too but are not kept as columns."
+msgstr "теги, нужные функции для её расчётов: они тоже разделяют рёбра, но не сохраняются как столбцы."
+
+msgid "Graph"
+msgstr "Граф"
+
+msgid "Kept tags (default, changed with ``config`` or ``osm_edge_tags``)"
+msgstr "Сохраняемые теги (по умолчанию; меняются через ``config`` или ``osm_edge_tags``)"
+
+msgid "Always kept"
+msgstr "Сохраняются всегда"
+
+msgid "Read but not kept"
+msgstr "Читаются, но не сохраняются"
+
+msgid "drive"
+msgstr "автомобильный"
+
+msgid "``highway``, ``name``, ``lanes``"
+msgstr "``highway``, ``name``, ``lanes``"
+
+msgid "``bridge``, ``tunnel``, ``oneway``, ``category``"
+msgstr "``bridge``, ``tunnel``, ``oneway``, ``category``"
+
+msgid "``maxspeed`` (for the travel time)"
+msgstr "``maxspeed`` (для времени в пути)"
+
+msgid "walk"
+msgstr "пешеходный"
+
+msgid "``highway``, ``name``"
+msgstr "``highway``, ``name``"
+
+msgid "``bridge``, ``tunnel``"
+msgstr "``bridge``, ``tunnel``"
+
+msgid "none"
+msgstr "нет"
+
+msgid "bike"
+msgstr "велосипедный"
+
+msgid "``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``"
+msgstr "``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``"
+
+msgid "``bridge``, ``tunnel``, ``oneway``, ``cycle_infra``, ``lts``"
+msgstr "``bridge``, ``tunnel``, ``oneway``, ``cycle_infra``, ``lts``"
+
+msgid "``cycleway``, ``cycleway:left``, ``cycleway:right``, ``cycleway:both``, ``bicycle``, ``oneway:bicycle``"
+msgstr "``cycleway``, ``cycleway:left``, ``cycleway:right``, ``cycleway:both``, ``bicycle``, ``oneway:bicycle``"
+
+msgid "The drive builder also always reads ``highway`` and ``oneway``, and the bike builder ``highway``, ``maxspeed``, ``lanes`` and ``oneway``, even when ``osm_edge_tags`` leaves them out. Fewer kept tags therefore give longer edges: with ``osm_edge_tags=[]`` a walk graph is split only at junctions, bridges and tunnels, while a drive graph is still split where the speed limit or the road class changes."
+msgstr "Автомобильный граф всегда читает ещё ``highway`` и ``oneway``, а велосипедный — ``highway``, ``maxspeed``, ``lanes`` и ``oneway``, даже если в ``osm_edge_tags`` их нет. Поэтому чем меньше сохраняемых тегов, тем длиннее рёбра: с ``osm_edge_tags=[]`` пешеходный граф разделяется только на перекрёстках, мостах и тоннелях, а автомобильный — ещё и там, где меняется ограничение скорости или класс дороги."
+
 msgid "Bike graphs"
 msgstr "Велосипедные графы"
 

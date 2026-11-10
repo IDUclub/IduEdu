@@ -185,24 +185,26 @@ def subgraph_by_nodes(graph_gdf: UrbanGraph, nodes) -> UrbanGraph:
     )
 
 
-def clip_urban_graph(graph_gdf: UrbanGraph, polygon: BaseGeometry) -> UrbanGraph:
+def clip_urban_graph(graph_gdf: UrbanGraph, polygon: BaseGeometry | gpd.GeoSeries | gpd.GeoDataFrame) -> UrbanGraph:
     """
     Clip graph nodes by geometry and keep only edges with retained endpoints.
 
-    ``polygon`` is expected to be in the same CRS as ``graph_gdf``. Node ids are
-    preserved; call :func:`relabel_urban_graph` if dense labels are needed.
+    ``polygon`` follows the rule of ``territory`` in the graph builders: a shapely geometry is in EPSG:4326
+    (longitude, latitude); a GeoSeries or GeoDataFrame carries its own CRS. Either is reprojected to the
+    graph CRS. Node ids are preserved; call :func:`relabel_urban_graph` if dense labels are needed.
 
     See also:
         https://iduclub.github.io/IduEdu/examples/graph_operations.html
     """
+    # Imported here: graph_inputs imports this module's package at import time.
+    from iduedu.graph.graph_inputs import area_in_crs  # pylint: disable=import-outside-toplevel
 
     nodes = graph_gdf.nodes_gdf.copy()
     edges = graph_gdf.edges_gdf.copy()
 
     if not isinstance(nodes, gpd.GeoDataFrame):
         raise TypeError(f"graph.nodes_gdf must be GeoDataFrame, got {type(nodes).__name__}")
-    if not isinstance(polygon, BaseGeometry):
-        raise TypeError(f"polygon must be a shapely geometry, got {type(polygon).__name__}")
+    polygon = area_in_crs(polygon, nodes.crs or graph_gdf.crs, "polygon")
 
     nodes = nodes.clip(polygon, keep_geom_type=True)
 

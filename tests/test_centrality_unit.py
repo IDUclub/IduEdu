@@ -1,5 +1,6 @@
 import itertools
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
@@ -76,7 +77,7 @@ def test_centrality_options():
     everything = centrality(graph, ["reach", "gravity"], beta=0.01)
     assert everything.columns.tolist() == ["reach_inf", "gravity_inf"]
     assert (everything["reach_inf"] == len(graph.nodes_gdf) - 1).all()
-    inside = centrality(graph, ["reach"], cutoffs=200, area=box(-10, -10, 110, 110))
+    inside = centrality(graph, ["reach"], cutoffs=200, area=gpd.GeoSeries([box(-10, -10, 110, 110)], crs=CRS))
     assert inside.index.tolist() == [0, 1, 5, 6] and inside.index.name == "node"
     assert (
         inside["reach_200"].tolist()

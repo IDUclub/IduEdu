@@ -66,8 +66,8 @@ def test_streets_are_counted_once_for_both_directions():
 
 def test_area_measures_the_inside_with_degrees_of_the_whole_graph():
     graph = grid_graph()
-    area = box(-10, -10, 110, 210)  # the two left columns: six nodes
-    stats = graph_stats(graph, area=area)
+    area = box(-10, -10, 110, 210)  # the two left columns: six nodes, in metres (EPSG:3857)
+    stats = graph_stats(graph, area=gpd.GeoSeries([area], crs=CRS))
     assert stats["node_count"] == 6
     # Three streets between the columns and four along them have their midpoint inside.
     assert stats["street_count"] == 7 and stats["street_length_total"] == pytest.approx(700.0)
@@ -78,6 +78,10 @@ def test_area_measures_the_inside_with_degrees_of_the_whole_graph():
     assert stats["street_density"] == pytest.approx(0.7 / stats["area_km2"])
     as_frame = gpd.GeoDataFrame(geometry=[area], crs=CRS).to_crs(4326)
     assert graph_stats(graph, area=as_frame)["node_count"] == 6
+    # A bare shapely geometry is in EPSG:4326, as territory in the graph builders.
+    assert graph_stats(graph, area=as_frame.geometry.iloc[0])["node_count"] == 6
+    with pytest.raises(ValueError, match="no CRS"):
+        graph_stats(graph, area=gpd.GeoSeries([area]))
 
 
 def test_dead_ends_at_the_area_boundary_are_not_counted():
@@ -85,9 +89,14 @@ def test_dead_ends_at_the_area_boundary_are_not_counted():
     edges = _edges(coords, [{"u": 0, "v": 1}, {"u": 1, "v": 2}, {"u": 1, "v": 3}])
     graph = UrbanGraph(_nodes(coords), edges, is_multigraph=False, is_directed=False, crs=CRS)
     assert graph_stats(graph)["dead_end_count"] == 3
-    clipped = graph_stats(graph, area=box(0, -20, 100, 60))  # nodes 0 and 2 lie on the boundary
+    clipped = graph_stats(
+        graph, area=gpd.GeoSeries([box(0, -20, 100, 60)], crs=CRS)
+    )  # nodes 0 and 2 lie on the boundary
     assert clipped["dead_end_count"] == 1 and clipped["node_count"] == 4
-    assert graph_stats(graph, area=box(0, -20, 100, 60), boundary_buffer=None)["dead_end_count"] == 3
+    assert (
+        graph_stats(graph, area=gpd.GeoSeries([box(0, -20, 100, 60)], crs=CRS), boundary_buffer=None)["dead_end_count"]
+        == 3
+    )
 
 
 def test_zones_give_one_row_each():
@@ -145,7 +154,10 @@ def test_edge_and_transport_stats():
     assert table["length_share"].sum() == pytest.approx(1.0)
     assert np.isnan(table.loc["alighting", "speed_kmh"])
     assert edge_stats(graph, "route").index.tolist() == ["7", "<missing>"]
-    assert edge_stats(graph, "type", area=box(-1, -1, 150, 20)).index.tolist() == ["walk", "boarding"]
+    assert edge_stats(graph, "type", area=gpd.GeoSeries([box(-1, -1, 150, 20)], crs=CRS)).index.tolist() == [
+        "walk",
+        "boarding",
+    ]
     modes = transport_stats(graph)
     assert modes.index.tolist() == ["bus"]
     assert modes.loc["bus"].to_dict() == {
