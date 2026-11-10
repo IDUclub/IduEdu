@@ -9,15 +9,16 @@ use crate::dijkstra::Scratch;
 
 /// How a value counts at travel cost `d` from the source, within a band of cutoff `c`.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[repr(u8)]
 pub enum Decay {
     /// Weight 1.
-    Flat,
+    Flat = 0,
     /// `1 - d / c` (weight 1 for an infinite cutoff).
-    Linear,
+    Linear = 1,
     /// `exp(-beta * d)` with the beta of the band.
-    Exp,
+    Exp = 2,
     /// `1 / d`; values at cost 0 do not count.
-    Inverse,
+    Inverse = 3,
 }
 
 impl Decay {
@@ -30,36 +31,15 @@ impl Decay {
             other => Err(format!("unknown decay {other:?}")),
         }
     }
-
-    #[inline]
-    fn weight(self, d: f32, cutoff: f32, beta: f32) -> f64 {
-        match self {
-            Decay::Flat => 1.0,
-            Decay::Linear => {
-                if cutoff.is_finite() && cutoff > 0.0 {
-                    1.0 - f64::from(d) / f64::from(cutoff)
-                } else {
-                    1.0
-                }
-            }
-            Decay::Exp => (-f64::from(beta) * f64::from(d)).exp(),
-            Decay::Inverse => {
-                if d > 0.0 {
-                    1.0 / f64::from(d)
-                } else {
-                    0.0
-                }
-            }
-        }
-    }
 }
 
-/// Cost bands of one aggregation: ascending inclusive `cutoffs`, each with its own `beta`.
+/// Cost bands of one aggregation: ascending inclusive `cutoffs`, each with its own `beta`, and the decay
+/// of every value column.
 #[derive(Clone, Copy)]
 pub struct Bands<'a> {
     pub cutoffs: &'a [f32],
     pub betas: &'a [f32],
-    pub decay: Decay,
+    pub decays: &'a [Decay],
 }
 
 impl Bands<'_> {
@@ -71,6 +51,28 @@ impl Bands<'_> {
     #[inline]
     fn first(&self, d: f32) -> usize {
         self.cutoffs.partition_point(|&c| c < d)
+    }
+
+    /// Weights of cost `d` in `band`, indexed by [`Decay`].
+    #[inline]
+    fn weights(&self, d: f32, band: usize, with_exp: bool) -> [f64; 4] {
+        let (cutoff, d64) = (self.cutoffs[band], f64::from(d));
+        let linear = if cutoff.is_finite() && cutoff > 0.0 {
+            1.0 - d64 / f64::from(cutoff)
+        } else {
+            1.0
+        };
+        let exp = if with_exp {
+            (-f64::from(self.betas[band]) * d64).exp()
+        } else {
+            0.0
+        };
+        let inverse = if d > 0.0 { 1.0 / d64 } else { 0.0 };
+        [1.0, linear, exp, inverse]
+    }
+
+    fn uses_exp(&self) -> bool {
+        self.decays.contains(&Decay::Exp)
     }
 }
 
@@ -122,6 +124,7 @@ pub fn gather(
     out: &mut [f64],
 ) {
     let n_bands = bands.cutoffs.len();
+    let with_exp = bands.uses_exp();
     sc.walk(g, source, bands.max(), |node, d| {
         if skip_source && node == source as usize {
             return true;
@@ -131,12 +134,11 @@ pub fn gather(
             return true;
         }
         for band in bands.first(d)..n_bands {
-            let w = bands
-                .decay
-                .weight(d, bands.cutoffs[band], bands.betas[band]);
+            let w = bands.weights(d, band, with_exp);
             let row = &mut out[band * n_cols..(band + 1) * n_cols];
             for (&c, &v) in cols.iter().zip(data) {
-                row[c as usize] += w * f64::from(v);
+                let c = c as usize;
+                row[c] += w[bands.decays[c] as usize] * f64::from(v);
             }
         }
         true
@@ -162,6 +164,7 @@ pub fn scatter(
         return;
     }
     let n_bands = bands.cutoffs.len();
+    let with_exp = bands.uses_exp();
     sc.walk(g, source, bands.max(), |node, d| {
         let slot = slots[node];
         if slot < 0 {
@@ -169,12 +172,11 @@ pub fn scatter(
         }
         let base = slot as usize * n_bands;
         for band in bands.first(d)..n_bands {
-            let w = bands
-                .decay
-                .weight(d, bands.cutoffs[band], bands.betas[band]);
+            let w = bands.weights(d, band, with_exp);
             let row = &mut acc[(base + band) * n_cols..(base + band + 1) * n_cols];
             for (&c, &v) in cols.iter().zip(data) {
-                row[c as usize] += w * f64::from(v);
+                let c = c as usize;
+                row[c] += w[bands.decays[c] as usize] * f64::from(v);
             }
         }
         true
@@ -379,14 +381,14 @@ mod tests {
         let bands = Bands {
             cutoffs: &[1.0, 3.0],
             betas: &[0.0, 0.0],
-            decay: Decay::Flat,
+            decays: &[Decay::Flat],
         };
         let mut out = vec![0.0; 2];
         gather(g, &mut sc, 1, values, 1, bands, false, &mut out);
         assert_eq!(out, vec![10.0, 11.0]);
 
         let linear = Bands {
-            decay: Decay::Linear,
+            decays: &[Decay::Linear],
             ..bands
         };
         let mut out = vec![0.0; 2];

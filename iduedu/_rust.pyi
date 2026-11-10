@@ -53,7 +53,7 @@ class CsrGraph:
         val_data: npt.NDArray[np.float32],
         n_cols: int,
         cutoffs: npt.NDArray[np.float32],
-        decay: str,
+        decay: list[str],
         betas: npt.NDArray[np.float32],
         skip_source: bool,
         n_threads: int | None = None,
@@ -68,7 +68,7 @@ class CsrGraph:
         slots: npt.NDArray[np.int32],
         n_slots: int,
         cutoffs: npt.NDArray[np.float32],
-        decay: str,
+        decay: list[str],
         betas: npt.NDArray[np.float32],
         n_threads: int | None = None,
     ) -> npt.NDArray[np.float64]: ...

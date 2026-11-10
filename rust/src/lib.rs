@@ -119,10 +119,23 @@ fn check_cutoffs(cutoffs: &[f32]) -> PyResult<()> {
     Ok(())
 }
 
+/// One decay per value column, from their names.
+fn decays_of(names: &[String], n_cols: usize) -> PyResult<Vec<analysis::Decay>> {
+    if names.len() != n_cols {
+        return Err(PyValueError::new_err(
+            "decay must name one decay per value column",
+        ));
+    }
+    names
+        .iter()
+        .map(|name| analysis::Decay::parse(name).map_err(PyValueError::new_err))
+        .collect()
+}
+
 fn bands_of<'a>(
     cutoffs: &'a [f32],
     betas: &'a [f32],
-    decay: &str,
+    decays: &'a [analysis::Decay],
 ) -> PyResult<analysis::Bands<'a>> {
     check_cutoffs(cutoffs)?;
     if betas.len() != cutoffs.len() || betas.iter().any(|b| !b.is_finite() || *b < 0.0) {
@@ -133,7 +146,7 @@ fn bands_of<'a>(
     Ok(analysis::Bands {
         cutoffs,
         betas,
-        decay: analysis::Decay::parse(decay).map_err(PyValueError::new_err)?,
+        decays,
     })
 }
 
@@ -376,7 +389,7 @@ impl CsrGraph {
         val_data: PyReadonlyArray1<'py, f32>,
         n_cols: usize,
         cutoffs: PyReadonlyArray1<'py, f32>,
-        decay: &str,
+        decay: Vec<String>,
         betas: PyReadonlyArray1<'py, f32>,
         skip_source: bool,
         n_threads: Option<usize>,
@@ -393,7 +406,8 @@ impl CsrGraph {
             .validate(g.n(), n_cols)
             .map_err(PyValueError::new_err)?;
         let (cutoffs, betas) = (cutoffs.as_slice()?, betas.as_slice()?);
-        let bands = bands_of(cutoffs, betas, decay)?;
+        let decays = decays_of(&decay, n_cols)?;
+        let bands = bands_of(cutoffs, betas, &decays)?;
         let width = cutoffs.len() * n_cols;
         let mut out = vec![0.0f64; s.len() * width];
         if width > 0 {
@@ -440,7 +454,7 @@ impl CsrGraph {
         slots: PyReadonlyArray1<'py, i32>,
         n_slots: usize,
         cutoffs: PyReadonlyArray1<'py, f32>,
-        decay: &str,
+        decay: Vec<String>,
         betas: PyReadonlyArray1<'py, f32>,
         n_threads: Option<usize>,
     ) -> PyResult<Bound<'py, PyArray3<f64>>> {
@@ -462,7 +476,8 @@ impl CsrGraph {
             ));
         }
         let (cutoffs, betas) = (cutoffs.as_slice()?, betas.as_slice()?);
-        let bands = bands_of(cutoffs, betas, decay)?;
+        let decays = decays_of(&decay, n_cols)?;
+        let bands = bands_of(cutoffs, betas, &decays)?;
         let size = n_slots * cutoffs.len() * n_cols;
         let out = py.detach(|| {
             in_pool(n_threads, || {

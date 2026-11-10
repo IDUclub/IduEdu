@@ -48,11 +48,21 @@ def value_rows(n_rows: int, rows, cols, data, n_cols: int) -> tuple[np.ndarray, 
     )
 
 
-def band_betas(bands: np.ndarray, decay: str, beta: float | Iterable[float] | None) -> np.ndarray:
+def column_decays(decay: str | Iterable[str], n_cols: int) -> list[str]:
+    """One decay name per value column; a single name applies to every column."""
+    decays = [decay] * n_cols if isinstance(decay, str) else list(decay)
+    if len(decays) != n_cols or any(d not in DECAYS for d in decays):
+        raise ValueError(f"decay must be one of {DECAYS} (one per value column), got {decay!r}")
+    return decays
+
+
+def band_betas(bands: np.ndarray, decay: str | Iterable[str], beta: float | Iterable[float] | None) -> np.ndarray:
     """One ``beta`` per band for exponential decay: given, or ``4 / cutoff`` (weight 0.018 at the cutoff)."""
-    if decay not in DECAYS:
-        raise ValueError(f"decay must be one of {DECAYS}, got {decay!r}")
-    if decay != "exp":
+    decays = [decay] if isinstance(decay, str) else list(decay)
+    unknown = [d for d in decays if d not in DECAYS]
+    if unknown:
+        raise ValueError(f"decay must be one of {DECAYS}, got {unknown[0]!r}")
+    if "exp" not in decays:
         return np.zeros(len(bands), dtype=np.float32)
     if beta is None:
         if np.isinf(bands).any():
@@ -74,7 +84,7 @@ def sum_within(
     bands: np.ndarray,
     *,
     weight: str,
-    decay: str = "flat",
+    decay: str | Iterable[str] = "flat",
     betas: np.ndarray | None = None,
     reverse: bool = False,
     skip_source: bool = False,
@@ -93,7 +103,7 @@ def sum_within(
         *values,
         n_cols,
         np.ascontiguousarray(bands, dtype=np.float32),
-        decay,
+        column_decays(decay, n_cols),
         betas,
         skip_source,
         max_workers,
@@ -110,7 +120,7 @@ def spread_within(
     bands: np.ndarray,
     *,
     weight: str,
-    decay: str = "flat",
+    decay: str | Iterable[str] = "flat",
     betas: np.ndarray | None = None,
     reverse: bool = False,
     max_workers: int | None = None,
@@ -131,7 +141,7 @@ def spread_within(
         np.ascontiguousarray(slots, dtype=np.int32),
         int(n_slots),
         np.ascontiguousarray(bands, dtype=np.float32),
-        decay,
+        column_decays(decay, n_cols),
         betas,
         max_workers,
     )

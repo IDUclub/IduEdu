@@ -133,6 +133,7 @@ iduedu/
     within.py        — sums of node values within a travel cost (shared by stats, aggregations, centralities)
     stats.py         — graph_stats(), edge_stats(), transport_stats(), local_stats(), route_directness()
     aggregations.py  — nearest_objects(), aggregate_objects(), diversity(): objects around origins along the network
+    centrality.py    — centrality() (reach, harmonic, gravity, betweenness) and edge_betweenness()
     io.py            — .urbangraph archive read/write
   _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/
