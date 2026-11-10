@@ -134,6 +134,7 @@ iduedu/
     stats.py         — graph_stats(), edge_stats(), transport_stats(), local_stats(), route_directness()
     aggregations.py  — nearest_objects(), aggregate_objects(), diversity(): objects around origins along the network
     centrality.py    — centrality() (reach, harmonic, gravity, betweenness) and edge_betweenness()
+    elevation.py     — add_elevation() (raster, points or contours; grades, bridges and tunnels), apply_grade_speed()
     io.py            — .urbangraph archive read/write
   _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/

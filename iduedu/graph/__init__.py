@@ -44,6 +44,7 @@ from .editors import (
 )
 from .graph_inputs import nearest_edges, nearest_nodes, resolve_graph_nodes_input
 from .segments import unique_segments
+from .elevation import add_elevation, apply_grade_speed
 from .centrality import centrality, edge_betweenness
 from .aggregations import aggregate_objects, diversity, nearest_objects
 from .stats import edge_stats, graph_stats, local_stats, route_directness, streets_per_node, transport_stats

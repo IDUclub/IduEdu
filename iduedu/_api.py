@@ -4,7 +4,9 @@ from .constants.transport_specs import DEFAULT_REGISTRY, DEFAULT_REGISTRY_W_TRAI
 from .graph import (
     UrbanGraph,
     UrbanGraphChanges,
+    add_elevation,
     aggregate_objects,
+    apply_grade_speed,
     apply_urban_graph_changes,
     centrality,
     clip_urban_graph,

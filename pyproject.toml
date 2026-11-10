@@ -24,6 +24,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+elevation = [
+    "rasterio>=1.4.0,<2.0.0",
+]
 io = [
     "pyarrow>=18.1.0,<26.0.0; python_version < '3.14'",
     "pyarrow>=22.0.0,<26.0.0; python_version >= '3.14'",
@@ -66,6 +69,7 @@ test = [
     "networkx>=3.4.0,<4.0.0",
     "pytest>=8.3.5,<9.0.0",
     "pytest-cov>=6.0.0,<7.0.0",
+    "rasterio>=1.4.0,<2.0.0",
 ]
 viz = [
     "contextily>=1.6.2,<2.0.0",
