@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Migrating to UrbanGraph
 
 IduEdu now uses `UrbanGraph` as the primary graph representation. The old

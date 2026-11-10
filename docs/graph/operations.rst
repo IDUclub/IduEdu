@@ -69,7 +69,7 @@ optionally include the cached adjacency matrix. See
 :doc:`../examples/urban_graph_basics`.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     connected_components
@@ -108,7 +108,7 @@ NetworkX is not installed with IduEdu. Install it separately (``pip install netw
 helpers below; without it they raise ``ImportError`` when called.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     urban_graph2nx_graph

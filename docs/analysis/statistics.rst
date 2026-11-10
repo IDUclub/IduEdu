@@ -40,7 +40,7 @@ Junctions drawn as several nodes inflate node and intersection counts; merge
 them with :func:`consolidate_intersections` first when that matters.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     graph_stats
@@ -71,7 +71,7 @@ reaches, or by one search per object on the reversed graph that hands its
 values to the origins around it.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     nearest_objects
@@ -94,7 +94,7 @@ largest threshold and pass the study ``area``: only the nodes inside are
 reported, and the searches still use the whole graph.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     centrality
@@ -121,7 +121,7 @@ or your own function. :func:`graph_stats` reports elevation and grade measures
 for graphs that carry them.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     add_elevation

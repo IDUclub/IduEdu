@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: IduEdu VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
-"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -22,6 +22,12 @@ msgstr "Любая функция построения по OSM может чи�
 
 msgid "Downloading from Geofabrik"
 msgstr "Загрузка из Geofabrik"
+
+msgid ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
+msgstr ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
+
+msgid "Normalize a territory boundary to a single EPSG:4326 Polygon."
+msgstr "Приводит границу территории к одному полигону Polygon в EPSG:4326."
 
 msgid ":py:obj:`use_pbf <iduedu.use_pbf>`"
 msgstr ":py:obj:`use_pbf <iduedu.use_pbf>`"

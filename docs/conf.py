@@ -32,6 +32,7 @@ extensions = [
 html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["iduedu.css"]
+html_js_files = ["lightbox.js"]
 templates_path = ["_templates"]
 # the language switch sits under the logo; the other entries are furo's defaults
 html_sidebars = {
@@ -64,7 +65,7 @@ html_theme_options = {
 html_logo = "_static/iduedulogo.svg"
 html_favicon = "_static/iduedufavicon.svg"
 
-myst_enable_extensions = ["colon_fence", "deflist", "substitution"]
+myst_enable_extensions = ["colon_fence", "deflist", "substitution", "attrs_block", "attrs_inline"]
 nb_execution_mode = "off"
 nb_execution_timeout = 600
 nb_execution_raise_on_error = False
@@ -97,7 +98,7 @@ napoleon_type_aliases = {
     "LineString": "shapely.geometry.LineString",
 }
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "figures"]
 lexers["ipython2"] = get_lexer_by_name("ipython3")
 
 latex_engine = "lualatex"

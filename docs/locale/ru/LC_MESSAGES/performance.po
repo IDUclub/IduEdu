@@ -1,0 +1,38 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Performance"
+msgstr "Производительность"
+
+msgid "This page is being rewritten for IduEdu 3.0 and will hold new measurements."
+msgstr "Эта страница переписывается для IduEdu 3.0, здесь будут новые замеры."
+
+msgid "IduEdu 3.0 replaces the Numba kernels of the 2.x series with a compiled Rust extension, ``iduedu._rust``. The extension is built once into the wheel, so a new process starts without the just-in-time compilation that Numba needed on its first call, and the ``numba`` and ``llvmlite`` dependencies (about 130 MB) are no longer installed. The changes cover the whole pipeline:"
+msgstr "IduEdu 3.0 заменяет ядра Numba из версий 2.x скомпилированным расширением на Rust, ``iduedu._rust``. Расширение собирается один раз в колесо (wheel), поэтому новый процесс запускается без JIT-компиляции, которая нужна была Numba при первом вызове, а зависимости ``numba`` и ``llvmlite`` (около 130 МБ) больше не устанавливаются. Изменения касаются всего конвейера:"
+
+#, python-brace-format
+msgid "**Routing**: Dijkstra searches on a cached compressed sparse row matrix, parallel searches over sources, shared searches for objects on the same node, point-to-point searches (bidirectional, A*, ALT; see {doc}`routing/point_to_point`)."
+msgstr "**Маршруты**: поиски Дейкстры по кэшированной матрице в сжатом строчном формате, параллельные поиски по источникам, общие поиски для объектов в одном узле, поиски между двумя точками (двунаправленный, A*, ALT; см. {doc}`routing/point_to_point`)."
+
+msgid "**Graph construction**: OpenStreetMap ``.osm.pbf`` files are read and written by the extension, with parallel block decoding; street segments are merged into junction-to-junction edges in the extension."
+msgstr "**Построение графов**: файлы OpenStreetMap ``.osm.pbf`` читаются и записываются расширением с параллельным декодированием блоков; отрезки улиц сливаются в рёбра от перекрёстка до перекрёстка в расширении."
+
+msgid "**Network analysis**: sums of node values within a travel cost, nearest objects, betweenness and the other centralities run in the extension in parallel threads."
+msgstr "**Анализ сети**: суммы значений узлов в пределах стоимости пути, ближайшие объекты, посредничество и другие центральности считаются в расширении в параллельных потоках."
+
+msgid "The measurements of IduEdu 2.x, made with the Numba kernels, are kept in the [repository history](https://github.com/IDUclub/IduEdu/blob/v2.4.2/docs/benchmarks.md)."
+msgstr "Замеры IduEdu 2.x, сделанные с ядрами Numba, сохранены в [истории репозитория](https://github.com/IDUclub/IduEdu/blob/v2.4.2/docs/benchmarks.md)."
+

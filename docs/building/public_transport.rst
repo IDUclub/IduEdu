@@ -268,7 +268,7 @@ API reference
 .. currentmodule:: iduedu
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     TransportSpec

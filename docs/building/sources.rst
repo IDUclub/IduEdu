@@ -14,9 +14,10 @@ Downloading from Geofabrik
 ==========================
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
+    get_4326_boundary
     use_pbf
     download_osm_pbf
     download_geofabrik_region
@@ -27,7 +28,7 @@ Reading and splitting files
 ===========================
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     PbfSource
@@ -40,7 +41,7 @@ Overpass tag filters
 .. currentmodule:: iduedu.osm_pbf
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     parse_way_filter

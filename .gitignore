@@ -56,3 +56,6 @@ Thumbs.db
 /rust/target/
 iduedu/_rust*.so
 iduedu/_rust*.pyd
+
+# documentation figures, published on the assets branch
+docs/figures/out/

@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: IduEdu VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
-"POT-Creation-Date: 2026-11-06 16:55+0300\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -137,14 +137,14 @@ msgstr "Автомобильный граф всегда читает ещё ``h
 msgid "Bike graphs"
 msgstr "Велосипедные графы"
 
-msgid "Use :func:`get_bike_graph` for the network a bicycle may use: streets, cycleways, paths and tracks, and footways where cycling is permitted. Every edge gets ``cycle_infra`` (``track``, ``lane`` or ``mixed``) and ``lts``, the level of traffic stress from 1 to 4 derived from the infrastructure, the speed limit and the number of lanes. ``max_lts`` keeps only the low-stress network, and ``elevation`` adds grades and makes travel times depend on them (see :doc:`analysis`)."
-msgstr "Используйте :func:`get_bike_graph` для сети, по которой может ехать велосипед: улицы, велодорожки, тропы и грунтовые дороги, а также тротуары, где езда разрешена. Каждое ребро получает ``cycle_infra`` (``track``, ``lane`` или ``mixed``) и ``lts`` — уровень транспортного стресса от 1 до 4, который выводится из инфраструктуры, ограничения скорости и числа полос. ``max_lts`` оставляет только сеть с низким стрессом, а ``elevation`` добавляет уклоны и ставит время в пути в зависимость от них (см. :doc:`analysis`)."
+msgid "Use :func:`get_bike_graph` for the network a bicycle may use: streets, cycleways, paths and tracks, and footways where cycling is permitted. Every edge gets ``cycle_infra`` (``track``, ``lane`` or ``mixed``) and ``lts``, the level of traffic stress from 1 to 4 derived from the infrastructure, the speed limit and the number of lanes. ``max_lts`` keeps only the low-stress network, and ``elevation`` adds grades and makes travel times depend on them (see :doc:`../analysis/elevation`)."
+msgstr ""
 
 msgid "OSM public-transport and intermodal graphs"
 msgstr "Графы общественного транспорта по OSM и интермодальные графы"
 
-msgid "Use :func:`get_public_transport_graph` to build bus, trolleybus, tram, subway, monorail, or share-taxi (``taxi``) graphs. Pass ``transport_types`` to restrict modes and ``transport_registry`` to customize time calculation. A requested type must exist in the registry, otherwise the builder raises ``ValueError``: trains need a registry that defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. OSM ``light_rail`` routes are fetched as ``tram`` and ``share_taxi`` routes as ``taxi``. See :doc:`transport_registry`."
-msgstr "Используйте :func:`get_public_transport_graph`, чтобы построить графы автобусов, троллейбусов, трамваев, метро, монорельса или маршрутных такси (``taxi``). Передайте ``transport_types``, чтобы ограничить виды транспорта, и ``transport_registry``, чтобы настроить расчёт времени. Запрошенный вид должен быть в реестре, иначе функция вызывает ``ValueError``: для поездов нужен реестр, в котором они определены, например ``DEFAULT_REGISTRY_W_TRAIN``. Маршруты OSM ``light_rail`` загружаются как ``tram``, а ``share_taxi`` — как ``taxi``. См. :doc:`transport_registry`."
+msgid "Use :func:`get_public_transport_graph` to build bus, trolleybus, tram, subway, monorail, or share-taxi (``taxi``) graphs. Pass ``transport_types`` to restrict modes and ``transport_registry`` to customize time calculation. A requested type must exist in the registry, otherwise the builder raises ``ValueError``: trains need a registry that defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. OSM ``light_rail`` routes are fetched as ``tram`` and ``share_taxi`` routes as ``taxi``. See :doc:`public_transport`."
+msgstr ""
 
 msgid "Use :func:`join_pt_walk_graph` when you already have public-transport and walk graphs. Use :func:`get_intermodal_graph` to build both networks and join them in one call. Public-transport platform-like nodes are projected to nearby walk edges, optionally creating link edges."
 msgstr "Используйте :func:`join_pt_walk_graph`, если графы общественного транспорта и пешеходный уже есть. Используйте :func:`get_intermodal_graph`, чтобы построить обе сети и объединить их одним вызовом. Узлы общественного транспорта, похожие на платформы, проецируются на ближайшие пешеходные рёбра, при необходимости с созданием соединительных рёбер."

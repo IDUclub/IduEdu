@@ -104,7 +104,7 @@ edge gets ``cycle_infra`` (``track``, ``lane`` or ``mixed``) and ``lts``, the
 level of traffic stress from 1 to 4 derived from the infrastructure, the speed
 limit and the number of lanes. ``max_lts`` keeps only the low-stress network,
 and ``elevation`` adds grades and makes travel times depend on them (see
-:doc:`analysis`).
+:doc:`../analysis/elevation`).
 
 OSM public-transport and intermodal graphs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,7 +115,7 @@ modes and ``transport_registry`` to customize time calculation. A requested type
 must exist in the registry, otherwise the builder raises ``ValueError``: trains
 need a registry that defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. OSM
 ``light_rail`` routes are fetched as ``tram`` and ``share_taxi`` routes as
-``taxi``. See :doc:`transport_registry`.
+``taxi``. See :doc:`public_transport`.
 
 Use :func:`join_pt_walk_graph` when you already have public-transport and walk
 graphs. Use :func:`get_intermodal_graph` to build both networks and join them in
@@ -140,7 +140,7 @@ GTFS builder, and combine the two with :func:`join_pt_walk_graph`. See
 :doc:`gtfs` for the complete workflow and modeling details.
 
 .. autosummary::
-    :toctree: generated
+    :toctree: ../api/generated
     :nosignatures:
 
     get_drive_graph
