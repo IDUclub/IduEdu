@@ -1,4 +1,5 @@
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 from shapely.geometry import LineString, Point, box
@@ -162,6 +163,8 @@ def test_project_objects_splits_nearest_edge_and_connects_object():
     assert len(new_graph.nodes_gdf) > len(graph.nodes_gdf)
     remaining = set(zip(new_graph.edges_gdf["u"], new_graph.edges_gdf["v"]))
     assert (1, 2) not in remaining  # original edge replaced by split parts
+    assert changes.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
+    assert new_graph.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
 def test_project_objects_snaps_to_existing_endpoint_without_splitting():
@@ -177,6 +180,8 @@ def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     object_node = object2node.loc[1000]
     assert object_node in new_graph.nodes_gdf.index
     assert _degree(new_graph, object_node) > 0  # the connector edge is part of the changes
+    # The endpoint id comes from the nearest-edge join; it stays an integer.
+    assert changes.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
 @pytest.mark.parametrize("add_link_edge", [True, False])

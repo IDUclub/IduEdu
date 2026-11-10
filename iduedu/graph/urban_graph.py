@@ -1,10 +1,12 @@
+import os
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Literal
+from typing import Any, Callable, Iterable, Iterator, Literal
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from scipy import sparse
+from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.adjacency import build_adjacency_matrix
 from iduedu.graph.routing_result import ShortestPathResult
@@ -978,3 +980,335 @@ class UrbanGraph:
 
         self._replace_state_from(changed_graph)
         return self, object2node_map
+
+    def graph_stats(
+        self,
+        *,
+        area: BaseGeometry | gpd.GeoSeries | gpd.GeoDataFrame | None = None,
+        zones: gpd.GeoSeries | gpd.GeoDataFrame | None = None,
+        edge_types: Iterable[str] | None = None,
+        boundary_buffer: float | None = 1.0,
+        precision: float = 0.01,
+    ) -> pd.Series | pd.DataFrame:
+        """Measures of size, density, shape and connectivity of the street network.
+
+        Functional equivalent: :func:`iduedu.graph_stats`.
+        """
+
+        from iduedu.graph.stats import graph_stats
+
+        return graph_stats(
+            self, area=area, zones=zones, edge_types=edge_types, boundary_buffer=boundary_buffer, precision=precision
+        )
+
+    def edge_stats(
+        self,
+        by: str = "type",
+        *,
+        area: BaseGeometry | gpd.GeoSeries | gpd.GeoDataFrame | None = None,
+        precision: float = 0.01,
+    ) -> pd.DataFrame:
+        """Edge counts, lengths and speeds for every value of an edge column.
+
+        Functional equivalent: :func:`iduedu.edge_stats`.
+        """
+
+        from iduedu.graph.stats import edge_stats
+
+        return edge_stats(self, by, area=area, precision=precision)
+
+    def transport_stats(
+        self,
+        *,
+        modes: Iterable[str] | None = None,
+    ) -> pd.DataFrame:
+        """Stops, routes and stop spacing of every public-transport mode.
+
+        Functional equivalent: :func:`iduedu.transport_stats`.
+        """
+
+        from iduedu.graph.stats import transport_stats
+
+        return transport_stats(self, modes=modes)
+
+    def local_stats(
+        self,
+        radius: float | Iterable[float],
+        *,
+        weight: str = "length_meter",
+        nodes: Iterable[Any] | None = None,
+        edge_types: Iterable[str] | None = None,
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Network measures around every node, within a travel cost along the network.
+
+        Functional equivalent: :func:`iduedu.local_stats`.
+        """
+
+        from iduedu.graph.stats import local_stats
+
+        return local_stats(self, radius, weight=weight, nodes=nodes, edge_types=edge_types, max_workers=max_workers)
+
+    def streets_per_node(
+        self,
+        *,
+        edge_types: Iterable[str] | None = None,
+    ) -> pd.Series:
+        """Number of streets that meet at every node.
+
+        Functional equivalent: :func:`iduedu.streets_per_node`.
+        """
+
+        from iduedu.graph.stats import streets_per_node
+
+        return streets_per_node(self, edge_types=edge_types)
+
+    def route_directness(
+        self,
+        *,
+        origins_nodes: Iterable[Any] | None = None,
+        destination_nodes: Iterable[Any] | None = None,
+        gdf_origins: pd.DataFrame | None = None,
+        gdf_destinations: pd.DataFrame | None = None,
+        graph_node_column: str = "graph_node_id",
+        sample: int = 200,
+        seed: int | None = 0,
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Ratio of network to straight distance between origins and destinations.
+
+        Functional equivalent: :func:`iduedu.route_directness`.
+        """
+
+        from iduedu.graph.stats import route_directness
+
+        return route_directness(
+            self,
+            origins_nodes=origins_nodes,
+            destination_nodes=destination_nodes,
+            gdf_origins=gdf_origins,
+            gdf_destinations=gdf_destinations,
+            graph_node_column=graph_node_column,
+            sample=sample,
+            seed=seed,
+            max_workers=max_workers,
+        )
+
+    def nearest_objects(
+        self,
+        *,
+        gdf_origins: pd.DataFrame | None = None,
+        gdf_objects: pd.DataFrame | None = None,
+        origins_nodes: Iterable[Any] | None = None,
+        object_nodes: Iterable[Any] | None = None,
+        k: int = 1,
+        cutoff: float | None = None,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        direction: Literal["from", "to"] = "from",
+        graph_node_column: str = "graph_node_id",
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Find the ``k`` nearest objects of every origin along the network.
+
+        Functional equivalent: :func:`iduedu.nearest_objects`.
+        """
+
+        from iduedu.graph.aggregations import nearest_objects
+
+        return nearest_objects(
+            self,
+            gdf_origins=gdf_origins,
+            gdf_objects=gdf_objects,
+            origins_nodes=origins_nodes,
+            object_nodes=object_nodes,
+            k=k,
+            cutoff=cutoff,
+            weight=weight,
+            direction=direction,
+            graph_node_column=graph_node_column,
+            max_workers=max_workers,
+        )
+
+    def aggregate_objects(
+        self,
+        cutoff: float | Iterable[float],
+        *,
+        gdf_origins: pd.DataFrame | None = None,
+        gdf_objects: pd.DataFrame | None = None,
+        origins_nodes: Iterable[Any] | None = None,
+        object_nodes: Iterable[Any] | None = None,
+        columns: Iterable[str] | None = None,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        decay: Literal["linear", "exp", "inverse"] | None = None,
+        beta: float | Iterable[float] | None = None,
+        direction: Literal["from", "to"] = "from",
+        graph_node_column: str = "graph_node_id",
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Count objects and sum their values within a travel cost of every origin.
+
+        Functional equivalent: :func:`iduedu.aggregate_objects`.
+        """
+
+        from iduedu.graph.aggregations import aggregate_objects
+
+        return aggregate_objects(
+            self,
+            cutoff,
+            gdf_origins=gdf_origins,
+            gdf_objects=gdf_objects,
+            origins_nodes=origins_nodes,
+            object_nodes=object_nodes,
+            columns=columns,
+            weight=weight,
+            decay=decay,
+            beta=beta,
+            direction=direction,
+            graph_node_column=graph_node_column,
+            max_workers=max_workers,
+        )
+
+    def diversity(
+        self,
+        cutoff: float | Iterable[float],
+        category: str,
+        *,
+        gdf_objects: pd.DataFrame,
+        gdf_origins: pd.DataFrame | None = None,
+        origins_nodes: Iterable[Any] | None = None,
+        values: str | None = None,
+        hill_order: float = 2.0,
+        weight: Literal["length_meter", "time_min"] = "time_min",
+        decay: Literal["linear", "exp", "inverse"] | None = None,
+        beta: float | Iterable[float] | None = None,
+        direction: Literal["from", "to"] = "from",
+        graph_node_column: str = "graph_node_id",
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Diversity of object categories within a travel cost of every origin.
+
+        Functional equivalent: :func:`iduedu.diversity`.
+        """
+
+        from iduedu.graph.aggregations import diversity
+
+        return diversity(
+            self,
+            cutoff,
+            category,
+            gdf_objects=gdf_objects,
+            gdf_origins=gdf_origins,
+            origins_nodes=origins_nodes,
+            values=values,
+            hill_order=hill_order,
+            weight=weight,
+            decay=decay,
+            beta=beta,
+            direction=direction,
+            graph_node_column=graph_node_column,
+            max_workers=max_workers,
+        )
+
+    def centrality(
+        self,
+        measures: Iterable[str] = ("reach", "harmonic", "gravity"),
+        *,
+        cutoffs: float | Iterable[float] | None = None,
+        weight: Literal["length_meter", "time_min"] = "length_meter",
+        beta: float | Iterable[float] | None = None,
+        node_weights: str | pd.Series | np.ndarray | None = None,
+        direction: Literal["from", "to"] = "from",
+        area: BaseGeometry | gpd.GeoSeries | gpd.GeoDataFrame | None = None,
+        sample: int | None = None,
+        seed: int | None = 0,
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Centralities of the nodes within travel-cost thresholds.
+
+        Functional equivalent: :func:`iduedu.centrality`.
+        """
+
+        from iduedu.graph.centrality import centrality
+
+        return centrality(
+            self,
+            measures,
+            cutoffs=cutoffs,
+            weight=weight,
+            beta=beta,
+            node_weights=node_weights,
+            direction=direction,
+            area=area,
+            sample=sample,
+            seed=seed,
+            max_workers=max_workers,
+        )
+
+    def edge_betweenness(
+        self,
+        *,
+        cutoffs: float | Iterable[float] | None = None,
+        weight: Literal["length_meter", "time_min"] = "length_meter",
+        node_weights: str | pd.Series | np.ndarray | None = None,
+        sample: int | None = None,
+        seed: int | None = 0,
+        max_workers: int | None = None,
+    ) -> pd.DataFrame:
+        """Betweenness of the edges within travel-cost thresholds.
+
+        Functional equivalent: :func:`iduedu.edge_betweenness`.
+        """
+
+        from iduedu.graph.centrality import edge_betweenness
+
+        return edge_betweenness(
+            self,
+            cutoffs=cutoffs,
+            weight=weight,
+            node_weights=node_weights,
+            sample=sample,
+            seed=seed,
+            max_workers=max_workers,
+        )
+
+    def add_elevation(
+        self,
+        elevation: str | os.PathLike | gpd.GeoDataFrame | Callable,
+        *,
+        column: str = "elevation",
+        method: Literal["linear", "nearest", "idw"] = "linear",
+        sample_distance: float = 20.0,
+        structure_columns: Iterable[str] = ("bridge", "tunnel"),
+        band: int = 1,
+    ) -> "UrbanGraph":
+        """Return a copy of the graph with node heights and edge grades.
+
+        Functional equivalent: :func:`iduedu.add_elevation`.
+        """
+
+        from iduedu.graph.elevation import add_elevation
+
+        return add_elevation(
+            self,
+            elevation,
+            column=column,
+            method=method,
+            sample_distance=sample_distance,
+            structure_columns=structure_columns,
+            band=band,
+        )
+
+    def apply_grade_speed(
+        self,
+        model: Literal["tobler", "cycling"] | Callable[[np.ndarray], np.ndarray] = "tobler",
+        *,
+        edge_types: Iterable[str] | None = None,
+    ) -> "UrbanGraph":
+        """Return a copy of the graph with travel times that depend on the grade.
+
+        Functional equivalent: :func:`iduedu.apply_grade_speed`.
+        """
+
+        from iduedu.graph.elevation import apply_grade_speed
+
+        return apply_grade_speed(self, model, edge_types=edge_types)

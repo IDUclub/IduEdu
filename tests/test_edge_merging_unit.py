@@ -61,3 +61,29 @@ def test_drive_graph_keeps_tags_of_each_way(ways):
     assert len(edges) == 5 and set(edges["name"]) == {"Main", "Side"}
     assert {"bridge", "tunnel", "highway", "oneway", "category"} <= set(edges.columns)
     assert edges["bridge"].notna().sum() == 1 and edges["tunnel"].isna().all()
+
+
+@pytest.mark.parametrize("tags", [[], ["name"]])
+def test_bridges_split_and_stay_without_requested_tags(ways, tags):
+    graph = get_walk_graph(territory=box(29.9, 58.9, 30.1, 59.1), osm_edge_tags=tags)
+    edges = graph.edges_gdf
+    assert {"bridge", "tunnel"} <= set(edges.columns)
+    assert (
+        edges["bridge"].notna().sum() == 1 and len(edges.loc[edges["bridge"].notna(), "geometry"].iloc[0].coords) == 2
+    )
+    if not tags:
+        # Only the bridge splits the street; the change of name no longer does.
+        assert len(edges) == 4 and "name" not in edges.columns
+    else:
+        assert len(edges) == 5
+
+
+def test_drive_graph_splits_on_tags_it_reads_but_does_not_keep(ways, monkeypatch):
+    rows = [
+        _way(1, [30.000, 30.001], {"highway": "residential", "maxspeed": "30"}),
+        _way(2, [30.001, 30.002], {"highway": "residential", "maxspeed": "60"}),
+        _way(3, [30.002, 30.003], {"highway": "residential", "maxspeed": "60"}),
+    ]
+    monkeypatch.setattr(drive_walk_builders, "get_network_by_filters", lambda polygon, way_filter: pd.DataFrame(rows))
+    graph = get_drive_graph(territory=box(29.9, 58.9, 30.1, 59.1), osm_edge_tags=[], keep_largest_subgraph=False)
+    assert len(graph.edges_gdf) == 2 and "maxspeed" not in graph.edges_gdf.columns

@@ -203,3 +203,36 @@ def test_stats_need_a_projected_crs():
             call(graph)
     with pytest.raises(TypeError):
         graph_stats(pd.DataFrame())
+
+
+def test_urban_graph_methods_match_the_functions():
+    graph = grid_graph()
+    pd.testing.assert_series_equal(graph.graph_stats(), graph_stats(graph))
+    pd.testing.assert_frame_equal(graph.local_stats(150), local_stats(graph, 150))
+    graph.edges_gdf["type"] = "walk"
+    pd.testing.assert_frame_equal(graph.edge_stats("type"), edge_stats(graph, "type"))
+    pd.testing.assert_series_equal(graph.streets_per_node(), streets_per_node(graph))
+    pd.testing.assert_frame_equal(
+        graph.route_directness(origins_nodes=[0], destination_nodes=[8]),
+        route_directness(graph, origins_nodes=[0], destination_nodes=[8]),
+    )
+    from iduedu import aggregate_objects, centrality, diversity, edge_betweenness, nearest_objects
+
+    objects = pd.DataFrame({"graph_node_id": [2, 4, 8], "kind": ["a", "b", "a"]})
+    pd.testing.assert_frame_equal(
+        graph.aggregate_objects(3, origins_nodes=[0, 1], gdf_objects=objects),
+        aggregate_objects(graph, 3, origins_nodes=[0, 1], gdf_objects=objects),
+    )
+    pd.testing.assert_frame_equal(
+        graph.nearest_objects(origins_nodes=[0], gdf_objects=objects, k=2),
+        nearest_objects(graph, origins_nodes=[0], gdf_objects=objects, k=2),
+    )
+    pd.testing.assert_frame_equal(
+        graph.diversity(5, "kind", gdf_objects=objects, origins_nodes=[0]),
+        diversity(graph, 5, "kind", gdf_objects=objects, origins_nodes=[0]),
+    )
+    pd.testing.assert_frame_equal(graph.centrality(cutoffs=250), centrality(graph, cutoffs=250))
+    pd.testing.assert_frame_equal(graph.edge_betweenness(), edge_betweenness(graph))
+    lifted = graph.add_elevation(lambda x, y: 0.01 * x)
+    assert "elevation" in lifted.nodes_gdf and "elevation" not in graph.nodes_gdf
+    assert lifted.apply_grade_speed().edges_gdf["time_min"].gt(0).all()

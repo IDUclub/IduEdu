@@ -15,14 +15,17 @@ from iduedu.constants.network_enums import Network
 from iduedu.graph.elevation import add_elevation, apply_grade_speed
 from iduedu.graph.transformers import estimate_crs_for_bounds, keep_largest_connected_component
 from iduedu.graph.urban_graph import UrbanGraph
-from iduedu.graph_builders.drive_walk_builders import _assign_edge_keys, _build_edges_from_overpass, _build_nodes_and_uv
+from iduedu.graph_builders.drive_walk_builders import (
+    STRUCTURE_TAGS,
+    _assign_edge_keys,
+    _build_edges_from_overpass,
+    _build_nodes_and_uv,
+)
 from iduedu.overpass.downloaders import get_4326_boundary, osm_source_label
 
 logger = config.logger
 
-#: Edge columns kept by default.
-BIKE_EDGE_TAGS = frozenset({"highway", "name", "lanes", "maxspeed", "surface", "bridge", "tunnel"})
-#: Tags read to classify the infrastructure and the direction of travel.
+#: Tags read to classify the infrastructure and the direction of travel (not kept as columns).
 _CYCLE_TAGS = ("cycleway", "cycleway:left", "cycleway:right", "cycleway:both", "bicycle", "oneway", "oneway:bicycle")
 #: Ways without motor traffic.
 CAR_FREE = frozenset({"cycleway", "path", "footway", "pedestrian", "track", "bridleway"})
@@ -155,8 +158,11 @@ def get_bike_graph(  # pylint: disable=too-many-locals
             cycling speed model of :func:`~iduedu.apply_grade_speed`.
         network_type: ``"bike"``, or ``"custom"`` together with ``custom_filter``.
         custom_filter (str | None): Custom Overpass way filter used in custom mode.
-        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. By default ``highway``, ``name``,
-            ``lanes``, ``maxspeed``, ``surface``, ``bridge`` and ``tunnel``.
+        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides
+            ``config.bike_useful_edges_attr`` (``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``).
+            ``bridge`` and ``tunnel`` are always kept. The ``cycleway*``, ``bicycle``, ``oneway`` and
+            ``oneway:bicycle`` tags are always read, and with ``simplify`` a change of any of them, or of a kept
+            tag, starts a new edge.
 
     Returns:
         UrbanGraph: Directed multigraph of the cycling network. Edges include geometry in the local CRS,
@@ -177,7 +183,7 @@ def get_bike_graph(  # pylint: disable=too-many-locals
     if network_type == "custom" and road_filter is None:
         raise ValueError("For road_type='custom' you must provide custom_filter")
 
-    needed_tags = set(BIKE_EDGE_TAGS if osm_edge_tags is None else osm_edge_tags)
+    needed_tags = set(config.bike_useful_edges_attr if osm_edge_tags is None else osm_edge_tags)
     tags_to_retrieve = needed_tags | set(_CYCLE_TAGS) | {"highway", "maxspeed", "lanes"}
     local_crs = estimate_crs_for_bounds(*polygon4326.bounds)
 
@@ -222,7 +228,8 @@ def get_bike_graph(  # pylint: disable=too-many-locals
     edges["time_min"] = (edges["length_meter"] / float(bike_speed)).round(3)
     edges["type"] = "bike"
     edges = _assign_edge_keys(edges)
-    keep = needed_tags | {"u", "v", "k", "geometry", "length_meter", "time_min", "type", "oneway", "cycle_infra", "lts"}
+    keep = needed_tags | set(STRUCTURE_TAGS) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type"}
+    keep |= {"oneway", "cycle_infra", "lts"}
     edges = edges[[column for column in edges.columns if column in keep]].copy()
 
     graph = UrbanGraph(

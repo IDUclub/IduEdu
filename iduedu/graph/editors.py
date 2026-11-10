@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from shapely.geometry import LineString, Point
 from shapely.geometry.base import BaseGeometry
@@ -434,7 +435,11 @@ def project_objects2urban_graph(
     def _new_edges_gdf() -> gpd.GeoDataFrame:
         if not new_edges_records:
             return gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=local_crs), crs=local_crs)
-        return gpd.GeoDataFrame(new_edges_records, geometry="geometry", crs=local_crs)
+        edges = gpd.GeoDataFrame(new_edges_records, geometry="geometry", crs=local_crs)
+        # Node ids taken from the nearest-edge join are floats there (the left join fills misses with NaN).
+        keys = [column for column in ("u", "v", "k") if column in edges.columns]
+        edges[keys] = edges[keys].astype(np.int64)
+        return edges
 
     def _object2node_map_from_records() -> pd.Series:
         if not object2node_records:

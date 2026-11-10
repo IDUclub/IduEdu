@@ -125,6 +125,8 @@ def test_set_tag_sets_are_frozensets():
     cfg.set_drive_useful_edges_attr(["a", "b"])
     cfg.set_walk_useful_edges_attr(("x", "y"))
     cfg.set_transport_useful_edges_attr({"m", "n"})
+    cfg.set_bike_useful_edges_attr(["c"])
+    assert cfg.bike_useful_edges_attr == frozenset({"c"}) and cfg.to_dict()["bike_useful_edges_attr"] == ["c"]
     assert isinstance(cfg.drive_useful_edges_attr, frozenset)
     assert cfg.drive_useful_edges_attr == frozenset({"a", "b"})
     assert isinstance(cfg.walk_useful_edges_attr, frozenset)

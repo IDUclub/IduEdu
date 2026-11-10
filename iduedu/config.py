@@ -69,8 +69,10 @@ class Config:
         self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}
 
         # --- Tags to keep on edges ---
-        self.drive_useful_edges_attr = frozenset({"highway", "name", "lanes", "bridge", "tunnel"})
-        self.walk_useful_edges_attr = frozenset({"highway", "name", "bridge", "tunnel"})
+        # bridge and tunnel are always kept on drive, walk and bike edges (see STRUCTURE_TAGS).
+        self.drive_useful_edges_attr = frozenset({"highway", "name", "lanes"})
+        self.walk_useful_edges_attr = frozenset({"highway", "name"})
+        self.bike_useful_edges_attr = frozenset({"highway", "name", "lanes", "maxspeed", "surface"})
         self.transport_useful_edges_attr = frozenset({"name"})
 
         # --- Logging ---
@@ -347,6 +349,10 @@ class Config:
         """Set OSM edge tags retained by walk graph builders."""
         self.walk_useful_edges_attr = frozenset(attr)
 
+    def set_bike_useful_edges_attr(self, attr: Iterable[str]):
+        """Set OSM edge tags retained by bike graph builders."""
+        self.bike_useful_edges_attr = frozenset(attr)
+
     def set_transport_useful_edges_attr(self, attr: Iterable[str]):
         """Set OSM edge tags retained by public-transport graph builders."""
         self.transport_useful_edges_attr = frozenset(attr)
@@ -387,6 +393,7 @@ class Config:
             "enable_tqdm_bar": self.enable_tqdm_bar,
             "drive_useful_edges_attr": sorted(self.drive_useful_edges_attr),
             "walk_useful_edges_attr": sorted(self.walk_useful_edges_attr),
+            "bike_useful_edges_attr": sorted(self.bike_useful_edges_attr),
             "transport_useful_edges_attr": sorted(self.transport_useful_edges_attr),
             "overpass_min_interval": self.overpass_min_interval,
             "overpass_max_retries": self.overpass_max_retries,

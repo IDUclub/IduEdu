@@ -97,8 +97,8 @@ def _get_highway_properties(highway) -> tuple[str, float]:
     return lowest_reg, min_speed
 
 
-#: Tags that always separate edges, whether or not they are kept as columns: a bridge or a tunnel does not
-#: follow the ground, so it must not be merged with the road it continues.
+#: Tags that always separate edges and are always kept as edge columns: a bridge or a tunnel does not
+#: follow the ground, so it must not be merged with the road it continues, and elevation needs to know it.
 STRUCTURE_TAGS = ("bridge", "tunnel")
 
 
@@ -117,13 +117,13 @@ def _build_edges_from_overpass(
     Parameters:
         polygon (Polygon): Boundary polygon in EPSG:4326 used to query OSM data.
         way_filter (str): Overpass filter applied to ways (e.g., ``[ "highway" ~ "motorway|trunk|primary|..." ]``).
-        needed_tags (set[str]): OSM tags to put on the edges.
+        needed_tags (set[str]): OSM tags to put on the edges, besides the bridge and tunnel tags.
         local_crs (CRS): Projected CRS of the result.
         simplify (bool): Merge segments into junction-to-junction edges.
 
     Returns:
         GeoDataFrame: Line features in the local CRS with ``geometry``, ``way_idx`` (row of the source way)
-        and one column per tag in ``needed_tags``.
+        and one column per tag in ``needed_tags`` and in ``STRUCTURE_TAGS``.
     """
     data = get_network_by_filters(polygon, way_filter)
     if len(data) == 0:
@@ -196,7 +196,7 @@ def _build_edges_from_overpass(
     edges = gpd.GeoDataFrame(
         {"way_idx": way_indices[way_of_segment[order[offsets[:-1]]]]}, geometry=geoms, crs=local_crs
     )
-    return edges.join(tags_df[sorted(needed_tags)], on="way_idx")
+    return edges.join(tags_df[tag_keys], on="way_idx")
 
 
 def get_drive_graph(
@@ -234,8 +234,10 @@ def get_drive_graph(
         network_type: Preset of Overpass filters to select drivable ways.
             Use "custom" together with ``custom_filter`` to pass your own Overpass ``way`` filter.
         custom_filter (str | None): Custom Overpass way filter used in custom mode.
-        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides defaults from config.
-            The tags oneway, maxspeed, and highway are always added.
+        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides
+            ``config.drive_useful_edges_attr`` (``highway``, ``name``, ``lanes``). ``bridge`` and ``tunnel`` are
+            always kept. ``oneway``, ``maxspeed`` and ``highway`` are always read, and with ``simplify`` a change of
+            any of them, or of a kept tag, starts a new edge.
 
     Returns:
         UrbanGraph: Directed multigraph of the road network. Edges include
@@ -322,7 +324,11 @@ def get_drive_graph(
 
     edges_gdf = _assign_edge_keys(edges_gdf)
 
-    edge_attr_cols = set(needed_tags) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type", "oneway"}
+    edge_attr_cols = (
+        set(needed_tags)
+        | set(STRUCTURE_TAGS)
+        | {"u", "v", "k", "geometry", "length_meter", "time_min", "type", "oneway"}
+    )
     if add_road_category:
         edge_attr_cols.add("category")
     edges_gdf = edges_gdf[[col for col in edges_gdf.columns if col in edge_attr_cols]].copy()
@@ -375,8 +381,9 @@ def get_walk_graph(
         network_type: Preset of Overpass filters. Use custom mode with custom_filter
             to pass your own way filter.
         custom_filter (str | None): Custom Overpass filter string used in custom mode.
-        osm_edge_tags (list[str] | None): List of OSM edge tags to retain (overrides defaults). Only these keys
-            are joined from element tags.
+        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides
+            ``config.walk_useful_edges_attr`` (``highway``, ``name``). ``bridge`` and ``tunnel`` are always kept.
+            With ``simplify`` a change of any kept tag starts a new edge.
 
     Returns:
         UrbanGraph: Undirected multigraph of the walking network. Edges include
@@ -434,7 +441,9 @@ def get_walk_graph(
 
     edges_gdf = _assign_edge_keys(edges_gdf)
 
-    edge_attrs = set(needed_tags) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type"}
+    edge_attrs = (
+        set(needed_tags) | set(STRUCTURE_TAGS) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type"}
+    )
     edges_gdf = edges_gdf[[col for col in edges_gdf.columns if col in edge_attrs]].copy()
 
     graph = UrbanGraph(
