@@ -154,3 +154,6 @@ def write_pbf(
     sorted: bool = True,
     writing_program: str | None = None,
 ) -> None: ...
+def merge_chains(
+    starts: npt.NDArray[np.uint32], ends: npt.NDArray[np.uint32], keys: npt.NDArray[np.uint32], n_nodes: int
+) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.int64]]: ...

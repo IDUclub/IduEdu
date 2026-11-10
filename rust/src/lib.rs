@@ -5,6 +5,7 @@
 //! worker per CPU).
 
 pub mod analysis;
+pub mod chains;
 pub mod components;
 pub mod csr;
 pub mod dijkstra;
@@ -1066,6 +1067,31 @@ fn write_pbf(
         .map_err(read_error)
 }
 
+/// Merge street segments into chains: segment ``i`` runs from node ``starts[i]`` to ``ends[i]`` and two
+/// segments are joined at a node only when they are alone there, follow one another and have equal
+/// ``keys``. Returns the segment order and ``n_chains + 1`` offsets into it.
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+fn merge_chains<'py>(
+    py: Python<'py>,
+    starts: PyReadonlyArray1<'py, u32>,
+    ends: PyReadonlyArray1<'py, u32>,
+    keys: PyReadonlyArray1<'py, u32>,
+    n_nodes: usize,
+) -> PyResult<(Bound<'py, PyArray1<u32>>, Bound<'py, PyArray1<i64>>)> {
+    let (s, e, k) = (starts.as_slice()?, ends.as_slice()?, keys.as_slice()?);
+    if e.len() != s.len() || k.len() != s.len() {
+        return Err(PyValueError::new_err(
+            "starts, ends and keys must have the same length",
+        ));
+    }
+    if s.iter().chain(e).any(|&v| v as usize >= n_nodes) {
+        return Err(PyValueError::new_err("segment node out of range"));
+    }
+    let (order, offsets) = py.detach(|| chains::merge(s, e, k, n_nodes));
+    Ok((order.into_pyarray(py), offsets.into_pyarray(py)))
+}
+
 #[pymodule(name = "_rust")]
 fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CsrGraph>()?;
@@ -1075,6 +1101,7 @@ fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(strongly_connected_components, m)?)?;
     m.add_class::<PbfFile>()?;
     m.add_function(wrap_pyfunction!(write_pbf, m)?)?;
+    m.add_function(wrap_pyfunction!(merge_chains, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

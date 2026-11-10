@@ -69,8 +69,8 @@ class Config:
         self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}
 
         # --- Tags to keep on edges ---
-        self.drive_useful_edges_attr = frozenset({"highway", "name", "lanes"})
-        self.walk_useful_edges_attr = frozenset({"highway", "name"})
+        self.drive_useful_edges_attr = frozenset({"highway", "name", "lanes", "bridge", "tunnel"})
+        self.walk_useful_edges_attr = frozenset({"highway", "name", "bridge", "tunnel"})
         self.transport_useful_edges_attr = frozenset({"name"})
 
         # --- Logging ---

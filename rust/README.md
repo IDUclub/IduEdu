@@ -13,6 +13,8 @@ building IduEdu from source builds it.
 - `src/components.rs`: connected and strongly connected components.
 - `src/analysis.rs`: cut-off searches that sum node values around every source (with distance decay), spread values
   from their own nodes, find the nearest objects, and Brandes betweenness for nodes and arcs in several cost bands.
+- `src/chains.rs`: merging street segments into junction-to-junction edges; segments are joined only when they
+  follow one another and carry equal tags, so bridges and tunnels stay separate.
 - `src/pbf.rs`: reading OSM `.pbf` files (`osmpbf` crate): ways by Overpass tag filter with their node locations,
   nodes and relations by id, tag or member, the header. Blocks are decoded in parallel; the first pass records a
   block index (offsets and id ranges) so later queries read only the blocks they need. Backs `PbfSource`.
