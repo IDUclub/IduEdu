@@ -92,7 +92,9 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
 11. [x] **Elevation** (`iduedu/graph/elevation.py`, extra `elevation` = rasterio): `add_elevation` from a raster,
     points, contours or a function; `grade`, `grade_max`, `ascent`, `descent`; bridges and tunnels interpolated
     between their ends; `apply_grade_speed` (Tobler, cycling, custom); relief measures in `graph_stats`.
-    Walk graph of St Petersburg from a 30 m raster: 3.4 s. Not yet checked on a real DEM.
+    Walk graph of St Petersburg from a 30 m raster: 3.1 s. Checked on Copernicus GLO-30: the method works
+    (structures get straight profiles), but GLO-30 is a surface model and measures roofs in built-up areas
+    (historic centre: ground 2–5 m, raster median 13.7 m), so street grades need a terrain model (DTM).
 12. [x] **`get_bike_graph`** (`iduedu/graph_builders/bike_builders.py`): `cycle_infra`, `lts` 1–4 (simplified
     Mekuria, Furth and Nixon 2012), bicycle one-way rules, `max_lts`, `elevation`. St Petersburg: 10.8 s,
     360k nodes, 20.3k km.

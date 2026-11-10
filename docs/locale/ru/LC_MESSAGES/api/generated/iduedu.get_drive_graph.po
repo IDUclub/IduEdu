@@ -50,8 +50,8 @@ msgstr "Готовый набор фильтров Overpass для отбора 
 msgid "Custom Overpass way filter used in custom mode."
 msgstr "Собственный фильтр линий Overpass для режима custom."
 
-msgid "Which OSM tags to retain on edges. Overrides defaults from config. The tags oneway, maxspeed, and highway are always added."
-msgstr "Какие теги OSM сохранять на рёбрах. Заменяет значения по умолчанию из config. Теги oneway, maxspeed и highway добавляются всегда."
+msgid "Which OSM tags to retain on edges. Overrides ``config.drive_useful_edges_attr`` (``highway``, ``name``, ``lanes``). ``bridge`` and ``tunnel`` are always kept. ``oneway``, ``maxspeed`` and ``highway`` are always read, and with ``simplify`` a change of any of them, or of a kept tag, starts a new edge."
+msgstr "Какие теги OSM сохранять на рёбрах. Заменяет ``config.drive_useful_edges_attr`` (``highway``, ``name``, ``lanes``). ``bridge`` и ``tunnel`` сохраняются всегда. ``oneway``, ``maxspeed`` и ``highway`` читаются всегда, и при ``simplify`` смена любого из них или сохраняемого тега начинает новое ребро."
 
 msgid "Returns"
 msgstr "Результат"

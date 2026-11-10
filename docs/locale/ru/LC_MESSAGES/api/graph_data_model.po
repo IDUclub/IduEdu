@@ -614,3 +614,84 @@ msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\
 msgid "Pair ``(graph, object2node_map)``. ``object2node_map`` is indexed by the original object index and contains graph node ids."
 msgstr "Пара ``(graph, object2node_map)``. ``object2node_map`` проиндексирована исходным индексом объектов и содержит идентификаторы узлов графа."
 
+msgid "Measures of size, density, shape and connectivity of the street network."
+msgstr "Показатели размера, плотности, формы и связности уличной сети."
+
+msgid "Functional equivalent: :func:`iduedu.graph_stats`."
+msgstr "Функциональный аналог: :func:`iduedu.graph_stats`."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Edge counts, lengths and speeds for every value of an edge column."
+msgstr "Количества рёбер, длины и скорости для каждого значения столбца рёбер."
+
+msgid "Functional equivalent: :func:`iduedu.edge_stats`."
+msgstr "Функциональный аналог: :func:`iduedu.edge_stats`."
+
+msgid "Stops, routes and stop spacing of every public-transport mode."
+msgstr "Остановки, маршруты и расстояние между остановками для каждого вида общественного транспорта."
+
+msgid "Functional equivalent: :func:`iduedu.transport_stats`."
+msgstr "Функциональный аналог: :func:`iduedu.transport_stats`."
+
+msgid "Network measures around every node, within a travel cost along the network."
+msgstr "Показатели сети вокруг каждого узла в пределах затрат на путь по сети."
+
+msgid "Functional equivalent: :func:`iduedu.local_stats`."
+msgstr "Функциональный аналог: :func:`iduedu.local_stats`."
+
+msgid "Number of streets that meet at every node."
+msgstr "Число улиц, сходящихся в каждом узле."
+
+msgid "Functional equivalent: :func:`iduedu.streets_per_node`."
+msgstr "Функциональный аналог: :func:`iduedu.streets_per_node`."
+
+msgid "Ratio of network to straight distance between origins and destinations."
+msgstr "Отношение расстояния по сети к расстоянию по прямой между исходными точками и точками назначения."
+
+msgid "Functional equivalent: :func:`iduedu.route_directness`."
+msgstr "Функциональный аналог: :func:`iduedu.route_directness`."
+
+msgid "Find the ``k`` nearest objects of every origin along the network."
+msgstr "Находит ``k`` ближайших по сети объектов для каждой исходной точки."
+
+msgid "Functional equivalent: :func:`iduedu.nearest_objects`."
+msgstr "Функциональный аналог: :func:`iduedu.nearest_objects`."
+
+msgid "Count objects and sum their values within a travel cost of every origin."
+msgstr "Считает объекты и суммирует их значения в пределах затрат на путь от каждой исходной точки."
+
+msgid "Functional equivalent: :func:`iduedu.aggregate_objects`."
+msgstr "Функциональный аналог: :func:`iduedu.aggregate_objects`."
+
+msgid "Diversity of object categories within a travel cost of every origin."
+msgstr "Разнообразие категорий объектов в пределах затрат на путь от каждой исходной точки."
+
+msgid "Functional equivalent: :func:`iduedu.diversity`."
+msgstr "Функциональный аналог: :func:`iduedu.diversity`."
+
+msgid "Centralities of the nodes within travel-cost thresholds."
+msgstr "Центральности узлов в пределах порогов затрат на путь."
+
+msgid "Functional equivalent: :func:`iduedu.centrality`."
+msgstr "Функциональный аналог: :func:`iduedu.centrality`."
+
+msgid "Betweenness of the edges within travel-cost thresholds."
+msgstr "Промежуточность рёбер в пределах порогов затрат на путь."
+
+msgid "Functional equivalent: :func:`iduedu.edge_betweenness`."
+msgstr "Функциональный аналог: :func:`iduedu.edge_betweenness`."
+
+msgid "Return a copy of the graph with node heights and edge grades."
+msgstr "Возвращает копию графа с высотами узлов и уклонами рёбер."
+
+msgid "Functional equivalent: :func:`iduedu.add_elevation`."
+msgstr "Функциональный аналог: :func:`iduedu.add_elevation`."
+
+msgid "Return a copy of the graph with travel times that depend on the grade."
+msgstr "Возвращает копию графа со временем в пути, зависящим от уклона."
+
+msgid "Functional equivalent: :func:`iduedu.apply_grade_speed`."
+msgstr "Функциональный аналог: :func:`iduedu.apply_grade_speed`."
+

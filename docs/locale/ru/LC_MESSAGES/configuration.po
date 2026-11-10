@@ -435,6 +435,9 @@ msgstr "Задаёт теги OSM, сохраняемые на рёбрах ав
 msgid "Set OSM edge tags retained by walk graph builders."
 msgstr "Задаёт теги OSM, сохраняемые на рёбрах пешеходных графов."
 
+msgid "Set OSM edge tags retained by bike graph builders."
+msgstr "Задаёт теги OSM, сохраняемые на рёбрах велосипедных графов."
+
 msgid "Set OSM edge tags retained by public-transport graph builders."
 msgstr "Задаёт теги OSM, сохраняемые на рёбрах графов общественного транспорта."
 

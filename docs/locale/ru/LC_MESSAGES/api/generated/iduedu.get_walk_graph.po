@@ -50,8 +50,8 @@ msgstr "Готовый набор фильтров Overpass. Используй�
 msgid "Custom Overpass filter string used in custom mode."
 msgstr "Собственная строка фильтра Overpass для режима custom."
 
-msgid "List of OSM edge tags to retain (overrides defaults). Only these keys are joined from element tags."
-msgstr "Список сохраняемых тегов OSM на рёбрах (заменяет значения по умолчанию). Из тегов элементов берутся только эти ключи."
+msgid "Which OSM tags to retain on edges. Overrides ``config.walk_useful_edges_attr`` (``highway``, ``name``). ``bridge`` and ``tunnel`` are always kept. With ``simplify`` a change of any kept tag starts a new edge."
+msgstr "Какие теги OSM сохранять на рёбрах. Заменяет ``config.walk_useful_edges_attr`` (``highway``, ``name``). ``bridge`` и ``tunnel`` сохраняются всегда. При ``simplify`` смена любого сохраняемого тега начинает новое ребро."
 
 msgid "Returns"
 msgstr "Результат"

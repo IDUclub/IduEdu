@@ -62,8 +62,8 @@ msgstr "``\"bike\"`` или ``\"custom\"`` вместе с ``custom_filter``."
 msgid "Custom Overpass way filter used in custom mode."
 msgstr "Пользовательский фильтр линий Overpass для режима custom."
 
-msgid "Which OSM tags to retain on edges. By default ``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``, ``bridge`` and ``tunnel``."
-msgstr "Какие теги OSM сохранять на рёбрах. По умолчанию ``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``, ``bridge`` и ``tunnel``."
+msgid "Which OSM tags to retain on edges. Overrides ``config.bike_useful_edges_attr`` (``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``). ``bridge`` and ``tunnel`` are always kept. The ``cycleway*``, ``bicycle``, ``oneway`` and ``oneway:bicycle`` tags are always read, and with ``simplify`` a change of any of them, or of a kept tag, starts a new edge."
+msgstr "Какие теги OSM сохранять на рёбрах. Заменяет ``config.bike_useful_edges_attr`` (``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``). ``bridge`` и ``tunnel`` сохраняются всегда. Теги ``cycleway*``, ``bicycle``, ``oneway`` и ``oneway:bicycle`` читаются всегда, и при ``simplify`` смена любого из них или сохраняемого тега начинает новое ребро."
 
 msgid "Returns"
 msgstr "Результат"
