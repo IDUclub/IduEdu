@@ -4,6 +4,7 @@
 //! kernel releases the GIL; parallel kernels run on a rayon pool of `n_threads` workers (`None`: one
 //! worker per CPU).
 
+pub mod analysis;
 pub mod components;
 pub mod csr;
 pub mod dijkstra;
@@ -11,10 +12,11 @@ pub mod pbf;
 pub mod pbf_write;
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use numpy::ndarray::Array2;
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyReadonlyArray1};
+use numpy::ndarray::{Array2, Array3};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -95,6 +97,53 @@ fn csr_py(py: Python<'_>, (indptr, indices, data): (Vec<i32>, Vec<i32>, Vec<f32>
     )
 }
 
+/// Nearest objects of every source: flat nodes and costs, and offsets.
+type NearestPy<'py> = (
+    Bound<'py, PyArray1<i32>>,
+    Bound<'py, PyArray1<f32>>,
+    Bound<'py, PyArray1<i64>>,
+);
+
+/// Betweenness sums of nodes and, when asked for, of arcs.
+type BetweennessPy<'py> = (Bound<'py, PyArray2<f64>>, Option<Bound<'py, PyArray2<f64>>>);
+
+fn check_cutoffs(cutoffs: &[f32]) -> PyResult<()> {
+    if cutoffs.is_empty()
+        || cutoffs.iter().any(|c| c.is_nan() || *c < 0.0)
+        || cutoffs.windows(2).any(|w| w[1] < w[0])
+    {
+        return Err(PyValueError::new_err(
+            "cutoffs must be a non-empty ascending array of non-negative values",
+        ));
+    }
+    Ok(())
+}
+
+fn bands_of<'a>(
+    cutoffs: &'a [f32],
+    betas: &'a [f32],
+    decay: &str,
+) -> PyResult<analysis::Bands<'a>> {
+    check_cutoffs(cutoffs)?;
+    if betas.len() != cutoffs.len() || betas.iter().any(|b| !b.is_finite() || *b < 0.0) {
+        return Err(PyValueError::new_err(
+            "betas must hold one finite non-negative value per cutoff",
+        ));
+    }
+    Ok(analysis::Bands {
+        cutoffs,
+        betas,
+        decay: analysis::Decay::parse(decay).map_err(PyValueError::new_err)?,
+    })
+}
+
+fn add_into(mut a: Vec<f64>, b: Vec<f64>) -> Vec<f64> {
+    for (x, y) in a.iter_mut().zip(b) {
+        *x += y;
+    }
+    a
+}
+
 /// A weighted graph owned by Rust: the CSR arrays (validated once) and a pool of search buffers, so
 /// repeated searches neither re-check the graph nor allocate arrays of the graph size.
 #[pyclass(frozen, module = "iduedu._rust")]
@@ -122,6 +171,36 @@ impl CsrGraph {
             self.scratch.lock().unwrap().push(sc);
         }
         out
+    }
+
+    /// Run `step` for every index in `0..n` on the workers of the current pool. Each worker sums into
+    /// its own accumulator from `init`; the accumulators are merged at the end (`None` for `n == 0`).
+    fn fold_sources<A: Send>(
+        &self,
+        n: usize,
+        init: impl Fn() -> A + Sync,
+        step: impl Fn(&mut A, usize, &mut Scratch) + Sync,
+        merge: impl Fn(A, A) -> A + Sync + Send,
+    ) -> Option<A> {
+        let next = AtomicUsize::new(0);
+        let workers = rayon::current_num_threads().min(n);
+        (0..workers)
+            .into_par_iter()
+            .map(|_| {
+                let mut acc = init();
+                self.with_scratch(|sc| {
+                    let sc = sc.get_or_insert_with(|| Scratch::new(self.view().n()));
+                    loop {
+                        let i = next.fetch_add(1, Ordering::Relaxed);
+                        if i >= n {
+                            break;
+                        }
+                        step(&mut acc, i, sc);
+                    }
+                });
+                acc
+            })
+            .reduce_with(merge)
     }
 }
 
@@ -280,6 +359,263 @@ impl CsrGraph {
         let arr = Array2::from_shape_vec((s.len(), m), out)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(arr.into_pyarray(py))
+    }
+
+    /// Sums of node values around every source: ``out[i, band, col]`` adds ``weight(d) * value`` over the
+    /// nodes within ``cutoffs[band]`` of ``sources[i]``. Values are sparse rows per node
+    /// (``val_indptr``, ``val_cols``, ``val_data``); ``decay`` is ``"flat"``, ``"linear"``, ``"exp"``
+    /// (with ``betas`` per band) or ``"inverse"``. One search per source, in parallel.
+    #[pyo3(signature = (sources, val_indptr, val_cols, val_data, n_cols, cutoffs, decay, betas, skip_source, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn aggregate<'py>(
+        &self,
+        py: Python<'py>,
+        sources: PyReadonlyArray1<'py, i32>,
+        val_indptr: PyReadonlyArray1<'py, i64>,
+        val_cols: PyReadonlyArray1<'py, i32>,
+        val_data: PyReadonlyArray1<'py, f32>,
+        n_cols: usize,
+        cutoffs: PyReadonlyArray1<'py, f32>,
+        decay: &str,
+        betas: PyReadonlyArray1<'py, f32>,
+        skip_source: bool,
+        n_threads: Option<usize>,
+    ) -> PyResult<Bound<'py, PyArray3<f64>>> {
+        let g = self.view();
+        let s = sources.as_slice()?;
+        check_nodes(s, g.n(), "sources")?;
+        let values = analysis::Values {
+            indptr: val_indptr.as_slice()?,
+            cols: val_cols.as_slice()?,
+            data: val_data.as_slice()?,
+        };
+        values
+            .validate(g.n(), n_cols)
+            .map_err(PyValueError::new_err)?;
+        let (cutoffs, betas) = (cutoffs.as_slice()?, betas.as_slice()?);
+        let bands = bands_of(cutoffs, betas, decay)?;
+        let width = cutoffs.len() * n_cols;
+        let mut out = vec![0.0f64; s.len() * width];
+        if width > 0 {
+            py.detach(|| {
+                in_pool(n_threads, || {
+                    out.par_chunks_mut(width)
+                        .zip(s.par_iter())
+                        .for_each(|(row, &src)| {
+                            self.with_scratch(|sc| {
+                                let sc = sc.get_or_insert_with(|| Scratch::new(g.n()));
+                                analysis::gather(
+                                    g,
+                                    sc,
+                                    src,
+                                    values,
+                                    n_cols,
+                                    bands,
+                                    skip_source,
+                                    row,
+                                )
+                            })
+                        })
+                })
+            })?;
+        }
+        let arr = Array3::from_shape_vec((s.len(), cutoffs.len(), n_cols), out)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(arr.into_pyarray(py))
+    }
+
+    /// The same sums as :meth:`aggregate`, computed from the side of the values: source ``i`` carries the
+    /// sparse row ``i`` of values and spreads it to the nodes around it that have a slot
+    /// (``slots[node] >= 0``). Returns ``(n_slots, bands, n_cols)``.
+    #[pyo3(signature = (sources, val_indptr, val_cols, val_data, n_cols, slots, n_slots, cutoffs, decay, betas, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn aggregate_scatter<'py>(
+        &self,
+        py: Python<'py>,
+        sources: PyReadonlyArray1<'py, i32>,
+        val_indptr: PyReadonlyArray1<'py, i64>,
+        val_cols: PyReadonlyArray1<'py, i32>,
+        val_data: PyReadonlyArray1<'py, f32>,
+        n_cols: usize,
+        slots: PyReadonlyArray1<'py, i32>,
+        n_slots: usize,
+        cutoffs: PyReadonlyArray1<'py, f32>,
+        decay: &str,
+        betas: PyReadonlyArray1<'py, f32>,
+        n_threads: Option<usize>,
+    ) -> PyResult<Bound<'py, PyArray3<f64>>> {
+        let g = self.view();
+        let s = sources.as_slice()?;
+        check_nodes(s, g.n(), "sources")?;
+        let values = analysis::Values {
+            indptr: val_indptr.as_slice()?,
+            cols: val_cols.as_slice()?,
+            data: val_data.as_slice()?,
+        };
+        values
+            .validate(s.len(), n_cols)
+            .map_err(PyValueError::new_err)?;
+        let slots = slots.as_slice()?;
+        if slots.len() != g.n() || slots.iter().any(|&x| x >= n_slots as i32) {
+            return Err(PyValueError::new_err(
+                "slots must give a slot below n_slots or -1 for every node",
+            ));
+        }
+        let (cutoffs, betas) = (cutoffs.as_slice()?, betas.as_slice()?);
+        let bands = bands_of(cutoffs, betas, decay)?;
+        let size = n_slots * cutoffs.len() * n_cols;
+        let out = py.detach(|| {
+            in_pool(n_threads, || {
+                self.fold_sources(
+                    s.len(),
+                    || vec![0.0f64; size],
+                    |acc, i, sc| {
+                        let (a, b) = (values.indptr[i] as usize, values.indptr[i + 1] as usize);
+                        analysis::scatter(
+                            g,
+                            sc,
+                            s[i],
+                            &values.cols[a..b],
+                            &values.data[a..b],
+                            n_cols,
+                            slots,
+                            bands,
+                            acc,
+                        )
+                    },
+                    add_into,
+                )
+                .unwrap_or_else(|| vec![0.0f64; size])
+            })
+        })?;
+        let arr = Array3::from_shape_vec((n_slots, cutoffs.len(), n_cols), out)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(arr.into_pyarray(py))
+    }
+
+    /// For every source the nearest nodes that hold objects (``counts[node] > 0``), nearest first, until
+    /// ``k`` objects are found or ``cutoff`` is passed: flat node and cost arrays and
+    /// ``len(sources) + 1`` offsets.
+    #[pyo3(signature = (sources, counts, k, cutoff, n_threads=None))]
+    fn nearest<'py>(
+        &self,
+        py: Python<'py>,
+        sources: PyReadonlyArray1<'py, i32>,
+        counts: PyReadonlyArray1<'py, i32>,
+        k: i64,
+        cutoff: f32,
+        n_threads: Option<usize>,
+    ) -> PyResult<NearestPy<'py>> {
+        let g = self.view();
+        let s = sources.as_slice()?;
+        check_nodes(s, g.n(), "sources")?;
+        let counts = counts.as_slice()?;
+        if counts.len() != g.n() {
+            return Err(PyValueError::new_err("counts must have one entry per node"));
+        }
+        let found: Vec<(Vec<i32>, Vec<f32>)> = py.detach(|| {
+            in_pool(n_threads, || {
+                s.par_iter()
+                    .map(|&src| {
+                        self.with_scratch(|sc| {
+                            let sc = sc.get_or_insert_with(|| Scratch::new(g.n()));
+                            let (mut nodes, mut costs) = (Vec::new(), Vec::new());
+                            analysis::nearest(
+                                g, sc, src, counts, k, cutoff, &mut nodes, &mut costs,
+                            );
+                            (nodes, costs)
+                        })
+                    })
+                    .collect()
+            })
+        })?;
+        let mut offsets = Vec::with_capacity(s.len() + 1);
+        offsets.push(0i64);
+        let (mut nodes, mut costs) = (Vec::new(), Vec::new());
+        for (n, c) in found {
+            nodes.extend(n);
+            costs.extend(c);
+            offsets.push(nodes.len() as i64);
+        }
+        Ok((
+            nodes.into_pyarray(py),
+            costs.into_pyarray(py),
+            offsets.into_pyarray(py),
+        ))
+    }
+
+    /// Betweenness sums over the shortest paths that start at ``sources``, once per cutoff band:
+    /// ``(n_nodes, bands)`` for nodes and, with ``edges``, ``(n_arcs, bands)`` for the arcs of this graph
+    /// in CSR order. Paths between ``s`` and ``t`` weigh ``weights[s] * weights[t]``.
+    #[pyo3(signature = (sources, cutoffs, weights=None, edges=false, n_threads=None))]
+    fn betweenness<'py>(
+        &self,
+        py: Python<'py>,
+        sources: PyReadonlyArray1<'py, i32>,
+        cutoffs: PyReadonlyArray1<'py, f32>,
+        weights: Option<PyReadonlyArray1<'py, f32>>,
+        edges: bool,
+        n_threads: Option<usize>,
+    ) -> PyResult<BetweennessPy<'py>> {
+        let g = self.view();
+        let s = sources.as_slice()?;
+        check_nodes(s, g.n(), "sources")?;
+        let cutoffs = cutoffs.as_slice()?;
+        check_cutoffs(cutoffs)?;
+        let weights = match &weights {
+            Some(w) => {
+                let w = w.as_slice()?;
+                if w.len() != g.n() || w.iter().any(|x| !x.is_finite() || *x < 0.0) {
+                    return Err(PyValueError::new_err(
+                        "weights must hold one finite non-negative value per node",
+                    ));
+                }
+                Some(w)
+            }
+            None => None,
+        };
+        let (n, m, bands) = (g.n(), g.indices.len(), cutoffs.len());
+        let arcs = if edges { m * bands } else { 0 };
+        let (nodes_out, arcs_out) = py.detach(|| {
+            in_pool(n_threads, || {
+                let rev = analysis::ReverseArcs::new(g);
+                self.fold_sources(
+                    s.len(),
+                    || {
+                        (
+                            vec![0.0f64; n * bands],
+                            vec![0.0f64; arcs],
+                            analysis::Brandes::new(n),
+                        )
+                    },
+                    |acc, i, sc| {
+                        let edge_acc = if edges { Some(&mut acc.1[..]) } else { None };
+                        analysis::betweenness(
+                            g, &rev, sc, &mut acc.2, s[i], cutoffs, weights, &mut acc.0, edge_acc,
+                        )
+                    },
+                    |mut a, b| {
+                        a.0 = add_into(std::mem::take(&mut a.0), b.0);
+                        a.1 = add_into(std::mem::take(&mut a.1), b.1);
+                        a
+                    },
+                )
+                .map(|acc| (acc.0, acc.1))
+                .unwrap_or_else(|| (vec![0.0f64; n * bands], vec![0.0f64; arcs]))
+            })
+        })?;
+        let nodes_arr = Array2::from_shape_vec((n, bands), nodes_out)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        let arcs_arr = if edges {
+            Some(
+                Array2::from_shape_vec((m, bands), arcs_out)
+                    .map_err(|e| PyValueError::new_err(e.to_string()))?
+                    .into_pyarray(py),
+            )
+        } else {
+            None
+        };
+        Ok((nodes_arr.into_pyarray(py), arcs_arr))
     }
 }
 

@@ -129,6 +129,9 @@ iduedu/
     nx_utils.py      — legacy NetworkX helpers (optional dep, soft-imported)
     validation.py    — node/edge schema validation, CRS sync
     graph_inputs.py  — nearest_nodes(), resolve_graph_nodes_input() helpers
+    segments.py      — unique_segments(): every physical segment of the geometry once
+    within.py        — sums of node values within a travel cost (shared by stats, aggregations, centralities)
+    stats.py         — graph_stats(), edge_stats(), transport_stats(), local_stats(), route_directness()
     io.py            — .urbangraph archive read/write
   _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/
@@ -158,6 +161,7 @@ rust/                — Rust core, compiled into iduedu._rust (see rust/README.
   src/csr.rs         — CSR view and validation, edge list → CSR (parallel arcs merged by min/max), transpose
   src/dijkstra.rs    — Dijkstra (multi-source, cutoff, early exit, predecessors, nearest source), route rebuild
   src/components.rs  — connected and strongly connected components
+  src/analysis.rs    — sums of node values within a travel cost (gather/scatter, decay), nearest objects, betweenness
   src/pbf.rs         — .pbf reading (osmpbf, parallel, block index): ways by tag filter, nodes, relations, header
   src/pbf_write.rs   — .pbf writing: per-territory extracts (osm_pbf/extract.py) and files from element lists
   src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, PbfFile, write_pbf
@@ -226,6 +230,6 @@ English; the update step keeps them so. Translations on MyST pages (`.md`, inclu
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
 - Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
-  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`) and `osm_pbf/` (`reader.py`, `extract.py`), never directly
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`, `within.py`, `centrality.py`) and `osm_pbf/` (`reader.py`, `extract.py`), never directly
   from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
   run parallel work on rayon; `max_workers` maps to the number of rayon threads

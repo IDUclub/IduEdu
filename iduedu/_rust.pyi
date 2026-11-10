@@ -45,6 +45,49 @@ class CsrGraph:
         cutoff: float,
         n_threads: int | None = None,
     ) -> npt.NDArray[np.float32]: ...
+    def aggregate(
+        self,
+        sources: npt.NDArray[np.int32],
+        val_indptr: npt.NDArray[np.int64],
+        val_cols: npt.NDArray[np.int32],
+        val_data: npt.NDArray[np.float32],
+        n_cols: int,
+        cutoffs: npt.NDArray[np.float32],
+        decay: str,
+        betas: npt.NDArray[np.float32],
+        skip_source: bool,
+        n_threads: int | None = None,
+    ) -> npt.NDArray[np.float64]: ...
+    def aggregate_scatter(
+        self,
+        sources: npt.NDArray[np.int32],
+        val_indptr: npt.NDArray[np.int64],
+        val_cols: npt.NDArray[np.int32],
+        val_data: npt.NDArray[np.float32],
+        n_cols: int,
+        slots: npt.NDArray[np.int32],
+        n_slots: int,
+        cutoffs: npt.NDArray[np.float32],
+        decay: str,
+        betas: npt.NDArray[np.float32],
+        n_threads: int | None = None,
+    ) -> npt.NDArray[np.float64]: ...
+    def nearest(
+        self,
+        sources: npt.NDArray[np.int32],
+        counts: npt.NDArray[np.int32],
+        k: int,
+        cutoff: float,
+        n_threads: int | None = None,
+    ) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.float32], npt.NDArray[np.int64]]: ...
+    def betweenness(
+        self,
+        sources: npt.NDArray[np.int32],
+        cutoffs: npt.NDArray[np.float32],
+        weights: npt.NDArray[np.float32] | None = None,
+        edges: bool = False,
+        n_threads: int | None = None,
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64] | None]: ...
 
 def reconstruct_paths(
     nodes: npt.NDArray[np.int32], parents: npt.NDArray[np.int32], targets: npt.NDArray[np.int32], reverse: bool

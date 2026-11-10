@@ -7,6 +7,31 @@ import shapely
 from iduedu.graph.urban_graph import UrbanGraph
 
 
+def segment_arrays(edges: gpd.GeoDataFrame, precision: float):
+    """Unique straight segments of the edge geometries as arrays.
+
+    Returns ``(start, end, owner, counts)``: end point coordinates of each unique segment, the position in
+    ``edges`` of the first edge that contains it, and how many edge pieces share it. Segments keep the edge
+    order of the graph; zero-length segments are left out.
+    """
+    coords, owner = shapely.get_coordinates(edges.geometry.values, return_index=True)
+    same_edge = owner[1:] == owner[:-1]
+    start, end, owner = coords[:-1][same_edge], coords[1:][same_edge], owner[:-1][same_edge]
+
+    # Grid integers make equal points compare equal; each segment is stored from its lower end point.
+    a = np.round(start / precision).astype(np.int64)
+    b = np.round(end / precision).astype(np.int64)
+    swap = (b[:, 0] < a[:, 0]) | ((b[:, 0] == a[:, 0]) & (b[:, 1] < a[:, 1]))
+    keys = np.where(swap[:, None], np.hstack([b, a]), np.hstack([a, b]))
+    nonzero = np.any(keys[:, :2] != keys[:, 2:], axis=1)
+    keys, start, end, owner = keys[nonzero], start[nonzero], end[nonzero], owner[nonzero]
+
+    _, first, counts = np.unique(keys, axis=0, return_index=True, return_counts=True)
+    order = np.argsort(first)  # keep the edge order of the graph
+    first, counts = first[order], counts[order]
+    return start[first], end[first], owner[first], counts
+
+
 def unique_segments(urban_graph: UrbanGraph, *, precision: float = 0.01) -> gpd.GeoDataFrame:
     """Return the straight segments the edge geometries are made of, each physical segment once.
 
@@ -38,26 +63,12 @@ def unique_segments(urban_graph: UrbanGraph, *, precision: float = 0.01) -> gpd.
     if edges.empty:
         return gpd.GeoDataFrame(columns=columns, geometry="geometry", crs=crs)
 
-    coords, owner = shapely.get_coordinates(edges.geometry.values, return_index=True)
-    same_edge = owner[1:] == owner[:-1]
-    start, end, owner = coords[:-1][same_edge], coords[1:][same_edge], owner[:-1][same_edge]
-
-    # Grid integers make equal points compare equal; each segment is stored from its lower end point.
-    a = np.round(start / precision).astype(np.int64)
-    b = np.round(end / precision).astype(np.int64)
-    swap = (b[:, 0] < a[:, 0]) | ((b[:, 0] == a[:, 0]) & (b[:, 1] < a[:, 1]))
-    keys = np.where(swap[:, None], np.hstack([b, a]), np.hstack([a, b]))
-    nonzero = np.any(keys[:, :2] != keys[:, 2:], axis=1)
-    keys, start, end, owner = keys[nonzero], start[nonzero], end[nonzero], owner[nonzero]
-
-    _, first, counts = np.unique(keys, axis=0, return_index=True, return_counts=True)
-    order = np.argsort(first)  # keep the edge order of the graph
-    first, counts = first[order], counts[order]
-    geometry = shapely.linestrings(np.stack([start[first], end[first]], axis=1))
+    start, end, owner, counts = segment_arrays(edges, precision)
+    geometry = shapely.linestrings(np.stack([start, end], axis=1))
     return gpd.GeoDataFrame(
         {
             "length": shapely.length(geometry),
-            "edge": edges.index.to_numpy()[owner[first]],
+            "edge": edges.index.to_numpy()[owner],
             "edge_count": counts,
         },
         geometry=geometry,

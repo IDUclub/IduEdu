@@ -203,6 +203,75 @@ impl Scratch {
         }
     }
 
+    /// Single-source search to the inclusive `cutoff` that hands every settled node and its cost to
+    /// `visit`, in order of cost, and stops when `visit` returns `false`. Leaves the buffers clean.
+    pub fn walk(
+        &mut self,
+        g: Csr,
+        source: i32,
+        cutoff: f32,
+        mut visit: impl FnMut(usize, f32) -> bool,
+    ) {
+        let mut heap = std::mem::take(&mut self.heap_single);
+        heap.clear();
+        let s = source as usize;
+        self.seen[s] = 0.0;
+        self.touched.push(s as u32);
+        heap.push(Reverse(<u64 as Key>::make(0.0, source, source)));
+        while let Some(Reverse(key)) = heap.pop() {
+            let u = key.node() as usize;
+            if self.settled[u] {
+                continue;
+            }
+            self.settled[u] = true;
+            let distance = self.seen[u];
+            if !visit(u, distance) {
+                break;
+            }
+            let (cols, weights) = g.row(u);
+            for (&v, &w) in cols.iter().zip(weights) {
+                let v = v as usize;
+                if self.settled[v] {
+                    continue;
+                }
+                let cand = distance + w;
+                if !cand.is_finite() || cand > cutoff {
+                    continue;
+                }
+                let sv = self.seen[v];
+                if sv == UNREACHED || cand < sv {
+                    if sv == UNREACHED {
+                        self.touched.push(v as u32);
+                    }
+                    self.seen[v] = cand;
+                    heap.push(Reverse(<u64 as Key>::make(cand, source, v as i32)));
+                }
+            }
+        }
+        self.heap_single = heap;
+        self.reset(&[]);
+    }
+
+    /// Single-source search to `cutoff` whose state stays in the buffers: [`Scratch::settled_order`]
+    /// and [`Scratch::cost`] read it, [`Scratch::clear`] must follow.
+    pub(crate) fn run_single(&mut self, g: Csr, source: i32, cutoff: f32) {
+        self.run(g, &[source], &[], cutoff, false);
+    }
+
+    /// Nodes settled by the last search, in order of cost.
+    pub(crate) fn settled_order(&self) -> &[u32] {
+        &self.settled_list
+    }
+
+    /// Cost of a node settled by the last search.
+    pub(crate) fn cost(&self, node: usize) -> f32 {
+        self.seen[node]
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.reset(&[]);
+    }
+
     /// Compact arrays of the last search.
     fn compact(&self, targets: &[i32], store_pred: bool) -> Compact {
         let keep_all = store_pred || targets.is_empty();
