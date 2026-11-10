@@ -1,0 +1,94 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.centrality"
+msgstr "iduedu.centrality"
+
+msgid "Centralities of the nodes of a graph within travel-cost thresholds."
+msgstr "Центральности узлов графа в пределах порогов затрат на путь."
+
+msgid "Measures, for a node ``i``, the other nodes ``j`` within the threshold at cost ``d`` and their weights ``w`` (1 without ``node_weights``):"
+msgstr "Показатели для узла ``i``, других узлов ``j`` в пределах порога с затратами ``d`` и их весов ``w`` (1 без ``node_weights``):"
+
+msgid "``reach``: ``Σ w``, how much is within the threshold;"
+msgstr "``reach``: ``Σ w``, сколько всего находится в пределах порога;"
+
+msgid "``harmonic``: ``Σ w / d``, closeness that favours near nodes (nodes at cost 0 are left out);"
+msgstr "``harmonic``: ``Σ w / d``, близость, в которой ближние узлы весят больше (узлы с нулевыми затратами не учитываются);"
+
+msgid "``gravity``: ``Σ w · exp(-beta · d)``, the same with an exponential decay;"
+msgstr "``gravity``: ``Σ w · exp(-beta · d)``, то же с экспоненциальным затуханием;"
+
+msgid "``betweenness``: how many shortest paths no longer than the threshold pass through the node, each weighted by ``w`` of both of its ends. A path shared by several equally short routes is split between them, end points are not counted, and on undirected graphs every pair of nodes counts once."
+msgstr "``betweenness``: сколько кратчайших путей не длиннее порога проходит через узел, каждый с весом ``w`` обоих своих концов. Путь, у которого есть несколько одинаково коротких вариантов, делится между ними, конечные точки не учитываются, а на неориентированных графах каждая пара узлов считается один раз."
+
+msgid "Reach, harmonic and gravity come from one cut-off search per reported node. Betweenness needs a search from every node of the graph, which takes much longer; ``sample`` estimates it from a random part of them."
+msgstr "Охват, гармоническая близость и гравитация считаются одним обходом с порогом на каждый узел из результата. Для промежуточности нужен обход от каждого узла графа, что занимает намного больше времени; ``sample`` оценивает её по случайной части узлов."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph to measure."
+msgstr "Граф для измерения."
+
+msgid "Any of ``\"reach\"``, ``\"harmonic\"``, ``\"gravity\"``, ``\"betweenness\"``."
+msgstr "Любые из ``\"reach\"``, ``\"harmonic\"``, ``\"gravity\"``, ``\"betweenness\"``."
+
+msgid "Threshold or thresholds in the units of ``weight``; ``None`` for no limit."
+msgstr "Порог или пороги в единицах ``weight``; ``None`` — без ограничения."
+
+msgid "Edge cost column: ``length_meter`` (metres, the default) or ``time_min`` (minutes)."
+msgstr "Столбец стоимости ребра: ``length_meter`` (метры, по умолчанию) или ``time_min`` (минуты)."
+
+msgid "Decay rate of ``gravity``, one value or one per threshold. By default ``4 / threshold``, which leaves a weight of 0.018 at the threshold; required when there is no threshold."
+msgstr "Скорость затухания для ``gravity``: одно значение или по одному на порог. По умолчанию ``4 / порог``, что оставляет на пороге вес 0,018; обязательна, если порога нет."
+
+msgid "Weights of the nodes: a column of ``nodes_gdf``, a Series indexed by node id or an array in node order. Missing values count as 0."
+msgstr "Веса узлов: столбец ``nodes_gdf``, Series с индексом по идентификаторам узлов или массив в порядке узлов. Пропущенные значения считаются равными 0."
+
+msgid "On directed graphs, ``\"from\"`` measures the way from the node to the others, ``\"to\"`` towards the node. Betweenness does not depend on it."
+msgstr "На ориентированных графах ``\"from\"`` измеряет путь от узла к остальным, ``\"to\"`` — к узлу. Промежуточность от этого не зависит."
+
+msgid "Report only the nodes inside (a shapely geometry in the graph CRS, or a GeoSeries / GeoDataFrame). The searches still use the whole graph."
+msgstr "Вернуть только узлы внутри области (геометрия shapely в системе координат графа либо GeoSeries / GeoDataFrame). Обходы по-прежнему используют весь граф."
+
+msgid "For betweenness, the number of randomly chosen source nodes; the result is scaled up to all nodes. ``None`` uses every node."
+msgstr "Для промежуточности — число случайно выбранных узлов-источников; результат масштабируется на все узлы. ``None`` использует все узлы."
+
+msgid "Seed of the sample."
+msgstr "Начальное значение генератора для выборки."
+
+msgid "Number of threads; ``None`` uses all cores."
+msgstr "Число потоков; ``None`` использует все ядра."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame indexed by node id with one column per measure and threshold, named ``<measure>_<cutoff>`` (``reach_400``, ``betweenness_inf``)."
+msgstr "DataFrame с индексом по идентификаторам узлов и одним столбцом на каждый показатель и порог с именем ``<measure>_<cutoff>`` (``reach_400``, ``betweenness_inf``)."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If a measure is unknown, or ``cutoffs``, ``beta`` or ``node_weights`` are invalid."
+msgstr "Если показатель неизвестен либо ``cutoffs``, ``beta`` или ``node_weights`` недопустимы."
+

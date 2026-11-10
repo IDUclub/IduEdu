@@ -32,8 +32,8 @@ msgstr "Идентификатор отношения или области OSM 
 msgid "Boundary geometry (EPSG:4326) or a GeoDataFrame to define the area when ``osm_id`` is not given."
 msgstr "Геометрия границы (EPSG:4326) или GeoDataFrame, задающие область, если ``osm_id`` не задан."
 
-msgid "If True, merges contiguous segments (via internal line merging) and transfers attributes back to merged lines using nearest midpoints; if False, keeps raw per-segment edges."
-msgstr "Если True, смежные отрезки объединяются (внутренним слиянием линий), а атрибуты переносятся на объединённые линии по ближайшим серединам; если False, сохраняются исходные рёбра по отрезкам."
+msgid "If True, merges the segments of the ways into edges that run from junction to junction. Segments are merged only when they carry the same tags, so an edge keeps the attributes of its ways, and bridges and tunnels stay separate edges. If False, keeps raw per-segment edges."
+msgstr "Если True, отрезки линий OSM объединяются в рёбра от перекрёстка до перекрёстка. Отрезки объединяются, только когда у них одинаковые теги, поэтому ребро сохраняет атрибуты своих линий, а мосты и тоннели остаются отдельными рёбрами. Если False, сохраняются исходные рёбра по отрезкам."
 
 msgid "If True, clips edges by the provided boundary before graph construction."
 msgstr "Если True, рёбра обрезаются по переданной границе до построения графа."

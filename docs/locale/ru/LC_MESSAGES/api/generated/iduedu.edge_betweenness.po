@@ -1,0 +1,61 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.edge\\_betweenness"
+msgstr "iduedu.edge\\_betweenness"
+
+msgid "Betweenness of the edges of a graph: how many shortest paths within a threshold run along each edge."
+msgstr "Промежуточность рёбер графа: сколько кратчайших путей в пределах порога проходит по каждому ребру."
+
+msgid "Paths are counted as in :func:`centrality`. An edge that can be travelled both ways carries the paths of both directions. Among parallel edges only the cheapest one carries paths; equally cheap ones share them."
+msgstr "Пути считаются так же, как в :func:`centrality`. Ребро, по которому можно ехать в обе стороны, несёт пути обоих направлений. Среди параллельных рёбер пути несёт только самое дешёвое; одинаково дешёвые делят их между собой."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph to measure."
+msgstr "Граф для измерения."
+
+msgid "Threshold or thresholds in the units of ``weight``; ``None`` for no limit."
+msgstr "Порог или пороги в единицах ``weight``; ``None`` — без ограничения."
+
+msgid "Edge cost column: ``length_meter`` (metres, the default) or ``time_min`` (minutes)."
+msgstr "Столбец стоимости ребра: ``length_meter`` (метры, по умолчанию) или ``time_min`` (минуты)."
+
+msgid "Weights of the path ends, see :func:`centrality`."
+msgstr "Веса концов путей, см. :func:`centrality`."
+
+msgid "Number of randomly chosen source nodes; the result is scaled up to all nodes."
+msgstr "Число случайно выбранных узлов-источников; результат масштабируется на все узлы."
+
+msgid "Seed of the sample."
+msgstr "Начальное значение генератора для выборки."
+
+msgid "Number of threads; ``None`` uses all cores."
+msgstr "Число потоков; ``None`` использует все ядра."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame indexed like ``edges_gdf`` with one column ``betweenness_<cutoff>`` per threshold."
+msgstr "DataFrame с тем же индексом, что у ``edges_gdf``, и одним столбцом ``betweenness_<cutoff>`` на каждый порог."
+

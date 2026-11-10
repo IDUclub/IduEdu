@@ -1,0 +1,61 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.apply\\_grade\\_speed"
+msgstr "iduedu.apply\\_grade\\_speed"
+
+msgid "Rescale the travel times of a graph with elevation by a speed model that depends on the grade."
+msgstr "Пересчитывает время в пути графа с высотами по модели скорости, зависящей от уклона."
+
+msgid "The time of an edge is divided by the relative speed the model gives for its grade. An edge that goes up and down is taken as a climb of ``ascent`` followed by a drop of ``descent``, both at the mean absolute grade ``(ascent + descent) / length``. A row that serves both directions (an edge of an undirected graph, or a two-way edge of a directed one) gets the mean of the two directions."
+msgstr "Время ребра делится на относительную скорость, которую модель даёт для его уклона. Ребро, которое идёт и вверх, и вниз, рассматривается как подъём на ``ascent`` и следующий за ним спуск на ``descent``, оба со средним по модулю уклоном ``(ascent + descent) / length``. Строка, которая обслуживает оба направления (ребро неориентированного графа или двустороннее ребро ориентированного), получает среднее по двум направлениям."
+
+msgid "The times before the change are kept in ``time_min_flat``, and a repeated call starts from them."
+msgstr "Время до изменения сохраняется в ``time_min_flat``, и повторный вызов отталкивается от него."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph with ``ascent`` and ``descent`` on its edges (see :func:`add_elevation`)."
+msgstr "Граф, у рёбер которого есть ``ascent`` и ``descent`` (см. :func:`add_elevation`)."
+
+msgid "``\"tobler\"`` (:func:`tobler`, walking), ``\"cycling\"`` (:func:`cycling`) or a function that maps an array of signed grades to speeds relative to flat ground."
+msgstr "``\"tobler\"`` (:func:`tobler`, пешком), ``\"cycling\"`` (:func:`cycling`) или функция, которая переводит массив уклонов со знаком в скорости относительно ровной местности."
+
+msgid "Change only edges whose ``type`` is one of these, for example ``[\"walk\"]`` in an intermodal graph."
+msgstr "Менять только рёбра, у которых ``type`` входит в этот список, например ``[\"walk\"]`` в интермодальном графе."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "A new ``UrbanGraph`` with changed ``time_min``."
+msgstr "Новый ``UrbanGraph`` с изменённым ``time_min``."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If the edges have no ``ascent`` and ``descent``."
+msgstr "Если у рёбер нет ``ascent`` и ``descent``."
+
+msgid "If the model is unknown or returns speeds that are not positive."
+msgstr "Если модель неизвестна или возвращает неположительные скорости."
+

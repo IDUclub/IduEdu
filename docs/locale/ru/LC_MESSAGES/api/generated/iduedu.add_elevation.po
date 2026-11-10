@@ -1,0 +1,82 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.add\\_elevation"
+msgstr "iduedu.add\\_elevation"
+
+msgid "Add node heights and edge grades to a graph."
+msgstr "Добавляет в граф высоты узлов и уклоны рёбер."
+
+msgid "Nodes get ``elevation`` (metres). Every edge is sampled along its geometry at steps of at most ``sample_distance`` and gets, in the direction from ``u`` to ``v``:"
+msgstr "Узлы получают ``elevation`` (метры). Каждое ребро замеряется вдоль геометрии с шагом не больше ``sample_distance`` и получает в направлении от ``u`` к ``v``:"
+
+msgid "``grade``: rise over length between its ends, positive uphill;"
+msgstr "``grade``: подъём, делённый на длину между концами, положителен в гору;"
+
+msgid "``grade_max``: the steepest absolute grade between two neighbouring samples;"
+msgstr "``grade_max``: наибольший по модулю уклон между двумя соседними точками замера;"
+
+msgid "``ascent`` and ``descent``: metres climbed and descended along the edge, both non-negative."
+msgstr "``ascent`` и ``descent``: набор и потеря высоты вдоль ребра в метрах, оба неотрицательны."
+
+msgid "Edges on a bridge or in a tunnel (a ``structure_columns`` tag other than ``no``) get a straight profile between their ends, and the nodes inside such structures get heights interpolated between the ends of the structure instead of the ground below or above them."
+msgstr "Рёбра на мосту или в тоннеле (тег из ``structure_columns`` со значением, отличным от ``no``) получают прямой профиль между концами, а узлы внутри таких сооружений — высоты, интерполированные между концами сооружения, а не высоту земли под ними или над ними."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph in a projected (metric) CRS."
+msgstr "Граф в проецированной (метрической) системе координат."
+
+msgid "Source of heights: a raster file (read with rasterio, bilinear interpolation, any CRS), a GeoDataFrame of points or contour lines with heights in ``column``, or a function ``f(x, y) -> z`` of coordinate arrays in the graph CRS."
+msgstr "Источник высот: растровый файл (читается через rasterio, билинейная интерполяция, любая система координат), GeoDataFrame с точками или горизонталями и высотами в ``column`` либо функция ``f(x, y) -> z`` от массивов координат в системе координат графа."
+
+msgid "Height column of an elevation GeoDataFrame."
+msgstr "Столбец высот в GeoDataFrame с высотами."
+
+msgid "Interpolation between the heights of a GeoDataFrame: ``\"linear\"`` on a triangulation (the nearest height outside the data), ``\"nearest\"`` or ``\"idw\"`` (inverse squared distance to the eight nearest points)."
+msgstr "Интерполяция между высотами из GeoDataFrame: ``\"linear\"`` по триангуляции (вне данных — ближайшая высота), ``\"nearest\"`` или ``\"idw\"`` (обратный квадрат расстояния до восьми ближайших точек)."
+
+msgid "Largest step, in metres, between samples along an edge, and between points taken from contour lines."
+msgstr "Наибольший шаг в метрах между точками замера вдоль ребра и между точками, взятыми с горизонталей."
+
+msgid "Edge columns that mark bridges and tunnels."
+msgstr "Столбцы рёбер, которые отмечают мосты и тоннели."
+
+msgid "Band of a raster file."
+msgstr "Канал растрового файла."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "A new ``UrbanGraph`` with the added columns. Nodes without data have ``NaN`` and so do the edges that touch them."
+msgstr "Новый ``UrbanGraph`` с добавленными столбцами. У узлов без данных стоит ``NaN``, как и у рёбер, которые их касаются."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``elevation`` is a raster path and rasterio is not installed."
+msgstr "Если ``elevation`` — путь к растру, а rasterio не установлен."
+
+msgid "If the graph CRS is missing or geographic, or the source does not cover the graph."
+msgstr "Если у графа нет системы координат или она географическая либо источник не покрывает граф."
+

@@ -38,6 +38,9 @@ msgstr "Общественный транспорт из GTFS"
 msgid "Graph utilities"
 msgstr "Утилиты для графов"
 
+msgid "Network analysis"
+msgstr "Анализ сети"
+
 msgid "Matrices"
 msgstr "Матрицы"
 

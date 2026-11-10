@@ -1,0 +1,58 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.edge\\_stats"
+msgstr "iduedu.edge\\_stats"
+
+msgid "Edge counts, lengths and speeds for every value of an edge column."
+msgstr "Количества рёбер, длины и скорости для каждого значения столбца рёбер."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph in a projected (metric) CRS."
+msgstr "Граф в проецированной (метрической) системе координат."
+
+msgid "Edge column to group by, for example ``\"type\"``, ``\"category\"`` or ``\"highway\"``. Edges without a value form the group ``\"<missing>\"``."
+msgstr "Столбец рёбер для группировки, например ``\"type\"``, ``\"category\"`` или ``\"highway\"``. Рёбра без значения образуют группу ``\"<missing>\"``."
+
+msgid "Measure only edges and segments whose midpoint lies inside (see :func:`graph_stats`)."
+msgstr "Измерять только рёбра и отрезки, середина которых лежит внутри области (см. :func:`graph_stats`)."
+
+msgid "Grid for comparing segment end points, see :func:`~iduedu.unique_segments`."
+msgstr "Шаг сетки для сравнения концов отрезков, см. :func:`~iduedu.unique_segments`."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame indexed by the values of ``by``, sorted by length, with columns ``edge_count``, ``length_km`` (every physical segment once, counted for the group of the first edge that has it), ``length_share``, ``edge_length_mean`` (metres) and ``speed_kmh`` (total length over total travel time, when edges have ``length_meter`` and ``time_min``)."
+msgstr "DataFrame с индексом по значениям ``by``, отсортированный по длине, со столбцами ``edge_count``, ``length_km`` (каждый физический отрезок один раз, в группе первого ребра, которому он принадлежит), ``length_share``, ``edge_length_mean`` (метры) и ``speed_kmh`` (общая длина, делённая на общее время в пути, если у рёбер есть ``length_meter`` и ``time_min``)."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``edges_gdf`` has no column ``by``."
+msgstr "Если в ``edges_gdf`` нет столбца ``by``."
+
+msgid "If the CRS is geographic."
+msgstr "Если система координат географическая."
+

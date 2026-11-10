@@ -64,8 +64,12 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
      and Leningrad oblast 86.5 → 17.2 s with identical elements (1.6M nodes, 425k ways, 1854 relations);
      `routes_by_poly` on St Petersburg 6.7 → 1.8 s, identical output. Only `.osm.pbf` is read now (`.osm`/`.opl`:
      convert with `osmium cat`); the `pbf` extra stays empty until 3.1, `location_storage` is deprecated.
-   - [ ] Not done: the rest of the walk build (~23 s: `line_merge` over all segments, `MultiLineString`, midpoint
-     `sjoin_nearest` to carry attributes) is a topological rewrite that changes results; decide separately.
+   - [x] Edge merging rewritten (`rust/src/chains.rs`): segments are joined into junction-to-junction edges only
+     where they are alone at a point, follow one another and carry equal tags, instead of `line_merge` over
+     everything and a nearest-midpoint join that lost the tags of all but one way. Bridges and tunnels always
+     stay separate edges and are kept as columns. St Petersburg: `get_walk_graph` 28.5 → 8.2 s, `get_drive_graph`
+     5.5 → 3.5 s; length, intersections and dead ends unchanged, +37k (walk) and +7.6k (drive) two-street nodes
+     where tags change.
 
 ## Stage 2. New functionality (new kernels in Rust from the start)
 
@@ -73,20 +77,25 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
    coordinate pairs with sorted endpoints, so partly shared there-and-back geometries count once);
    `consolidate_intersections` (KD-tree single-linkage clusters, split by connectivity inside each cluster, only edge
    end points moved, mapping old → new nodes).
-8. [ ] **`stats`**: global, per zone (GeoDataFrame of polygons) and local (within a network radius) metrics; grouping by
-   `type` / `category`; boundary dead ends excluded. Size and length (by unique segments), streets per node and its
-   distribution, intersection count and density, dead-end share, street density, mean segment length, edge circuity,
-   β / γ / cyclomatic number / meshedness, orientation entropy, self-loops and multi-edges, components; drive: one-way
-   share, length by category, length-weighted speed; PT: stops and routes by mode, stop spacing; intermodal:
-   connectors and unattached platforms. Route directness on an OD matrix.
-9. [ ] **Aggregations**: k nearest objects; sum / mean / count within a cutoff with optional decay; diversity of
-   categories (count, Shannon, Hill); `direction="from" | "to"` via the transposed matrix.
-10. [ ] **Centralities**: reach, harmonic closeness, gravity, betweenness (Brandes) for nodes and edges; several
-    thresholds in one call; buffer against edge effects.
-11. [ ] **Elevation** from a raster or a GeoDataFrame (points / contours): node heights, signed edge grade, maximum
-    grade along the geometry, bridges and tunnels interpolated between the ends, ascent / descent, Tobler walking
-    speed, relief metrics in `stats`.
-12. [ ] **`get_bike_graph`**: cycle infrastructure from OSM tags, level of traffic stress (LTS), optional grade penalties.
+8. [x] **`stats`** (`iduedu/graph/stats.py`): `graph_stats` for the whole graph, an `area` or `zones` (node degrees
+   from the whole graph, boundary dead ends excluded), `edge_stats` by any edge column, `transport_stats` per mode,
+   `local_stats` within a network radius, `streets_per_node`, `route_directness`. St Petersburg walk graph
+   (480k nodes): whole graph 2.0 s, 400 zones 3.8 s, local stats of every node within 500 m 1.7 s.
+9. [x] **Aggregations** (`iduedu/graph/aggregations.py`, kernels in `rust/src/analysis.rs`): `nearest_objects`,
+   `aggregate_objects` (count / sum / mean, several cutoffs, linear / exp / inverse decay), `diversity` (richness,
+   Shannon, Hill). Sums run from the smaller side: per origin, or per object on the reversed graph.
+   50k origins × 2k objects on the 533k-node intermodal graph: 0.2 s.
+10. [x] **Centralities** (`iduedu/graph/centrality.py`): `centrality` (reach, harmonic, gravity in one search per node;
+    Brandes betweenness, one backward sweep per threshold; node weights; `sample`; `area` against edge effects) and
+    `edge_betweenness`. Equal to networkx. Drive graph (24.6k nodes) full betweenness 4.3 s; walk graph (480k)
+    reach + harmonic + gravity at 400 / 800 m 4.2 s, betweenness at 400 / 800 m 5.4 s.
+11. [x] **Elevation** (`iduedu/graph/elevation.py`, extra `elevation` = rasterio): `add_elevation` from a raster,
+    points, contours or a function; `grade`, `grade_max`, `ascent`, `descent`; bridges and tunnels interpolated
+    between their ends; `apply_grade_speed` (Tobler, cycling, custom); relief measures in `graph_stats`.
+    Walk graph of St Petersburg from a 30 m raster: 3.4 s. Not yet checked on a real DEM.
+12. [x] **`get_bike_graph`** (`iduedu/graph_builders/bike_builders.py`): `cycle_infra`, `lts` 1–4 (simplified
+    Mekuria, Furth and Nixon 2012), bicycle one-way rules, `max_lts`, `elevation`. St Petersburg: 10.8 s,
+    360k nodes, 20.3k km.
 13. [ ] **Bidirectional Dijkstra** for point-to-point queries.
 
 ## Stage 3. Release and after

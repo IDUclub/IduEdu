@@ -29,8 +29,10 @@ Use :func:`get_drive_graph` for car-accessible street networks and
 :func:`get_walk_graph` for pedestrian networks. Both functions support:
 
 ``simplify``
-    Merge raw OSM way segments into longer graph edges. Use ``False`` when the
-    full per-segment topology is required.
+    Merge raw OSM way segments into edges that run from junction to junction.
+    Segments are merged only when they carry the same tags, so an edge keeps
+    the attributes of its ways, and bridges and tunnels stay separate edges.
+    Use ``False`` when the full per-segment topology is required.
 
 ``clip_by_territory``
     Clip edge geometries to the exact territory boundary before graph assembly.
@@ -41,6 +43,17 @@ Use :func:`get_drive_graph` for car-accessible street networks and
 
 The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and
 ``simplify=False`` side by side and highlights edges affected by clipping.
+
+Bike graphs
+~~~~~~~~~~~
+
+Use :func:`get_bike_graph` for the network a bicycle may use: streets,
+cycleways, paths and tracks, and footways where cycling is permitted. Every
+edge gets ``cycle_infra`` (``track``, ``lane`` or ``mixed``) and ``lts``, the
+level of traffic stress from 1 to 4 derived from the infrastructure, the speed
+limit and the number of lanes. ``max_lts`` keeps only the low-stress network,
+and ``elevation`` adds grades and makes travel times depend on them (see
+:doc:`analysis`).
 
 OSM public-transport and intermodal graphs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,6 +94,7 @@ GTFS builder, and combine the two with :func:`join_pt_walk_graph`. See
 
     get_drive_graph
     get_walk_graph
+    get_bike_graph
     get_public_transport_graph
     get_gtfs_public_transport_graph
     get_intermodal_graph

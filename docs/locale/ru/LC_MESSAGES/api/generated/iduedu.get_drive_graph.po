@@ -32,8 +32,8 @@ msgstr "Идентификатор отношения или области OSM 
 msgid "Boundary geometry in EPSG:4326 or GeoDataFrame. Used when ``osm_id`` is not given."
 msgstr "Геометрия границы в EPSG:4326 или GeoDataFrame. Используется, если ``osm_id`` не задан."
 
-msgid "If True, merges contiguous collinear segments and transfers attributes back to merged lines using nearest midpoints. If False, keeps raw per-segment edges."
-msgstr "Если True, смежные коллинеарные отрезки объединяются, а атрибуты переносятся на объединённые линии по ближайшим серединам. Если False, сохраняются исходные рёбра по отрезкам."
+msgid "If True, merges the segments of the ways into edges that run from junction to junction. Segments are merged only when they carry the same tags, so an edge keeps the attributes of its ways, and bridges and tunnels stay separate edges. If False, keeps raw per-segment edges."
+msgstr "Если True, отрезки линий OSM объединяются в рёбра от перекрёстка до перекрёстка. Отрезки объединяются, только когда у них одинаковые теги, поэтому ребро сохраняет атрибуты своих линий, а мосты и тоннели остаются отдельными рёбрами. Если False, сохраняются исходные рёбра по отрезкам."
 
 msgid "If True, adds a derived ``category`` (e.g., local/regional/federal) and a default speed (``maxspeed_mpm``) inferred from the OSM ``highway`` class."
 msgstr "Если True, добавляются производная категория ``category`` (например, местная, региональная, федеральная) и скорость по умолчанию (``maxspeed_mpm``), выводимая из класса OSM ``highway``."

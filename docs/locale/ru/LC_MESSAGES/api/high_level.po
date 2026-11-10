@@ -47,8 +47,8 @@ msgstr "Используйте :func:`get_drive_graph` для улично-до�
 msgid "``simplify``"
 msgstr "``simplify``"
 
-msgid "Merge raw OSM way segments into longer graph edges. Use ``False`` when the full per-segment topology is required."
-msgstr "Объединять исходные отрезки улиц OSM в более длинные рёбра графа. Используйте ``False``, когда нужна полная топология по отрезкам."
+msgid "Merge raw OSM way segments into edges that run from junction to junction. Segments are merged only when they carry the same tags, so an edge keeps the attributes of its ways, and bridges and tunnels stay separate edges. Use ``False`` when the full per-segment topology is required."
+msgstr "Объединяет исходные отрезки линий OSM в рёбра от перекрёстка до перекрёстка. Отрезки объединяются, только когда у них одинаковые теги, поэтому ребро сохраняет атрибуты своих линий, а мосты и тоннели остаются отдельными рёбрами. Укажите ``False``, если нужна полная топология по отрезкам."
 
 msgid "``clip_by_territory``"
 msgstr "``clip_by_territory``"
@@ -64,6 +64,12 @@ msgstr "Удалять несвязные фрагменты. Для ориен�
 
 msgid "The :doc:`../examples/get_any_graph` notebook shows ``simplify=True`` and ``simplify=False`` side by side and highlights edges affected by clipping."
 msgstr "Ноутбук :doc:`../examples/get_any_graph` показывает ``simplify=True`` и ``simplify=False`` рядом и выделяет рёбра, затронутые обрезкой."
+
+msgid "Bike graphs"
+msgstr "Велосипедные графы"
+
+msgid "Use :func:`get_bike_graph` for the network a bicycle may use: streets, cycleways, paths and tracks, and footways where cycling is permitted. Every edge gets ``cycle_infra`` (``track``, ``lane`` or ``mixed``) and ``lts``, the level of traffic stress from 1 to 4 derived from the infrastructure, the speed limit and the number of lanes. ``max_lts`` keeps only the low-stress network, and ``elevation`` adds grades and makes travel times depend on them (see :doc:`analysis`)."
+msgstr "Используйте :func:`get_bike_graph` для сети, по которой может ехать велосипед: улицы, велодорожки, тропы и грунтовые дороги, а также тротуары, где езда разрешена. Каждое ребро получает ``cycle_infra`` (``track``, ``lane`` или ``mixed``) и ``lts`` — уровень транспортного стресса от 1 до 4, который выводится из инфраструктуры, ограничения скорости и числа полос. ``max_lts`` оставляет только сеть с низким стрессом, а ``elevation`` добавляет уклоны и ставит время в пути в зависимость от них (см. :doc:`analysis`)."
 
 msgid "OSM public-transport and intermodal graphs"
 msgstr "Графы общественного транспорта по OSM и интермодальные графы"
@@ -97,6 +103,12 @@ msgstr ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
 
 msgid "Build a pedestrian UrbanGraph from OpenStreetMap within a given territory."
 msgstr "Строит пешеходный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
+msgstr ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
+
+msgid "Build a cycling UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит велосипедный UrbanGraph по OpenStreetMap в пределах заданной территории."
 
 msgid ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
 msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"

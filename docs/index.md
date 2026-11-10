@@ -11,6 +11,7 @@ Benchmarks and design notes <benchmarks>
 Transport registry <api/transport_registry>
 GTFS public transport <api/gtfs>
 Graph utilities <api/utilities>
+Network analysis <api/analysis>
 Matrices <api/matrices>
 Overpass helpers <api/overpass>
 Local OSM files <api/osm_pbf>
