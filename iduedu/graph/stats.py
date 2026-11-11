@@ -389,7 +389,7 @@ def edge_stats(
     else:
         result["speed_kmh"] = np.nan
     result.index.name = by
-    return result.sort_values("length_km", ascending=False)[columns]
+    return result.sort_values("length_km", ascending=False, kind="stable")[columns]
 
 
 def transport_stats(urban_graph: UrbanGraph, *, modes: Iterable[str] | None = None) -> pd.DataFrame:
@@ -441,7 +441,7 @@ def transport_stats(urban_graph: UrbanGraph, *, modes: Iterable[str] | None = No
     columns = ["stop_count", "route_count", "edge_count", "length_km", "stop_spacing_mean", "speed_kmh"]
     result = pd.DataFrame.from_dict(rows, orient="index", columns=columns)
     result.index.name = "mode"
-    return result.sort_values("length_km", ascending=False)
+    return result.sort_values("length_km", ascending=False, kind="stable")
 
 
 def local_stats(
@@ -585,5 +585,5 @@ def route_directness(
         xy[sources, 0][:, None] - xy[targets, 0][None, :], xy[sources, 1][:, None] - xy[targets, 1][None, :]
     )
     with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where(np.isfinite(network) & (straight > 0), network / straight, np.nan)
-    return pd.DataFrame(ratio, index=origins.index, columns=destinations.index)
+        directness = np.where(np.isfinite(network) & (straight > 0), network / straight, np.nan)
+    return pd.DataFrame(directness, index=origins.index, columns=destinations.index)

@@ -149,7 +149,7 @@ def test_platform_and_direction_measures():
 def test_edge_and_transport_stats():
     graph = _intermodal_graph()
     table = edge_stats(graph, "type")
-    assert table.index.tolist() == ["bus", "walk", "boarding", "alighting"]
+    assert table.index.tolist() == ["bus", "walk", "alighting", "boarding"]  # ties keep the value order
     assert table.loc["bus", "length_km"] == pytest.approx(0.3) and table.loc["bus", "speed_kmh"] == pytest.approx(18.0)
     assert table["length_share"].sum() == pytest.approx(1.0)
     assert np.isnan(table.loc["alighting", "speed_kmh"])
