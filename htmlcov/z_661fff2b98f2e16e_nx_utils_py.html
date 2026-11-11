@@ -55,19 +55,19 @@
             </div>
         </aside>
         <h2>
-            <span class="text">173 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">152<span class="text"> run</span></button>
+            <span class="text">175 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">154<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">21<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">9<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">14<span class="text"> partial</span></button>
         </h2>
         <p class="text">
-            <a id="prevFileLink" class="nav" href="z_661fff2b98f2e16e_io_py.html">&#xab; prev</a> &nbsp; &nbsp;
+            <a id="prevFileLink" class="nav" href="z_661fff2b98f2e16e_lines_py.html">&#xab; prev</a> &nbsp; &nbsp;
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
-            <a id="nextFileLink" class="nav" href="z_661fff2b98f2e16e_routing_py.html">&#xbb; next</a>
+            <a id="nextFileLink" class="nav" href="z_661fff2b98f2e16e_point_to_point_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.17.0">coverage.py v7.17.0</a>,
-            created at 2026-11-06 16:14 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.17.2">coverage.py v7.17.2</a>,
+            created at 2026-11-11 12:27 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -441,30 +441,35 @@
     <p class="pln"><span class="n"><a id="t357" href="#t357">357</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t358" href="#t358">358</a></span><span class="t"><span class="str">    Parameters:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t359" href="#t359">359</a></span><span class="t"><span class="str">        graph (nx.Graph): Graph with node coords stored as `x`, `y` and a CRS in `graph.graph[&quot;crs&quot;]`.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t360" href="#t360">360</a></span><span class="t"><span class="str">        polygon (Polygon): Clipping polygon in the same CRS as the graph.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t361" href="#t361">361</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t362" href="#t362">362</a></span><span class="t"><span class="str">    Returns:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t363" href="#t363">363</a></span><span class="t"><span class="str">        (nx.Graph): Subgraph containing only nodes whose points fall inside the polygon.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t364" href="#t364">364</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t365" href="#t365">365</a></span><span class="t"><span class="str">    Notes:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t366" href="#t366">366</a></span><span class="t"><span class="str">        Edges are preserved only if both endpoints remain in the subgraph.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t367" href="#t367">367</a></span><span class="t"><span class="str">    &quot;&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t368" href="#t368">368</a></span><span class="t">    <span class="nam">crs</span> <span class="op">=</span> <span class="nam">graph</span><span class="op">.</span><span class="nam">graph</span><span class="op">[</span><span class="str">&quot;crs&quot;</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t369" href="#t369">369</a></span><span class="t">    <span class="nam">points</span> <span class="op">=</span> <span class="nam">gpd</span><span class="op">.</span><span class="nam">GeoDataFrame</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t370" href="#t370">370</a></span><span class="t">        <span class="nam">data</span><span class="op">=</span><span class="op">[</span><span class="op">{</span><span class="str">&quot;id&quot;</span><span class="op">:</span> <span class="nam">p_id</span><span class="op">,</span> <span class="str">&quot;geometry&quot;</span><span class="op">:</span> <span class="nam">Point</span><span class="op">(</span><span class="nam">data</span><span class="op">[</span><span class="str">&quot;x&quot;</span><span class="op">]</span><span class="op">,</span> <span class="nam">data</span><span class="op">[</span><span class="str">&quot;y&quot;</span><span class="op">]</span><span class="op">)</span><span class="op">}</span> <span class="key">for</span> <span class="nam">p_id</span><span class="op">,</span> <span class="nam">data</span> <span class="key">in</span> <span class="nam">graph</span><span class="op">.</span><span class="nam">nodes</span><span class="op">(</span><span class="nam">data</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">]</span><span class="op">,</span> <span class="nam">crs</span><span class="op">=</span><span class="nam">crs</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t371" href="#t371">371</a></span><span class="t">    <span class="op">)</span><span class="op">.</span><span class="nam">clip</span><span class="op">(</span><span class="nam">polygon</span><span class="op">,</span> <span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t372" href="#t372">372</a></span><span class="t">    <span class="nam">clipped</span> <span class="op">=</span> <span class="nam">graph</span><span class="op">.</span><span class="nam">subgraph</span><span class="op">(</span><span class="nam">points</span><span class="op">[</span><span class="str">&quot;id&quot;</span><span class="op">]</span><span class="op">.</span><span class="nam">tolist</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">    <span class="key">return</span> <span class="nam">clipped</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t360" href="#t360">360</a></span><span class="t"><span class="str">        polygon (Polygon | gpd.GeoSeries | gpd.GeoDataFrame): Clipping polygon: a shapely geometry in</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t361" href="#t361">361</a></span><span class="t"><span class="str">            EPSG:4326, as ``territory`` of the graph builders, or a GeoSeries / GeoDataFrame in any CRS.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t362" href="#t362">362</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t363" href="#t363">363</a></span><span class="t"><span class="str">    Returns:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t364" href="#t364">364</a></span><span class="t"><span class="str">        (nx.Graph): Subgraph containing only nodes whose points fall inside the polygon.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t365" href="#t365">365</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t366" href="#t366">366</a></span><span class="t"><span class="str">    Notes:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t367" href="#t367">367</a></span><span class="t"><span class="str">        Edges are preserved only if both endpoints remain in the subgraph.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t368" href="#t368">368</a></span><span class="t"><span class="str">    &quot;&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t369" href="#t369">369</a></span><span class="t">    <span class="com"># Imported here: graph_inputs pulls in UrbanGraph, which this optional module does not otherwise need.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t370" href="#t370">370</a></span><span class="t">    <span class="key">from</span> <span class="nam">iduedu</span><span class="op">.</span><span class="nam">graph</span><span class="op">.</span><span class="nam">graph_inputs</span> <span class="key">import</span> <span class="nam">area_in_crs</span>  <span class="com"># pylint: disable=import-outside-toplevel</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t371" href="#t371">371</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t372" href="#t372">372</a></span><span class="t">    <span class="nam">crs</span> <span class="op">=</span> <span class="nam">graph</span><span class="op">.</span><span class="nam">graph</span><span class="op">[</span><span class="str">&quot;crs&quot;</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">    <span class="nam">polygon</span> <span class="op">=</span> <span class="nam">area_in_crs</span><span class="op">(</span><span class="nam">polygon</span><span class="op">,</span> <span class="nam">crs</span><span class="op">,</span> <span class="str">&quot;polygon&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t374" href="#t374">374</a></span><span class="t">    <span class="nam">points</span> <span class="op">=</span> <span class="nam">gpd</span><span class="op">.</span><span class="nam">GeoDataFrame</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t375" href="#t375">375</a></span><span class="t">        <span class="nam">data</span><span class="op">=</span><span class="op">[</span><span class="op">{</span><span class="str">&quot;id&quot;</span><span class="op">:</span> <span class="nam">p_id</span><span class="op">,</span> <span class="str">&quot;geometry&quot;</span><span class="op">:</span> <span class="nam">Point</span><span class="op">(</span><span class="nam">data</span><span class="op">[</span><span class="str">&quot;x&quot;</span><span class="op">]</span><span class="op">,</span> <span class="nam">data</span><span class="op">[</span><span class="str">&quot;y&quot;</span><span class="op">]</span><span class="op">)</span><span class="op">}</span> <span class="key">for</span> <span class="nam">p_id</span><span class="op">,</span> <span class="nam">data</span> <span class="key">in</span> <span class="nam">graph</span><span class="op">.</span><span class="nam">nodes</span><span class="op">(</span><span class="nam">data</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">]</span><span class="op">,</span> <span class="nam">crs</span><span class="op">=</span><span class="nam">crs</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t376" href="#t376">376</a></span><span class="t">    <span class="op">)</span><span class="op">.</span><span class="nam">clip</span><span class="op">(</span><span class="nam">polygon</span><span class="op">,</span> <span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t377" href="#t377">377</a></span><span class="t">    <span class="nam">clipped</span> <span class="op">=</span> <span class="nam">graph</span><span class="op">.</span><span class="nam">subgraph</span><span class="op">(</span><span class="nam">points</span><span class="op">[</span><span class="str">&quot;id&quot;</span><span class="op">]</span><span class="op">.</span><span class="nam">tolist</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t378" href="#t378">378</a></span><span class="t">    <span class="key">return</span> <span class="nam">clipped</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
         <p>
-            <a class="nav" href="z_661fff2b98f2e16e_io_py.html">&#xab; prev</a> &nbsp; &nbsp;
+            <a class="nav" href="z_661fff2b98f2e16e_lines_py.html">&#xab; prev</a> &nbsp; &nbsp;
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
-            <a class="nav" href="z_661fff2b98f2e16e_routing_py.html">&#xbb; next</a>
+            <a class="nav" href="z_661fff2b98f2e16e_point_to_point_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.17.0">coverage.py v7.17.0</a>,
-            created at 2026-11-06 16:14 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.17.2">coverage.py v7.17.2</a>,
+            created at 2026-11-11 12:27 +0000
         </p>
     </div>
 </footer>
