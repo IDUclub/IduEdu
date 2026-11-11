@@ -132,7 +132,7 @@ def test_relabel_inplace_mutates_and_resets_adjacency_matrix():
 
 def test_clip_inplace_replaces_state():
     graph = undirected_line_graph()
-    polygon = box(-5.0, -5.0, 15.0, 5.0)
+    polygon = gpd.GeoSeries([box(-5.0, -5.0, 15.0, 5.0)], crs=CRS)
 
     result = graph.clip(polygon, inplace=True)
 

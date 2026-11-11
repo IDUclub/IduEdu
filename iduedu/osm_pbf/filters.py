@@ -66,11 +66,6 @@ class TagClause:
             return lambda tags: key not in tags or search(tags[key]) is None
         raise UnsupportedFilterError(f"Unknown operator {self.op!r}")  # pragma: no cover
 
-    @property
-    def requires_key(self) -> bool:
-        """True when the clause can only match a way that carries ``key``."""
-        return self.op in {"exists", "=", "~"}
-
 
 class WayFilter:
     """A parsed Overpass tag filter; calling it with a tag mapping tells whether the tags match."""
@@ -82,15 +77,6 @@ class WayFilter:
 
     def __call__(self, tags: Mapping[str, str]) -> bool:
         return all(p(tags) for p in self._predicates)
-
-    @property
-    def required_keys(self) -> tuple[str, ...]:
-        """Keys every matching way must carry; useful to pre-filter ways before the full check."""
-        seen = []
-        for clause in self.clauses:
-            if clause.requires_key and clause.key not in seen:
-                seen.append(clause.key)
-        return tuple(seen)
 
     def __repr__(self) -> str:
         return f"WayFilter({self.text!r})"

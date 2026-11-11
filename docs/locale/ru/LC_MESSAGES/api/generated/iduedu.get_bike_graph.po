@@ -1,0 +1,82 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_bike\\_graph"
+msgstr "iduedu.get\\_bike\\_graph"
+
+msgid "Build a cycling UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит велосипедный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid "The graph holds every way a bicycle may use: streets (except motorways and ways closed to bicycles), cycleways, paths and tracks, and footways and pedestrian streets where cycling is permitted (``bicycle=yes``, ``designated`` or ``permissive``). Every edge gets the kind of cycling infrastructure (``cycle_infra``: ``track``, ``lane`` or ``mixed``) and the level of traffic stress (``lts``, 1 to 4, see :func:`~iduedu.graph_builders.bike_builders.level_of_traffic_stress`)."
+msgstr "Граф содержит все линии, по которым может ехать велосипед: улицы (кроме автомагистралей и линий, закрытых для велосипедов), велодорожки, тропы и грунтовые дороги, а также тротуары и пешеходные улицы, где езда разрешена (``bicycle=yes``, ``designated`` или ``permissive``). Каждое ребро получает вид велоинфраструктуры (``cycle_infra``: ``track``, ``lane`` или ``mixed``) и уровень транспортного стресса (``lts``, от 1 до 4, см. :func:`~iduedu.graph_builders.bike_builders.level_of_traffic_stress`)."
+
+msgid "The graph is directed. One-way streets are one-way for bicycles too, unless the way allows riding against the traffic (``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag). Travel time is the length over ``bike_speed``; with ``elevation`` it also depends on the grade."
+msgstr "Граф ориентированный. Улицы с односторонним движением односторонние и для велосипедов, если только линия не разрешает ехать навстречу потоку (``oneway:bicycle=no`` или тег ``cycleway*=opposite*``). Время в пути — длина, делённая на ``bike_speed``; с ``elevation`` оно зависит ещё и от уклона."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation/area ID of the territory boundary. Provide this or ``territory``."
+msgstr "Идентификатор отношения/области OSM для границы территории. Укажите его или ``territory``."
+
+msgid "Boundary geometry in EPSG:4326 or GeoDataFrame."
+msgstr "Геометрия границы в EPSG:4326 или GeoDataFrame."
+
+msgid "If True, merges the segments of the ways into edges that run from junction to junction; segments are merged only when they carry the same tags."
+msgstr "Если True, отрезки линий объединяются в рёбра от перекрёстка до перекрёстка; отрезки объединяются, только когда у них одинаковые теги."
+
+msgid "If True, clips edges by the exact boundary geometry before graph construction."
+msgstr "Если True, рёбра обрезаются по точной геометрии границы до построения графа."
+
+msgid "If True, returns only the largest strongly connected component."
+msgstr "Если True, возвращается только наибольшая сильно связная компонента."
+
+msgid "Cycling speed on flat ground in meters per minute."
+msgstr "Скорость велосипеда на ровной местности в метрах в минуту."
+
+msgid "Keep only edges with a level of traffic stress up to this one, for example 2 for the network that most adults are willing to ride."
+msgstr "Оставить только рёбра с уровнем транспортного стресса не выше этого, например 2 для сети, по которой готово ехать большинство взрослых."
+
+msgid "If True, footways and pedestrian streets are used also without an explicit ``bicycle`` permission."
+msgstr "Если True, тротуары и пешеходные улицы используются и без явного разрешения ``bicycle``."
+
+msgid "Source of heights for :func:`~iduedu.add_elevation` (a raster path, a GeoDataFrame of points or contours, or a function). When given, edges get grades, and travel times are rescaled with the cycling speed model of :func:`~iduedu.apply_grade_speed`."
+msgstr "Источник высот для :func:`~iduedu.add_elevation` (путь к растру, GeoDataFrame с точками или горизонталями либо функция). Если задан, рёбра получают уклоны, а время в пути пересчитывается по велосипедной модели скорости из :func:`~iduedu.apply_grade_speed`."
+
+msgid "``\"bike\"``, or ``\"custom\"`` together with ``custom_filter``."
+msgstr "``\"bike\"`` или ``\"custom\"`` вместе с ``custom_filter``."
+
+msgid "Custom Overpass way filter used in custom mode."
+msgstr "Пользовательский фильтр линий Overpass для режима custom."
+
+msgid "Which OSM tags to retain on edges. Overrides ``config.bike_useful_edges_attr`` (``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``). ``bridge`` and ``tunnel`` are always kept. The ``cycleway*``, ``bicycle``, ``oneway`` and ``oneway:bicycle`` tags are always read, and with ``simplify`` a change of any of them, or of a kept tag, starts a new edge."
+msgstr "Какие теги OSM сохранять на рёбрах. Заменяет ``config.bike_useful_edges_attr`` (``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``). ``bridge`` и ``tunnel`` сохраняются всегда. Теги ``cycleway*``, ``bicycle``, ``oneway`` и ``oneway:bicycle`` читаются всегда, и при ``simplify`` смена любого из них или сохраняемого тега начинает новое ребро."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Directed multigraph of the cycling network. Edges include geometry in the local CRS, ``length_meter``, ``time_min``, ``oneway``, ``cycle_infra``, ``lts``, the selected OSM tags and, with ``elevation``, ``grade``, ``grade_max``, ``ascent`` and ``descent``."
+msgstr "Ориентированный мультиграф велосипедной сети. Рёбра содержат геометрию в локальной системе координат, ``length_meter``, ``time_min``, ``oneway``, ``cycle_infra``, ``lts``, выбранные теги OSM, а с ``elevation`` — ещё ``grade``, ``grade_max``, ``ascent`` и ``descent``."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``max_lts`` is not between 1 and 4, or the network type is unknown."
+msgstr "Если ``max_lts`` не лежит между 1 и 4 или тип сети неизвестен."
+

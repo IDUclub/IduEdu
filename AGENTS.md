@@ -37,18 +37,22 @@ Rules:
 ## Project Overview
 
 **IduEdu** is a Python library for building and analyzing multi-modal city transport networks from OpenStreetMap and
-GTFS Schedule data. It downloads OSM data via Overpass API (or reads local `.osm.pbf` files with the optional `pbf`
-extra), reads local GTFS feeds, constructs `drive`, `walk`, and `public transport` graphs, joins them into intermodal
-networks, and computes OD-matrices and routes with Numba-accelerated Dijkstra.
+GTFS Schedule data. It downloads OSM data via Overpass API (or reads local `.osm.pbf` files with its Rust
+reader), reads local GTFS feeds, constructs `drive`, `walk`, and `public transport` graphs, joins them into intermodal
+networks, and computes OD-matrices and routes with Dijkstra kernels written in Rust.
 
 Python 3.11–3.14. Package manager: **uv** (`uv.lock` is generated locally and not committed). Build
-backend: hatchling.
+backend: maturin; the graph kernels are a Rust crate in `rust/` compiled into the extension `iduedu._rust` (PyO3, abi3),
+so a stable Rust toolchain (1.82+) is needed to build from source.
 
 ## Commands
 
 ```bash
-# Install dev dependencies
-uv sync --group dev
+# Install dev dependencies (builds the Rust extension; rerun after editing rust/)
+uv sync --all-groups
+
+# Rust core: format, lint, unit tests (or: make rust-check)
+cd rust && cargo fmt --check && cargo clippy --release --all-targets -- -D warnings && cargo test --release
 
 # Run all unit tests (fast, no network)
 uv run pytest
@@ -86,8 +90,9 @@ uv run python docs/i18n.py update                   # or: make docs-i18n
 uv run python docs/i18n.py check                    # or: make docs-i18n-check (CI fails on untranslated text)
 ```
 
-**Numba JIT note:** When running tests under coverage (`--cov`), `conftest.py` automatically sets `NUMBA_DISABLE_JIT=1`
-to allow line-level coverage. Don't set this manually when you want to test actual Numba performance.
+**Rust note:** `uv sync` rebuilds the extension when `rust/Cargo.toml` or `rust/src/**/*.rs` change (`[tool.uv]
+cache-keys`); `uv run maturin develop --release` rebuilds it by hand. Coverage measures the Python layer only; the Rust
+kernels have their own `cargo test` and the Python-level checks in `tests/test_rust_unit.py`.
 
 ## Architecture
 
@@ -99,8 +104,9 @@ to allow line-level coverage. Don't set this manually when you want to test actu
 - `edges_gdf` — required columns: `u`, `v`, `geometry`, `length_meter`, `time_min`; multigraph adds `k`
 
 The adjacency matrix (`scipy.sparse.csr_matrix`) is built lazily via `update_adjacency_matrix()` and stored on the
-object. It is invalidated whenever nodes/edges change — callers must call `update_adjacency_matrix()` again after any
-structural edit.
+object. `routing._prepare_graph` rebuilds it when the node order, the weight name, the weight or direction values
+(also edited in place) or the `u`/`v` columns change: copies of those columns are kept in the `_SOURCE` slot of
+`_csr_cache`. Only in-place edits of `u`/`v` values go unnoticed.
 
 Default weight for routing: `time_min`. Alternative: `length_meter`.
 
@@ -117,20 +123,27 @@ iduedu/
     components.py    — connected/weakly/strongly connected component algorithms
     editors.py       — subgraph_by_nodes, clip, join, relabel, project_objects2urban_graph
     transformers.py  — keep_largest_component, simplify_multiedges, to_directed/undirected
-    routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both)
+    routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both) and
+                       the point-to-point kernels behind them (bidirectional, A*, ALT landmarks cached per matrix)
+    point_to_point.py — shortest_path (bidirectional, A*, ALT, Dijkstra), alternative_paths (penalty method),
+                       k_shortest_paths (Yen)
     routing_result.py — ShortestPathResult: distances with eager or lazy (predecessor-tree) paths
     shortest_paths.py — public re-exports of the routing API, path_to_edges()
     adapters.py      — UrbanGraph ↔ NetworkX conversion
     nx_utils.py      — legacy NetworkX helpers (optional dep, soft-imported)
     validation.py    — node/edge schema validation, CRS sync
     graph_inputs.py  — nearest_nodes(), resolve_graph_nodes_input() helpers
+    segments.py      — unique_segments(): every physical segment of the geometry once
+    within.py        — sums of node values within a travel cost (shared by stats, aggregations, centralities)
+    stats.py         — graph_stats(), edge_stats(), transport_stats(), local_stats(), route_directness()
+    aggregations.py  — nearest_objects(), aggregate_objects(), diversity(): objects around origins along the network
+    centrality.py    — centrality() (reach, harmonic, gravity, betweenness) and edge_betweenness()
+    elevation.py     — add_elevation() (raster, points or contours; grades, bridges and tunnels), apply_grade_speed()
     io.py            — .urbangraph archive read/write
-  _numba/
-    csr.py           — CSR builder (Numba-compiled)
-    components.py    — BFS/DFS traversal (Numba-compiled)
-    shortest_paths.py — Dijkstra kernels (Numba-compiled)
+  _rust.pyi        — type stubs of the compiled extension built from rust/
   graph_builders/
     drive_walk_builders.py      — get_drive_graph(), get_walk_graph()
+    bike_builders.py            — get_bike_graph(): cycle infrastructure and level of traffic stress
     public_transport_builders.py — get_public_transport_graph()
     gtfs_builders.py            — get_gtfs_public_transport_graph()
     intermodal_builders.py      — get_intermodal_graph(), join_pt_walk_graph()
@@ -139,7 +152,7 @@ iduedu/
     validation.py    — GTFS table and reference validation
     merge.py         — merge_gtfs_feeds(), deduplicate_across_feeds(): several feeds into one
     service_days.py  — calendar/calendar_dates → service days for average-day boarding waits
-  osm_pbf/           — local OSM files instead of Overpass (optional pyosmium, soft-imported)
+  osm_pbf/           — local .osm.pbf files instead of Overpass (read and written by the Rust core)
     reader.py        — PbfSource: answers the Overpass queries of the builders from a file; snapshot_time()
     filters.py       — Overpass tag-filter parser (parse_way_filter, WayFilter)
     extract.py       — split_by_polygons(): per-city files from a regional extract in one pass
@@ -152,6 +165,20 @@ iduedu/
     transport_specs.py — TransportSpec, TransportRegistry, DEFAULT_REGISTRY
     highway_enums.py   — HighwayType enum
     network_enums.py   — network type enums
+rust/                — Rust core, compiled into iduedu._rust (see rust/README.md)
+  src/csr.rs         — CSR view and validation, edge list → CSR (parallel arcs merged by min/max), transpose
+  src/dijkstra.rs    — Dijkstra (multi-source, cutoff, early exit, predecessors, nearest source), route rebuild
+  src/bidirectional.rs — bidirectional Dijkstra for point-to-point queries (optionally avoiding nodes and arcs)
+  src/astar.rs       — A* with a straight-distance estimate scaled by the graph's own cheapest cost per metre
+  src/yen.rs         — Yen's k shortest loopless routes
+  src/alt.rs         — ALT (A* with landmarks): landmark choice and cost tables
+  src/penalty.rs     — alternative routes by the penalty method
+  src/components.rs  — connected and strongly connected components
+  src/analysis.rs    — sums of node values within a travel cost (gather/scatter, decay), nearest objects, betweenness
+  src/chains.rs      — merging street segments into junction-to-junction edges, only across equal tags
+  src/pbf.rs         — .pbf reading (osmpbf, parallel, block index): ways by tag filter, nodes, relations, header
+  src/pbf_write.rs   — .pbf writing: per-territory extracts (osm_pbf/extract.py) and files from element lists
+  src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, PbfFile, write_pbf
 ```
 
 ### Data flow
@@ -169,7 +196,7 @@ Local GTFS directory/ZIP
 UrbanGraph layers
   → intermodal_builders.py (UrbanGraph + UrbanGraph → joined UrbanGraph)
   → graph/editors.py (project objects onto graph)
-  → graph/routing.py → _numba/ (CSR Dijkstra → distances, paths, OD matrix)
+  → graph/routing.py → iduedu._rust (CSR Dijkstra → distances, paths, OD matrix)
 ```
 
 ### Public transport speed model
@@ -186,10 +213,10 @@ bus/trolleybus/tram/subway/monorail/taxi; `DEFAULT_REGISTRY_W_TRAIN` adds train.
 Tests are split into `_unit` (no network, fast) and `_network` (real OSM data). Network test modules are listed in
 `conftest.py::NETWORK_ONLY_TEST_MODULES` and are excluded from collection unless `--run-network` is passed. They read
 Overpass, or the test territory cut out of its Geofabrik extract (`northwestern-fed-district`, about 650 MB, cached in
-`.iduedu_cache/geofabrik/`, needs pyosmium) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
+`.iduedu_cache/geofabrik/`) when Overpass does not answer; `--osm-source=overpass|pbf|auto` forces one.
 Network tests check real data only; options and edge cases belong in the unit tests with mocked responses.
 
-Pytest markers: `unit`, `integration`, `network`, `slow`, `numba`.
+Pytest markers: `unit`, `integration`, `network`, `slow`, `rust`.
 
 Shared fixtures in `tests/conftest.py`: `territory_osm_id` (OSM relation 1114252), `osm_source` (Overpass or the
 PBF fallback; a `pytest_runtest_protocol` hook switches to the file only around network tests, so unit tests in the
@@ -208,6 +235,15 @@ and finish with `docs/i18n.py check`.** Containers of nested lists (`Text:  - a 
 English; the update step keeps them so. Translations on MyST pages (`.md`, including the `Config` docstrings on
 `configuration.md`) are parsed as Markdown: roles there are `{func}`, not `:func:`.
 
+### Documentation pages and figures
+
+Pages are grouped as `docs/building/`, `docs/graph/`, `docs/routing/` and `docs/analysis/`; a method page has the
+sections Overview, Inputs, Method, Outputs, Functions (autosummary with `:toctree: ../api/generated`), Figures,
+Limitations, References and Example notebook. Figures come from `docs/figures/make_figures.py` (output in the
+git-ignored `docs/figures/out/`) and are published on the `assets` branch, linked as
+`https://raw.githubusercontent.com/IDUclub/IduEdu/assets/<name>.png`. Notebooks in `docs/examples/` are stored with
+their outputs (`nb_execution_mode = "off"`).
+
 ### Coding conventions
 
 - Line length: 120 characters (black + pylint)
@@ -216,5 +252,7 @@ English; the update step keeps them so. Translations on MyST pages (`.md`, inclu
 - All public API must be reachable via `from iduedu import ...` through `_api.py`
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
-- Numba JIT functions live in `iduedu/_numba/` and are called only through the `graph/` layer, never directly from
-  builders or public API
+- Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`, `within.py`, `centrality.py`), `osm_pbf/` (`reader.py`, `extract.py`) and the edge merging of `drive_walk_builders.py`, never directly
+  from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
+  run parallel work on rayon; `max_workers` maps to the number of rayon threads

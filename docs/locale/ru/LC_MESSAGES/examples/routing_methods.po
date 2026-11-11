@@ -1,0 +1,46 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 21:29+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Routes between two points"
+msgstr "Маршруты между двумя точками"
+
+msgid "This notebook compares the four point-to-point searches of `shortest_path`, runs them for many pairs with `od_matrix(mode=\"pairwise\")`, and contrasts the alternative routes of `alternative_paths` with the k shortest routes of `k_shortest_paths`. On a district graph of 22 thousand nodes every search takes about a millisecond; the differences between the methods grow with the graph, as the timings for the whole of Saint Petersburg on the routing page show."
+msgstr "Этот блокнот сравнивает четыре поиска между двумя точками в `shortest_path`, запускает их для многих пар через `od_matrix(mode=\"pairwise\")` и сопоставляет альтернативные маршруты `alternative_paths` с k кратчайшими маршрутами `k_shortest_paths`. На графе района из 22 тысяч узлов каждый поиск занимает около миллисекунды; разница между методами растёт с размером графа, как показывают замеры для всего Санкт-Петербурга на странице о маршрутах."
+
+msgid "Four searches, one route"
+msgstr "Четыре поиска, один маршрут"
+
+msgid "Every method returns a shortest route; they differ in how many nodes they visit. ALT builds its landmark tables on the first call and keeps them with the graph, so the first call is timed apart."
+msgstr "Каждый метод возвращает кратчайший маршрут; они различаются тем, сколько узлов посещают. ALT строит таблицы ориентиров при первом вызове и хранит их с графом, поэтому первый вызов замеряется отдельно."
+
+msgid "Many pairs"
+msgstr "Много пар"
+
+msgid "`od_matrix(mode=\"pairwise\")` matches origins and destinations by position. `method` picks the search; the default `\"auto\"` runs the bidirectional search when most origins occur once."
+msgstr "`od_matrix(mode=\"pairwise\")` сопоставляет точки отправления и назначения по позиции. `method` выбирает поиск; значение по умолчанию `\"auto\"` запускает двунаправленный поиск, когда большинство точек отправления встречается один раз."
+
+msgid "Alternative routes and k shortest routes"
+msgstr "Альтернативные маршруты и k кратчайших маршрутов"
+
+msgid "`k_shortest_paths` returns the next cheapest routes exactly; in a dense street graph they differ by a crossing or a sidewalk. `alternative_paths` penalises the streets of the routes already found and keeps routes that share at most `max_overlap` of their length with the others."
+msgstr "`k_shortest_paths` возвращает точно следующие по стоимости маршруты; в плотной уличной сети они различаются переходом или тротуаром. `alternative_paths` штрафует улицы уже найденных маршрутов и сохраняет маршруты, которые делят с остальными не больше `max_overlap` своей длины."
+
+msgid "Your own area"
+msgstr "Своя территория"
+
+msgid "Replace `OSM_ID` with the id of an OSM boundary relation, or pass `territory=` a shapely polygon in EPSG:4326 or a GeoDataFrame. Measures near the border of a graph are biased, because the network beyond it is missing: build the graph for a larger area and pass the study area as `area=` to `graph_stats` and `centrality`. For many runs on one region, read a local OSM file instead of Overpass with `iduedu.use_pbf(...)` (see the data sources page)."
+msgstr "Замените `OSM_ID` на id отношения границы OSM или передайте в `territory=` полигон shapely в EPSG:4326 или GeoDataFrame. Меры у границы графа смещены, потому что сети за границей нет: стройте граф для большей территории и передавайте исследуемую территорию как `area=` в `graph_stats` и `centrality`. Для многих расчётов по одному региону читайте локальный файл OSM вместо Overpass через `iduedu.use_pbf(...)` (см. страницу об источниках данных)."
+

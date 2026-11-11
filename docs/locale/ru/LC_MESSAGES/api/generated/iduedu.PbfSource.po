@@ -17,29 +17,26 @@ msgstr ""
 msgid "iduedu.PbfSource"
 msgstr "iduedu.PbfSource"
 
-msgid "A local OpenStreetMap file answering the queries IduEdu otherwise sends to Overpass."
-msgstr "Локальный файл OpenStreetMap, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
+msgid "A local OpenStreetMap ``.osm.pbf`` file answering the queries IduEdu otherwise sends to Overpass."
+msgstr "Локальный файл OpenStreetMap ``.osm.pbf``, отвечающий на запросы, которые IduEdu иначе отправляет в Overpass."
 
-msgid "Any format libosmium reads works (``.osm.pbf``, ``.osm``, ``.opl``, compressed variants). For a city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a whole country extract works too, but every query then scans the whole file."
-msgstr "Подходит любой формат, который читает libosmium (``.osm.pbf``, ``.osm``, ``.opl``, сжатые варианты). Для города передайте компактный файл города, вырезанный :func:`iduedu.osm_pbf.split_by_polygons`; чтение выгрузки целой страны тоже работает, но тогда каждый запрос просматривает весь файл."
+msgid "For a city, pass a compact per-city file cut with :func:`iduedu.osm_pbf.split_by_polygons`; reading a whole country extract works too, but the first query then scans the whole file. Later queries on the same source read only the blocks of the file they need."
+msgstr "Для города передайте компактный файл города, вырезанный :func:`iduedu.osm_pbf.split_by_polygons`; чтение выгрузки целой страны тоже работает, но тогда первый запрос просматривает весь файл. Следующие запросы к тому же источнику читают только нужные им блоки файла."
 
 msgid "Parameters"
 msgstr "Параметры"
 
-msgid "The OSM file."
-msgstr "Файл OSM."
-
-msgid "Node-location index used while assembling way geometries, as accepted by ``osmium.index.create_map``: ``\"flex_mem\"`` (default) for city files, or a disk-backed ``\"sparse_file_array\"`` / ``\"dense_file_array\"`` (optionally ``\",<file>\"``) for large extracts."
-msgstr "Индекс координат узлов для сборки геометрий линий в формате ``osmium.index.create_map``: ``\"flex_mem\"`` (по умолчанию) для файлов городов или дисковый ``\"sparse_file_array\"`` / ``\"dense_file_array\"`` (при необходимости с ``\",<file>\"``) для больших выгрузок."
+msgid "The ``.osm.pbf`` file."
+msgstr "Файл ``.osm.pbf``."
 
 msgid "Raises"
 msgstr "Исключения"
 
-msgid "When pyosmium is not installed."
-msgstr "Если pyosmium не установлен."
-
 msgid "When ``path`` does not exist."
 msgstr "Если ``path`` не существует."
+
+msgid "When the file is not an OSM ``.pbf`` file."
+msgstr "Если файл не является файлом OSM ``.pbf``."
 
 msgid "Methods"
 msgstr "Методы"
@@ -80,6 +77,12 @@ msgstr ":py:obj:`ways_by_filter <iduedu.PbfSource.ways_by_filter>`"
 msgid "Ways matching an Overpass tag filter inside a polygon."
 msgstr "Линии внутри полигона, подходящие под фильтр тегов Overpass."
 
+msgid ":py:obj:`ways_table <iduedu.PbfSource.ways_table>`"
+msgstr ":py:obj:`ways_table <iduedu.PbfSource.ways_table>`"
+
+msgid "The ways of :meth:`ways_by_filter` as a table, without the per-point dictionaries."
+msgstr "Пути :meth:`ways_by_filter` в виде таблицы, без словаря на каждую точку."
+
 msgid "Return type"
 msgstr "Тип результата"
 
@@ -92,6 +95,12 @@ msgstr "Равносильно ``way<way_filter>(poly:\"...\"); out geom;``. В�
 
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`dict\\`\\]`"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`dict\\`\\]`"
+
+msgid "Columns ``type`` (``\"way\"``), ``id``, ``nodes`` (list of node ids), ``geometry`` (``(k, 2)`` array of lon/lat) and ``tags``. The street builders read this; it holds the same data as the Overpass elements."
+msgstr "Столбцы ``type`` (``\"way\"``), ``id``, ``nodes`` (список идентификаторов узлов), ``geometry`` (массив ``(k, 2)`` долгот и широт) и ``tags``. Его читают функции построения уличных графов; данные те же, что в элементах Overpass."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
 
 msgid "Reproduces, statement by statement and in the same order, the Overpass query of :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways of ground routes (``out tags``), the ground route relations (``out geom``) and, for ``subway``, the relations sharing a node with a subway route (``out geom``), their stop-area groups (``out body``), the stations among their members (``out tags``), the ``stop_area_members`` section marker and all their members (``out center``)."
 msgstr "Воспроизводит, оператор за оператором и в том же порядке, запрос Overpass функции :func:`iduedu.overpass.downloaders.get_routes_by_poly`: теги линий-участников наземных маршрутов (``out tags``), отношения наземных маршрутов (``out geom``) и, для ``subway``, отношения, имеющие общий узел с маршрутом метро (``out geom``), их группы зон остановок (``out body``), станции среди их участников (``out tags``), маркер раздела ``stop_area_members`` и всех их участников (``out center``)."

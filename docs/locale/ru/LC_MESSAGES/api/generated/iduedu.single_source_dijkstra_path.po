@@ -20,6 +20,9 @@ msgstr "iduedu.single\\_source\\_dijkstra\\_path"
 msgid "Return one shortest node route, or [] when unreachable or beyond cutoff."
 msgstr "Возвращает один кратчайший маршрут по узлам или [], если цель недостижима или за порогом."
 
+msgid "With reverse on a directed graph the route runs from target_node to source_node along the edge directions. The search is bidirectional (see :func:`shortest_path`)."
+msgstr "С reverse на ориентированном графе маршрут идёт от target_node к source_node по направлению рёбер. Поиск двунаправленный (см. :func:`shortest_path`)."
+
 msgid "Return type"
 msgstr "Тип результата"
 

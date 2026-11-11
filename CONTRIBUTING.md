@@ -9,13 +9,15 @@ Never bump the version or create a tag by hand.
 ## Requirements
 
 - Python 3.11 through 3.14
+- a stable [Rust toolchain](https://rustup.rs/) (1.82 or newer): the graph kernels are a Rust crate in `rust/`,
+  compiled with maturin into `iduedu._rust` when the package is installed from source
 - [uv](https://docs.astral.sh/uv/) (package manager; `uv.lock` is generated locally and is not committed)
 - `make` (optional but every command below has a `make` shortcut)
 
 ## Setup
 
 ```bash
-uv sync --all-groups     # or: make install-dev
+uv sync --all-groups     # or: make install-dev; also rebuilds the Rust extension after changes in rust/
 ```
 
 ## Local development loop
@@ -31,6 +33,7 @@ uv sync --all-groups     # or: make install-dev
 | Format                  | `make format`       | isort + black                                     |
 | Format check            | `make format-check` | what CI enforces                                  |
 | Lint                    | `make lint`         | pylint                                            |
+| Rust core               | `make rust-check`   | `cargo fmt --check`, clippy, `cargo test` (CI)    |
 | Build docs              | `make docs`         | English and Russian → `docs/_build/html`, `/ru`   |
 | Update translations     | `make docs-i18n`    | new and changed text into `docs/locale/ru`        |
 | Check translations      | `make docs-i18n-check` | what CI enforces on pull requests              |
@@ -44,10 +47,9 @@ same search across every combination of unrelated options. Shared graph and
 GTFS factories live in `tests/factories.py`. Optional-dependency tests stay
 separate so missing an extra cannot skip core graph tests.
 
-Ordinary pytest runs execute actual Numba kernels and reuse a versioned cache
-under `.pytest_cache/numba`. Small synthetic graphs default to two worker threads;
-set `NUMBA_NUM_THREADS` to override this for a run. Coverage runs disable JIT for
-line/branch measurements. The early pytest plugin in `tests/__init__.py` loads
+The routing and component kernels are compiled Rust (`rust/`, see `rust/README.md`). `cargo test` covers them
+on their own, and `tests/test_rust_unit.py` checks the bindings against SciPy; coverage measures the Python layer.
+Keep `iduedu/_rust.pyi` in sync when the bindings change. The early pytest plugin in `tests/__init__.py` loads
 third-party numerical extensions before coverage tracing starts, including on
 Windows; imports and execution of `iduedu` remain measured.
 Branch coverage is explicitly enabled in pytest options so subprocesses inherit
@@ -69,10 +71,30 @@ to each other from the sidebar. A change of English text is not finished until i
 4. Run `make docs-i18n-check` (CI runs it on every pull request) and `make docs`, and look at the changed pages in
    both languages.
 
-Translations of a MyST page (`index.md`, `configuration.md`, ...) are parsed as Markdown, including the docstrings
+Translations of a MyST page (`configuration.md`, `performance.md`) are parsed as Markdown, including the docstrings
 that page shows through `autoclass`: write a role there as `` {func}`name` ``, not `` :func:`name` ``, or it renders
 as plain text. A parameter description with a nested list appears in a catalogue as a whole and as its parts;
 `make docs-i18n` keeps the whole one unchanged so that Sphinx translates the parts, which you translate.
+
+### Pages, figures and notebooks
+
+The pages follow the topics of the sidebar: `docs/building/`, `docs/graph/`, `docs/routing/` and `docs/analysis/`.
+A method page has the sections Overview, Inputs, Method, Outputs, Functions, Figures, Limitations, References and
+Example notebook; its functions are listed in an `autosummary` with `:toctree: ../api/generated`, so every function
+has its own reference page and its docstring is translated once.
+
+The figures are drawn by `docs/figures/make_figures.py` from Vasilyevsky Island (OSM relation 1114252), read from
+the Geofabrik extract of the Northwestern Federal District (about 650 MB, downloaded once into `.iduedu_cache`):
+
+```bash
+uv run python docs/figures/make_figures.py                  # every figure
+uv run python docs/figures/make_figures.py routing_search   # only the named ones
+```
+
+The PNG files land in `docs/figures/out/` (not committed). Pages link them from the `assets` branch,
+`https://raw.githubusercontent.com/IDUclub/IduEdu/assets/<name>.png`; a maintainer commits new or changed figures
+there. The example notebooks are stored with their outputs (`nb_execution_mode = "off"`); run a changed notebook
+before committing it.
 
 ## Commit messages (Conventional Commits)
 

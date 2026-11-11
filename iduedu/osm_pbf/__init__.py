@@ -8,8 +8,7 @@ per-city files out of a regional extract, :func:`snapshot_time` reads the date a
 territory out of it; ``iduedu.use_pbf(osm_id=...)`` or ``use_pbf(territory=...)`` does the same and switches
 to the file in one step.
 
-Requires the optional dependency pyosmium: ``pip install 'iduedu[pbf]'``. Importing this package works
-without it; using it raises an ``ImportError`` with the installation hint.
+Files are read and written by IduEdu's Rust core; no further dependency is needed.
 """
 
 from .download import download_geofabrik_region, download_osm_pbf, find_geofabrik_region, geofabrik_regions

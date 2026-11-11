@@ -161,6 +161,7 @@ def test_join_pt_walk_graph(walk_graph, subway_graph):
     assert walk_and_subway.is_directed is True
     # every subway platform-like node should have been projected into the walk network
     assert "walk" in set(walk_and_subway.edges_gdf["type"].dropna().unique())
+    assert walk_and_subway.edges_gdf[["u", "v", "k"]].dtypes.tolist() == ["int64"] * 3
 
 
 def test_join_pt_walk_graph_respects_max_dist(walk_graph, subway_graph):

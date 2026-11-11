@@ -1,0 +1,266 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Routes between two points"
+msgstr "Маршруты между двумя точками"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "A route between two nodes does not need the costs to the whole network. :func:`shortest_path` finds one shortest route with one of four searches that differ in how many nodes they visit before they reach the target, and :func:`od_matrix` with ``mode=\"pairwise\"`` runs the same searches for many pairs. :func:`alternative_paths` returns several routes along different streets, and :func:`k_shortest_paths` the k cheapest routes without loops."
+msgstr "Для маршрута между двумя узлами не нужны стоимости до всей сети. :func:`shortest_path` находит один кратчайший маршрут одним из четырёх поисков, которые различаются числом узлов, просмотренных до цели, а :func:`od_matrix` с ``mode=\"pairwise\"`` выполняет те же поиски для многих пар. :func:`alternative_paths` возвращает несколько маршрутов по разным улицам, а :func:`k_shortest_paths` — k самых дешёвых маршрутов без циклов."
+
+msgid ":func:`shortest_path` returns ``(cost, route)``: the cost in the units of ``weight`` and the list of node ids from the source to the target, or ``(inf, [])`` when the target is not reached within ``cutoff``."
+msgstr ":func:`shortest_path` возвращает ``(cost, route)``: стоимость в единицах ``weight`` и список идентификаторов узлов от источника до цели либо ``(inf, [])``, если цель не достигнута в пределах ``cutoff``."
+
+msgid "Search methods"
+msgstr "Методы поиска"
+
+msgid "Every method returns a shortest route; they differ in speed only. The cost of the returned route is summed again from the source along the route, so it equals the float32 sum of a Dijkstra search along the same route. When several routes have the same cost, different methods can return different ones."
+msgstr "Каждый метод возвращает кратчайший маршрут; методы различаются только скоростью. Стоимость найденного маршрута заново суммируется от источника вдоль маршрута, поэтому она равна сумме float32, которую алгоритм Дейкстры получает на том же маршруте. Если несколько маршрутов имеют одинаковую стоимость, разные методы могут вернуть разные из них."
+
+msgid "``\"dijkstra\"``"
+msgstr "``\"dijkstra\"``"
+
+msgid "One search from the source that settles nodes in order of their cost and stops at the target. It visits every node that is cheaper to reach than the target, in all directions."
+msgstr "Один поиск от источника, который фиксирует узлы в порядке их стоимости и останавливается на цели. Он просматривает все узлы, до которых дешевле добраться, чем до цели, во всех направлениях."
+
+msgid "``\"bidirectional\"`` (default)"
+msgstr "``\"bidirectional\"`` (по умолчанию)"
+
+msgid "A search from the source over the graph and a search from the target over the reversed graph run at the same time; each step settles a node on the side whose next cost is smaller. Every edge scanned from a settled node that reaches a node already seen by the other side gives a candidate route. The search stops once the next costs of the two sides add up to at least the cost of the best candidate (bidirectional search, Pohl, 1971). Each side covers about half of the route cost, so on the walk graph of Saint Petersburg a query runs 1.2 to 3.4 times faster than one search from the source, the more so the closer the target. The method needs nothing beyond the graph and works with any weight."
+msgstr "Поиск от источника по графу и поиск от цели по развёрнутому графу идут одновременно; на каждом шаге фиксируется узел той стороны, у которой следующая стоимость меньше. Каждое ребро, просмотренное из зафиксированного узла и ведущее в узел, уже найденный другой стороной, даёт маршрут-кандидат. Поиск останавливается, когда следующие стоимости двух сторон в сумме не меньше стоимости лучшего кандидата (двунаправленный поиск, Pohl, 1971). Каждая сторона покрывает примерно половину стоимости маршрута, поэтому на пешеходном графе Санкт-Петербурга запрос выполняется в 1,2–3,4 раза быстрее, чем один поиск от источника, и тем быстрее, чем ближе цель. Методу не нужно ничего, кроме графа, и он работает с любым весом."
+
+msgid "``\"astar\"``"
+msgstr "``\"astar\"``"
+
+msgid "A search from the source that settles nodes in order of their cost plus an estimate of the cost that remains to the target (A*, Hart, Nilsson and Raphael, 1968). The estimate is the straight distance to the target times the smallest cost per metre of straight distance over the edges of the graph. No edge is cheaper than that rate, so by the triangle inequality the estimate never exceeds the cost of a route, and the result is exact for any weight. The method needs a point geometry for every node. An edge of zero cost between two distinct points would set the rate to zero; such edges (in OSM walk graphs, a few edges of 1–4 cm whose rounded travel time is zero) are left out of the rate, and the search goes on until no queued node can improve the result by more than the estimate can exceed the cost through them. The estimate prunes the search where costs follow distance: walking and driving by ``length_meter``, walking by ``time_min``. On an intermodal graph the fastest edges (subway) set the rate, and the search takes as long as Dijkstra."
+msgstr "Поиск от источника, который фиксирует узлы в порядке суммы их стоимости и оценки оставшейся стоимости до цели (A*, Hart, Nilsson и Raphael, 1968). Оценка равна расстоянию до цели по прямой, умноженному на наименьшую стоимость метра прямого расстояния среди рёбер графа. Ни одно ребро не дешевле этой ставки, поэтому по неравенству треугольника оценка никогда не превышает стоимость маршрута, и результат точен при любом весе. Методу нужна точечная геометрия каждого узла. Ребро нулевой стоимости между двумя разными точками обнулило бы ставку; такие рёбра (в пешеходных графах OSM — несколько рёбер длиной 1–4 см, у которых округлённое время в пути равно нулю) не учитываются в ставке, а поиск продолжается, пока ни один узел в очереди не может улучшить результат больше, чем оценка может превысить стоимость через эти рёбра. Оценка сокращает поиск там, где стоимость следует за расстоянием: пешком и на автомобиле по ``length_meter``, пешком по ``time_min``. На интермодальном графе ставку задают самые быстрые рёбра (метро), и поиск занимает столько же времени, сколько алгоритм Дейкстры."
+
+msgid "``\"alt\"``"
+msgstr "``\"alt\"``"
+
+msgid "A* with an estimate taken from the network itself (ALT: A*, landmarks and the triangle inequality; Goldberg and Harrelson, 2005). Sixteen nodes are chosen as landmarks, each the node farthest from the landmarks chosen before, which places them at the edges of the graph. For every landmark ``L`` the costs from ``L`` to every node and from every node to ``L`` are computed once. The triangle inequality bounds the remaining cost from ``v`` to the target ``t`` from below by ``d(L, t) - d(L, v)`` and by ``d(v, L) - d(t, L)``; the estimate is the largest of these bounds over the landmarks. It follows the costs of the network, subway included, so it stays sharp on intermodal graphs and needs no coordinates. The tables are built on the first call and kept with the graph until its nodes, edges or weight change. They take 4 bytes per node and landmark, twice as much on a directed graph, which needs the costs in both directions (33 MB and 0.7 s for the undirected walk graph of Saint Petersburg, 518 thousand nodes). The method pays off when one graph answers many queries."
+msgstr "A* с оценкой, взятой из самой сети (ALT: A*, ориентиры и неравенство треугольника; Goldberg и Harrelson, 2005). Шестнадцать узлов выбираются ориентирами, каждый — самый дальний от уже выбранных, поэтому они оказываются на краях графа. Для каждого ориентира ``L`` один раз считаются стоимости от ``L`` до всех узлов и от всех узлов до ``L``. По неравенству треугольника оставшаяся стоимость от ``v`` до цели ``t`` ограничена снизу величинами ``d(L, t) - d(L, v)`` и ``d(v, L) - d(t, L)``; оценка — наибольшая из этих границ по всем ориентирам. Она следует за стоимостями сети, включая метро, поэтому остаётся точной на интермодальных графах и не требует координат. Таблицы строятся при первом вызове и хранятся вместе с графом, пока не изменятся его узлы, рёбра или вес. Они занимают 4 байта на узел и ориентир, вдвое больше на ориентированном графе, которому нужны стоимости в обе стороны (33 МБ и 0,7 с для неориентированного пешеходного графа Санкт-Петербурга, 518 тысяч узлов). Метод выгоден, когда к одному графу делается много запросов."
+
+msgid "Nodes settled by Dijkstra, the bidirectional search, A* and ALT for one walking route"
+msgstr "Узлы, зафиксированные алгоритмом Дейкстры, двунаправленным поиском, A* и ALT для одного пешего маршрута"
+
+msgid "Nodes settled by the four methods for one walking route of 3.6 km by ``length_meter`` on Vasilyevsky Island (22 thousand nodes). The bidirectional search settles nodes from the source (blue) and from the target (orange); green triangles are the landmarks of ALT. All four return a route of the same length (black)."
+msgstr "Узлы, зафиксированные четырьмя методами для одного пешего маршрута длиной 3,6 км по ``length_meter`` на Васильевском острове (22 тысячи узлов). Двунаправленный поиск фиксирует узлы от источника (синие) и от цели (оранжевые); зелёные треугольники — ориентиры ALT. Все четыре метода возвращают маршрут одной длины (чёрный)."
+
+msgid "Choosing a method"
+msgstr "Выбор метода"
+
+msgid "The table gives the time of one query in milliseconds on one thread, measured on graphs of Saint Petersburg (500 pairs per row; random pairs lie anywhere in the city, the other rows hold pairs at the given straight distance)."
+msgstr "В таблице — время одного запроса в миллисекундах в одном потоке на графах Санкт-Петербурга (500 пар на строку; случайные пары расположены в любой точке города, остальные строки — пары на заданном расстоянии по прямой)."
+
+msgid "Graph, weight, pairs"
+msgstr "Граф, вес, пары"
+
+msgid "Dijkstra"
+msgstr "Дейкстра"
+
+msgid "bidirectional"
+msgstr "двунаправленный"
+
+msgid "A*"
+msgstr "A*"
+
+msgid "ALT"
+msgstr "ALT"
+
+msgid "walk (518 thousand nodes), length, 4 km"
+msgstr "пешеходный (518 тысяч узлов), длина, 4 км"
+
+msgid "2.6"
+msgstr "2,6"
+
+msgid "1.1"
+msgstr "1,1"
+
+msgid "0.56"
+msgstr "0,56"
+
+msgid "0.28"
+msgstr "0,28"
+
+msgid "walk, time, 10 km"
+msgstr "пешеходный, время, 10 км"
+
+msgid "11.7"
+msgstr "11,7"
+
+msgid "4.8"
+msgstr "4,8"
+
+msgid "3.7"
+msgstr "3,7"
+
+msgid "0.83"
+msgstr "0,83"
+
+msgid "walk, time, random pairs"
+msgstr "пешеходный, время, случайные пары"
+
+msgid "18.0"
+msgstr "18,0"
+
+msgid "14.4"
+msgstr "14,4"
+
+msgid "10.9"
+msgstr "10,9"
+
+msgid "1.9"
+msgstr "1,9"
+
+msgid "drive (32 thousand nodes), time, random pairs"
+msgstr "автомобильный (32 тысячи узлов), время, случайные пары"
+
+msgid "0.77"
+msgstr "0,77"
+
+msgid "0.51"
+msgstr "0,51"
+
+msgid "0.54"
+msgstr "0,54"
+
+msgid "0.10"
+msgstr "0,10"
+
+msgid "intermodal (533 thousand nodes), time, 10 km"
+msgstr "интермодальный (533 тысячи узлов), время, 10 км"
+
+msgid "21.3"
+msgstr "21,3"
+
+msgid "4.5"
+msgstr "4,5"
+
+msgid "23.7"
+msgstr "23,7"
+
+msgid "5.1"
+msgstr "5,1"
+
+msgid "The bidirectional search is the default: it needs no preparation, works on any graph and weight, and is faster than Dijkstra on every graph of the table. On random pairs across a city it gains less, because a search from one end of the city is already cut off by the city border. ALT is the fastest on the street graphs once its tables exist; on the intermodal graph it is as fast as the bidirectional search on pairs 10 km apart and 1.4 times faster on random pairs. A* is worth its coordinates on walk and drive graphs measured by length."
+msgstr "Двунаправленный поиск используется по умолчанию: он не требует подготовки, работает на любом графе с любым весом и быстрее алгоритма Дейкстры на каждом графе таблицы. На случайных парах по всему городу он выигрывает меньше, потому что поиск с одного края города и так упирается в границу города. ALT — самый быстрый на уличных графах, когда его таблицы построены; на интермодальном графе он так же быстр, как двунаправленный поиск, на парах в 10 км друг от друга и в 1,4 раза быстрее на случайных парах. A* оправдывает свои координаты на пешеходных и автомобильных графах при весе по длине."
+
+msgid "Pairwise tables"
+msgstr "Попарные таблицы"
+
+msgid ":func:`od_matrix` and :func:`iter_od_matrix` with ``mode=\"pairwise\"`` take a ``method`` argument. ``\"dijkstra\"`` runs one search per unique origin that stops once all destinations paired with it are settled, which suits origins with many destinations. ``\"bidirectional\"``, ``\"astar\"`` and ``\"alt\"`` run one point-to-point search per pair. The default ``\"auto\"`` chooses ``\"bidirectional\"`` when most origins occur once and ``\"dijkstra\"`` when they repeat. All-to-all tables always run one Dijkstra search per source (see :doc:`shortest_paths`). :func:`single_source_dijkstra_path` runs the bidirectional search too."
+msgstr ":func:`od_matrix` и :func:`iter_od_matrix` с ``mode=\"pairwise\"`` принимают аргумент ``method``. ``\"dijkstra\"`` запускает один поиск на каждую уникальную точку отправления и останавливает его, когда зафиксированы все её точки назначения; это подходит для точек отправления с большим числом точек назначения. ``\"bidirectional\"``, ``\"astar\"`` и ``\"alt\"`` запускают отдельный поиск для каждой пары. По умолчанию ``\"auto\"`` выбирает ``\"bidirectional\"``, если большинство точек отправления встречается один раз, и ``\"dijkstra\"``, если они повторяются. Таблицы «все со всеми» всегда считаются одним поиском Дейкстры на источник (см. :doc:`shortest_paths`). :func:`single_source_dijkstra_path` тоже использует двунаправленный поиск."
+
+msgid "Alternative routes"
+msgstr "Альтернативные маршруты"
+
+msgid ":func:`alternative_paths` finds routes that differ by whole streets, with the penalty method:"
+msgstr ":func:`alternative_paths` находит маршруты, которые отличаются целыми улицами, методом штрафов:"
+
+msgid "The shortest route is found and kept."
+msgstr "Находится и сохраняется кратчайший маршрут."
+
+msgid "The costs of the edges of the route are multiplied by ``penalty`` (1.5 by default), in both directions of each street, and the search runs again on the new costs. The next route leaves the streets already taken wherever a detour exists and keeps them where it does not, for example on a bridge."
+msgstr "Стоимости рёбер маршрута умножаются на ``penalty`` (по умолчанию 1,5) в обоих направлениях каждой улицы, и поиск повторяется на новых стоимостях. Следующий маршрут уходит с уже пройденных улиц везде, где есть объезд, и остаётся на них там, где объезда нет, например на мосту."
+
+msgid "A route is kept when its real cost is at most ``max_cost_ratio`` times the cost of the shortest route (1.4 by default) and at most ``max_overlap`` of its real cost (0.7 by default) runs on the streets of a route kept before. Every route found is penalised, kept or not."
+msgstr "Маршрут сохраняется, если его настоящая стоимость не больше чем в ``max_cost_ratio`` раз превышает стоимость кратчайшего маршрута (по умолчанию 1,4) и не больше ``max_overlap`` его настоящей стоимости (по умолчанию 0,7) приходится на улицы ранее сохранённых маршрутов. Штраф получает каждый найденный маршрут, сохранён он или нет."
+
+msgid "The search stops after ``k`` routes or ``4 * k`` searches."
+msgstr "Поиск останавливается после ``k`` маршрутов или ``4 * k`` поисков."
+
+msgid "The result is a table indexed by ``rank`` (0 is the shortest route, then by cost) with the columns ``dist`` (real cost in the units of ``weight``), ``overlap`` (the largest share of that cost on the streets of another route of the table) and ``path`` (node ids). A street here is an edge of the graph: on a walk graph the sidewalk on the other side of an avenue is another street, so a route along it counts as different."
+msgstr "Результат — таблица с индексом ``rank`` (0 — кратчайший маршрут, дальше по стоимости) и столбцами ``dist`` (настоящая стоимость в единицах ``weight``), ``overlap`` (наибольшая доля этой стоимости на улицах другого маршрута таблицы) и ``path`` (идентификаторы узлов). Улица здесь — ребро графа: на пешеходном графе тротуар на другой стороне проспекта — другая улица, поэтому маршрут по нему считается отличающимся."
+
+msgid "k shortest routes"
+msgstr "k кратчайших маршрутов"
+
+msgid ":func:`k_shortest_paths` returns the k cheapest loopless routes in order of cost (Yen, 1971). Every next route leaves an earlier one at some node, the spur node: it follows the earlier route up to there and then takes the shortest way to the target that touches no node of the shared part and does not continue the way a route found before continues from the same part. The candidates are kept in a heap, and the cheapest one not yet taken becomes the next route. Spur nodes are taken from the node where a route left its parent onwards (Lawler, 1972), and the spur searches of one route run in parallel, each a bidirectional search. The result has the columns ``dist`` and ``path`` under the ``rank`` index."
+msgstr ":func:`k_shortest_paths` возвращает k самых дешёвых маршрутов без циклов в порядке стоимости (Yen, 1971). Каждый следующий маршрут отходит от одного из предыдущих в некотором узле, узле ответвления: до него он идёт по предыдущему маршруту, а дальше — кратчайшей дорогой к цели, которая не касается ни одного узла общей части и не продолжает путь так, как его продолжал от той же части уже найденный маршрут. Кандидаты хранятся в куче, и самый дешёвый из ещё не взятых становится следующим маршрутом. Узлы ответвления берутся начиная с узла, где маршрут отошёл от своего предшественника (Lawler, 1972), а поиски от узлов ответвления одного маршрута идут параллельно, каждый — двунаправленным поиском. У результата столбцы ``dist`` и ``path`` и индекс ``rank``."
+
+#, python-format
+msgid "These are the next cheapest routes exactly. In a sparse network, such as a railway network or intercity roads, they run along different lines. In a dense street graph the next cheapest route is the same route with a small change: crossing at the next pedestrian crossing, taking the other sidewalk. For a walk of 4.9 km in Saint Petersburg the three cheapest routes differ by 1.7 m, while :func:`alternative_paths` returns routes of 4.9, 5.3 and 5.5 km with 0 to 12 % of shared streets. On the same graph a query takes 2 to 8 ms with :func:`alternative_paths`, and 0.57 s with :func:`k_shortest_paths` for ``k=3`` on a route of 536 nodes, which needs a spur search from almost every node of the route."
+msgstr "Это ровно следующие по стоимости маршруты. В разреженной сети, например железнодорожной или сети междугородних дорог, они идут по разным линиям. В плотном уличном графе следующий по стоимости маршрут — тот же маршрут с небольшим изменением: переход по соседнему пешеходному переходу, другой тротуар. Для пешего маршрута длиной 4,9 км по Санкт-Петербургу три самых дешёвых маршрута различаются на 1,7 м, а :func:`alternative_paths` возвращает маршруты длиной 4,9, 5,3 и 5,5 км с 0–12 % общих улиц. На том же графе запрос занимает 2–8 мс с :func:`alternative_paths` и 0,57 с с :func:`k_shortest_paths` при ``k=3`` на маршруте из 536 узлов, которому нужен поиск ответвления почти из каждого узла маршрута."
+
+msgid "Three routes of k_shortest_paths and of alternative_paths for one walk"
+msgstr "Три маршрута k_shortest_paths и alternative_paths для одного пешего маршрута"
+
+msgid "One walk on Vasilyevsky Island measured by ``length_meter``. Left: the three cheapest routes of :func:`k_shortest_paths` lie on top of each other. Right: :func:`alternative_paths` with the default limits; the percentages are the column ``overlap``."
+msgstr "Один пеший маршрут на Васильевском острове по ``length_meter``. Слева: три самых дешёвых маршрута :func:`k_shortest_paths` лежат друг на друге. Справа: :func:`alternative_paths` с ограничениями по умолчанию; проценты — столбец ``overlap``."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`shortest_path <iduedu.shortest_path>`"
+msgstr ":py:obj:`shortest_path <iduedu.shortest_path>`"
+
+msgid "Return the cost and the node route of one shortest path from source_node to target_node."
+msgstr "Вернуть стоимость и маршрут по узлам одного кратчайшего пути из source_node в target_node."
+
+msgid ":py:obj:`alternative_paths <iduedu.alternative_paths>`"
+msgstr ":py:obj:`alternative_paths <iduedu.alternative_paths>`"
+
+msgid "Return up to k distinct routes from source_node to target_node by the penalty method."
+msgstr "Вернуть до k разных маршрутов из source_node в target_node методом штрафов."
+
+msgid ":py:obj:`k_shortest_paths <iduedu.k_shortest_paths>`"
+msgstr ":py:obj:`k_shortest_paths <iduedu.k_shortest_paths>`"
+
+msgid "Return up to k shortest loopless paths from source_node to target_node (Yen's algorithm)."
+msgstr "Вернуть до k кратчайших путей без циклов из source_node в target_node (алгоритм Йена)."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid ":func:`alternative_paths` and :func:`k_shortest_paths` answer one pair per call."
+msgstr ":func:`alternative_paths` и :func:`k_shortest_paths` отвечают на одну пару за вызов."
+
+msgid "The landmark tables of ALT belong to one weight of one graph; they are built again after the graph changes and take memory proportional to the number of nodes."
+msgstr "Таблицы ориентиров ALT относятся к одному весу одного графа; после изменения графа они строятся заново и занимают память, пропорциональную числу узлов."
+
+msgid "A* needs a point geometry for every node; on graphs without coordinates use ``\"bidirectional\"`` or ``\"alt\"``."
+msgstr "A* нужна точечная геометрия каждого узла; на графах без координат используйте ``\"bidirectional\"`` или ``\"alt\"``."
+
+msgid "Costs are float32 sums; routes of equal cost can differ between methods, and their costs agree up to float32 rounding."
+msgstr "Стоимости — суммы float32; маршруты равной стоимости могут различаться у разных методов, а их стоимости совпадают с точностью до округления float32."
+
+msgid "References"
+msgstr "Литература"
+
+msgid "Goldberg, A. V. and Harrelson, C. (2005). Computing the shortest path: A* search meets graph theory. *Proceedings of the Sixteenth Annual ACM-SIAM Symposium on Discrete Algorithms*, 156–165."
+msgstr "Goldberg, A. V. and Harrelson, C. (2005). Computing the shortest path: A* search meets graph theory. *Proceedings of the Sixteenth Annual ACM-SIAM Symposium on Discrete Algorithms*, 156–165."
+
+msgid "Hart, P. E., Nilsson, N. J. and Raphael, B. (1968). A formal basis for the heuristic determination of minimum cost paths. *IEEE Transactions on Systems Science and Cybernetics*, 4(2), 100–107."
+msgstr "Hart, P. E., Nilsson, N. J. and Raphael, B. (1968). A formal basis for the heuristic determination of minimum cost paths. *IEEE Transactions on Systems Science and Cybernetics*, 4(2), 100–107."
+
+msgid "Lawler, E. L. (1972). A procedure for computing the K best solutions to discrete optimization problems and its application to the shortest path problem. *Management Science*, 18(7), 401–405."
+msgstr "Lawler, E. L. (1972). A procedure for computing the K best solutions to discrete optimization problems and its application to the shortest path problem. *Management Science*, 18(7), 401–405."
+
+msgid "Pohl, I. (1971). Bi-directional search. In B. Meltzer and D. Michie (Eds.), *Machine Intelligence 6*, 127–140. Edinburgh University Press."
+msgstr "Pohl, I. (1971). Bi-directional search. In B. Meltzer and D. Michie (Eds.), *Machine Intelligence 6*, 127–140. Edinburgh University Press."
+
+msgid "Yen, J. Y. (1971). Finding the K shortest loopless paths in a network. *Management Science*, 17(11), 712–716."
+msgstr "Yen, J. Y. (1971). Finding the K shortest loopless paths in a network. *Management Science*, 17(11), 712–716."
+
+msgid "Example notebook"
+msgstr "Пример"
+
+msgid ":doc:`../examples/routing_methods`"
+msgstr ":doc:`../examples/routing_methods`"
+

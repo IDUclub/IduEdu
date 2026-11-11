@@ -1,0 +1,307 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Streets: drive, walk and bike"
+msgstr "Улицы: автомобильные, пешеходные и велосипедные"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "Three builders turn the OpenStreetMap ways of a territory into street networks."
+msgstr "Три построителя превращают линии OpenStreetMap территории в уличные сети."
+
+msgid "Builder"
+msgstr "Построитель"
+
+msgid "Graph"
+msgstr "Граф"
+
+msgid "Travel time ``time_min``"
+msgstr "Время в пути ``time_min``"
+
+msgid ":func:`get_drive_graph`"
+msgstr ":func:`get_drive_graph`"
+
+msgid "directed"
+msgstr "ориентированный"
+
+msgid "Length over the speed limit: the ``maxspeed`` tag, or the default of the ``highway`` class"
+msgstr "Длина, делённая на ограничение скорости: тег ``maxspeed`` или значение по умолчанию для класса ``highway``"
+
+msgid ":func:`get_walk_graph`"
+msgstr ":func:`get_walk_graph`"
+
+msgid "undirected"
+msgstr "неориентированный"
+
+msgid "Length over ``walk_speed`` (5 km/h by default)"
+msgstr "Длина, делённая на ``walk_speed`` (по умолчанию 5 км/ч)"
+
+msgid ":func:`get_bike_graph`"
+msgstr ":func:`get_bike_graph`"
+
+msgid "Length over ``bike_speed`` (15 km/h by default), rescaled by the grade when ``elevation`` is given"
+msgstr "Длина, делённая на ``bike_speed`` (по умолчанию 15 км/ч), с поправкой на уклон, если задан ``elevation``"
+
+msgid "Every edge has ``length_meter`` (metres) and ``time_min`` (minutes) and a geometry in the local projected CRS of the territory. The territory and the OSM source are given as described in :doc:`sources`."
+msgstr "У каждого ребра есть ``length_meter`` (метры), ``time_min`` (минуты) и геометрия в локальной проекционной системе координат территории. Территория и источник OSM задаются, как описано в :doc:`sources`."
+
+msgid "Inputs"
+msgstr "Входные данные"
+
+msgid "``osm_id`` or ``territory``"
+msgstr "``osm_id`` или ``territory``"
+
+msgid "The territory, see :doc:`sources`."
+msgstr "Территория, см. :doc:`sources`."
+
+msgid "``simplify``"
+msgstr "``simplify``"
+
+msgid "``True`` (the default) merges the segments of the ways into edges that run from junction to junction, see `Edges and tags`_. ``False`` keeps one edge per straight segment."
+msgstr "``True`` (по умолчанию) сливает отрезки линий в рёбра от перекрёстка до перекрёстка, см. `Edges and tags`_. ``False`` оставляет по ребру на каждый прямой отрезок."
+
+msgid "``clip_by_territory``"
+msgstr "``clip_by_territory``"
+
+msgid "Cut the edges at the territory boundary. Without it, ways that touch the territory are kept whole."
+msgstr "Обрезать рёбра по границе территории. Без этого линии, касающиеся территории, сохраняются целиком."
+
+msgid "``keep_largest_subgraph``"
+msgstr "``keep_largest_subgraph``"
+
+msgid "Keep only the largest connected component (strongly connected for the directed drive and bike graphs), so that every node can be reached from every other."
+msgstr "Сохранить только наибольшую компоненту связности (сильной связности для ориентированных автомобильного и велосипедного графов), чтобы из каждого узла можно было попасть в любой другой."
+
+msgid "``network_type`` and ``custom_filter``"
+msgstr "``network_type`` и ``custom_filter``"
+
+msgid "The Overpass way filter. ``\"drive\"`` reads the roads for cars, ``\"drive_service\"`` adds service roads, ``\"walk\"`` reads every way a pedestrian may use, ``\"bike\"`` every way a bicycle may use. ``\"custom\"`` takes your own filter in ``custom_filter``."
+msgstr "Фильтр линий Overpass. ``\"drive\"`` читает дороги для автомобилей, ``\"drive_service\"`` добавляет служебные проезды, ``\"walk\"`` читает все пути, доступные пешеходу, ``\"bike\"`` — все пути, доступные велосипеду. ``\"custom\"`` берёт ваш фильтр из ``custom_filter``."
+
+msgid "``osm_edge_tags``"
+msgstr "``osm_edge_tags``"
+
+msgid "The OSM tags kept as edge columns; by default those of ``config.drive_useful_edges_attr``, ``config.walk_useful_edges_attr`` and ``config.bike_useful_edges_attr``."
+msgstr "Теги OSM, сохраняемые как столбцы рёбер; по умолчанию из ``config.drive_useful_edges_attr``, ``config.walk_useful_edges_attr`` и ``config.bike_useful_edges_attr``."
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "Edges and tags"
+msgstr "Рёбра и теги"
+
+msgid "Every OSM way is cut into its straight segments, and the drive and bike graphs get the direction of every segment from the ``oneway`` tag. With ``simplify=True`` the segments are joined back into edges at the points where exactly two segments meet, follow one another in the same direction and carry the same values of every tag the builder reads. An edge therefore runs from junction to junction and ends earlier wherever a tag changes, so it always has the tags of all its ways and never a mix of different ways. The merging runs in the Rust core."
+msgstr "Каждая линия OSM режется на прямые отрезки, а автомобильный и велосипедный графы получают направление каждого отрезка из тега ``oneway``. При ``simplify=True`` отрезки снова соединяются в рёбра в точках, где сходятся ровно два отрезка, идущие друг за другом в одном направлении и с одинаковыми значениями всех тегов, которые читает построитель. Поэтому ребро идёт от перекрёстка до перекрёстка и заканчивается раньше там, где меняется тег: у него всегда теги всех его линий и никогда не смесь разных линий. Слияние выполняется в Rust-ядре."
+
+msgid "The builder reads three groups of tags:"
+msgstr "Функция читает три группы тегов:"
+
+msgid "the tags kept as edge columns, set with ``osm_edge_tags`` or the ``config`` defaults;"
+msgstr "теги, сохраняемые как столбцы рёбер, задаются ``osm_edge_tags`` или значениями ``config`` по умолчанию;"
+
+msgid "``bridge`` and ``tunnel``, always read and always kept, because a bridge or a tunnel does not follow the ground and must not be merged with the road it continues (:func:`add_elevation` relies on them);"
+msgstr "``bridge`` и ``tunnel`` всегда читаются и всегда сохраняются, потому что мост или тоннель не следует рельефу и не должен сливаться с продолжающей его дорогой (на них опирается :func:`add_elevation`);"
+
+msgid "the tags the builder needs for its own calculations; they split edges too but are not kept as columns."
+msgstr "теги, нужные построителю для его расчётов; они тоже разделяют рёбра, но не сохраняются как столбцы."
+
+msgid "Kept tags (default, changed with ``config`` or ``osm_edge_tags``)"
+msgstr "Сохраняемые теги (по умолчанию; меняются через ``config`` или ``osm_edge_tags``)"
+
+msgid "Always kept"
+msgstr "Сохраняются всегда"
+
+msgid "Read but not kept"
+msgstr "Читаются, но не сохраняются"
+
+msgid "drive"
+msgstr "автомобильный"
+
+msgid "``highway``, ``name``, ``lanes``"
+msgstr "``highway``, ``name``, ``lanes``"
+
+msgid "``bridge``, ``tunnel``, ``oneway``, ``category``"
+msgstr "``bridge``, ``tunnel``, ``oneway``, ``category``"
+
+msgid "``maxspeed`` (for the travel time)"
+msgstr "``maxspeed`` (для времени в пути)"
+
+msgid "walk"
+msgstr "пешеходный"
+
+msgid "``highway``, ``name``"
+msgstr "``highway``, ``name``"
+
+msgid "``bridge``, ``tunnel``"
+msgstr "``bridge``, ``tunnel``"
+
+msgid "none"
+msgstr "нет"
+
+msgid "bike"
+msgstr "велосипедный"
+
+msgid "``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``"
+msgstr "``highway``, ``name``, ``lanes``, ``maxspeed``, ``surface``"
+
+msgid "``bridge``, ``tunnel``, ``oneway``, ``cycle_infra``, ``lts``"
+msgstr "``bridge``, ``tunnel``, ``oneway``, ``cycle_infra``, ``lts``"
+
+msgid "``cycleway``, ``cycleway:left``, ``cycleway:right``, ``cycleway:both``, ``bicycle``, ``oneway:bicycle``"
+msgstr "``cycleway``, ``cycleway:left``, ``cycleway:right``, ``cycleway:both``, ``bicycle``, ``oneway:bicycle``"
+
+msgid "The drive builder also always reads ``highway`` and ``oneway``, and the bike builder ``highway``, ``maxspeed``, ``lanes`` and ``oneway``, even when ``osm_edge_tags`` leaves them out. Fewer kept tags therefore give longer edges: with ``osm_edge_tags=[]`` a walk graph is split only at junctions, bridges and tunnels, while a drive graph is still split where the speed limit or the road class changes."
+msgstr "Автомобильный граф всегда читает ещё ``highway`` и ``oneway``, а велосипедный — ``highway``, ``maxspeed``, ``lanes`` и ``oneway``, даже если в ``osm_edge_tags`` их нет. Поэтому чем меньше сохраняемых тегов, тем длиннее рёбра: с ``osm_edge_tags=[]`` пешеходный граф разделяется только на перекрёстках, мостах и тоннелях, а автомобильный — ещё и там, где меняется ограничение скорости или класс дороги."
+
+msgid "Drive graphs"
+msgstr "Автомобильные графы"
+
+msgid "The speed of an edge is the number in its ``maxspeed`` tag, or the default speed of its ``highway`` class: 110 km/h on motorways, 90 km/h on trunk roads and on motorway and trunk links, 60 km/h on primary, secondary and tertiary roads and their links, 40 km/h on residential and unclassified streets and 20 km/h on living streets. ``category`` (``federal``, ``regional`` or ``local``) is derived from the class; for a way with several classes the lowest category and the lowest speed are taken. The travel time is the length over that speed, a free-flow time without traffic or junction delays."
+msgstr "Скорость ребра — число в его теге ``maxspeed`` или скорость по умолчанию для его класса ``highway``: 110 км/ч на автомагистралях, 90 км/ч на магистралях и съездах автомагистралей и магистралей, 60 км/ч на первичных, вторичных и третичных дорогах и их съездах, 40 км/ч на жилых и неклассифицированных улицах и 20 км/ч в жилых зонах. ``category`` (``federal``, ``regional`` или ``local``) выводится из класса; для линии с несколькими классами берутся наименьшая категория и наименьшая скорость. Время в пути — длина, делённая на эту скорость: время свободного движения без пробок и задержек на перекрёстках."
+
+msgid "Walk graphs"
+msgstr "Пешеходные графы"
+
+msgid "A walk graph is undirected: every way can be walked both ways. It holds streets and their sidewalks, footways, paths, steps and pedestrian areas as OSM draws them, so a street with mapped sidewalks appears as three parallel lines. The travel time is the length over ``walk_speed`` in metres per minute; :func:`apply_grade_speed` makes it depend on the slope (see :doc:`../analysis/elevation`)."
+msgstr "Пешеходный граф неориентирован: по каждой линии можно идти в обе стороны. Он содержит улицы и их тротуары, пешеходные дорожки, тропы, лестницы и пешеходные зоны так, как их рисует OSM, поэтому улица с нанесёнными тротуарами выглядит как три параллельные линии. Время в пути — длина, делённая на ``walk_speed`` в метрах в минуту; :func:`apply_grade_speed` делает его зависящим от уклона (см. :doc:`../analysis/elevation`)."
+
+msgid "Bike graphs"
+msgstr "Велосипедные графы"
+
+msgid "A bike graph holds every way a bicycle may use: streets except motorways and ways closed to bicycles, cycleways, paths and tracks, and footways and pedestrian streets where cycling is permitted (``bicycle=yes``, ``designated`` or ``permissive``; ``allow_footways=True`` takes all of them). One-way streets are one-way for bicycles too, unless the way allows riding against the traffic (``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag)."
+msgstr "Велосипедный граф содержит все пути, доступные велосипеду: улицы, кроме автомагистралей и закрытых для велосипедов дорог, велодорожки, тропы и грунтовые дороги, а также пешеходные дорожки и улицы, где езда на велосипеде разрешена (``bicycle=yes``, ``designated`` или ``permissive``; ``allow_footways=True`` берёт их все). Улицы с односторонним движением односторонние и для велосипедов, если только линия не разрешает ехать навстречу (``oneway:bicycle=no`` или тег ``cycleway*=opposite*``)."
+
+msgid "Every edge gets the kind of cycling infrastructure, ``cycle_infra``:"
+msgstr "Каждое ребро получает вид велоинфраструктуры ``cycle_infra``:"
+
+msgid "``track``: a way of its own or without motor traffic (``highway=cycleway``, paths and footways, ``cycleway*=track``);"
+msgstr "``track``: отдельный путь или путь без автомобильного движения (``highway=cycleway``, тропы и пешеходные дорожки, ``cycleway*=track``);"
+
+msgid "``lane``: a marked lane on the carriageway (``cycleway*=lane``, or a shared bus lane);"
+msgstr "``lane``: размеченная полоса на проезжей части (``cycleway*=lane`` или общая полоса с автобусами);"
+
+msgid "``mixed``: riding with the traffic."
+msgstr "``mixed``: езда в общем потоке."
+
+msgid "and the level of traffic stress, ``lts``, from 1 (anyone rides here) to 4 (only the most confident riders). The levels follow a simplified form of the criteria of Mekuria, Furth and Nixon (2012) for the tags OpenStreetMap has: the infrastructure, the speed limit (``maxspeed`` or the default of the class) and the number of lanes (``lanes``, 2 when absent)."
+msgstr "и уровень транспортного стресса ``lts`` от 1 (здесь поедет любой) до 4 (только самые уверенные велосипедисты). Уровни следуют упрощённому варианту критериев Мекурии, Ферта и Никсона (Mekuria, Furth and Nixon, 2012) для тегов, которые есть в OpenStreetMap: инфраструктура, ограничение скорости (``maxspeed`` или значение по умолчанию для класса) и число полос (``lanes``, 2, если тега нет)."
+
+msgid "Infrastructure"
+msgstr "Инфраструктура"
+
+msgid "Level of traffic stress"
+msgstr "Уровень транспортного стресса"
+
+msgid "track"
+msgstr "track"
+
+msgid "1"
+msgstr "1"
+
+msgid "lane"
+msgstr "lane"
+
+msgid "1 up to 30 km/h and two lanes, 2 up to 50 km/h and two lanes, 3 up to 60 km/h or with more lanes, otherwise 4"
+msgstr "1 до 30 км/ч и двух полос, 2 до 50 км/ч и двух полос, 3 до 60 км/ч или при большем числе полос, иначе 4"
+
+msgid "mixed, on residential, living, unclassified and service streets"
+msgstr "mixed, на жилых улицах, в жилых зонах, на неклассифицированных улицах и служебных проездах"
+
+msgid "1 up to 30 km/h and two lanes (always on living streets), 2 up to 50 km/h and two lanes, 3 with more lanes, 4 above 50 km/h"
+msgstr "1 до 30 км/ч и двух полос (в жилых зонах всегда), 2 до 50 км/ч и двух полос, 3 при большем числе полос, 4 выше 50 км/ч"
+
+msgid "mixed, on other roads"
+msgstr "mixed, на других дорогах"
+
+msgid "2 up to 30 km/h and two lanes, 3 up to 50 km/h and three lanes, otherwise 4"
+msgstr "2 до 30 км/ч и двух полос, 3 до 50 км/ч и трёх полос, иначе 4"
+
+msgid "``max_lts`` keeps only the edges up to the given level, for example 2 for the network most adults are willing to ride. With ``elevation`` the builder adds heights and grades and rescales the travel times with the cycling model of :func:`apply_grade_speed`."
+msgstr "``max_lts`` сохраняет только рёбра до заданного уровня, например 2 для сети, по которой готово ездить большинство взрослых. С ``elevation`` построитель добавляет высоты и уклоны и пересчитывает время в пути по велосипедной модели :func:`apply_grade_speed`."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+msgid "Every builder returns an :class:`UrbanGraph` in the local projected CRS of the territory. Nodes are the ends of the edges; edges have ``u``, ``v``, ``k``, ``geometry``, ``length_meter``, ``time_min``, the kept tags, ``bridge`` and ``tunnel``. Drive edges add ``oneway`` and ``category``; bike edges add ``oneway``, ``cycle_infra``, ``lts`` and, with ``elevation``, ``grade``, ``grade_max``, ``ascent`` and ``descent``."
+msgstr "Каждый построитель возвращает :class:`UrbanGraph` в локальной проекционной системе координат территории. Узлы — концы рёбер; рёбра имеют ``u``, ``v``, ``k``, ``geometry``, ``length_meter``, ``time_min``, сохранённые теги, ``bridge`` и ``tunnel``. Рёбра автомобильного графа добавляют ``oneway`` и ``category``; рёбра велосипедного — ``oneway``, ``cycle_infra``, ``lts`` и, с ``elevation``, ``grade``, ``grade_max``, ``ascent`` и ``descent``."
+
+msgid "For Vasilyevsky Island the walk graph has 22 289 nodes and 29 149 edges with ``simplify=True``, and 38 727 nodes and 45 587 edges with ``simplify=False``. The drive graph has 1 381 directed edges."
+msgstr "Для Васильевского острова пешеходный граф содержит 22 289 узлов и 29 149 рёбер при ``simplify=True`` и 38 727 узлов и 45 587 рёбер при ``simplify=False``. Автомобильный граф содержит 1 381 ориентированное ребро."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+msgstr ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+
+msgid "Build a drivable UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит автомобильный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
+msgstr ":py:obj:`get_walk_graph <iduedu.get_walk_graph>`"
+
+msgid "Build a pedestrian UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит пешеходный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
+msgstr ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
+
+msgid "Build a cycling UrbanGraph from OpenStreetMap within a given territory."
+msgstr "Строит велосипедный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "Drive graph coloured by speed and bike graph coloured by level of traffic stress"
+msgstr "Автомобильный граф, раскрашенный по скорости, и велосипедный граф, раскрашенный по уровню транспортного стресса"
+
+msgid "Vasilyevsky Island. Left: the drive graph coloured by the speed of its edges, ``length_meter`` over ``time_min``. Right: the bike graph by level of traffic stress, with the share of the length at each level. The avenues without cycle lanes are at level 4; the residential streets, at 40 km/h by default, are at level 2."
+msgstr "Васильевский остров. Слева: автомобильный граф, раскрашенный по скорости рёбер, ``length_meter``, делённой на ``time_min``. Справа: велосипедный граф по уровню транспортного стресса с долей длины на каждом уровне. Проспекты без велополос имеют уровень 4; жилые улицы, по умолчанию с 40 км/ч, — уровень 2."
+
+msgid "The same blocks of the walk graph with simplify=False and simplify=True"
+msgstr "Одни и те же кварталы пешеходного графа при simplify=False и simplify=True"
+
+msgid "The same blocks of the walk graph built with ``simplify=False`` and ``simplify=True``. Merging removes the nodes where only two segments of equal tags meet; bridges and tunnels (orange, here mostly passages through buildings, ``tunnel=building_passage``) stay edges of their own."
+msgstr "Одни и те же кварталы пешеходного графа, построенного при ``simplify=False`` и ``simplify=True``. Слияние убирает узлы, где сходятся только два отрезка с одинаковыми тегами; мосты и тоннели (оранжевые, здесь в основном проходы через здания, ``tunnel=building_passage``) остаются отдельными рёбрами."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "Travel times are free-flow times at the speed limit or the walking and cycling speed; they do not include traffic, signals or turns."
+msgstr "Время в пути — время свободного движения с ограничением скорости или со скоростью пешехода и велосипедиста; оно не учитывает пробки, светофоры и повороты."
+
+msgid "A missing ``maxspeed`` tag takes the default of the road class, which may differ from the local rule."
+msgstr "Если тега ``maxspeed`` нет, берётся значение по умолчанию для класса дороги, которое может отличаться от местных правил."
+
+msgid "The level of traffic stress uses only the tags OpenStreetMap has. Parking lanes, the width of a lane, traffic volume and intersections are not taken into account."
+msgstr "Уровень транспортного стресса использует только теги, которые есть в OpenStreetMap. Полосы парковки, ширина полосы, интенсивность движения и перекрёстки не учитываются."
+
+msgid "A walk graph reflects what is mapped: sidewalks drawn as separate ways, or only the street centre lines."
+msgstr "Пешеходный граф отражает то, что нанесено на карту: тротуары отдельными линиями или только осевые линии улиц."
+
+msgid "References"
+msgstr "Литература"
+
+msgid "Mekuria, M. C., Furth, P. G. and Nixon, H. (2012). *Low-stress bicycling and network connectivity*. Report 11-19, Mineta Transportation Institute, San José."
+msgstr "Mekuria, M. C., Furth, P. G. and Nixon, H. (2012). *Low-stress bicycling and network connectivity*. Report 11-19, Mineta Transportation Institute, San José."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/get_any_graph`"
+msgstr ":doc:`../examples/get_any_graph`"
+

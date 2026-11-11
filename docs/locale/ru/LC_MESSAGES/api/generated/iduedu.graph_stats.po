@@ -1,0 +1,106 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.graph\\_stats"
+msgstr "iduedu.graph\\_stats"
+
+msgid "Measures of size, density, shape and connectivity of a street network."
+msgstr "Показатели размера, плотности, формы и связности уличной сети."
+
+msgid "Without ``area`` and ``zones`` the whole graph is measured. With ``area`` only the part of the graph inside it is measured, and with ``zones`` every zone separately. In both cases the number of streets at a node is taken from the whole graph, so a graph built with a margin around the study area gives dead ends and intersections free of edge effects. Nodes belong to the zone they lie in, streets and segments to the zone of their midpoint."
+msgstr "Без ``area`` и ``zones`` измеряется весь граф. С ``area`` измеряется только часть графа внутри неё, а с ``zones`` — каждая зона отдельно. В обоих случаях число улиц в узле берётся из всего графа, поэтому граф, построенный с запасом вокруг области исследования, даёт тупики и перекрёстки без краевых эффектов. Узлы относятся к зоне, в которой лежат, улицы и отрезки — к зоне своей середины."
+
+msgid "Measures (``NaN`` where a measure is undefined):"
+msgstr "Показатели (``NaN``, если показатель не определён):"
+
+msgid "``node_count``, ``edge_count`` (edges as stored), ``street_count`` (undirected streets);"
+msgstr "``node_count``, ``edge_count`` (рёбра в том виде, как они хранятся), ``street_count`` (неориентированные улицы);"
+
+msgid "``street_length_total`` (metres, every physical segment once), ``street_length_mean``;"
+msgstr "``street_length_total`` (метры, каждый физический отрезок один раз), ``street_length_mean``;"
+
+msgid "``streets_per_node_mean``, ``dead_end_count``, ``dead_end_share``, ``intersection_count`` (nodes with three or more streets), ``intersection_4way_share`` (four or more streets, among intersections);"
+msgstr "``streets_per_node_mean``, ``dead_end_count``, ``dead_end_share``, ``intersection_count`` (узлы с тремя и более улицами), ``intersection_4way_share`` (четыре и более улицы, среди перекрёстков);"
+
+msgid "``circuity_mean`` (street length over the straight distance between its ends, loops left out), ``self_loop_share``, ``parallel_street_share``;"
+msgstr "``circuity_mean`` (длина улицы, делённая на расстояние по прямой между её концами, без петель), ``self_loop_share``, ``parallel_street_share``;"
+
+msgid "``component_count``, ``largest_component_share`` (of nodes);"
+msgstr "``component_count``, ``largest_component_share`` (от числа узлов);"
+
+msgid "``beta_index`` (streets per node), ``gamma_index`` (streets over the most a planar graph can have, ``3 (v - 2)``), ``cyclomatic_number`` (independent cycles, ``e - v + p``), ``meshedness`` (cycles over the most a planar graph can have, ``2 v - 5``); they count streets with both ends inside;"
+msgstr "``beta_index`` (улиц на узел), ``gamma_index`` (число улиц, делённое на наибольшее возможное в планарном графе, ``3 (v - 2)``), ``cyclomatic_number`` (независимые циклы, ``e - v + p``), ``meshedness`` (число циклов, делённое на наибольшее возможное в планарном графе, ``2 v - 5``); учитываются улицы, оба конца которых лежат внутри;"
+
+msgid "``orientation_entropy`` (Shannon entropy in nats of segment bearings in 36 bins, weighted by length) and ``orientation_order`` (1 for a perfect grid, 0 for uniform bearings);"
+msgstr "``orientation_entropy`` (энтропия Шеннона в натах для азимутов отрезков по 36 интервалам, взвешенная по длине) и ``orientation_order`` (1 для идеальной решётки, 0 для равномерных азимутов);"
+
+msgid "``oneway_share`` (of street length) when the graph has a direction column;"
+msgstr "``oneway_share`` (от длины улиц), если в графе есть столбец направления;"
+
+msgid "``speed_mean_kmh`` (total length over total travel time) when edges have ``length_meter`` and ``time_min``;"
+msgstr "``speed_mean_kmh`` (общая длина, делённая на общее время в пути), если у рёбер есть ``length_meter`` и ``time_min``;"
+
+msgid "``elevation_min``, ``elevation_max``, ``elevation_mean`` (nodes), ``grade_mean`` (mean absolute grade weighted by length) and ``grade_max`` when the graph carries elevation (:func:`~iduedu.add_elevation`);"
+msgstr "``elevation_min``, ``elevation_max``, ``elevation_mean`` (узлы), ``grade_mean`` (средний по модулю уклон, взвешенный по длине) и ``grade_max``, если в графе есть высоты (:func:`~iduedu.add_elevation`);"
+
+msgid "``platform_count`` (nodes of type ``platform``), ``unattached_platform_count`` (platforms no walking edge leads to, in graphs that have walking edges) and ``boarding_edge_count`` for graphs with public-transport platforms;"
+msgstr "``platform_count`` (узлы типа ``platform``), ``unattached_platform_count`` (платформы, к которым не ведёт ни одно пешеходное ребро, в графах с пешеходными рёбрами) и ``boarding_edge_count`` для графов с платформами общественного транспорта;"
+
+msgid "with ``area`` or ``zones``: ``area_km2``, ``node_density``, ``intersection_density`` (per km²) and ``street_density`` (km per km²)."
+msgstr "с ``area`` или ``zones``: ``area_km2``, ``node_density``, ``intersection_density`` (на км²) и ``street_density`` (км на км²)."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph in a projected (metric) CRS."
+msgstr "Граф в проецированной (метрической) системе координат."
+
+msgid "Study area: a shapely geometry in EPSG:4326, as ``territory`` of the graph builders, or a GeoSeries / GeoDataFrame in any CRS. Several geometries are merged into one area."
+msgstr "Область исследования: геометрия shapely в EPSG:4326, как ``territory`` в функциях построения графов, либо GeoSeries / GeoDataFrame в любой системе координат. Несколько геометрий объединяются в одну область."
+
+msgid "Zones to measure separately: a GeoSeries or GeoDataFrame in any CRS. The result has one row per zone, indexed like ``zones``."
+msgstr "Зоны, которые измеряются по отдельности: GeoSeries или GeoDataFrame в любой системе координат. В результате одна строка на зону с тем же индексом, что у ``zones``."
+
+msgid "Measure only edges whose ``type`` is one of these, and the nodes they touch."
+msgstr "Измерять только рёбра, у которых ``type`` входит в этот список, и узлы, которых они касаются."
+
+msgid "With ``area``: nodes with one street closer than this to the area boundary are not counted as dead ends (streets cut by clipping the graph to the area). ``None`` counts them."
+msgstr "С ``area``: узлы с одной улицей, лежащие ближе этого расстояния к границе области, не считаются тупиками (улицы, обрезанные при обрезке графа по области). ``None`` считает и их."
+
+msgid "Grid for comparing segment end points, see :func:`~iduedu.unique_segments`."
+msgstr "Шаг сетки для сравнения концов отрезков, см. :func:`~iduedu.unique_segments`."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Series of measures, or with ``zones`` a DataFrame with one row per zone."
+msgstr "Series с показателями, а с ``zones`` — DataFrame с одной строкой на зону."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``urban_graph`` is not an ``UrbanGraph`` or ``area`` / ``zones`` have a wrong type."
+msgstr "Если ``urban_graph`` не ``UrbanGraph`` или у ``area`` / ``zones`` неверный тип."
+
+msgid "If the CRS is geographic, or both ``area`` and ``zones`` are passed."
+msgstr "Если система координат географическая либо переданы и ``area``, и ``zones``."
+

@@ -1,0 +1,172 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Centrality"
+msgstr "Центральность"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "Centralities rank the nodes and edges of a network by their position in it. :func:`centrality` measures how much of the network lies within a threshold of every node (reach, harmonic closeness, gravity) and how many shortest paths pass through it (betweenness). :func:`edge_betweenness` counts the shortest paths along every edge."
+msgstr "Центральности ранжируют узлы и рёбра сети по их положению в ней. :func:`centrality` измеряет, какая часть сети лежит в пределах порога от каждого узла (охват, гармоническая близость, гравитация) и сколько кратчайших путей проходит через узел (посредничество). :func:`edge_betweenness` считает кратчайшие пути вдоль каждого ребра."
+
+msgid "Every measure is local: it looks only at the nodes within the threshold along the network, measured by ``length_meter`` (metres, the default) or ``time_min`` (minutes). ``cutoffs=None`` removes the threshold."
+msgstr "Каждая мера локальна: она учитывает только узлы в пределах порога по сети, измеренного по ``length_meter`` (метры, по умолчанию) или ``time_min`` (минуты). ``cutoffs=None`` снимает порог."
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "Measures of a node"
+msgstr "Меры узла"
+
+msgid "For a node ``i`` let ``j`` run over the other nodes within the threshold, ``d`` be the cost of the shortest path from ``i`` to ``j`` and ``w`` the weight of ``j`` (1 without ``node_weights``)."
+msgstr "Для узла ``i`` пусть ``j`` пробегает остальные узлы в пределах порога, ``d`` — стоимость кратчайшего пути от ``i`` до ``j``, а ``w`` — вес ``j`` (1 без ``node_weights``)."
+
+msgid "Measure"
+msgstr "Мера"
+
+msgid "Value"
+msgstr "Значение"
+
+msgid "Meaning"
+msgstr "Значение"
+
+msgid "``reach``"
+msgstr "``reach``"
+
+msgid "``Σ w``"
+msgstr "``Σ w``"
+
+msgid "How much is within the threshold: nodes, or residents with ``node_weights``"
+msgstr "Сколько лежит в пределах порога: узлов или, с ``node_weights``, жителей"
+
+msgid "``harmonic``"
+msgstr "``harmonic``"
+
+msgid "``Σ w / d``"
+msgstr "``Σ w / d``"
+
+msgid "Closeness that favours near nodes (Marchiori and Latora, 2000); nodes at cost 0 are left out"
+msgstr "Близость, в которой ближние узлы весят больше (Marchiori and Latora, 2000); узлы со стоимостью 0 не учитываются"
+
+msgid "``gravity``"
+msgstr "``gravity``"
+
+msgid "``Σ w · exp(-beta · d)``"
+msgstr "``Σ w · exp(-beta · d)``"
+
+msgid "The same with an exponential decay (Hansen, 1959); ``beta`` is ``4 / threshold`` by default"
+msgstr "То же с экспоненциальным затуханием (Hansen, 1959); по умолчанию ``beta`` равна ``4 / threshold``"
+
+msgid "``betweenness``"
+msgstr "``betweenness``"
+
+msgid "shortest paths through ``i``"
+msgstr "кратчайшие пути через ``i``"
+
+msgid "How many shortest paths no longer than the threshold pass through the node (Freeman, 1977)"
+msgstr "Сколько кратчайших путей не длиннее порога проходит через узел (Freeman, 1977)"
+
+msgid "Reach, harmonic and gravity take one cut-off search from every reported node, and several thresholds come from the same searches. ``direction=\"to\"`` measures the paths towards the node on a directed graph."
+msgstr "Охват, гармоническая близость и гравитация требуют одного поиска с отсечкой от каждого выводимого узла, и несколько порогов считаются по одним и тем же поискам. ``direction=\"to\"`` на ориентированном графе измеряет пути к узлу."
+
+msgid "Betweenness"
+msgstr "Посредничество"
+
+msgid "Betweenness is computed with the algorithm of Brandes (2001): one search from every node of the graph, then a pass back along the search tree that hands every node its share of the paths. A path between two nodes counts with the weights of both of its ends. When several routes are equally short, the path is split between them equally. The end points of a path are not counted, and on an undirected graph every pair of nodes counts once."
+msgstr "Посредничество считается алгоритмом Брандеса (Brandes, 2001): один поиск от каждого узла графа, затем обратный проход по дереву поиска, который передаёт каждому узлу его долю путей. Путь между двумя узлами учитывается с весами обоих его концов. Если несколько маршрутов одинаково коротки, путь делится между ними поровну. Концы пути не учитываются, а на неориентированном графе каждая пара узлов считается один раз."
+
+msgid "Every node has to run its own search, also when only the nodes inside ``area`` are reported, so betweenness takes much longer than the other measures. ``sample`` runs the searches from a random part of the nodes and scales the result up to all of them (Brandes and Pich, 2007); ``seed`` fixes the sample."
+msgstr "Поиск нужен от каждого узла, даже когда выводятся только узлы внутри ``area``, поэтому посредничество считается гораздо дольше остальных мер. ``sample`` запускает поиски от случайной части узлов и масштабирует результат на все узлы (Brandes and Pich, 2007); ``seed`` фиксирует выборку."
+
+msgid ":func:`edge_betweenness` counts the same paths along the edges. An edge that can be travelled both ways carries the paths of both directions. Among parallel edges between two nodes only the cheapest one carries paths, and equally cheap ones share them."
+msgstr ":func:`edge_betweenness` считает те же пути вдоль рёбер. Ребро, по которому можно ехать в обе стороны, несёт пути обоих направлений. Из параллельных рёбер между двумя узлами пути несёт только самое дешёвое, а одинаково дешёвые делят их между собой."
+
+msgid "Border effects"
+msgstr "Краевые эффекты"
+
+msgid "A node near the border of a graph has part of its surroundings cut off, so its values are too low. Build the graph with a margin at least as wide as the largest threshold and pass the study ``area``: only the nodes inside are reported, and the searches still use the whole graph. ``area`` follows the rule of ``territory`` in the graph builders (a bare shapely geometry is in EPSG:4326)."
+msgstr "У узла у границы графа часть окружения отрезана, поэтому его значения занижены. Стройте граф с запасом не меньше наибольшего порога и передавайте исследуемую территорию ``area``: выводятся только узлы внутри неё, а поиски по-прежнему идут по всему графу. ``area`` задаётся по правилу ``territory`` построителей графов (геометрия shapely без обёртки — в EPSG:4326)."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+msgid ":func:`centrality` returns a table indexed by node id with one column per measure and threshold, named ``<measure>_<threshold>`` (``reach_400``, ``harmonic_800``, ``betweenness_inf``). :func:`edge_betweenness` returns a table indexed like ``edges_gdf`` with one column ``betweenness_<threshold>`` per threshold."
+msgstr ":func:`centrality` возвращает таблицу с индексом по id узла и одним столбцом на меру и порог с именем ``<measure>_<threshold>`` (``reach_400``, ``harmonic_800``, ``betweenness_inf``). :func:`edge_betweenness` возвращает таблицу с индексом как у ``edges_gdf`` и одним столбцом ``betweenness_<threshold>`` на порог."
+
+msgid "On the walk graph of Vasilyevsky Island (22 289 nodes) on 16 threads, the three measures of a node within 400, 800 and 1 600 m take 0.65 s. Betweenness of the nodes within 2 000 m takes 1.2 s, and betweenness of the edges takes 1.2 s within 2 000 m, 3.6 s without a threshold and 0.17 s without a threshold from a sample of 1 000 nodes."
+msgstr "На пешеходном графе Васильевского острова (22 289 узлов) в 16 потоках три меры узла в пределах 400, 800 и 1 600 м считаются за 0,65 с. Посредничество узлов в пределах 2 000 м занимает 1,2 с, а посредничество рёбер — 1,2 с в пределах 2 000 м, 3,6 с без порога и 0,17 с без порога по выборке из 1 000 узлов."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`centrality <iduedu.centrality>`"
+msgstr ":py:obj:`centrality <iduedu.centrality>`"
+
+msgid "Centralities of the nodes of a graph within travel-cost thresholds."
+msgstr "Центральности узлов графа в пределах порогов затрат на путь."
+
+msgid ":py:obj:`edge_betweenness <iduedu.edge_betweenness>`"
+msgstr ":py:obj:`edge_betweenness <iduedu.edge_betweenness>`"
+
+msgid "Betweenness of the edges of a graph: how many shortest paths within a threshold run along each edge."
+msgstr "Промежуточность рёбер графа: сколько кратчайших путей в пределах порога проходит по каждому ребру."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "Harmonic closeness of the nodes within 800 m and betweenness of the edges within 2 km"
+msgstr "Гармоническая близость узлов в пределах 800 м и посредничество рёбер в пределах 2 км"
+
+msgid "The walk graph of Vasilyevsky Island measured by ``length_meter``. Left: ``harmonic_800`` of every node, high where short streets and walkways are dense. Right: ``betweenness_2000`` of every edge; the line width grows with the value up to its 99.5th percentile. The paths within 2 km concentrate on a few long straight walkways that link the parts of the island."
+msgstr "Пешеходный граф Васильевского острова, измеренный по ``length_meter``. Слева: ``harmonic_800`` каждого узла, высокая там, где густо идут короткие улицы и дорожки. Справа: ``betweenness_2000`` каждого ребра; толщина линии растёт со значением до его 99,5-го процентиля. Пути в пределах 2 км сосредоточены на нескольких длинных прямых дорожках, которые связывают части острова."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "Values near the border of a graph are biased low, see Border effects above."
+msgstr "Значения у границы графа занижены, см. раздел «Краевые эффекты» выше."
+
+msgid "On a walk graph a street with two sidewalks splits its paths between them, so betweenness of the sidewalks is lower than that of a street drawn as one line."
+msgstr "На пешеходном графе улица с двумя тротуарами делит свои пути между ними, поэтому посредничество тротуаров ниже, чем у улицы, нарисованной одной линией."
+
+msgid "Without a threshold, harmonic closeness and gravity sum over the whole graph, and betweenness needs a search of the whole graph from every node."
+msgstr "Без порога гармоническая близость и гравитация суммируются по всему графу, а посредничеству нужен поиск по всему графу от каждого узла."
+
+msgid "References"
+msgstr "Литература"
+
+msgid "Brandes, U. (2001). A faster algorithm for betweenness centrality. *Journal of Mathematical Sociology*, 25(2), 163–177."
+msgstr "Brandes, U. (2001). A faster algorithm for betweenness centrality. *Journal of Mathematical Sociology*, 25(2), 163–177."
+
+msgid "Brandes, U. and Pich, C. (2007). Centrality estimation in large networks. *International Journal of Bifurcation and Chaos*, 17(7), 2303–2318."
+msgstr "Brandes, U. and Pich, C. (2007). Centrality estimation in large networks. *International Journal of Bifurcation and Chaos*, 17(7), 2303–2318."
+
+msgid "Freeman, L. C. (1977). A set of measures of centrality based on betweenness. *Sociometry*, 40(1), 35–41."
+msgstr "Freeman, L. C. (1977). A set of measures of centrality based on betweenness. *Sociometry*, 40(1), 35–41."
+
+msgid "Hansen, W. G. (1959). How accessibility shapes land use. *Journal of the American Institute of Planners*, 25(2), 73–76."
+msgstr "Hansen, W. G. (1959). How accessibility shapes land use. *Journal of the American Institute of Planners*, 25(2), 73–76."
+
+msgid "Marchiori, M. and Latora, V. (2000). Harmony in the small-world. *Physica A*, 285(3–4), 539–546."
+msgstr "Marchiori, M. and Latora, V. (2000). Harmony in the small-world. *Physica A*, 285(3–4), 539–546."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/network_analysis`"
+msgstr ":doc:`../examples/network_analysis`"
+

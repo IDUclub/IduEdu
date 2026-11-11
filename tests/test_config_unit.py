@@ -125,6 +125,8 @@ def test_set_tag_sets_are_frozensets():
     cfg.set_drive_useful_edges_attr(["a", "b"])
     cfg.set_walk_useful_edges_attr(("x", "y"))
     cfg.set_transport_useful_edges_attr({"m", "n"})
+    cfg.set_bike_useful_edges_attr(["c"])
+    assert cfg.bike_useful_edges_attr == frozenset({"c"}) and cfg.to_dict()["bike_useful_edges_attr"] == ["c"]
     assert isinstance(cfg.drive_useful_edges_attr, frozenset)
     assert cfg.drive_useful_edges_attr == frozenset({"a", "b"})
     assert isinstance(cfg.walk_useful_edges_attr, frozenset)
@@ -333,7 +335,6 @@ def test_set_osm_source_validates(tmp_path):
 
 
 def test_set_osm_source_and_use_pbf(tmp_path):
-    pytest.importorskip("osmium")
     first, second = tmp_path / "a.osm.pbf", tmp_path / "b.osm.pbf"
     first.write_bytes(b"")
     second.write_bytes(b"")
@@ -372,7 +373,6 @@ def test_use_pbf_takes_a_path_or_download_arguments(tmp_path):
 
 
 def test_top_level_use_pbf_switches_the_global_config(tmp_path):
-    pytest.importorskip("osmium")
     import iduedu  # pylint: disable=import-outside-toplevel
 
     path = tmp_path / "a.osm.pbf"

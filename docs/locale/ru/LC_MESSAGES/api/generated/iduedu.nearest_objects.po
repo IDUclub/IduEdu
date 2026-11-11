@@ -1,0 +1,79 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.nearest\\_objects"
+msgstr "iduedu.nearest\\_objects"
+
+msgid "Find the ``k`` nearest objects of every origin along the network."
+msgstr "Находит ``k`` ближайших по сети объектов для каждой исходной точки."
+
+msgid "Each origin runs one search that stops as soon as ``k`` objects are found, so the cost does not grow with the number of objects."
+msgstr "Каждая исходная точка запускает один обход, который останавливается, как только найдено ``k`` объектов, поэтому затраты не растут с числом объектов."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph to search."
+msgstr "Граф для поиска."
+
+msgid "Origin objects, with ``graph_node_column`` or matched to their nearest nodes, or"
+msgstr "Исходные объекты со столбцом ``graph_node_column`` или сопоставленные с ближайшими узлами, либо"
+
+msgid "origin node ids."
+msgstr "идентификаторы исходных узлов."
+
+msgid "Objects to look for, with the same conventions, or"
+msgstr "Объекты, которые нужно найти, заданные так же, либо"
+
+msgid "their node ids."
+msgstr "идентификаторы их узлов."
+
+msgid "Number of objects to return per origin."
+msgstr "Сколько объектов вернуть для каждой исходной точки."
+
+msgid "Largest travel cost, inclusive; ``None`` for no limit."
+msgstr "Наибольшие затраты на путь (включительно); ``None`` — без ограничения."
+
+msgid "Edge cost column: ``time_min`` (minutes) or ``length_meter`` (metres)."
+msgstr "Столбец стоимости ребра: ``time_min`` (минуты) или ``length_meter`` (метры)."
+
+msgid "``\"from\"`` measures the way from the origin to the object, ``\"to\"`` from the object to the origin. They differ on directed graphs."
+msgstr "``\"from\"`` измеряет путь от исходной точки к объекту, ``\"to\"`` — от объекта к исходной точке. На ориентированных графах они различаются."
+
+msgid "Column of object tables that holds graph node ids."
+msgstr "Столбец таблиц объектов с идентификаторами узлов графа."
+
+msgid "Number of threads; ``None`` uses all cores."
+msgstr "Число потоков; ``None`` использует все ядра."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame with a ``(origin, rank)`` MultiIndex (``rank`` starts at 1) and columns ``object`` (label of the object in its table, or its node id) and ``dist``. Origins with fewer than ``k`` reachable objects have fewer rows; objects on the same node keep the order of the object table."
+msgstr "DataFrame с мультииндексом ``(origin, rank)`` (``rank`` начинается с 1) и столбцами ``object`` (метка объекта в его таблице или идентификатор его узла) и ``dist``. У исходных точек, для которых достижимо меньше ``k`` объектов, строк меньше; объекты на одном узле сохраняют порядок таблицы объектов."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``k`` is not a positive integer, or inputs cannot be resolved to graph nodes."
+msgstr "Если ``k`` не положительное целое число или входные данные нельзя сопоставить с узлами графа."
+

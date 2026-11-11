@@ -51,3 +51,11 @@ graphify-out
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Rust extension build artifacts
+/rust/target/
+iduedu/_rust*.so
+iduedu/_rust*.pyd
+
+# documentation figures, published on the assets branch
+docs/figures/out/

@@ -1,4 +1,5 @@
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 from shapely.geometry import LineString, Point, box
@@ -68,11 +69,13 @@ def test_subgraph_by_nodes_rejects_unknown_node():
 
 def test_clip_urban_graph_keeps_nodes_inside_polygon():
     graph = undirected_line_graph()  # nodes at x = 0, 10, 20, 30 (y = 0)
-    polygon = box(-5.0, -5.0, 15.0, 5.0)
+    polygon = gpd.GeoSeries([box(-5.0, -5.0, 15.0, 5.0)], crs=CRS)  # metres, in the graph CRS
 
     clipped = clip_urban_graph(graph, polygon)
 
     assert set(clipped.nodes_gdf.index) == {0, 1}
+    # A bare shapely geometry is in EPSG:4326, as territory in the graph builders.
+    assert set(clip_urban_graph(graph, polygon.to_crs(4326).iloc[0]).nodes_gdf.index) == {0, 1}
     edge_pairs = set(zip(clipped.edges_gdf["u"], clipped.edges_gdf["v"]))
     assert edge_pairs == {(0, 1)}
 
@@ -162,6 +165,8 @@ def test_project_objects_splits_nearest_edge_and_connects_object():
     assert len(new_graph.nodes_gdf) > len(graph.nodes_gdf)
     remaining = set(zip(new_graph.edges_gdf["u"], new_graph.edges_gdf["v"]))
     assert (1, 2) not in remaining  # original edge replaced by split parts
+    assert changes.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
+    assert new_graph.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
 def test_project_objects_snaps_to_existing_endpoint_without_splitting():
@@ -177,6 +182,8 @@ def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     object_node = object2node.loc[1000]
     assert object_node in new_graph.nodes_gdf.index
     assert _degree(new_graph, object_node) > 0  # the connector edge is part of the changes
+    # The endpoint id comes from the nearest-edge join; it stays an integer.
+    assert changes.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
 @pytest.mark.parametrize("add_link_edge", [True, False])

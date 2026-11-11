@@ -1,0 +1,91 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.diversity"
+msgstr "iduedu.diversity"
+
+msgid "Diversity of object categories within a travel cost of every origin."
+msgstr "Разнообразие категорий объектов в пределах затрат на путь от каждой исходной точки."
+
+msgid "The shares ``p`` of the categories are taken from the object counts in reach (or from the sums of ``values``, for example floor area), weighted by ``decay`` when it is set."
+msgstr "Доли ``p`` категорий берутся из количеств достижимых объектов (или из сумм ``values``, например площади помещений), взвешенных по ``decay``, если оно задано."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph to search."
+msgstr "Граф для поиска."
+
+msgid "Largest travel cost, inclusive, or several of them."
+msgstr "Наибольшие затраты на путь (включительно) или несколько таких порогов."
+
+msgid "Column of ``gdf_objects`` with the category of every object. Objects without one are left out."
+msgstr "Столбец ``gdf_objects`` с категорией каждого объекта. Объекты без категории не учитываются."
+
+msgid "Objects, with ``graph_node_column`` or matched to their nearest nodes."
+msgstr "Объекты со столбцом ``graph_node_column`` или сопоставленные с ближайшими узлами."
+
+msgid "Origin objects, with the same conventions, or"
+msgstr "Исходные объекты, заданные так же, либо"
+
+msgid "origin node ids."
+msgstr "идентификаторы исходных узлов."
+
+msgid "Numeric column of ``gdf_objects`` that weighs the objects instead of counting them."
+msgstr "Числовой столбец ``gdf_objects``, который задаёт вес объектов вместо их подсчёта."
+
+msgid "Order ``q`` of the Hill number: 0 counts categories, 1 gives ``exp`` of the Shannon entropy, 2 (the default) the inverse Simpson index."
+msgstr "Порядок ``q`` числа Хилла: 0 считает категории, 1 даёт ``exp`` от энтропии Шеннона, 2 (по умолчанию) — обратный индекс Симпсона."
+
+msgid "Edge cost column: ``time_min`` (minutes) or ``length_meter`` (metres)."
+msgstr "Столбец стоимости ребра: ``time_min`` (минуты) или ``length_meter`` (метры)."
+
+msgid "Distance decay, see :func:`aggregate_objects`."
+msgstr "Затухание по расстоянию, см. :func:`aggregate_objects`."
+
+msgid "Rate of the exponential decay, see :func:`aggregate_objects`."
+msgstr "Скорость экспоненциального затухания, см. :func:`aggregate_objects`."
+
+msgid "``\"from\"`` (origin to object) or ``\"to\"`` (object to origin)."
+msgstr "``\"from\"`` (от исходной точки к объекту) или ``\"to\"`` (от объекта к исходной точке)."
+
+msgid "Column of object tables that holds graph node ids."
+msgstr "Столбец таблиц объектов с идентификаторами узлов графа."
+
+msgid "Number of threads; ``None`` uses all cores."
+msgstr "Число потоков; ``None`` использует все ядра."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "``richness_c`` (categories in reach), ``shannon_c`` (entropy ``-Σ p ln p``) and ``hill_c`` (effective number of categories of order ``hill_order``); ``NaN`` for the last two where nothing is in reach."
+msgstr "``richness_c`` (число достижимых категорий), ``shannon_c`` (энтропия ``-Σ p ln p``) и ``hill_c`` (эффективное число категорий порядка ``hill_order``); для двух последних ``NaN``, если в пределах досягаемости ничего нет."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "DataFrame indexed like the origins. For every cutoff ``c``"
+msgstr "DataFrame с индексом исходных точек. Для каждого порога ``c``"
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``category`` or ``values`` is absent from ``gdf_objects``."
+msgstr "Если ``category`` или ``values`` нет в ``gdf_objects``."
+
+msgid "If ``hill_order`` is negative or other arguments are invalid."
+msgstr "Если ``hill_order`` отрицателен или другие аргументы недопустимы."
+

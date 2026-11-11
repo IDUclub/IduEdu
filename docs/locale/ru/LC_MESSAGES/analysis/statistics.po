@@ -1,0 +1,253 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+# | msgid "Statistics"
+msgid "Network statistics"
+msgstr "Статистика сети"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "The statistics functions describe a graph that is already built: its size, density, junctions, shape and connectivity, for the whole graph, inside a study area, for every zone of a grid or around every node."
+msgstr "Функции статистики описывают уже построенный граф: его размер, плотность, узлы, форму и связность, для всего графа, внутри исследуемой территории, для каждой зоны сетки или вокруг каждого узла."
+
+msgid "Function"
+msgstr "Функция"
+
+msgid "Result"
+msgstr "Результат"
+
+msgid ":func:`graph_stats`"
+msgstr ":func:`graph_stats`"
+
+msgid "Measures of the whole network, of the part inside ``area`` or of every one of ``zones``"
+msgstr "Меры всей сети, её части внутри ``area`` или каждой из ``zones``"
+
+msgid ":func:`local_stats`"
+msgstr ":func:`local_stats`"
+
+# | msgid "Network measures around every node, within a travel cost along the
+# | network."
+msgid "The same kind of measures around every node, within a network radius"
+msgstr "Такие же меры вокруг каждого узла в пределах сетевого радиуса"
+
+msgid ":func:`edge_stats`"
+msgstr ":func:`edge_stats`"
+
+# | msgid "Edge counts, lengths and speeds for every value of an edge column."
+msgid "Counts, lengths and speeds for every value of an edge column (``type``, ``highway``, ``category``)"
+msgstr "Число, длины и скорости для каждого значения столбца рёбер (``type``, ``highway``, ``category``)"
+
+msgid ":func:`transport_stats`"
+msgstr ":func:`transport_stats`"
+
+# | msgid "Stops, routes and stop spacing of every public-transport mode of a
+# | graph."
+msgid "Stops, routes, stop spacing and speed of every public-transport mode"
+msgstr "Остановки, маршруты, расстояние между остановками и скорость каждого вида общественного транспорта"
+
+msgid ":func:`streets_per_node`"
+msgstr ":func:`streets_per_node`"
+
+# | msgid "Number of streets that meet at every node."
+msgid "The number of streets that meet at every node"
+msgstr "Число улиц, сходящихся в каждом узле"
+
+msgid ":func:`route_directness`"
+msgstr ":func:`route_directness`"
+
+# | msgid "Ratio of the shortest network distance to the straight distance
+# | between origins and destinations."
+msgid "Network distance over straight distance between origins and destinations"
+msgstr "Расстояние по сети, делённое на расстояние по прямой между точками отправления и назначения"
+
+msgid "Inputs"
+msgstr "Входные данные"
+
+# | msgid "Areas (``area``, ``zones``) follow the rule of ``territory`` in the
+# | graph builders: a bare shapely geometry is in EPSG:4326 (longitude,
+# | latitude), and a GeoSeries or GeoDataFrame carries its own CRS; both are
+# | reprojected to the graph CRS."
+msgid "Every function reads an :class:`UrbanGraph` in a projected CRS with lengths in metres. ``area`` follows the rule of ``territory`` in the graph builders: a bare shapely geometry is in EPSG:4326 (longitude, latitude), and a GeoSeries or GeoDataFrame carries its own CRS. ``zones`` is a GeoSeries or GeoDataFrame in any CRS. Both are reprojected to the graph CRS. ``edge_types`` restricts the measures to the edges of the given ``type``, for example ``[\"walk\"]`` on an intermodal graph."
+msgstr "Каждая функция читает :class:`UrbanGraph` в проекционной системе координат с длинами в метрах. ``area`` задаётся по правилу ``territory`` построителей графов: геометрия shapely без обёртки — в EPSG:4326 (долгота, широта), а GeoSeries или GeoDataFrame несут свою систему координат. ``zones`` — GeoSeries или GeoDataFrame в любой системе координат. Обе перепроецируются в систему координат графа. ``edge_types`` ограничивает меры рёбрами заданного ``type``, например ``[\"walk\"]`` на интермодальном графе."
+
+msgid ":func:`local_stats` measures its ``radius`` in metres by ``length_meter`` (the default) or in minutes with ``weight=\"time_min\"``. Several radii are computed from the same searches."
+msgstr ":func:`local_stats` измеряет ``radius`` в метрах по ``length_meter`` (по умолчанию) или в минутах при ``weight=\"time_min\"``. Несколько радиусов считаются по одним и тем же поискам."
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "Streets"
+msgstr "Улицы"
+
+msgid "An OSM graph stores a two-way street as two directed edges, and a walk graph can store the same segment twice. The statistics count a *street*: one undirected connection between two nodes, however many directed or parallel edges the graph stores for it. Lengths are taken on the unique segments of the geometry (:func:`unique_segments`), so the two directions of a street add their length once. A node with one street is a dead end, and a node with three or more streets is an intersection."
+msgstr "Граф OSM хранит двустороннюю улицу как два ориентированных ребра, а пешеходный граф может хранить один и тот же отрезок дважды. Статистика считает *улицы*: одну неориентированную связь между двумя узлами, сколько бы ориентированных или параллельных рёбер граф для неё ни хранил. Длины берутся по уникальным отрезкам геометрии (:func:`unique_segments`), поэтому два направления улицы дают её длину один раз. Узел с одной улицей — тупик, узел с тремя и более улицами — перекрёсток."
+
+msgid "The number of streets at a node always comes from the whole graph. With ``area`` or ``zones`` the nodes belong to the zone they lie in, and streets and segments to the zone of their midpoint. A graph built with a margin around the study area therefore gives the true number of streets at the nodes near the border. Nodes with one street closer than ``boundary_buffer`` (1 m) to the boundary of ``area`` are streets cut by clipping and are not counted as dead ends."
+msgstr "Число улиц в узле всегда берётся по всему графу. С ``area`` или ``zones`` узлы относятся к зоне, в которой лежат, а улицы и отрезки — к зоне своей середины. Поэтому граф, построенный с запасом вокруг исследуемой территории, даёт верное число улиц в узлах у границы. Узлы с одной улицей ближе ``boundary_buffer`` (1 м) к границе ``area`` — это улицы, обрезанные по территории, и тупиками они не считаются."
+
+msgid "Measures of the network"
+msgstr "Меры сети"
+
+msgid ":func:`graph_stats` returns the following groups of measures; a measure that is undefined for a graph or a zone is ``NaN``."
+msgstr ":func:`graph_stats` возвращает следующие группы мер; мера, не определённая для графа или зоны, равна ``NaN``."
+
+msgid "Group"
+msgstr "Группа"
+
+msgid "Measures"
+msgstr "Меры"
+
+msgid "Size"
+msgstr "Размер"
+
+msgid "``node_count``, ``edge_count`` (edges as stored), ``street_count``, ``street_length_total`` (metres), ``street_length_mean``"
+msgstr "``node_count``, ``edge_count`` (рёбра в том виде, как хранятся), ``street_count``, ``street_length_total`` (метры), ``street_length_mean``"
+
+msgid "Junctions"
+msgstr "Узлы"
+
+msgid "``streets_per_node_mean``, ``dead_end_count``, ``dead_end_share``, ``intersection_count``, ``intersection_4way_share`` (four or more streets, among the intersections)"
+msgstr "``streets_per_node_mean``, ``dead_end_count``, ``dead_end_share``, ``intersection_count``, ``intersection_4way_share`` (четыре и более улиц, среди перекрёстков)"
+
+msgid "Shape"
+msgstr "Форма"
+
+msgid "``circuity_mean`` (street length over the straight distance between its ends), ``self_loop_share``, ``parallel_street_share``, ``orientation_entropy`` and ``orientation_order``"
+msgstr "``circuity_mean`` (длина улицы, делённая на расстояние по прямой между её концами), ``self_loop_share``, ``parallel_street_share``, ``orientation_entropy`` и ``orientation_order``"
+
+msgid "Connectivity"
+msgstr "Связность"
+
+msgid "``component_count``, ``largest_component_share``, ``beta_index``, ``gamma_index``, ``cyclomatic_number``, ``meshedness``"
+msgstr "``component_count``, ``largest_component_share``, ``beta_index``, ``gamma_index``, ``cyclomatic_number``, ``meshedness``"
+
+msgid "Density"
+msgstr "Плотность"
+
+msgid "``area_km2``, ``node_density``, ``intersection_density`` (per km²) and ``street_density`` (km per km²), with ``area`` or ``zones``"
+msgstr "``area_km2``, ``node_density``, ``intersection_density`` (на км²) и ``street_density`` (км на км²), с ``area`` или ``zones``"
+
+msgid "Edge attributes"
+msgstr "Атрибуты рёбер"
+
+msgid "``oneway_share`` (of street length), ``speed_mean_kmh``, elevation and grade after :func:`add_elevation`, platform and boarding counts on graphs with public transport"
+msgstr "``oneway_share`` (доля длины улиц), ``speed_mean_kmh``, высоты и уклоны после :func:`add_elevation`, число платформ и посадочных рёбер на графах с общественным транспортом"
+
+msgid "The connectivity indices compare the number of streets ``e`` with the number of nodes ``v`` and of components ``p``: the beta index is ``e / v``, the gamma index ``e / (3 (v - 2))``, the cyclomatic number ``e - v + p`` (independent cycles) and the meshedness ``(e - v + p) / (2 v - 5)``. The denominators are the largest numbers of streets and cycles a planar graph can have. Only streets with both ends inside the area are counted for them."
+msgstr "Индексы связности сравнивают число улиц ``e`` с числом узлов ``v`` и компонент ``p``: индекс бета равен ``e / v``, индекс гамма — ``e / (3 (v - 2))``, цикломатическое число — ``e - v + p`` (независимые циклы), а сетчатость — ``(e - v + p) / (2 v - 5)``. Знаменатели — наибольшие числа улиц и циклов, возможные в планарном графе. Для этих индексов учитываются только улицы с обоими концами внутри территории."
+
+msgid "The orientation measures sort the bearings of the segments into 36 bins of 10°, each segment weighted by its length. ``orientation_entropy`` is the Shannon entropy of the bins in nats, and ``orientation_order`` rescales it to 1 for a grid of two perpendicular directions and 0 for bearings spread evenly over all bins (Boeing, 2019)."
+msgstr "Меры ориентации раскладывают азимуты отрезков по 36 интервалам по 10°, каждый отрезок с весом, равным его длине. ``orientation_entropy`` — энтропия Шеннона интервалов в натах, а ``orientation_order`` перешкаливает её в 1 для сетки из двух перпендикулярных направлений и в 0 для азимутов, равномерно распределённых по всем интервалам (Boeing, 2019)."
+
+msgid "Measures around every node"
+msgstr "Меры вокруг каждого узла"
+
+msgid ":func:`local_stats` runs one cut-off search from every node and collects the nodes within ``radius``. Every street gives half of its length to each of its two ends, so the street length around a node is the sum of the halves held by the nodes in reach. For every radius ``r`` the result has the columns ``node_count_r``, ``intersection_count_r``, ``dead_end_count_r``, ``street_length_r`` (metres), ``streets_per_node_mean_r``, ``dead_end_share_r`` and ``intersections_per_km_r`` (intersections per kilometre of street). The node itself is included."
+msgstr ":func:`local_stats` запускает один поиск с отсечкой от каждого узла и собирает узлы в пределах ``radius``. Каждая улица отдаёт половину своей длины каждому из двух концов, поэтому длина улиц вокруг узла — сумма половин, которые держат досягаемые узлы. Для каждого радиуса ``r`` результат содержит столбцы ``node_count_r``, ``intersection_count_r``, ``dead_end_count_r``, ``street_length_r`` (метры), ``streets_per_node_mean_r``, ``dead_end_share_r`` и ``intersections_per_km_r`` (перекрёстков на километр улиц). Сам узел учитывается."
+
+msgid "Directness"
+msgstr "Прямолинейность"
+
+msgid ":func:`route_directness` divides the shortest network distance by the straight distance between the same two nodes. A value of 1 is a straight route; the mean over a street grid is about 1.27. Without origins it takes ``sample`` random nodes (200 by default) as both origins and destinations. The result is a table with origins in rows and destinations in columns, and ``result.stack().mean()`` is the mean directness."
+msgstr ":func:`route_directness` делит кратчайшее расстояние по сети на расстояние по прямой между теми же двумя узлами. Значение 1 — прямой маршрут; среднее по уличной сетке около 1,27. Без точек отправления берётся ``sample`` случайных узлов (по умолчанию 200) как точки отправления и назначения одновременно. Результат — таблица с точками отправления в строках и точками назначения в столбцах, а ``result.stack().mean()`` — средняя прямолинейность."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+#, python-format
+msgid "On the walk graph of Vasilyevsky Island (22 289 nodes, 726 km of streets), ``graph_stats(walk)`` reports 14 244 intersections, 22 % of the nodes as dead ends, a mean circuity of 1.04 and an orientation order of 0.27. A random sample of 200 nodes gives a mean directness of 1.25. On 16 threads the whole graph is measured in 0.06 s, 85 squares of 500 m in 0.14 s and every node within 400 and 800 m in 0.17 s."
+msgstr "На пешеходном графе Васильевского острова (22 289 узлов, 726 км улиц) ``graph_stats(walk)`` даёт 14 244 перекрёстка, 22 % узлов-тупиков, среднюю извилистость 1,04 и упорядоченность ориентации 0,27. Случайная выборка из 200 узлов даёт среднюю прямолинейность 1,25. В 16 потоках весь граф измеряется за 0,06 с, 85 квадратов по 500 м — за 0,14 с, а каждый узел в пределах 400 и 800 м — за 0,17 с."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`graph_stats <iduedu.graph_stats>`"
+msgstr ":py:obj:`graph_stats <iduedu.graph_stats>`"
+
+msgid "Measures of size, density, shape and connectivity of a street network."
+msgstr "Показатели размера, плотности, формы и связности уличной сети."
+
+msgid ":py:obj:`local_stats <iduedu.local_stats>`"
+msgstr ":py:obj:`local_stats <iduedu.local_stats>`"
+
+msgid "Network measures around every node, within a travel cost along the network."
+msgstr "Показатели сети вокруг каждого узла в пределах затрат на путь по сети."
+
+msgid ":py:obj:`edge_stats <iduedu.edge_stats>`"
+msgstr ":py:obj:`edge_stats <iduedu.edge_stats>`"
+
+msgid "Edge counts, lengths and speeds for every value of an edge column."
+msgstr "Количества рёбер, длины и скорости для каждого значения столбца рёбер."
+
+msgid ":py:obj:`transport_stats <iduedu.transport_stats>`"
+msgstr ":py:obj:`transport_stats <iduedu.transport_stats>`"
+
+msgid "Stops, routes and stop spacing of every public-transport mode of a graph."
+msgstr "Остановки, маршруты и расстояние между остановками для каждого вида общественного транспорта в графе."
+
+msgid ":py:obj:`streets_per_node <iduedu.streets_per_node>`"
+msgstr ":py:obj:`streets_per_node <iduedu.streets_per_node>`"
+
+msgid "Number of streets that meet at every node."
+msgstr "Число улиц, сходящихся в каждом узле."
+
+msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgstr ":py:obj:`route_directness <iduedu.route_directness>`"
+
+msgid "Ratio of the shortest network distance to the straight distance between origins and destinations."
+msgstr "Отношение кратчайшего расстояния по сети к расстоянию по прямой между исходными точками и точками назначения."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "Intersection density in squares of 500 m and street length within 400 m of every node"
+msgstr "Плотность перекрёстков в квадратах по 500 м и длина улиц в пределах 400 м от каждого узла"
+
+msgid "The walk graph of Vasilyevsky Island. Left: ``intersection_density`` of :func:`graph_stats` with ``zones`` set to squares of 500 m (squares with less than half of their area on land are left out). Right: ``street_length_400`` of :func:`local_stats`, the length of walkable street within 400 m of every node along the network."
+msgstr "Пешеходный граф Васильевского острова. Слева: ``intersection_density`` из :func:`graph_stats` с ``zones`` из квадратов по 500 м (квадраты, у которых на суше меньше половины площади, отброшены). Справа: ``street_length_400`` из :func:`local_stats`, длина пешеходных улиц в пределах 400 м по сети от каждого узла."
+
+# | msgid "Elevation"
+msgid "Limitations"
+msgstr "Ограничения"
+
+# | msgid "Junctions drawn as several nodes inflate node and intersection
+# | counts; merge them with :func:`consolidate_intersections` first when that
+# | matters."
+msgid "Junctions drawn as several nodes, such as dual carriageways and the crossings of a walk graph, inflate node and intersection counts. Merge them with :func:`consolidate_intersections` before comparing graphs from different sources."
+msgstr "Перекрёстки, нарисованные несколькими узлами, например у дорог с разделительной полосой и на переходах пешеходного графа, завышают число узлов и перекрёстков. Перед сравнением графов из разных источников объединяйте их функцией :func:`consolidate_intersections`."
+
+msgid "Densities depend on the zone boundaries; small zones and zones cut by water give unstable values."
+msgstr "Плотности зависят от границ зон; маленькие зоны и зоны, срезанные водой, дают неустойчивые значения."
+
+msgid ":func:`local_stats` near the border of a graph counts only the network inside it. Build the graph with a margin at least as wide as the largest radius."
+msgstr ":func:`local_stats` у границы графа учитывает только сеть внутри него. Стройте граф с запасом не меньше наибольшего радиуса."
+
+msgid ":func:`route_directness` represents objects by their nearest nodes, so the straight distance is measured between nodes, not between the objects."
+msgstr ":func:`route_directness` представляет объекты ближайшими узлами, поэтому расстояние по прямой измеряется между узлами, а не между объектами."
+
+msgid "References"
+msgstr "Литература"
+
+msgid "Boeing, G. (2019). Urban spatial order: street network orientation, configuration, and entropy. *Applied Network Science*, 4, 67."
+msgstr "Boeing, G. (2019). Urban spatial order: street network orientation, configuration, and entropy. *Applied Network Science*, 4, 67."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/network_analysis`"
+msgstr ":doc:`../examples/network_analysis`"
+

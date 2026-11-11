@@ -3,11 +3,11 @@ from typing import Literal
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from pyproj import CRS
-from shapely import LineString, MultiLineString, Polygon, line_merge, linestrings
+from pyproj import CRS, Transformer
+from shapely import LineString, Polygon, linestrings
 from shapely.geometry.multipolygon import MultiPolygon
 
-from iduedu import config
+from iduedu import _rust, config
 from iduedu.constants.highway_enums import HighwayType
 from iduedu.constants.network_enums import Network
 from iduedu.graph.transformers import estimate_crs_for_bounds, keep_largest_connected_component
@@ -97,30 +97,33 @@ def _get_highway_properties(highway) -> tuple[str, float]:
     return lowest_reg, min_speed
 
 
+#: Tags that always separate edges and are always kept as edge columns: a bridge or a tunnel does not
+#: follow the ground, so it must not be merged with the road it continues, and elevation needs to know it.
+STRUCTURE_TAGS = ("bridge", "tunnel")
+
+
 def _build_edges_from_overpass(
     polygon: Polygon, way_filter: str, needed_tags: set[str], local_crs: CRS, simplify: bool = True
 ) -> gpd.GeoDataFrame:
     """
-    Download OSM ways by filter, segment into edges, and project to a local CRS.
+    Download OSM ways by filter, cut them into edges and project them to a local CRS.
 
-    The function queries the ways within ``polygon`` using an Overpass ``way_filter``, converts each way
-    into consecutive line segments (one edge per segment), and projects the result to a local metric CRS.
-    If ``simplify=True``, contiguous segments are merged (``line_merge``), and OSM attributes are transferred
-    to merged lines via midpoint nearest join.
+    Every way is split into its straight segments. With ``simplify=True`` the segments are merged back into
+    edges that run from junction to junction: two segments are joined at a point only when they are the
+    only segments there, follow one another, and carry the same tags (``needed_tags`` and the bridge and
+    tunnel tags). An edge therefore never mixes the attributes of different ways, and bridges and tunnels
+    stay separate edges. With ``simplify=False`` every segment is an edge.
 
     Parameters:
         polygon (Polygon): Boundary polygon in EPSG:4326 used to query OSM data.
         way_filter (str): Overpass filter applied to ways (e.g., ``[ "highway" ~ "motorway|trunk|primary|..." ]``).
-        simplify (bool): If True, merges contiguous segments into longer edges and reattaches attributes
-            using a nearest midpoint join.
+        needed_tags (set[str]): OSM tags to put on the edges, besides the bridge and tunnel tags.
+        local_crs (CRS): Projected CRS of the result.
+        simplify (bool): Merge segments into junction-to-junction edges.
 
     Returns:
-        GeoDataFrame: Line features in local CRS with columns:
-            ``geometry`` (LineString), ``way_idx`` (source way index), ``id`` (OSM way id), ``tags`` (dict).
-
-    Notes:
-        Attributes on merged edges are inferred from the nearest original segment around the midpoint,
-        which may drop or aggregate original per-segment variability.
+        GeoDataFrame: Line features in the local CRS with ``geometry``, ``way_idx`` (row of the source way)
+        and one column per tag in ``needed_tags`` and in ``STRUCTURE_TAGS``.
     """
     data = get_network_by_filters(polygon, way_filter)
     if len(data) == 0:
@@ -130,58 +133,70 @@ def _build_edges_from_overpass(
     if len(ways) == 0:
         return gpd.GeoDataFrame()
 
-    # Collecting the coordinates of each line (lon, lat)
+    # Collecting the coordinates of each line (lon, lat): Overpass gives point dicts, a .pbf file arrays.
     coord_entries = [
-        (idx, np.asarray([(p["lon"], p["lat"]) for p in pts], dtype="f8"))
+        (idx, pts if isinstance(pts, np.ndarray) else np.asarray([(p["lon"], p["lat"]) for p in pts], dtype="f8"))
         for idx, pts in ways["geometry"].items()
         if len(pts) >= 2
     ]
     if not coord_entries:
         return gpd.GeoDataFrame()
     way_indices, coords_list = zip(*coord_entries)
+    way_indices = np.asarray(way_indices)
+    lonlat = np.concatenate(coords_list, axis=0)
+    counts = np.array([a.shape[0] for a in coords_list], dtype=np.int64)
+    way_of_point = np.repeat(np.arange(len(counts)), counts)
 
-    starts = np.concatenate([a[:-1] for a in coords_list], axis=0)
-    ends = np.concatenate([a[1:] for a in coords_list], axis=0)
-
-    lengths = np.array([a.shape[0] for a in coords_list], dtype=int)
-    seg_counts = np.maximum(lengths - 1, 0)
-    way_idx = np.repeat(np.asarray(way_indices), seg_counts)
-
-    coords = np.stack([starts, ends], axis=1)
-    geoms = linestrings(coords)
-
-    edges = gpd.GeoDataFrame({"way_idx": way_idx}, geometry=geoms, crs=4326).to_crs(local_crs)
+    # Points with the same coordinates are one node; segments join consecutive points of a way.
+    _, node_of = np.unique(lonlat, axis=0, return_inverse=True)
+    node_of = node_of.ravel()
+    start = np.flatnonzero((way_of_point[1:] == way_of_point[:-1]) & (node_of[1:] != node_of[:-1]))
+    if len(start) == 0:
+        return gpd.GeoDataFrame()
+    way_of_segment = way_of_point[start]
 
     tags = ways["tags"]
-
-    tag_keys: set[str] = set(needed_tags)
+    tag_keys = sorted(set(needed_tags) | set(STRUCTURE_TAGS))
     if len(tag_keys) > 50:
         tags_expanded = pd.json_normalize(tags.tolist())
         tags_expanded.index = ways.index
-        tags_df = tags_expanded.loc[:, tags_expanded.columns.intersection(tag_keys)]
+        tags_df = tags_expanded.reindex(columns=tag_keys)
     else:
         cols = {k: tags.map(lambda d, kk=k: d.get(kk) if isinstance(d, dict) else None) for k in tag_keys}
         tags_df = pd.DataFrame(cols, index=ways.index)
 
-    edges = edges.join(tags_df, on="way_idx")
-
-    existing_columns = [c for c in needed_tags if c in edges.columns]
     if simplify:
-        # stitching edges and transferring attributes via midpoints -> nearest
-        merged_lines = line_merge(MultiLineString(edges.geometry.to_list()), directed=True)
-        list_of_merged = list(merged_lines.geoms) if merged_lines.geom_type == "MultiLineString" else [merged_lines]
+        # Ways with equal tags share a key; only segments with the same key are merged.
+        way_tags = tags_df.loc[way_indices]
+        key_of_way = way_tags.groupby(tag_keys, dropna=False, sort=False).ngroup().to_numpy()
+        order, offsets = _rust.merge_chains(
+            node_of[start].astype(np.uint32),
+            node_of[start + 1].astype(np.uint32),
+            key_of_way[way_of_segment].astype(np.uint32),
+            int(node_of.max()) + 1,
+        )
+    else:
+        order, offsets = np.arange(len(start)), np.arange(len(start) + 1)
 
-        lines = gpd.GeoDataFrame(geometry=list_of_merged, crs=local_crs)
+    # The points of an edge: the start of its first segment, then the end of every segment.
+    n_edges = len(offsets) - 1
+    edge_of_segment = np.repeat(np.arange(n_edges), np.diff(offsets))
+    ordered = start[order]
+    points = np.empty(len(ordered) + n_edges, dtype=np.int64)
+    edge_of_point = np.empty(len(points), dtype=np.int64)
+    first = offsets[:-1] + np.arange(n_edges)
+    points[first] = ordered[offsets[:-1]]
+    edge_of_point[first] = np.arange(n_edges)
+    rest = np.arange(len(ordered)) + edge_of_segment + 1
+    points[rest] = ordered + 1
+    edge_of_point[rest] = edge_of_segment
 
-        mid = lines.copy()
-        mid.geometry = mid.interpolate(lines.length / 2)
-
-        joined = gpd.sjoin_nearest(mid[["geometry"]], edges, how="left", max_distance=1)
-        joined = joined.reset_index().drop_duplicates(subset="index").set_index("index")
-        lines = lines.join(joined[existing_columns])
-        edges = lines
-
-    return edges
+    x, y = Transformer.from_crs(4326, local_crs, always_xy=True).transform(lonlat[:, 0], lonlat[:, 1])
+    geoms = linestrings(np.column_stack([x, y])[points], indices=edge_of_point)
+    edges = gpd.GeoDataFrame(
+        {"way_idx": way_indices[way_of_segment[order[offsets[:-1]]]]}, geometry=geoms, crs=local_crs
+    )
+    return edges.join(tags_df[tag_keys], on="way_idx")
 
 
 def get_drive_graph(
@@ -209,8 +224,9 @@ def get_drive_graph(
         osm_id (int | None): OSM relation/area ID of the territory boundary. Provide this or ``territory``.
         territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Boundary geometry in EPSG:4326 or GeoDataFrame.
             Used when ``osm_id`` is not given.
-        simplify (bool): If True, merges contiguous collinear segments and transfers attributes
-            back to merged lines using nearest midpoints. If False, keeps raw per-segment edges.
+        simplify (bool): If True, merges the segments of the ways into edges that run from junction to
+            junction. Segments are merged only when they carry the same tags, so an edge keeps the attributes
+            of its ways, and bridges and tunnels stay separate edges. If False, keeps raw per-segment edges.
         add_road_category (bool): If True, adds a derived ``category`` (e.g., local/regional/federal) and a default
             speed (``maxspeed_mpm``) inferred from the OSM ``highway`` class.
         clip_by_territory (bool): If True, clips edges by the exact boundary geometry before graph construction.
@@ -218,8 +234,10 @@ def get_drive_graph(
         network_type: Preset of Overpass filters to select drivable ways.
             Use "custom" together with ``custom_filter`` to pass your own Overpass ``way`` filter.
         custom_filter (str | None): Custom Overpass way filter used in custom mode.
-        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides defaults from config.
-            The tags oneway, maxspeed, and highway are always added.
+        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides
+            ``config.drive_useful_edges_attr`` (``highway``, ``name``, ``lanes``). ``bridge`` and ``tunnel`` are
+            always kept. ``oneway``, ``maxspeed`` and ``highway`` are always read, and with ``simplify`` a change of
+            any of them, or of a kept tag, starts a new edge.
 
     Returns:
         UrbanGraph: Directed multigraph of the road network. Edges include
@@ -306,7 +324,11 @@ def get_drive_graph(
 
     edges_gdf = _assign_edge_keys(edges_gdf)
 
-    edge_attr_cols = set(needed_tags) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type", "oneway"}
+    edge_attr_cols = (
+        set(needed_tags)
+        | set(STRUCTURE_TAGS)
+        | {"u", "v", "k", "geometry", "length_meter", "time_min", "type", "oneway"}
+    )
     if add_road_category:
         edge_attr_cols.add("category")
     edges_gdf = edges_gdf[[col for col in edges_gdf.columns if col in edge_attr_cols]].copy()
@@ -350,16 +372,18 @@ def get_walk_graph(
         osm_id (int | None): OSM relation/area ID for the boundary. Provide this or ``territory``.
         territory (Polygon | MultiPolygon | gpd.GeoDataFrame | None): Boundary geometry (EPSG:4326) or a GeoDataFrame
             to define the area when ``osm_id`` is not given.
-        simplify (bool): If True, merges contiguous segments (via internal line merging) and transfers attributes
-            back to merged lines using nearest midpoints; if False, keeps raw per-segment edges.
+        simplify (bool): If True, merges the segments of the ways into edges that run from junction to
+            junction. Segments are merged only when they carry the same tags, so an edge keeps the attributes
+            of its ways, and bridges and tunnels stay separate edges. If False, keeps raw per-segment edges.
         clip_by_territory (bool): If True, clips edges by the provided boundary before graph construction.
         keep_largest_subgraph (bool): If True, retains only the largest strongly connected component.
         walk_speed (float): Walking speed in meters per minute used to compute time for each edge.
         network_type: Preset of Overpass filters. Use custom mode with custom_filter
             to pass your own way filter.
         custom_filter (str | None): Custom Overpass filter string used in custom mode.
-        osm_edge_tags (list[str] | None): List of OSM edge tags to retain (overrides defaults). Only these keys
-            are joined from element tags.
+        osm_edge_tags (list[str] | None): Which OSM tags to retain on edges. Overrides
+            ``config.walk_useful_edges_attr`` (``highway``, ``name``). ``bridge`` and ``tunnel`` are always kept.
+            With ``simplify`` a change of any kept tag starts a new edge.
 
     Returns:
         UrbanGraph: Undirected multigraph of the walking network. Edges include
@@ -417,7 +441,9 @@ def get_walk_graph(
 
     edges_gdf = _assign_edge_keys(edges_gdf)
 
-    edge_attrs = set(needed_tags) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type"}
+    edge_attrs = (
+        set(needed_tags) | set(STRUCTURE_TAGS) | {"u", "v", "k", "geometry", "length_meter", "time_min", "type"}
+    )
     edges_gdf = edges_gdf[[col for col in edges_gdf.columns if col in edge_attrs]].copy()
 
     graph = UrbanGraph(

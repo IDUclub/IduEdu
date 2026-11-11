@@ -47,9 +47,6 @@ msgstr "Обновить закешированную региональную �
 msgid "Cut again even if the territory file exists."
 msgstr "Вырезать заново, даже если файл территории уже есть."
 
-msgid "Node-location index used while cutting (see :func:`~iduedu.osm_pbf.split_by_polygons`); use ``\"sparse_file_array\"`` for country-sized extracts."
-msgstr "Индекс координат узлов, используемый при нарезке (см. :func:`~iduedu.osm_pbf.split_by_polygons`); для выгрузок размером со страну используйте ``\"sparse_file_array\"``."
-
 msgid "Return type"
 msgstr "Тип результата"
 
@@ -67,7 +64,4 @@ msgstr "Исключения"
 
 msgid "If neither ``osm_id`` nor ``territory`` is given, or no extract covers the territory."
 msgstr "Если не задан ни ``osm_id``, ни ``territory`` или ни одна выгрузка не покрывает территорию."
-
-msgid "When pyosmium is not installed and the file has to be cut."
-msgstr "Если pyosmium не установлен, а файл нужно вырезать."
 

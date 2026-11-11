@@ -3,8 +3,136 @@ from typing import Any, Iterable
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import shapely
+from pyproj import CRS
+from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.urban_graph import UrbanGraph
+
+#: CRS of bare shapely geometries passed as areas, as in the graph builders' ``territory``.
+AREA_CRS = 4326
+
+
+def geometries_in_crs(geometry, crs, name: str = "area") -> gpd.GeoSeries:
+    """Area geometries as a GeoSeries in ``crs``.
+
+    The rule of every function that takes an area or a clipping polygon, the same as for ``territory`` in the
+    graph builders: a bare shapely geometry is in EPSG:4326 (longitude, latitude); a GeoSeries or GeoDataFrame
+    carries its own CRS and is reprojected.
+    """
+    if isinstance(geometry, BaseGeometry):
+        geometry = gpd.GeoSeries([geometry], crs=AREA_CRS)
+    elif isinstance(geometry, gpd.GeoDataFrame):
+        geometry = geometry.geometry
+    if not isinstance(geometry, gpd.GeoSeries):
+        raise TypeError(
+            f"{name} must be a shapely geometry (EPSG:4326), GeoSeries or GeoDataFrame, got {type(geometry).__name__}"
+        )
+    if geometry.crs is None:
+        raise ValueError(f"{name} has no CRS; set it, or pass a shapely geometry in EPSG:4326")
+    if crs is not None and geometry.crs != crs:
+        geometry = geometry.to_crs(crs)
+    return geometry
+
+
+def projected_crs(urban_graph: UrbanGraph, what: str, *, required: bool = False):
+    """CRS of the graph (nodes, then edges, then the graph attribute), rejecting a geographic one.
+
+    ``what`` names the caller in the error; ``required`` also rejects a graph without a CRS.
+    """
+    if not isinstance(urban_graph, UrbanGraph):
+        raise TypeError(f"graph must be UrbanGraph, got {type(urban_graph).__name__}")
+    crs = getattr(urban_graph.nodes_gdf, "crs", None) or getattr(urban_graph.edges_gdf, "crs", None) or urban_graph.crs
+    if crs is None and required:
+        raise ValueError(f"{what} needs a graph with a CRS")
+    if crs is not None and CRS.from_user_input(crs).is_geographic:
+        raise ValueError(f"{what} needs a projected CRS; reproject the graph first")
+    return crs
+
+
+def area_in_crs(geometry, crs, name: str = "area") -> BaseGeometry:
+    """One area geometry in ``crs`` (see :func:`geometries_in_crs`); several geometries are merged."""
+    return shapely.union_all(geometries_in_crs(geometry, crs, name).values)
+
+
+def _object_points(urban_graph: UrbanGraph, gdf: gpd.GeoDataFrame, what: str) -> gpd.GeoSeries:
+    """Representative points of ``gdf`` in the graph CRS, after checking the object table."""
+    if not isinstance(gdf, gpd.GeoDataFrame):
+        raise TypeError(f"gdf must be GeoDataFrame, got {type(gdf).__name__}")
+    if gdf.empty:
+        raise ValueError("gdf must not be empty")
+    if gdf.index.has_duplicates:
+        raise ValueError("gdf.index must be unique")
+    if gdf.crs is None:
+        raise ValueError(f"gdf must have CRS to calculate {what}")
+    local_crs = getattr(urban_graph.nodes_gdf, "crs", None)
+    if local_crs is None:
+        local_crs = getattr(urban_graph.edges_gdf, "crs", None)
+    if local_crs is None:
+        raise ValueError("UrbanGraph does not have CRS on nodes_gdf or edges_gdf")
+    points_geom = gdf.geometry
+    if points_geom.crs != local_crs:
+        points_geom = points_geom.to_crs(local_crs)
+    return points_geom.representative_point()
+
+
+def nearest_edges(
+    urban_graph: UrbanGraph,
+    gdf: gpd.GeoDataFrame,
+    *,
+    max_dist: float | None = None,
+) -> pd.DataFrame:
+    """Return the nearest graph edge for each input geometry, with the distance and the position along it.
+
+    Objects are matched by their ``representative_point()`` in the graph CRS, as in :func:`nearest_nodes`.
+    This does not change the graph; use :func:`project_objects2urban_graph` to insert objects into it.
+
+    Args:
+        urban_graph: Graph whose ``edges_gdf`` contains line geometries.
+        gdf: GeoDataFrame with geometries to match to graph edges.
+        max_dist: Optional search radius in graph CRS units; objects farther from every edge get missing
+            values. ``None`` searches without a limit.
+
+    Returns:
+        DataFrame indexed like ``gdf`` with columns ``edge`` (label of the edge in ``edges_gdf``), ``u``,
+        ``v`` (and ``k`` for multigraphs), ``dist`` (distance from the object to the edge) and ``along``
+        (distance from the start of the edge geometry to the closest point on it). When several edges are
+        equally near, one of them is returned.
+
+    Raises:
+        TypeError: If ``gdf`` is not a GeoDataFrame.
+        ValueError: If the graph has no edges or geometries cannot be matched safely.
+
+    See also:
+        https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html
+    """
+    edges_gdf = urban_graph.edges_gdf
+    if not isinstance(edges_gdf, gpd.GeoDataFrame) or edges_gdf.empty:
+        raise ValueError("graph has no edge geometries to match objects to")
+    if max_dist is not None and (not np.isfinite(max_dist) or max_dist < 0):
+        raise ValueError("max_dist must be a non-negative number or None")
+    points_geom = _object_points(urban_graph, gdf, "nearest graph edges")
+
+    matches, distances = edges_gdf.sindex.nearest(
+        points_geom.values, return_all=False, max_distance=max_dist, return_distance=True
+    )
+    object_pos, edge_pos = matches
+    found = edges_gdf.iloc[edge_pos]
+
+    def column(values):
+        # Missing rows for objects beyond max_dist; integer ids stay integers (nullable).
+        series = pd.Series(values, index=gdf.index[object_pos]).reindex(gdf.index)
+        if pd.api.types.is_integer_dtype(np.asarray(values).dtype):
+            series = series.astype("Int64")
+        return series
+
+    keys = ["u", "v"] + (["k"] if urban_graph.is_multigraph and "k" in edges_gdf.columns else [])
+    result = pd.DataFrame({"edge": column(found.index.to_numpy())}, index=gdf.index)
+    for key in keys:
+        result[key] = column(found[key].to_numpy())
+    result["dist"] = column(np.asarray(distances, dtype=float))
+    result["along"] = column(shapely.line_locate_point(found.geometry.values, points_geom.values[object_pos]))
+    return result
 
 
 def nearest_nodes(
@@ -31,15 +159,6 @@ def nearest_nodes(
         https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html
     """
 
-    if not isinstance(gdf, gpd.GeoDataFrame):
-        raise TypeError(f"gdf must be GeoDataFrame, got {type(gdf).__name__}")
-    if gdf.empty:
-        raise ValueError("gdf must not be empty")
-    if gdf.index.has_duplicates:
-        raise ValueError("gdf.index must be unique")
-    if gdf.crs is None:
-        raise ValueError("gdf must have CRS to calculate nearest graph nodes")
-
     nodes_gdf = urban_graph.nodes_gdf
     if not isinstance(nodes_gdf, gpd.GeoDataFrame):
         raise TypeError("UrbanGraph nodes_gdf must be GeoDataFrame to calculate nearest graph nodes")
@@ -47,17 +166,7 @@ def nearest_nodes(
         raise ValueError("graph is empty")
     if nodes_gdf.index.has_duplicates:
         raise ValueError("graph.nodes_gdf.index must be unique")
-
-    local_crs = nodes_gdf.crs
-    if local_crs is None:
-        local_crs = getattr(urban_graph.edges_gdf, "crs", None)
-    if local_crs is None:
-        raise ValueError("UrbanGraph does not have CRS on nodes_gdf or edges_gdf")
-
-    points_geom = gdf.geometry
-    if points_geom.crs != local_crs:
-        points_geom = points_geom.to_crs(local_crs)
-    points_geom = points_geom.representative_point()
+    points_geom = _object_points(urban_graph, gdf, "nearest graph nodes")
 
     matches = nodes_gdf.sindex.nearest(points_geom.values, return_all=False)
     order = np.argsort(matches[0], kind="stable")

@@ -1,4 +1,3 @@
-import numba as nb
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,15 +13,10 @@ from iduedu import (
     path_to_edges,
     single_source_dijkstra,
 )
-from iduedu._numba.shortest_paths import dijkstra_numba_search
 from iduedu.graph import routing
 from iduedu.graph.shortest_paths import (
-    dijkstra_path_length_parallel,
     multi_source_dijkstra_nearest_source,
-    multi_source_dijkstra_path,
-    multi_source_dijkstra_path_length,
     single_source_dijkstra_path,
-    single_source_dijkstra_path_length,
 )
 from tests.factories import (
     directed_oneway_graph,
@@ -31,7 +25,7 @@ from tests.factories import (
     undirected_line_graph,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.numba]
+pytestmark = [pytest.mark.unit, pytest.mark.rust]
 
 
 def _dense(series: pd.Series) -> dict:
@@ -255,13 +249,13 @@ def test_zero_edges_ties_and_self_routes():
 def test_duplicate_labels_and_unique_source_optimization(monkeypatch):
     graph = undirected_line_graph()
     calls = []
-    original = routing.dijkstra_numba_search_parallel
+    original = routing._kernel_search_many
 
     def record(matrix, sources, *args):
         calls.append(len(sources))
         return original(matrix, sources, *args)
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", record)
+    monkeypatch.setattr(routing, "_kernel_search_many", record)
     result = graph.od_matrix(
         origins_nodes=[0, 0, 0], destination_nodes=[1, 2, 3, 1], output="both", path_storage="lazy", max_workers=1
     )
@@ -278,13 +272,13 @@ def test_duplicate_labels_and_unique_source_optimization(monkeypatch):
 def test_pairwise_duplicate_sources_share_one_search(monkeypatch):
     graph = undirected_line_graph()
     calls = []
-    original = routing.dijkstra_numba_search_parallel
+    original = routing._kernel_search_many
 
     def record(matrix, sources, targets, starts, ends, *args):
         calls.append((len(sources), sorted(targets[starts[0] : ends[0]])))
         return original(matrix, sources, targets, starts, ends, *args)
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", record)
+    monkeypatch.setattr(routing, "_kernel_search_many", record)
     origins = pd.DataFrame({"graph_node_id": [0, 0]}, index=["a", "b"])
     destinations = pd.DataFrame({"graph_node_id": [2, 3]}, index=["x", "y"])
     result = graph.od_matrix(
@@ -303,10 +297,10 @@ def test_pairwise_duplicate_sources_share_one_search(monkeypatch):
 
 def test_early_stop_discards_tentative_distances_and_distance_only_parents():
     graph = undirected_line_graph()
-    matrix = routing._prepare_numba_graph(graph, weight="time_min", cutoff=None, reverse=False)
+    matrix = routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False)
     sources, targets = np.array([0], dtype=np.int32), np.array([1], dtype=np.int32)
-    tree = dijkstra_numba_search(matrix, sources, targets, np.float32(np.inf), True)
-    distances = dijkstra_numba_search(matrix, sources, targets, np.float32(np.inf), False)
+    tree = matrix.search(sources, targets, np.float32(np.inf), True)
+    distances = matrix.search(sources, targets, np.float32(np.inf), False)
     assert tree[0].tolist() == [0, 1]
     assert distances[0].tolist() == [1]
     assert len(distances[2]) == 0
@@ -319,7 +313,7 @@ def test_lazy_lookup_does_not_repeat_search(monkeypatch):
     def fail(*args, **kwargs):
         raise AssertionError("Lazy route lookup must not search again")
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", fail)
+    monkeypatch.setattr(routing, "_kernel_search_many", fail)
     assert result.get_path(0, 3) == [0, 1, 2, 3]
     assert not result.paths_materialized
     assert result.paths.loc[0, 2] == [0, 1, 2]
@@ -446,24 +440,29 @@ def test_invalid_targets_inputs_and_lookup_positions():
         result.get_path(999)
 
 
-def test_worker_count_restored_on_success_and_failure(monkeypatch):
+def test_max_workers_reaches_the_kernel_and_kernel_errors_propagate(monkeypatch):
     graph = undirected_line_graph()
-    previous = nb.get_num_threads()
+    workers = []
+    original = routing._kernel_search_many
+
+    def record(matrix, *args):
+        workers.append(args[-1])
+        return original(matrix, *args)
+
+    monkeypatch.setattr(routing, "_kernel_search_many", record)
     graph.od_matrix(origins_nodes=[0], destination_nodes=[1], max_workers=1)
-    assert nb.get_num_threads() == previous
+    graph.od_matrix(origins_nodes=[0], destination_nodes=[1])
+    assert workers == [1, None]
 
     def fail(*args, **kwargs):
         raise RuntimeError("kernel failed")
 
-    monkeypatch.setattr(routing, "dijkstra_numba_search_parallel", fail)
+    monkeypatch.setattr(routing, "_kernel_search_many", fail)
     with pytest.raises(RuntimeError, match="kernel failed"):
         graph.od_matrix(origins_nodes=[0], destination_nodes=[1], max_workers=1)
-    assert nb.get_num_threads() == previous
 
 
 def test_parallel_workers_and_batches_preserve_results():
-    if nb.config.NUMBA_NUM_THREADS < 2:
-        pytest.skip("Two Numba workers are unavailable")
     graph = disconnected_graph()
     params = dict(origins_nodes=[0, 1, 2, 10, 11], destination_nodes=[0, 2, 10, 11], output="both")
     serial = graph.od_matrix(**params, max_workers=1)
@@ -491,19 +490,19 @@ def test_isolated_nodes_unreachable_columns_and_float64_storage():
     assert nearest.nearest_sources.iloc[0] is None
 
 
-def test_legacy_path_matrix_preserves_labels_mode_and_threshold():
+def test_pairwise_path_table_preserves_labels_and_threshold():
     graph = undirected_line_graph()
     origins = pd.DataFrame({"graph_node_id": [0, 3]}, index=["left", "right"])
     destinations = pd.DataFrame({"graph_node_id": [2, 0]}, index=["near", "far"])
-    with pytest.warns(DeprecationWarning, match="od_matrix"):
-        result = multi_source_dijkstra_path(
-            graph,
-            gdf_origins=origins,
-            gdf_destinations=destinations,
-            mode="pairwise",
-            threshold=3,
-            max_workers=1,
-        )
+    result = od_matrix(
+        graph,
+        gdf_origins=origins,
+        gdf_destinations=destinations,
+        mode="pairwise",
+        threshold=3,
+        max_workers=1,
+        output="paths",
+    )
     assert result.index.tolist() == [("left", "near"), ("right", "far")]
     assert result.iloc[0, 0] == [0, 1, 2]
     assert pd.isna(result.iloc[1, 0])
@@ -553,55 +552,6 @@ def test_pairwise_repeated_unordered_origins_match_matrix_cells():
         assert pairwise.get_path_at(i) == matrix.get_path_at(i, i)
 
 
-@pytest.mark.parametrize(
-    "legacy,replacement",
-    [
-        (
-            lambda g: single_source_dijkstra_path_length(g, 0, cutoff=3),
-            lambda g: g.single_source_dijkstra(0, cutoff=3, output="distances"),
-        ),
-        (
-            lambda g: g.single_source_dijkstra_path_length(0, cutoff=3),
-            lambda g: g.single_source_dijkstra(0, cutoff=3, output="distances"),
-        ),
-        (
-            lambda g: multi_source_dijkstra_path_length(g, source_nodes=[0, 3]),
-            lambda g: g.multi_source_dijkstra(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: g.multi_source_dijkstra_path_length(source_nodes=[0, 3]),
-            lambda g: g.multi_source_dijkstra(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: dijkstra_path_length_parallel(g, source_nodes=[0, 3]),
-            lambda g: g.dijkstra_parallel(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: g.dijkstra_path_length_parallel(source_nodes=[0, 3]),
-            lambda g: g.dijkstra_parallel(source_nodes=[0, 3], output="distances"),
-        ),
-        (
-            lambda g: multi_source_dijkstra_path(g, origins_nodes=[0], destination_nodes=[2, 3]),
-            lambda g: g.od_matrix(origins_nodes=[0], destination_nodes=[2, 3], output="paths"),
-        ),
-        (
-            lambda g: g.multi_source_dijkstra_path(origins_nodes=[0], destination_nodes=[2, 3]),
-            lambda g: g.od_matrix(origins_nodes=[0], destination_nodes=[2, 3], output="paths"),
-        ),
-    ],
-)
-def test_legacy_helpers_warn_and_match_replacements(legacy, replacement):
-    graph = undirected_line_graph()
-    with pytest.warns(DeprecationWarning, match="removed in IduEdu 3.0") as record:
-        result = legacy(graph)
-    # Count only IduEdu deprecations: dependencies may warn inside the same call.
-    legacy_warnings = [item for item in record if "removed in IduEdu 3.0" in str(item.message)]
-    assert len(legacy_warnings) == 1 and legacy_warnings[0].filename == __file__
-    expected = replacement(graph)
-    assert_equal = pd.testing.assert_series_equal if isinstance(expected, pd.Series) else pd.testing.assert_frame_equal
-    assert_equal(result, expected)
-
-
 def test_path_to_edges_out_and_back_route_reuses_edges_in_order():
     graph = undirected_line_graph()
     route = path_to_edges(graph, [0, 1, 2, 1, 0])
@@ -611,3 +561,59 @@ def test_path_to_edges_out_and_back_route_reuses_edges_in_order():
     assert list(route.geometry.iloc[2].coords) == [(20.0, 0.0), (10.0, 0.0)]
     with pytest.raises(ValueError, match=r"absent or disallowed in graph: \(0, 2\)"):
         path_to_edges(graph, [0, 1, 0, 2])
+
+
+def _cost_to_end(graph, weight="time_min"):
+    return _dense(single_source_dijkstra(graph, 0, weight=weight, output="distances"))[3]
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        pytest.param(lambda edges: edges.__setitem__("time_min", edges["time_min"] * 2), id="column-assigned"),
+        pytest.param(lambda edges: edges.loc.__setitem__((1, "time_min"), 4.0), id="loc-in-place"),
+    ],
+)
+def test_weight_edits_after_a_search_rebuild_the_matrix(edit):
+    graph = undirected_line_graph()
+    assert _cost_to_end(graph) == 7.0
+    edit(graph.edges_gdf)
+    assert _cost_to_end(graph) == pytest.approx(float(graph.edges_gdf["time_min"].sum()))
+
+
+def test_new_edge_table_and_new_edge_ends_rebuild_the_matrix():
+    graph = undirected_line_graph()
+    assert _cost_to_end(graph) == 7.0
+    edges = graph.edges_gdf.copy()
+    edges["time_min"] = [1.0, 1.0, 1.0]
+    graph.edges_gdf = edges
+    assert _cost_to_end(graph) == 3.0
+    graph.edges_gdf["v"] = [1, 3, 2]  # 1 -> 3 directly, 2 hangs on 3
+    assert _cost_to_end(graph) == 2.0
+
+
+def test_direction_edits_rebuild_the_matrix():
+    graph = directed_oneway_graph()
+    reverse = single_source_dijkstra(graph, 3, weight="time_min", output="distances")
+    assert _dense(reverse) == {3: 0.0}
+    graph.edges_gdf.loc[2, "oneway"] = False
+    assert _dense(single_source_dijkstra(graph, 3, weight="time_min", output="distances")) == {3: 0.0, 2: 4.0, 1: 6.0}
+
+
+def test_bad_weights_written_after_a_search_are_rejected():
+    graph = undirected_line_graph()
+    _cost_to_end(graph)
+    graph.edges_gdf.loc[0, "time_min"] = np.nan
+    with pytest.raises(ValueError, match="non-negative values without NaN"):
+        _cost_to_end(graph)
+
+
+def test_unchanged_tables_reuse_the_matrix_and_a_manual_rebuild_is_trusted():
+    graph = undirected_line_graph()
+    first = routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False)
+    assert routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False) is first
+    graph.edges_gdf.loc[0, "time_min"] = 3.0
+    matrix = graph.update_adjacency_matrix(weight="time_min")
+    routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False)
+    assert graph.adjacency_matrix is matrix
+    assert _cost_to_end(graph) == 9.0

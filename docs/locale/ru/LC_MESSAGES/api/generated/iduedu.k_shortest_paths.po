@@ -1,0 +1,61 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 17:54+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.k\\_shortest\\_paths"
+msgstr "iduedu.k\\_shortest\\_paths"
+
+msgid "Return up to k shortest loopless paths from source_node to target_node (Yen's algorithm)."
+msgstr "Вернуть до k кратчайших путей без циклов из source_node в target_node (алгоритм Йена)."
+
+msgid "Every next path leaves an earlier one at some node and takes the shortest way on from there that repeats no node of the shared part and no way taken before. The paths are often small variations of one another (another sidewalk, the other side of a square); for routes along other streets use :func:`alternative_paths`."
+msgstr "Каждый следующий путь отходит от одного из предыдущих в каком-то узле и идёт дальше кратчайшей дорогой, которая не повторяет ни одного узла общей части и ни одного уже пройденного продолжения. Такие пути часто лишь немного отличаются друг от друга (другой тротуар, другая сторона площади); для маршрутов по другим улицам используйте :func:`alternative_paths`."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Urban graph to search."
+msgstr "Городской граф для поиска."
+
+msgid "Graph id of the start node."
+msgstr "Идентификатор начального узла графа."
+
+msgid "Graph id of the end node."
+msgstr "Идентификатор конечного узла графа."
+
+msgid "Maximum number of paths, at least 1."
+msgstr "Наибольшее число путей, не меньше 1."
+
+msgid "Edge cost column: time_min (minutes) or length_meter (meters)."
+msgstr "Столбец стоимости рёбер: time_min (минуты) или length_meter (метры)."
+
+msgid "Inclusive maximum cost of a path, or None for no limit."
+msgstr "Наибольшая стоимость пути включительно или None без ограничения."
+
+msgid "Worker threads for the searches of each step (default: one per CPU)."
+msgstr "Число рабочих потоков для поисков на каждом шаге (по умолчанию по одному на процессор)."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame indexed by ``rank`` (0 is the shortest path) with columns ``dist`` (cost in the units of ``weight``) and ``path`` (node ids from source_node to target_node), cheapest first. It has fewer than k rows when there are fewer loopless paths within cutoff, and none when the end is not reached."
+msgstr "DataFrame с индексом ``rank`` (0 — кратчайший путь) и столбцами ``dist`` (стоимость в единицах ``weight``) и ``path`` (идентификаторы узлов от source_node до target_node), от самого дешёвого пути. Строк меньше k, если путей без циклов в пределах cutoff меньше, и нет совсем, если конечный узел недостижим."
+

@@ -1,0 +1,67 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-09 20:06+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.consolidate\\_intersections"
+msgstr "iduedu.consolidate\\_intersections"
+
+msgid "Merge groups of nearby nodes, such as the several nodes of one junction of dual carriageways, into one."
+msgstr "Сливает группы близких узлов, например несколько узлов одного перекрёстка дорог с разделёнными проезжими частями, в один."
+
+msgid "Two nodes closer than ``tolerance`` belong to one cluster, and clusters chain (single linkage). A cluster is then split into the parts that edges inside the cluster connect, so nodes that are merely close (a bridge above a road) stay apart. Each part with several nodes becomes one node at the mean position of its members, keeping the id and attributes of its first member in ``nodes_gdf`` order; single nodes are unchanged. Edges inside a part are removed. The other edges keep their geometry with the end points moved to the new nodes; ``length_meter`` is the new geometry length and ``time_min`` is scaled with it."
+msgstr "Два узла ближе ``tolerance`` попадают в один кластер, и кластеры сцепляются цепочкой (метод одиночной связи). Затем кластер делится на части, которые связывают рёбра внутри него, поэтому узлы, которые просто оказались рядом (мост над дорогой), остаются раздельными. Каждая часть из нескольких узлов превращается в один узел в среднем положении её узлов, с идентификатором и атрибутами первого из них в порядке ``nodes_gdf``; одиночные узлы не меняются. Рёбра внутри части удаляются. Остальные рёбра сохраняют геометрию, а их концы переносятся в новые узлы; ``length_meter`` — новая длина геометрии, ``time_min`` масштабируется вместе с ней."
+
+msgid "Chaining can join long runs of closely spaced nodes (dense footpath networks); a part whose bounding box is wider than ``max_span`` is therefore left unmerged."
+msgstr "Цепочка может объединить длинные ряды близко расположенных узлов (густые сети тротуаров), поэтому часть, ограничивающий прямоугольник которой шире ``max_span``, не сливается."
+
+msgid "Meant for network statistics and centralities, where one junction drawn as several nodes inflates the counts. It changes routing: turns and one-way links inside a junction disappear."
+msgstr "Предназначено для статистики сети и центральностей, где перекрёсток, нарисованный несколькими узлами, завышает подсчёты. На маршрутизацию это влияет: повороты и односторонние связи внутри перекрёстка исчезают."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph with point nodes and line edges in a projected (metric) CRS."
+msgstr "Граф с точечными узлами и линейными рёбрами в проецированной (метрической) системе координат."
+
+msgid "Distance in CRS units under which two nodes are joined."
+msgstr "Расстояние в единицах системы координат, ближе которого два узла объединяются."
+
+msgid "Largest bounding-box diagonal of a part that is still merged, in CRS units. ``None`` means ``4 * tolerance``."
+msgstr "Наибольшая диагональ ограничивающего прямоугольника части, которая ещё сливается, в единицах системы координат. ``None`` означает ``4 * tolerance``."
+
+msgid "Also return the mapping from old to new node ids."
+msgstr "Вернуть также соответствие старых идентификаторов узлов новым."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\` \\| \\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\`\\, \\:py\\:class\\:\\`\\~pandas.Series\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\` \\| \\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\`\\, \\:py\\:class\\:\\`\\~pandas.Series\\`\\]`"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "New ``UrbanGraph`` of the same kind (directed or not, multigraph or not; a simple graph keeps the lighter of the parallel edges that merging creates), and with ``return_mapping`` the ``Series`` from every old node id to its new one."
+msgstr "Новый ``UrbanGraph`` того же вида (ориентированный или нет, мультиграф или нет; простой граф сохраняет более лёгкое из параллельных рёбер, которые появляются при слиянии), а с ``return_mapping`` также ``Series`` от каждого старого идентификатора узла к новому."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``graph`` is not an ``UrbanGraph``."
+msgstr "Если ``graph`` не ``UrbanGraph``."
+
+msgid "If ``tolerance`` is negative, the CRS is geographic or an edge is not a LineString."
+msgstr "Если ``tolerance`` отрицательно, система координат географическая или ребро не LineString."
+

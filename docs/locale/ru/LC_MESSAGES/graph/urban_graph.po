@@ -1,0 +1,337 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "The UrbanGraph model"
+msgstr "Модель UrbanGraph"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "Every network in IduEdu is an :class:`UrbanGraph`: a table of nodes and a table of edges, both GeoDataFrames in one projected CRS, plus a few flags that say how to read them. Tables are what urban data already is: they filter, join, plot and save with pandas and GeoPandas. The graph algorithms read a compressed sparse row (CSR) matrix built from the edge table and run in the Rust core."
+msgstr "Каждая сеть в IduEdu — это :class:`UrbanGraph`: таблица узлов и таблица рёбер, обе GeoDataFrame в одной проекционной системе координат, и несколько флагов, которые говорят, как их читать. Таблицы — это то, чем городские данные уже являются: их фильтруют, объединяют, рисуют и сохраняют средствами pandas и GeoPandas. Графовые алгоритмы читают матрицу в сжатом построчном формате (CSR), построенную по таблице рёбер, и работают в Rust-ядре."
+
+msgid "Tables"
+msgstr "Таблицы"
+
+msgid "Nodes"
+msgstr "Узлы"
+
+msgid "``nodes_gdf`` is a DataFrame or GeoDataFrame whose index is the node id used by every function. The index must be unique. Spatial graphs store a point geometry for every node; builders add columns such as ``type``, ``route`` or ``name`` where a node stands for something."
+msgstr "``nodes_gdf`` — DataFrame или GeoDataFrame, индекс которого служит id узла во всех функциях. Индекс должен быть уникальным. Пространственные графы хранят точечную геометрию для каждого узла; построители добавляют столбцы, такие как ``type``, ``route`` или ``name``, там, где узел что-то обозначает."
+
+msgid "Edges"
+msgstr "Рёбра"
+
+msgid "``edges_gdf`` has one row per edge and these required columns:"
+msgstr "``edges_gdf`` содержит по строке на ребро и обязательные столбцы:"
+
+msgid "Column"
+msgstr "Столбец"
+
+msgid "Meaning"
+msgstr "Значение"
+
+msgid "``u``, ``v``"
+msgstr "``u``, ``v``"
+
+msgid "Source and target node ids, present in ``nodes_gdf.index``"
+msgstr "id начального и конечного узлов, присутствующие в ``nodes_gdf.index``"
+
+msgid "``k``"
+msgstr "``k``"
+
+msgid "Key of parallel edges, required when ``is_multigraph`` is true; ``(u, v, k)`` identifies an edge"
+msgstr "Ключ параллельных рёбер, обязателен, когда ``is_multigraph`` истинно; ``(u, v, k)`` определяет ребро"
+
+msgid "``geometry``"
+msgstr "``geometry``"
+
+msgid "Line geometry of the edge"
+msgstr "Линейная геометрия ребра"
+
+msgid "``length_meter``"
+msgstr "``length_meter``"
+
+msgid "Length in metres"
+msgstr "Длина в метрах"
+
+msgid "``time_min``"
+msgstr "``time_min``"
+
+msgid "Travel time in minutes"
+msgstr "Время в пути в минутах"
+
+msgid "Without ``is_multigraph`` every ``(u, v)`` pair must be unique. Any other column (OSM tags, ``type``, ``route``, ``grade``) can be added and used as a weight if it holds non-negative numbers."
+msgstr "Без ``is_multigraph`` каждая пара ``(u, v)`` должна быть уникальной. Любой другой столбец (теги OSM, ``type``, ``route``, ``grade``) можно добавить и использовать как вес, если в нём неотрицательные числа."
+
+msgid "Direction"
+msgstr "Направление"
+
+msgid "``is_directed`` makes adjacency-based algorithms respect the order of ``u`` and ``v``. A directed graph can carry an ``edge_direction_column``, usually ``oneway``: ``True`` allows movement only from ``u`` to ``v`` and ``False`` in both directions, so a two-way street is stored once. Walk graphs are undirected; drive, bike, public-transport and intermodal graphs are directed."
+msgstr "``is_directed`` заставляет алгоритмы на матрице смежности учитывать порядок ``u`` и ``v``. Ориентированный граф может иметь ``edge_direction_column``, обычно ``oneway``: ``True`` разрешает движение только от ``u`` к ``v``, а ``False`` — в обе стороны, так что двусторонняя улица хранится один раз. Пешеходные графы неориентированные; автомобильные, велосипедные, транспортные и интермодальные — ориентированные."
+
+msgid "CRS"
+msgstr "Система координат"
+
+msgid "When nodes and edges are GeoDataFrames, their CRS must equal the graph CRS. Builders choose a local projected CRS (UTM) from the territory, so that lengths are metres. Functions that take areas or objects in another CRS reproject them to the graph CRS."
+msgstr "Если узлы и рёбра — GeoDataFrame, их система координат должна совпадать с системой координат графа. Построители выбирают локальную проекционную систему (UTM) по территории, чтобы длины были в метрах. Функции, принимающие территории или объекты в другой системе координат, перепроецируют их в систему графа."
+
+msgid "Adjacency matrix"
+msgstr "Матрица смежности"
+
+msgid "Routing and analysis functions turn the edge table into a CSR matrix of one weight, ``time_min`` by default:"
+msgstr "Функции маршрутизации и анализа превращают таблицу рёбер в матрицу CSR одного веса, по умолчанию ``time_min``:"
+
+msgid "The rows and columns follow ``nodes_gdf.index`` (``graph.adjacency_nodelist``)."
+msgstr "Строки и столбцы следуют ``nodes_gdf.index`` (``graph.adjacency_nodelist``)."
+
+msgid "Parallel edges between two nodes, in either orientation of an undirected graph, become one entry with the smallest cost (``multigraph_rule=\"max\"`` takes the largest)."
+msgstr "Параллельные рёбра между двумя узлами, в любой ориентации на неориентированном графе, становятся одной записью с наименьшей стоимостью (``multigraph_rule=\"max\"`` берёт наибольшую)."
+
+msgid "Every edge of an undirected graph and every two-way edge of a directed one gives entries in both directions."
+msgstr "Каждое ребро неориентированного графа и каждое двустороннее ребро ориентированного дают записи в обоих направлениях."
+
+msgid "The matrix is stored on the graph (``graph.adjacency_matrix``) with a copy for the Rust core and is reused by later calls with the same weight while the edge table still holds what the matrix was built from. Before every query the weight column and the direction column are compared with copies kept with the matrix, so an edit of the weights rebuilds the matrix, whether it assigns a new column, changes values in place (``edges_gdf.loc[...] = ...``) or assigns a new ``edges_gdf``. The comparison costs about 0.4 ms per million edges. New ``u`` and ``v`` columns and a new edge table are found too."
+msgstr "Матрица хранится в графе (``graph.adjacency_matrix``) вместе с копией для ядра на Rust и используется последующими вызовами с тем же весом, пока таблица рёбер содержит то, из чего матрица построена. Перед каждым запросом столбец веса и столбец направления сравниваются с копиями, сохранёнными вместе с матрицей, поэтому любое изменение весов перестраивает матрицу: присваивание нового столбца, изменение значений на месте (``edges_gdf.loc[...] = ...``) или присваивание новой ``edges_gdf``. Сравнение стоит около 0,4 мс на миллион рёбер. Новые столбцы ``u`` и ``v`` и новая таблица рёбер тоже обнаруживаются."
+
+msgid ":meth:`UrbanGraph.update_adjacency_matrix` rebuilds the matrix by hand, for example with ``multigraph_rule=\"max\"``, and :meth:`UrbanGraph.to_csr` builds a matrix without storing it."
+msgstr ":meth:`UrbanGraph.update_adjacency_matrix` перестраивает матрицу вручную, например с ``multigraph_rule=\"max\"``, а :meth:`UrbanGraph.to_csr` строит матрицу, не сохраняя её."
+
+msgid "Node and edge types"
+msgstr "Типы узлов и рёбер"
+
+msgid "Builders record what a node or an edge stands for in a ``type`` column. Routing ignores it, but it tells the layers apart after they are joined, for example to colour a route by mode or to select boarding edges."
+msgstr "Построители записывают, что обозначает узел или ребро, в столбец ``type``. Маршрутизация его не учитывает, но он различает слои после объединения, например чтобы раскрасить маршрут по видам транспорта или выбрать рёбра посадки."
+
+msgid "Streets"
+msgstr "Улицы"
+
+msgid ":func:`get_walk_graph` returns an undirected multigraph with ``type=\"walk\"`` edges. :func:`get_drive_graph` returns a directed multigraph with ``type=\"drive\"`` edges, the ``oneway`` direction column and, with ``add_road_category=True``, a road ``category``. :func:`get_bike_graph` adds ``cycle_infra`` and ``lts``. Street nodes carry only their geometry (see :doc:`../building/streets`)."
+msgstr ":func:`get_walk_graph` возвращает неориентированный мультиграф с рёбрами ``type=\"walk\"``. :func:`get_drive_graph` возвращает ориентированный мультиграф с рёбрами ``type=\"drive\"``, столбцом направления ``oneway`` и, при ``add_road_category=True``, категорией дороги ``category``. :func:`get_bike_graph` добавляет ``cycle_infra`` и ``lts``. Узлы улиц хранят только геометрию (см. :doc:`../building/streets`)."
+
+msgid "Public transport from OSM"
+msgstr "Общественный транспорт из OSM"
+
+msgid "Type"
+msgstr "Тип"
+
+msgid "``bus``, ``trolleybus``, ``tram``, ``subway``, ``monorail``, ``taxi``, ``train``"
+msgstr "``bus``, ``trolleybus``, ``tram``, ``subway``, ``monorail``, ``taxi``, ``train``"
+
+msgid "On nodes, a stop of one route, with the route name in ``route``. On edges, a ride between consecutive stops of that route."
+msgstr "На узлах — остановка одного маршрута, название маршрута в ``route``. На рёбрах — перегон между соседними остановками этого маршрута."
+
+msgid "``platform``"
+msgstr "``platform``"
+
+msgid "Node where passengers wait; it is attached to the walking network in intermodal graphs. Subway platforms that are not linked to a station, or whose station has no mapped entrance and exit, are typed ``platform`` too."
+msgstr "Узел, где пассажиры ждут; в интермодальных графах он присоединяется к пешеходной сети. Платформы метро, не связанные со станцией или у станции которых не отмечены вход и выход, тоже получают тип ``platform``."
+
+msgid "``boarding``"
+msgstr "``boarding``"
+
+msgid "Edge from a platform to a route stop, with zero length. Its ``time_min`` is the ``avg_wait_time_min`` of the mode in the transport registry."
+msgstr "Ребро от платформы к остановке маршрута с нулевой длиной. Его ``time_min`` — это ``avg_wait_time_min`` вида транспорта в реестре транспорта."
+
+msgid "``alighting``"
+msgstr "``alighting``"
+
+msgid "Edge from a route stop back to its platform, with zero time and length."
+msgstr "Ребро от остановки маршрута обратно к её платформе, с нулевыми временем и длиной."
+
+msgid "``subway_station``"
+msgstr "``subway_station``"
+
+msgid "Node for a station, with OSM ``name`` and ``depth`` when mapped. As an edge type, the link in both directions between a station and its platform."
+msgstr "Узел станции с OSM ``name`` и ``depth``, если они нанесены. Как тип ребра — связь в обоих направлениях между станцией и её платформой."
+
+msgid "``subway_platform``"
+msgstr "``subway_platform``"
+
+msgid "Node for a platform reached only through its station."
+msgstr "Узел платформы, на которую можно попасть только через её станцию."
+
+msgid "``subway_entry_exit``, ``subway_entry``, ``subway_exit``"
+msgstr "``subway_entry_exit``, ``subway_entry``, ``subway_exit``"
+
+msgid "Nodes for station entrances, by the direction of travel they allow. They are attached to the walking network."
+msgstr "Узлы входов на станцию, по допустимому направлению движения. Они присоединяются к пешеходной сети."
+
+msgid "``subway_entrance``, ``subway_exit``"
+msgstr "``subway_entrance``, ``subway_exit``"
+
+msgid "Edges from an entrance into the station and from the station to an exit, timed as an escalator ride when the station depth is known."
+msgstr "Рёбра от входа внутрь станции и от станции к выходу; их время рассчитывается как поездка на эскалаторе, если известна глубина станции."
+
+msgid "``subway_transfer``"
+msgstr "``subway_transfer``"
+
+msgid "Edge in both directions between the stations of one interchange."
+msgstr "Ребро в обоих направлениях между станциями одного пересадочного узла."
+
+msgid "Public transport from GTFS"
+msgstr "Общественный транспорт из GTFS"
+
+msgid "``bus``, ``subway``, ``tram`` and the other modes"
+msgstr "``bus``, ``subway``, ``tram`` и другие виды транспорта"
+
+msgid "On nodes, a stop of one route pattern, with ``gtfs_stop_id``, ``route_id``, ``pattern_id`` and ``stop_position``. On edges, a ride between consecutive stops of that pattern."
+msgstr "На узлах — остановка одного варианта маршрута с ``gtfs_stop_id``, ``route_id``, ``pattern_id`` и ``stop_position``. На рёбрах — перегон между соседними остановками этого варианта."
+
+msgid "Node for a stop served by the selected trips; it is attached to the walking network in intermodal graphs."
+msgstr "Узел остановки, которую обслуживают выбранные рейсы; в интермодальных графах он присоединяется к пешеходной сети."
+
+msgid "``station_platform``"
+msgstr "``station_platform``"
+
+msgid "Node for a stop inside a station that the feed describes with pathways. It is reached through the station, not directly from the street."
+msgstr "Узел остановки внутри станции, которую фид описывает переходами (pathways). На неё попадают через станцию, а не прямо с улицы."
+
+msgid "``station``, ``station_entry_exit``, ``station_node``, ``station_boarding_area``"
+msgstr "``station``, ``station_entry_exit``, ``station_node``, ``station_boarding_area``"
+
+msgid "Nodes for stops with ``location_type`` 1, 2, 3 and 4 that pathways or served stops refer to. Entrances (``station_entry_exit``) are attached to the walking network."
+msgstr "Узлы остановок с ``location_type`` 1, 2, 3 и 4, на которые ссылаются переходы или обслуживаемые остановки. Входы (``station_entry_exit``) присоединяются к пешеходной сети."
+
+msgid "``boarding``, ``alighting``"
+msgstr "``boarding``, ``alighting``"
+
+msgid "As in OSM graphs, except that the boarding time is the timetable wait."
+msgstr "Как в графах по OSM, но время посадки — ожидание по расписанию."
+
+msgid "``pathway``"
+msgstr "``pathway``"
+
+msgid "Edge from ``pathways.txt`` with ``pathway_id`` and ``pathway_mode``, timed by ``traversal_time`` or by its length at ``walk_speed_m_per_min``."
+msgstr "Ребро из ``pathways.txt`` с ``pathway_id`` и ``pathway_mode``; время берётся из ``traversal_time`` или по длине при скорости ``walk_speed_m_per_min``."
+
+msgid "``station_link``"
+msgstr "``station_link``"
+
+msgid "Edge of zero cost in both directions from a stop to its ``parent_station``."
+msgstr "Ребро нулевой стоимости в обоих направлениях от остановки к её ``parent_station``."
+
+msgid "Intermodal graphs"
+msgstr "Интермодальные графы"
+
+msgid ":func:`get_intermodal_graph` and :func:`join_pt_walk_graph` keep the types of both layers. Walking edges, including the connectors that attach platforms and entrances to the street, have ``type=\"walk\"``, and walking nodes have no type (see :doc:`../building/intermodal`)."
+msgstr ":func:`get_intermodal_graph` и :func:`join_pt_walk_graph` сохраняют типы обоих слоёв. Пешеходные рёбра, включая соединители, которые присоединяют платформы и входы к улице, имеют ``type=\"walk\"``, а у пешеходных узлов типа нет (см. :doc:`../building/intermodal`)."
+
+msgid "Methods"
+msgstr "Методы"
+
+msgid "Most functions of the library are also methods of the graph, with the graph as the first argument left out:"
+msgstr "Большинство функций библиотеки — также методы графа, у которых граф как первый аргумент опущен:"
+
+msgid "Editing methods (``clip``, ``relabel``, ``join``, ``to_directed``, ``to_undirected``, ``simplify_multiedges``, ``project_objects``) return a new graph, or change the graph itself with ``inplace=True``."
+msgstr "Методы редактирования (``clip``, ``relabel``, ``join``, ``to_directed``, ``to_undirected``, ``simplify_multiedges``, ``project_objects``) возвращают новый граф или меняют сам граф при ``inplace=True``."
+
+msgid "Validation"
+msgstr "Проверка"
+
+msgid "The constructor checks the tables: unique node ids, edge ends present among the nodes, the required columns, line geometries and one CRS. :meth:`UrbanGraph.validate` and :func:`validate_graph` repeat the checks after your own edits:"
+msgstr "Конструктор проверяет таблицы: уникальные id узлов, концы рёбер среди узлов, обязательные столбцы, линейные геометрии и одну систему координат. :meth:`UrbanGraph.validate` и :func:`validate_graph` повторяют проверки после ваших правок:"
+
+msgid "Storage"
+msgstr "Хранение"
+
+msgid "A ``.urbangraph`` archive stores a graph without converting it: ``metadata.json``, ``nodes.parquet`` and ``edges.parquet``, and optionally the adjacency matrix as a cache."
+msgstr "Архив ``.urbangraph`` хранит граф без преобразования: ``metadata.json``, ``nodes.parquet`` и ``edges.parquet``, а также, по желанию, матрицу смежности как кэш."
+
+msgid "Install ``iduedu[io]`` when parquet support is not already available."
+msgstr "Установите ``iduedu[io]``, если поддержки parquet ещё нет."
+
+msgid "NetworkX"
+msgstr "NetworkX"
+
+msgid "NetworkX is an optional dependency. :func:`urban_graph2nx_graph` (``graph.to_nx_graph()``) and :func:`nx_graph2urban_graph` (``UrbanGraph.from_nx_graph``) convert at the boundary with code that needs NetworkX; the other NetworkX helpers are listed in :doc:`operations`. Code written for IduEdu 1.x maps as follows:"
+msgstr "NetworkX — необязательная зависимость. :func:`urban_graph2nx_graph` (``graph.to_nx_graph()``) и :func:`nx_graph2urban_graph` (``UrbanGraph.from_nx_graph``) выполняют преобразование на границе с кодом, которому нужен NetworkX; остальные помощники NetworkX перечислены в :doc:`operations`. Код для IduEdu 1.x переносится так:"
+
+msgid "Before (NetworkX graph)"
+msgstr "Раньше (граф NetworkX)"
+
+msgid "Now (UrbanGraph)"
+msgstr "Теперь (UrbanGraph)"
+
+msgid "Read nodes and edges from a NetworkX graph"
+msgstr "Читать узлы и рёбра из графа NetworkX"
+
+msgid "Use ``graph.nodes_gdf`` and ``graph.edges_gdf``"
+msgstr "Используйте ``graph.nodes_gdf`` и ``graph.edges_gdf``"
+
+msgid "Convert GeoDataFrames to NetworkX before an OD matrix"
+msgstr "Преобразовать GeoDataFrame в NetworkX перед матрицей OD"
+
+msgid "Pass the ``UrbanGraph`` to :func:`od_matrix`"
+msgstr "Передайте ``UrbanGraph`` в :func:`od_matrix`"
+
+msgid "Snap objects to node ids before every matrix call"
+msgstr "Привязывать объекты к id узлов перед каждым вызовом матрицы"
+
+msgid "Pass the objects as ``gdf_origins`` / ``gdf_destinations``, or store ``graph_node_id`` from :func:`nearest_nodes` once"
+msgstr "Передайте объекты как ``gdf_origins`` / ``gdf_destinations`` или один раз сохраните ``graph_node_id`` из :func:`nearest_nodes`"
+
+msgid "Keep NetworkX as the graph in memory"
+msgstr "Хранить граф в памяти как NetworkX"
+
+msgid "Keep ``UrbanGraph``; convert to NetworkX only where another library needs it"
+msgstr "Храните ``UrbanGraph``; преобразуйте в NetworkX только там, где это нужно другой библиотеке"
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`UrbanGraph <iduedu.UrbanGraph>`"
+msgstr ":py:obj:`UrbanGraph <iduedu.UrbanGraph>`"
+
+msgid "Tabular representation of an urban transport graph."
+msgstr "Табличное представление городского транспортного графа."
+
+msgid ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
+msgstr ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
+
+msgid "Read an ``UrbanGraph`` from an ``.urbangraph`` archive."
+msgstr "Читает ``UrbanGraph`` из архива ``.urbangraph``."
+
+msgid ":py:obj:`write_urban_graph <iduedu.write_urban_graph>`"
+msgstr ":py:obj:`write_urban_graph <iduedu.write_urban_graph>`"
+
+msgid "Write an ``UrbanGraph`` to an ``.urbangraph`` archive."
+msgstr "Записывает ``UrbanGraph`` в архив ``.urbangraph``."
+
+msgid ":py:obj:`validate_graph <iduedu.validate_graph>`"
+msgstr ":py:obj:`validate_graph <iduedu.validate_graph>`"
+
+msgid "Validate all node, edge, topology and CRS contracts of an ``UrbanGraph``."
+msgstr "Проверяет все требования к узлам, рёбрам, топологии и системе координат ``UrbanGraph``."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "Values of ``u`` and ``v`` changed in place (``edges_gdf.loc[i, \"u\"] = ...``) are not detected; assign new columns or a new edge table, or call :meth:`UrbanGraph.update_adjacency_matrix`."
+msgstr "Значения ``u`` и ``v``, изменённые на месте (``edges_gdf.loc[i, \"u\"] = ...``), не обнаруживаются; присвойте новые столбцы или новую таблицу рёбер либо вызовите :meth:`UrbanGraph.update_adjacency_matrix`."
+
+msgid "Weights must be non-negative and without missing values."
+msgstr "Веса должны быть неотрицательными и без пропусков."
+
+msgid "Node ids can be any hashable values, but integer ids keep the tables and the archives compact."
+msgstr "id узлов могут быть любыми хешируемыми значениями, но целые id делают таблицы и архивы компактнее."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/urban_graph_basics`"
+msgstr ":doc:`../examples/urban_graph_basics`"
+

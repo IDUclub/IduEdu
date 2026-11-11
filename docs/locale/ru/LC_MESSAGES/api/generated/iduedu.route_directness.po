@@ -1,0 +1,67 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 15:46+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.route\\_directness"
+msgstr "iduedu.route\\_directness"
+
+msgid "Ratio of the shortest network distance to the straight distance between origins and destinations."
+msgstr "Отношение кратчайшего расстояния по сети к расстоянию по прямой между исходными точками и точками назначения."
+
+msgid "1 means a straight route; a street grid gives about 1.27 on average. Distances are measured by ``length_meter`` between graph nodes, and the straight distance between the same nodes, so objects are represented by their nearest nodes."
+msgstr "1 означает прямой маршрут; уличная решётка даёт в среднем около 1,27. Расстояния измеряются по ``length_meter`` между узлами графа, а расстояние по прямой — между теми же узлами, поэтому объекты представлены ближайшими узлами."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph in a projected (metric) CRS."
+msgstr "Граф в проецированной (метрической) системе координат."
+
+msgid "Origin node ids, or"
+msgstr "Идентификаторы исходных узлов, либо"
+
+msgid "origin objects (with ``graph_node_column`` or matched to their nearest nodes)."
+msgstr "исходные объекты (со столбцом ``graph_node_column`` или сопоставленные с ближайшими узлами)."
+
+msgid "Destination node ids, or"
+msgstr "Идентификаторы узлов назначения, либо"
+
+msgid "destination objects. Without destinations the origins are used."
+msgstr "объекты назначения. Без точек назначения используются исходные точки."
+
+msgid "Column of object tables that holds graph node ids."
+msgstr "Столбец таблиц объектов с идентификаторами узлов графа."
+
+msgid "Without origins, this many random nodes are taken as origins and destinations."
+msgstr "Без исходных точек столько случайных узлов берётся и как исходные точки, и как точки назначения."
+
+msgid "Seed of the random sample."
+msgstr "Начальное значение генератора для случайной выборки."
+
+msgid "Number of threads; ``None`` uses all cores."
+msgstr "Число потоков; ``None`` использует все ядра."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "DataFrame of ratios, origins in rows and destinations in columns; ``NaN`` for unreachable pairs and for pairs at the same place. ``result.stack().mean()`` is the mean directness."
+msgstr "DataFrame с отношениями: исходные точки в строках, точки назначения в столбцах; ``NaN`` для недостижимых пар и для пар в одном и том же месте. ``result.stack().mean()`` — средняя прямолинейность."
+

@@ -1,0 +1,277 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Public transport from OpenStreetMap"
+msgstr "Общественный транспорт по OpenStreetMap"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid ":func:`get_public_transport_graph` builds the bus, trolleybus, tram, subway, monorail and share-taxi routes of a territory from the route relations of OpenStreetMap. Travel times between stops come from a speed model of every mode, and waiting times at boarding from the averages of the transport registry. For timetable travel and waiting times use a GTFS feed (:doc:`gtfs`); to walk to and between stops, join the graph with a walk graph (:doc:`intermodal`)."
+msgstr ":func:`get_public_transport_graph` строит автобусные, троллейбусные, трамвайные маршруты, маршруты метро, монорельса и маршрутных такси территории по отношениям маршрутов OpenStreetMap. Время в пути между остановками берётся из модели скорости каждого вида транспорта, а время ожидания посадки — из средних значений реестра транспорта. Для времени движения и ожидания по расписанию используйте фид GTFS (:doc:`gtfs`); чтобы ходить к остановкам и между ними, соедините граф с пешеходным (:doc:`intermodal`)."
+
+msgid "Inputs"
+msgstr "Входные данные"
+
+msgid "``osm_id`` or ``territory``"
+msgstr "``osm_id`` или ``territory``"
+
+msgid "The territory, see :doc:`sources`. Every route relation that touches it is read with all its stops, also those outside; ``clip_by_territory=True`` cuts the graph at the boundary."
+msgstr "Территория, см. :doc:`sources`. Каждое отношение маршрута, касающееся её, читается со всеми остановками, в том числе внешними; ``clip_by_territory=True`` обрезает граф по границе."
+
+msgid "``transport_types``"
+msgstr "``transport_types``"
+
+msgid "The modes to build: one name, a list, or ``None`` for every mode of the registry. A requested mode must exist in the registry, otherwise the builder raises ``ValueError``. OpenStreetMap tags some services under names the registry does not use: ``tram`` also reads ``route=light_rail`` relations and ``taxi`` reads ``route=share_taxi`` (``OSM_ROUTE_ALIASES`` in ``iduedu.constants.transport_specs``)."
+msgstr "Виды транспорта для построения: одно имя, список или ``None`` для всех видов реестра. Запрошенный вид должен быть в реестре, иначе построитель вызывает ``ValueError``. OpenStreetMap отмечает некоторые виды под именами, которые реестр не использует: ``tram`` читает также отношения ``route=light_rail``, а ``taxi`` — ``route=share_taxi`` (``OSM_ROUTE_ALIASES`` в ``iduedu.constants.transport_specs``)."
+
+msgid "``transport_registry``"
+msgstr "``transport_registry``"
+
+msgid "The speed and waiting-time parameters of every mode, ``DEFAULT_REGISTRY`` by default. Trains need a registry that defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. See `Transport registry`_."
+msgstr "Параметры скорости и ожидания для каждого вида транспорта, по умолчанию ``DEFAULT_REGISTRY``. Поездам нужен реестр, в котором они определены, например ``DEFAULT_REGISTRY_W_TRAIN``. См. `Transport registry`_."
+
+msgid "Method"
+msgstr "Метод"
+
+msgid "Graph structure"
+msgstr "Устройство графа"
+
+msgid "Every route gets its own chain of *route stops*, one node per stop of the route, connected by travel edges whose ``type`` is the mode (``bus``, ``tram``, ...) and whose ``route`` is the route number. Routes that stop at the same place share a *platform* node, the place where passengers wait. A ``boarding`` edge leads from the platform to the route stop and carries the waiting time of the mode; an ``alighting`` edge leads back at no cost. A transfer between routes therefore passes through a platform and pays the wait of the route boarded."
+msgstr "Каждый маршрут получает свою цепочку *остановок маршрута*, по узлу на каждую остановку, соединённых рёбрами движения, у которых ``type`` — вид транспорта (``bus``, ``tram``, ...), а ``route`` — номер маршрута. Маршруты, останавливающиеся в одном месте, делят узел *платформы*, где ждут пассажиры. Ребро ``boarding`` ведёт от платформы к остановке маршрута и несёт время ожидания этого вида транспорта; ребро ``alighting`` ведёт обратно бесплатно. Поэтому пересадка между маршрутами проходит через платформу и оплачивает ожидание маршрута, на который садятся."
+
+msgid "The subway is built from the stop areas of its stations. Station entrances (``subway_entry_exit`` nodes) are linked to the station by ``subway_entrance`` and ``subway_exit`` edges. Their length is the slanted distance from the entrance down to the station, the straight distance combined with the ``depth`` tag of the station, and their time is that length at 0.75 m/s, the speed of an escalator. Stations of one interchange are linked by ``subway_transfer`` edges of 1.5 times their straight distance at 5 km/h. When a station lacks mapped entrances or exits, its node becomes a ``platform`` and is joined to the walk graph directly."
+msgstr "Метро строится по зонам остановок его станций. Входы станций (узлы ``subway_entry_exit``) связаны со станцией рёбрами ``subway_entrance`` и ``subway_exit``. Их длина — наклонное расстояние от входа вниз до станции, то есть расстояние по прямой вместе с тегом ``depth`` станции, а время — эта длина при скорости эскалатора 0,75 м/с. Станции одного пересадочного узла связаны рёбрами ``subway_transfer`` длиной в 1,5 расстояния по прямой при скорости 5 км/ч. Если у станции нет нанесённых входов или выходов, её узел становится ``platform`` и присоединяется к пешеходному графу напрямую."
+
+msgid "Travel time between stops"
+msgstr "Время в пути между остановками"
+
+msgid "For a segment of length ``L`` between two stops, the cruising speed ``v`` is the free speed of the mode (``base_speed_kmh``, or ``v(L)`` below when ``long_speed_kmh`` is set), capped by ``vmax_tech_kmh`` and by the road speed limit where that is lower. With ``span = accel_dist_m + brake_dist_m``:"
+msgstr "Для перегона длиной ``L`` между двумя остановками крейсерская скорость ``v`` — это свободная скорость вида транспорта (``base_speed_kmh`` или ``v(L)`` ниже, если задана ``long_speed_kmh``), ограниченная ``vmax_tech_kmh`` и ограничением скорости на дороге, где оно ниже. При ``span = accel_dist_m + brake_dist_m``:"
+
+msgid "if ``L >= span``, the time is ``dwell_min + (L + span) / v``: accelerating and braking cost as much as covering ``span`` twice at cruising speed;"
+msgstr "если ``L >= span``, время равно ``dwell_min + (L + span) / v``: разгон и торможение стоят столько же, сколько двукратное прохождение ``span`` на крейсерской скорости;"
+
+msgid "if ``L < span``, the vehicle never reaches ``v``. Its peak speed is ``v * sqrt(L / span)`` and the time is ``dwell_min + 2 * L / v_peak``. Both cases give the same time at ``L == span``."
+msgstr "если ``L < span``, транспорт не успевает набрать ``v``. Его пиковая скорость — ``v * sqrt(L / span)``, а время — ``dwell_min + 2 * L / v_peak``. При ``L == span`` оба случая дают одно и то же время."
+
+msgid "When ``long_speed_kmh`` and ``speed_half_length_m`` are set, the free speed grows with the segment length from ``base_speed_kmh`` towards ``long_speed_kmh``:"
+msgstr "Если заданы ``long_speed_kmh`` и ``speed_half_length_m``, свободная скорость растёт с длиной перегона от ``base_speed_kmh`` к ``long_speed_kmh``:"
+
+msgid "It is halfway at ``L = speed_half_length_m``. Timetables of every mode show this growth: a long stretch between stops runs on roads and tracks built for speed. A posted road limit does not raise the free speed; it is honoured only where it is lower, so a motorway does not make a bus faster. Fitting the free speed as ``base + coef * limit`` against published timetables showed that the two terms cannot be told apart, and leaving the limit term out improved the accuracy for every mode measured."
+msgstr "Половина роста достигается при ``L = speed_half_length_m``. Расписания всех видов транспорта показывают этот рост: длинный перегон проходит по дорогам и путям, построенным для скорости. Знак ограничения скорости не повышает свободную скорость; он учитывается только там, где он ниже, поэтому автомагистраль не делает автобус быстрее. Подбор свободной скорости в виде ``base + coef * limit`` по опубликованным расписаниям показал, что эти два члена нельзя разделить, а отказ от члена с ограничением повысил точность для каждого измеренного вида транспорта."
+
+msgid "Transport registry"
+msgstr "Реестр видов транспорта"
+
+msgid "A :class:`TransportRegistry` holds one :class:`TransportSpec` per mode:"
+msgstr ":class:`TransportRegistry` хранит по одной :class:`TransportSpec` на вид транспорта:"
+
+msgid "Parameter"
+msgstr "Параметр"
+
+msgid "Meaning"
+msgstr "Значение"
+
+msgid "``name``"
+msgstr "``name``"
+
+msgid "Mode identifier, usually the OSM ``route=*`` value"
+msgstr "Идентификатор вида транспорта, обычно значение OSM ``route=*``"
+
+msgid "``vmax_tech_kmh``"
+msgstr "``vmax_tech_kmh``"
+
+msgid "Technical maximum speed, km/h"
+msgstr "Техническая максимальная скорость, км/ч"
+
+msgid "``accel_dist_m``, ``brake_dist_m``"
+msgstr "``accel_dist_m``, ``brake_dist_m``"
+
+msgid "Distances to accelerate to and brake from the cruising speed, metres"
+msgstr "Расстояния разгона до крейсерской скорости и торможения с неё, метры"
+
+msgid "``base_speed_kmh``"
+msgstr "``base_speed_kmh``"
+
+msgid "Free speed between stops, km/h"
+msgstr "Свободная скорость между остановками, км/ч"
+
+msgid "``long_speed_kmh``, ``speed_half_length_m``"
+msgstr "``long_speed_kmh``, ``speed_half_length_m``"
+
+msgid "Optional, set together: the free speed on long segments and the length at which half of the growth is reached"
+msgstr "Необязательные, задаются вместе: свободная скорость на длинных перегонах и длина, на которой достигается половина роста"
+
+msgid "``dwell_min``"
+msgstr "``dwell_min``"
+
+msgid "Time standing at a stop, added once per segment, minutes"
+msgstr "Время стоянки на остановке, добавляется один раз на перегон, минуты"
+
+msgid "``avg_wait_time_min``"
+msgstr "``avg_wait_time_min``"
+
+msgid "Waiting time of the ``boarding`` edges, minutes"
+msgstr "Время ожидания на рёбрах ``boarding``, минуты"
+
+msgid "``DEFAULT_REGISTRY`` covers buses, trolleybuses, trams, subways, monorails and share taxis (``taxi``); ``DEFAULT_REGISTRY_W_TRAIN`` adds trains."
+msgstr "``DEFAULT_REGISTRY`` охватывает автобусы, троллейбусы, трамваи, метро, монорельс и маршрутные такси (``taxi``); ``DEFAULT_REGISTRY_W_TRAIN`` добавляет поезда."
+
+msgid "Mode"
+msgstr "Вид"
+
+msgid "``long_speed_kmh`` / ``speed_half_length_m``"
+msgstr "``long_speed_kmh`` / ``speed_half_length_m``"
+
+msgid "``bus``"
+msgstr "``bus``"
+
+msgid "29.5"
+msgstr "29,5"
+
+msgid "none"
+msgstr "нет"
+
+msgid "12.24"
+msgstr "12,24"
+
+msgid "0.387"
+msgstr "0,387"
+
+msgid "``trolleybus``"
+msgstr "``trolleybus``"
+
+msgid "20.0"
+msgstr "20,0"
+
+msgid "8.02"
+msgstr "8,02"
+
+msgid "0.159"
+msgstr "0,159"
+
+msgid "``tram``"
+msgstr "``tram``"
+
+msgid "11.5"
+msgstr "11,5"
+
+msgid "74.1 / 3506"
+msgstr "74,1 / 3506"
+
+msgid "5.22"
+msgstr "5,22"
+
+msgid "0.0"
+msgstr "0,0"
+
+msgid "``subway``"
+msgstr "``subway``"
+
+msgid "56.7"
+msgstr "56,7"
+
+msgid "3.26"
+msgstr "3,26"
+
+msgid "0.694"
+msgstr "0,694"
+
+msgid "``monorail``"
+msgstr "``monorail``"
+
+msgid "``taxi``"
+msgstr "``taxi``"
+
+msgid "``train`` (``DEFAULT_REGISTRY_W_TRAIN`` only)"
+msgstr "``train`` (только ``DEFAULT_REGISTRY_W_TRAIN``)"
+
+msgid "33.5"
+msgstr "33,5"
+
+msgid "78.9 / 5270"
+msgstr "78,9 / 5270"
+
+msgid "21.5"
+msgstr "21,5"
+
+msgid "0.365"
+msgstr "0,365"
+
+msgid "Speeds and dwell times are fitted on every published GTFS segment that has its own geometry (``shapes.txt``), about 859 000 segments in 239 cities, minimising the error in scheduled minutes with every city weighing the same, and cross-validated on held-out cities. A free speed that grows with the segment length is used for trams and trains, where it carries over to unseen cities; buses, subways and trolleybuses keep one free speed, because the growing form does not improve them. Waiting times are medians across cities of the average-day timetable wait over regular services (06:00 to 22:00, a line counted towards the same next stop). Too few cities publish a timetable for monorails or share taxis, so these two borrow the subway and bus profiles."
+msgstr "Скорости и время стоянки подобраны по всем опубликованным перегонам GTFS со своей геометрией (``shapes.txt``), около 859 000 перегонов в 239 городах, минимизацией ошибки в минутах расписания при одинаковом весе каждого города, с перекрёстной проверкой на отложенных городах. Свободная скорость, растущая с длиной перегона, используется для трамваев и поездов, где она переносится на новые города; автобусы, метро и троллейбусы сохраняют одну свободную скорость, потому что растущая форма их не улучшает. Время ожидания — медианы по городам ожидания среднего дня по расписанию для регулярных рейсов (с 06:00 до 22:00, линия считается по одной и той же следующей остановке). Расписания монорельса и маршрутных такси публикуют слишком немногие города, поэтому эти два вида берут профили метро и автобуса."
+
+msgid "A custom registry changes the speeds or the waits of the modes:"
+msgstr "Собственный реестр меняет скорости или ожидание видов транспорта:"
+
+msgid "Mode names are normalised (lower case, stripped). ``registry.update(\"bus\", name=\"express_bus\")`` renames a mode, and ``registry.ensure(\"ferry\")`` creates a mode with default parameters when it is missing. :func:`get_intermodal_graph` passes the registry on through ``pt_kwargs``."
+msgstr "Имена видов транспорта нормализуются (нижний регистр, без пробелов по краям). ``registry.update(\"bus\", name=\"express_bus\")`` переименовывает вид, а ``registry.ensure(\"ferry\")`` создаёт вид с параметрами по умолчанию, если его нет. :func:`get_intermodal_graph` передаёт реестр дальше через ``pt_kwargs``."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+msgid "A directed :class:`UrbanGraph` of type ``public_transport``. Nodes have ``type`` (``platform``, the mode of a route stop, ``subway_station``, ``subway_platform``, ``subway_entry_exit``), ``route`` and ``name``; subway stations also ``depth``. Edges have ``type`` (the mode, ``boarding``, ``alighting``, ``subway_entrance``, ``subway_exit``, ``subway_station``, ``subway_transfer``), ``route``, ``length_meter``, ``time_min`` and ``oneway``. Boarding and alighting edges have ``length_meter = 0``. :func:`transport_stats` summarises stops, routes and stop spacing by mode."
+msgstr "Ориентированный :class:`UrbanGraph` типа ``public_transport``. Узлы имеют ``type`` (``platform``, вид транспорта остановки маршрута, ``subway_station``, ``subway_platform``, ``subway_entry_exit``), ``route`` и ``name``; станции метро также ``depth``. Рёбра имеют ``type`` (вид транспорта, ``boarding``, ``alighting``, ``subway_entrance``, ``subway_exit``, ``subway_station``, ``subway_transfer``), ``route``, ``length_meter``, ``time_min`` и ``oneway``. У рёбер посадки и высадки ``length_meter = 0``. :func:`transport_stats` сводит остановки, маршруты и расстояния между остановками по видам транспорта."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
+msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
+
+msgid "Build a directed public-transport graph for one or multiple transport modes within a territory."
+msgstr "Строит ориентированный граф общественного транспорта для одного или нескольких видов транспорта в пределах территории."
+
+msgid ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
+msgstr ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
+
+msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
+msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+
+msgid ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
+msgstr ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
+
+msgid "Registry of available public-transport modes and their specifications."
+msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+
+msgid "Figures"
+msgstr "Рисунки"
+
+msgid "Public-transport routes of Vasilyevsky Island by mode, and the speed between stops by mode"
+msgstr "Маршруты общественного транспорта Васильевского острова по видам и скорость между остановками по видам"
+
+msgid "Left: the routes of Vasilyevsky Island by mode with their platforms. Right: the mean speed between two stops, the distance over ``time_min`` with the dwell time included, for the modes of ``DEFAULT_REGISTRY``. Short segments are slow for every mode because of acceleration, braking and dwell; trams and the subway gain most on long segments."
+msgstr "Слева: маршруты Васильевского острова по видам транспорта с их платформами. Справа: средняя скорость между двумя остановками, расстояние, делённое на ``time_min`` со временем стоянки, для видов транспорта ``DEFAULT_REGISTRY``. Короткие перегоны медленны для всех видов из-за разгона, торможения и стоянки; трамваи и метро выигрывают больше всего на длинных перегонах."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "Travel and waiting times are averages of the mode, not of the route or the time of day. Use a GTFS feed for the timetable of a city (:doc:`gtfs`)."
+msgstr "Время в пути и ожидания — средние по виду транспорта, а не по маршруту или времени суток. Для расписания города используйте фид GTFS (:doc:`gtfs`)."
+
+msgid "Routes are only as complete as their relations in OpenStreetMap: a route without stops or with gaps in its ways gives a shorter or broken chain."
+msgstr "Маршруты полны настолько, насколько полны их отношения в OpenStreetMap: маршрут без остановок или с разрывами в линиях даёт укороченную или разорванную цепочку."
+
+msgid "The subway model needs mapped stop areas; entrances without a ``depth`` tag on the station are taken at ground level."
+msgstr "Модели метро нужны нанесённые зоны остановок; входы станции без тега ``depth`` считаются на уровне земли."
+
+msgid "Example notebook"
+msgstr "Пример в блокноте"
+
+msgid ":doc:`../examples/transport_registry`"
+msgstr ":doc:`../examples/transport_registry`"
+

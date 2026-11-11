@@ -1,0 +1,130 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Upgrading to 3.0"
+msgstr "Переход на 3.0"
+
+msgid "IduEdu 3.0 replaces the Numba kernels with a compiled Rust core and adds point-to-point routing, network statistics, object aggregations, centralities, elevation and bike graphs. Most code written for 2.x runs unchanged. This page lists what was removed and what changed its results."
+msgstr "IduEdu 3.0 заменяет ядра Numba скомпилированным Rust-ядром и добавляет маршруты между двумя точками, статистику сети, агрегацию объектов, центральности, рельеф и велосипедные графы. Большая часть кода, написанного для 2.x, работает без изменений. На этой странице перечислено, что удалено и что изменило результаты."
+
+msgid "Installation"
+msgstr "Установка"
+
+msgid "Numba and llvmlite are no longer dependencies, and there is no JIT warm-up on the first call. Wheels are published for Linux (x86_64, aarch64), Windows (x64) and macOS (arm64, x86_64); building from source needs a stable Rust toolchain (1.82 or newer)."
+msgstr "Numba и llvmlite больше не нужны, и нет прогрева JIT при первом вызове. Колёса публикуются для Linux (x86_64, aarch64), Windows (x64) и macOS (arm64, x86_64); для сборки из исходников нужен стабильный инструментарий Rust (1.82 или новее)."
+
+msgid "pyosmium is no longer used: ``.osm.pbf`` files are read and written by the Rust core. The ``pbf`` extra is removed; drop it from your requirements, since ``pip install \"iduedu[pbf]\"`` now warns about an unknown extra."
+msgstr "pyosmium больше не используется: файлы ``.osm.pbf`` читает и пишет Rust-ядро. Дополнение ``pbf`` удалено; уберите его из зависимостей, так как ``pip install \"iduedu[pbf]\"`` теперь предупреждает о неизвестном дополнении."
+
+msgid "The new ``elevation`` extra installs rasterio for :func:`add_elevation` with raster files."
+msgstr "Новое дополнение ``elevation`` устанавливает rasterio для :func:`add_elevation` с растровыми файлами."
+
+msgid "Removed functions and arguments"
+msgstr "Удалённые функции и аргументы"
+
+msgid "The routing wrappers deprecated in 2.4.1 are removed, as functions and as :class:`UrbanGraph` methods. Each called a general function with a fixed ``output``:"
+msgstr "Обёртки маршрутизации, объявленные устаревшими в 2.4.1, удалены как функции и как методы :class:`UrbanGraph`. Каждая вызывала общую функцию с фиксированным ``output``:"
+
+msgid "Removed"
+msgstr "Удалено"
+
+msgid "Replacement"
+msgstr "Замена"
+
+msgid "``single_source_dijkstra_path_length``"
+msgstr "``single_source_dijkstra_path_length``"
+
+msgid "``single_source_dijkstra(..., output=\"distances\")``"
+msgstr "``single_source_dijkstra(..., output=\"distances\")``"
+
+msgid "``multi_source_dijkstra_path_length``"
+msgstr "``multi_source_dijkstra_path_length``"
+
+msgid "``multi_source_dijkstra(..., output=\"distances\")``"
+msgstr "``multi_source_dijkstra(..., output=\"distances\")``"
+
+msgid "``dijkstra_path_length_parallel``"
+msgstr "``dijkstra_path_length_parallel``"
+
+msgid "``dijkstra_parallel(..., output=\"distances\")``"
+msgstr "``dijkstra_parallel(..., output=\"distances\")``"
+
+msgid "``multi_source_dijkstra_path``"
+msgstr "``multi_source_dijkstra_path``"
+
+msgid "``od_matrix(..., output=\"paths\")``; despite its name it computed independent origin–destination routes, not a nearest-source search"
+msgstr "``od_matrix(..., output=\"paths\")``; несмотря на имя, она считала независимые маршруты между точками отправления и назначения, а не поиск от ближайшего источника"
+
+msgid "The ``location_storage`` argument of :class:`PbfSource`, :func:`split_by_polygons` and :func:`download_osm_pbf` is removed too: it chose the node index of pyosmium, and the Rust reader needs none."
+msgstr "Аргумент ``location_storage`` в :class:`PbfSource`, :func:`split_by_polygons` и :func:`download_osm_pbf` тоже удалён: он выбирал индекс узлов pyosmium, а Rust-читателю индекс не нужен."
+
+msgid "Changed behaviour"
+msgstr "Изменения в поведении"
+
+msgid "Areas in EPSG:4326"
+msgstr "Территории в EPSG:4326"
+
+msgid ":func:`clip_urban_graph`, :meth:`UrbanGraph.clip` and :func:`clip_nx_graph` read a bare shapely polygon in EPSG:4326, like ``territory`` in the graph builders and ``area`` in the new analysis functions. A GeoSeries or GeoDataFrame carries its own CRS. To clip by a polygon in the graph CRS, pass ``gpd.GeoSeries([polygon], crs=graph.crs)``."
+msgstr ":func:`clip_urban_graph`, :meth:`UrbanGraph.clip` и :func:`clip_nx_graph` читают полигон shapely без обёртки в EPSG:4326, как ``territory`` в построителях графов и ``area`` в новых функциях анализа. GeoSeries или GeoDataFrame несут свою систему координат. Чтобы обрезать по полигону в системе координат графа, передайте ``gpd.GeoSeries([polygon], crs=graph.crs)``."
+
+msgid "Edges of simplified street graphs"
+msgstr "Рёбра упрощённых уличных графов"
+
+msgid "With ``simplify=True``, segments are merged only where the tags of the ways are equal, so an edge ends wherever a tag changes and keeps the tags of all its ways (see :doc:`building/streets`). Drive and walk graphs have more nodes and edges than in 2.x; network length, intersections and dead ends are unchanged. The ``bridge`` and ``tunnel`` columns are always present, and bridges and tunnels are separate edges."
+msgstr "При ``simplify=True`` отрезки сливаются только там, где теги линий одинаковы, поэтому ребро заканчивается там, где меняется тег, и сохраняет теги всех своих линий (см. :doc:`building/streets`). У автомобильных и пешеходных графов больше узлов и рёбер, чем в 2.x; длина сети, перекрёстки и тупики не изменились. Столбцы ``bridge`` и ``tunnel`` есть всегда, а мосты и тоннели — отдельные рёбра."
+
+msgid "Parallel edges of undirected graphs"
+msgstr "Параллельные рёбра неориентированных графов"
+
+msgid "The adjacency matrix takes the cheapest of the parallel edges between two nodes in either orientation. In 2.x two edges of opposite orientation in an undirected multigraph were summed, which made some walking routes too long. Travel times on walk graphs can therefore be shorter than in 2.x."
+msgstr "Матрица смежности берёт самое дешёвое из параллельных рёбер между двумя узлами в любой ориентации. В 2.x два ребра противоположной ориентации в неориентированном мультиграфе суммировались, из-за чего некоторые пешеходные маршруты получались слишком длинными. Поэтому время в пути на пешеходных графах может быть меньше, чем в 2.x."
+
+msgid "Local OSM files"
+msgstr "Локальные файлы OSM"
+
+msgid "Only ``.osm.pbf`` files are read; convert ``.osm`` and ``.opl`` files with ``osmium cat city.osm -o city.osm.pbf``. Files written by :func:`split_by_polygons` carry no element metadata (versions, timestamps, users)."
+msgstr "Читаются только файлы ``.osm.pbf``; файлы ``.osm`` и ``.opl`` преобразуйте командой ``osmium cat city.osm -o city.osm.pbf``. Файлы, записанные :func:`split_by_polygons`, не содержат метаданных элементов (версий, отметок времени, пользователей)."
+
+msgid "Edits of edge weights"
+msgstr "Изменения весов рёбер"
+
+msgid "The cached adjacency matrix is rebuilt when the weights, directions or ends of the edges change after a query, also when the weights are edited in place. In 2.x such edits were ignored until :meth:`UrbanGraph.update_adjacency_matrix` was called, and the queries returned the old costs."
+msgstr "Кэшированная матрица смежности перестраивается, когда после запроса меняются веса, направления или концы рёбер, в том числе когда веса изменены на месте. В 2.x такие изменения игнорировались до вызова :meth:`UrbanGraph.update_adjacency_matrix`, и запросы возвращали старые стоимости."
+
+msgid "Single routes"
+msgstr "Отдельные маршруты"
+
+msgid ":func:`single_source_dijkstra_path` and :func:`od_matrix` with ``mode=\"pairwise\"`` run the bidirectional search (see :doc:`routing/point_to_point`). The costs are the same; where several routes are equally short, another of them can be returned."
+msgstr ":func:`single_source_dijkstra_path` и :func:`od_matrix` с ``mode=\"pairwise\"`` используют двунаправленный поиск (см. :doc:`routing/point_to_point`). Стоимости те же; если несколько маршрутов одинаково коротки, может вернуться другой из них."
+
+msgid "New in 3.0"
+msgstr "Новое в 3.0"
+
+msgid "Routes between two points with bidirectional search, A* and ALT, alternative routes and k shortest routes: :doc:`routing/point_to_point`."
+msgstr "Маршруты между двумя точками двунаправленным поиском, A* и ALT, альтернативные маршруты и k кратчайших маршрутов: :doc:`routing/point_to_point`."
+
+msgid "Network statistics, objects around origins and centralities: :doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`."
+msgstr "Статистика сети, объекты вокруг точек отправления и центральности: :doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`."
+
+msgid "Heights, grades and speeds on slopes: :doc:`analysis/elevation`."
+msgstr "Высоты, уклоны и скорость на склонах: :doc:`analysis/elevation`."
+
+msgid "Bike graphs with the level of traffic stress: :doc:`building/streets`."
+msgstr "Велосипедные графы с уровнем транспортного стресса: :doc:`building/streets`."
+
+msgid ":func:`nearest_edges`, :func:`unique_segments` and :func:`consolidate_intersections`: :doc:`graph/operations`."
+msgstr ":func:`nearest_edges`, :func:`unique_segments` и :func:`consolidate_intersections`: :doc:`graph/operations`."
+

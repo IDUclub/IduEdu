@@ -6,34 +6,56 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 from pandas._libs.sparse import IntIndex  # pylint: disable=no-name-in-module
+from scipy import sparse
 
-from iduedu._numba.shortest_paths import reconstruct_numba_compact_path
+from iduedu import _rust
 
 
-def _sparse_array(values, positions, length, dtype, fill_value):
+def _sparse_array(values, positions, length, dtype, fill_value, sparse_dtype=None):
     """Wrap stored values at sorted unique positions without a dense round trip."""
-    # pandas >= 3.1 offers from_indices and deprecates the sparse_index argument.
-    if hasattr(pd.arrays.SparseArray, "from_indices"):
+    if sparse_dtype is None:
+        sparse_dtype = pd.SparseDtype(dtype, fill_value)
+    values = np.asarray(values, dtype=dtype)
+    positions = np.asarray(positions, dtype=np.int32)
+    simple_new = getattr(pd.arrays.SparseArray, "_simple_new", None)
+    if simple_new is not None:
+        # Skips the validation of the public constructor, which dominates wide tables (one array per column).
+        return simple_new(values, IntIndex(length, positions), sparse_dtype)
+    if hasattr(pd.arrays.SparseArray, "from_indices"):  # pragma: no cover - pandas without _simple_new
         return pd.arrays.SparseArray.from_indices(values, positions, length, fill_value=fill_value, dtype=dtype)
     return pd.arrays.SparseArray(
-        values,
-        sparse_index=IntIndex(length, np.asarray(positions, dtype=np.int32)),
-        dtype=pd.SparseDtype(dtype, fill_value),
-    )
+        values, sparse_index=IntIndex(length, positions), dtype=sparse_dtype
+    )  # pragma: no cover
+
+
+def _frame(arrays, index, columns):
+    from_arrays = getattr(pd.DataFrame, "_from_arrays", None)
+    if from_arrays is not None and arrays:
+        return from_arrays(arrays, columns=columns, index=index, verify_integrity=False)
+    result = pd.DataFrame(dict(enumerate(arrays)), index=index) if arrays else pd.DataFrame(index=index)
+    result.columns = columns
+    return result
 
 
 def _sparse_frame(rows, cols, values, index, columns, dtype, fill_value):
-    """Build a sparse table column by column from coordinate entries."""
-    order = np.lexsort((rows, cols))
-    rows, cols, values = rows[order], cols[order], values[order]
-    bounds = np.searchsorted(cols, np.arange(len(columns) + 1))
-    arrays = {
-        j: _sparse_array(values[start:end], rows[start:end], len(index), dtype, fill_value)
-        for j, (start, end) in enumerate(zip(bounds[:-1], bounds[1:]))
-    }
-    result = pd.DataFrame(arrays, index=index) if arrays else pd.DataFrame(index=index)
-    result.columns = columns
-    return result
+    """Build a sparse table column by column from coordinate entries (each cell at most once)."""
+    rows, cols = np.asarray(rows, dtype=np.int64), np.asarray(cols, dtype=np.int64)
+    if np.dtype(dtype) != object:
+        # Counting sort by column in SciPy; explicit zeros (zero costs) are kept.
+        matrix = sparse.csc_matrix((np.asarray(values, dtype=dtype), (rows, cols)), shape=(len(index), len(columns)))
+        matrix.sort_indices()
+        bounds, rows, values = matrix.indptr, matrix.indices, matrix.data
+    else:
+        order = np.lexsort((rows, cols))
+        rows, cols, values = rows[order], cols[order], values[order]
+        bounds = np.searchsorted(cols, np.arange(len(columns) + 1))
+    sparse_dtype = pd.SparseDtype(dtype, fill_value)
+    rows = rows.astype(np.int32, copy=False)
+    arrays = [
+        _sparse_array(values[start:end], rows[start:end], len(index), dtype, fill_value, sparse_dtype)
+        for start, end in zip(bounds[:-1], bounds[1:])
+    ]
+    return _frame(arrays, index, columns)
 
 
 def _groups(labels, count):
@@ -66,8 +88,43 @@ class _PathTree:
     parents: np.ndarray
 
     def reconstruct(self, target: int, node_ids: np.ndarray, reverse: bool) -> list[Any] | None:
-        positions = reconstruct_numba_compact_path(self.nodes, self.parents, np.int32(target), reverse)
-        return node_ids[positions].tolist() if len(positions) else None
+        routes = self.reconstruct_many(np.array([target], dtype=np.int32), node_ids, reverse)
+        return routes[0]
+
+    def reconstruct_many(self, targets: np.ndarray, node_ids: np.ndarray, reverse: bool) -> list[list[Any] | None]:
+        """Routes to several targets in one kernel call; None for a target outside the tree."""
+        flat, offsets = _rust.reconstruct_paths(self.nodes, self.parents, np.asarray(targets, dtype=np.int32), reverse)
+        ids = node_ids[flat].tolist()
+        return [ids[start:end] if end > start else None for start, end in zip(offsets[:-1], offsets[1:])]
+
+
+@dataclass
+class _Route:
+    """One ready route of a point-to-point query, standing in for a search tree."""
+
+    routes: "_RouteList"
+    position: int
+
+    def reconstruct(self, target: int, node_ids: np.ndarray, reverse: bool) -> list[Any] | None:
+        start, end = self.routes.offsets[self.position], self.routes.offsets[self.position + 1]
+        if end == start or self.routes.flat[end - 1] != target:
+            return None
+        route = node_ids[self.routes.flat[start:end]].tolist()
+        return route[::-1] if reverse else route
+
+
+@dataclass
+class _RouteList:
+    """Routes of point-to-point queries as flat node positions with offsets, one per query."""
+
+    flat: np.ndarray
+    offsets: np.ndarray
+
+    def __len__(self) -> int:
+        return len(self.offsets) - 1
+
+    def __getitem__(self, position: int) -> _Route:
+        return _Route(self, int(position))
 
 
 @dataclass
@@ -77,7 +134,7 @@ class _PathStore:
     # The store explicitly records both search orientation and public layout.
     # pylint: disable=too-many-instance-attributes
 
-    trees: list[_PathTree]
+    trees: list[_PathTree] | _RouteList
     node_ids: np.ndarray
     tree_indices: np.ndarray
     origins: np.ndarray
@@ -112,7 +169,7 @@ class _PathStore:
                 continue
             found = np.searchsorted(tree.nodes, targets).clip(max=len(tree.nodes) - 1)
             found = np.flatnonzero(tree.nodes[found] == targets)
-            routes = [tree.reconstruct(int(targets[k]), self.node_ids, self.reverse) for k in found]
+            routes = tree.reconstruct_many(targets[found], self.node_ids, self.reverse)
             for owner in members:
                 owner_axis = np.full(len(found), owner)
                 rows.append(found if self.transposed else owner_axis)

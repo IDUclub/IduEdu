@@ -1,4 +1,3 @@
-import importlib.util
 import os
 import sys
 import threading
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
 LogLevel = Literal["TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 OsmSource = Literal["overpass", "pbf"]
 OSM_SOURCES = ("overpass", "pbf")
-PBF_INSTALL_HINT = "osm_source='pbf' needs the optional dependency pyosmium. Install it with: pip install 'iduedu[pbf]'"
 
 
 class Config:
@@ -71,8 +69,10 @@ class Config:
         self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}
 
         # --- Tags to keep on edges ---
+        # bridge and tunnel are always kept on drive, walk and bike edges (see STRUCTURE_TAGS).
         self.drive_useful_edges_attr = frozenset({"highway", "name", "lanes"})
         self.walk_useful_edges_attr = frozenset({"highway", "name"})
+        self.bike_useful_edges_attr = frozenset({"highway", "name", "lanes", "maxspeed", "surface"})
         self.transport_useful_edges_attr = frozenset({"name"})
 
         # --- Logging ---
@@ -228,8 +228,7 @@ class Config:
         """Choose where OpenStreetMap data comes from.
 
         ``"overpass"`` (the default) sends queries to the Overpass API. ``"pbf"`` answers the same
-        queries from a local OSM file (``.osm.pbf``, ``.osm``, ``.opl``) through the optional
-        dependency pyosmium (``pip install 'iduedu[pbf]'``); the Overpass cache and
+        queries from a local ``.osm.pbf`` file, read by IduEdu's Rust core; the Overpass cache and
         ``overpass_date`` are not used then.
 
         Args:
@@ -240,7 +239,6 @@ class Config:
         Raises:
             ValueError: For an unknown source, or ``"pbf"`` without a file.
             FileNotFoundError: If the file does not exist.
-            ImportError: If ``"pbf"`` is chosen and pyosmium is not installed.
         """
         normalized = str(source).strip().lower()
         if normalized not in OSM_SOURCES:
@@ -251,8 +249,6 @@ class Config:
                 raise ValueError("osm_source='pbf' requires a path to an OSM file")
             if not os.path.isfile(new_path):
                 raise FileNotFoundError(f"OSM file not found: {new_path}")
-            if importlib.util.find_spec("osmium") is None:
-                raise ImportError(PBF_INSTALL_HINT)
         with self._lock:
             self.osm_source = normalized
             self.pbf_path = new_path
@@ -275,7 +271,7 @@ class Config:
         reused without any download. Also available as ``iduedu.use_pbf``.
 
         Args:
-            path: The OSM file (``.osm.pbf``, ``.osm``, ``.opl``).
+            path: The ``.osm.pbf`` file.
             osm_id: OSM relation id of the territory to download, instead of ``path``.
             territory: Territory polygon in EPSG:4326, or a GeoDataFrame/GeoSeries, instead of ``path``.
             region: Geofabrik region id to cut the territory from; chosen automatically when omitted.
@@ -353,6 +349,10 @@ class Config:
         """Set OSM edge tags retained by walk graph builders."""
         self.walk_useful_edges_attr = frozenset(attr)
 
+    def set_bike_useful_edges_attr(self, attr: Iterable[str]):
+        """Set OSM edge tags retained by bike graph builders."""
+        self.bike_useful_edges_attr = frozenset(attr)
+
     def set_transport_useful_edges_attr(self, attr: Iterable[str]):
         """Set OSM edge tags retained by public-transport graph builders."""
         self.transport_useful_edges_attr = frozenset(attr)
@@ -393,6 +393,7 @@ class Config:
             "enable_tqdm_bar": self.enable_tqdm_bar,
             "drive_useful_edges_attr": sorted(self.drive_useful_edges_attr),
             "walk_useful_edges_attr": sorted(self.walk_useful_edges_attr),
+            "bike_useful_edges_attr": sorted(self.bike_useful_edges_attr),
             "transport_useful_edges_attr": sorted(self.transport_useful_edges_attr),
             "overpass_min_interval": self.overpass_min_interval,
             "overpass_max_retries": self.overpass_max_retries,

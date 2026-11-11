@@ -12,10 +12,11 @@
 <img src="./docs/_static/iduedu_header.svg" alt="IduEdu logo banner" width="100%">
 </p>
 
-**IduEdu** is an open-source Python toolkit for building and analyzing multimodal city networks from
-OpenStreetMap and local GTFS Schedule data. It downloads OSM data via Overpass, reads GTFS feeds, builds
-drive, walk, public-transport and intermodal networks, and stores them as `UrbanGraph` objects backed by
-GeoDataFrame node and edge tables.
+**IduEdu** is an open-source Python toolkit for building and analysing multimodal city networks from
+OpenStreetMap and local GTFS Schedule data. It reads OSM data from Overpass or local `.osm.pbf` files and GTFS
+feeds, builds drive, walk, bike, public-transport and intermodal networks, and stores them as `UrbanGraph` objects
+backed by GeoDataFrame node and edge tables. Routing, network statistics, accessibility sums and centralities run
+in a compiled Rust core.
 
 ## Benchmark snapshot
 
@@ -33,28 +34,33 @@ a representation detail:
 `UrbanGraph` can keep bidirectional walking edges as one row with a direction flag, while NetworkX-style
 directed multigraphs store separate directed edge rows.
 
-Full protocol notes, limitations and raw-result links are in the
-[benchmark documentation](https://iduclub.github.io/IduEdu/benchmarks.html).
+These runs were measured with IduEdu 2.x; full protocol notes, limitations and raw-result links are in the
+[2.x benchmark documentation](https://github.com/IDUclub/IduEdu/blob/v2.4.2/docs/benchmarks.md). Measurements of
+the Rust core of 3.0 will follow on the [performance page](https://iduclub.github.io/IduEdu/performance.html).
 
 ## Documentation
 
 Full documentation is published at <https://iduclub.github.io/IduEdu/>.
-Migrating from the old NetworkX-first API? See the
-[UrbanGraph migration guide](https://iduclub.github.io/IduEdu/migration_to_urban_graph.html).
+Upgrading from 2.x? See [Upgrading to 3.0](https://iduclub.github.io/IduEdu/upgrading.html); the graph model is
+described in [The UrbanGraph model](https://iduclub.github.io/IduEdu/graph/urban_graph.html).
 Runnable examples are available for
 [graph construction](https://iduclub.github.io/IduEdu/examples/get_any_graph.html),
 [UrbanGraph basics](https://iduclub.github.io/IduEdu/examples/urban_graph_basics.html),
-[object projection](https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html), and
-[shortest paths](https://iduclub.github.io/IduEdu/examples/shortest_paths.html). GTFS feeds are covered in
-the [GTFS guide](https://iduclub.github.io/IduEdu/api/gtfs.html) and the
+[object projection](https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html),
+[shortest paths](https://iduclub.github.io/IduEdu/examples/shortest_paths.html),
+[routing methods](https://iduclub.github.io/IduEdu/examples/routing_methods.html),
+[network analysis](https://iduclub.github.io/IduEdu/examples/network_analysis.html) and
+[elevation and cycling](https://iduclub.github.io/IduEdu/examples/elevation.html). GTFS feeds are covered in
+the [GTFS guide](https://iduclub.github.io/IduEdu/building/gtfs.html) and the
 [GTFS example](https://iduclub.github.io/IduEdu/examples/gtfs_public_transport.html), public-transport speeds
-and waits in the [transport registry guide](https://iduclub.github.io/IduEdu/api/transport_registry.html), and
+and waits in the [public-transport guide](https://iduclub.github.io/IduEdu/building/public_transport.html), and
 every setting in the [configuration guide](https://iduclub.github.io/IduEdu/configuration.html).
 
 ## Features
 
 - Store graph topology, geometry, CRS and edge weights in `UrbanGraph`, a GeoDataFrame-native graph model.
-- Build drive and walk graphs from OpenStreetMap with local metric projection and optional simplification.
+- Build drive, walk and bike graphs from OpenStreetMap with local metric projection and optional simplification;
+  bike edges carry their cycling infrastructure and level of traffic stress.
 - Build static public-transport graphs directly from OSM relations for bus, trolleybus, tram, subway,
   monorail and share taxi, with trains available through `DEFAULT_REGISTRY_W_TRAIN`.
 - Build static public-transport graphs from local GTFS Schedule directories or ZIP archives, using timetable
@@ -63,8 +69,13 @@ every setting in the [configuration guide](https://iduclub.github.io/IduEdu/conf
 - Reconstruct shortest routes as ordered nodes and edge geometries for mapping.
 - Combine pedestrian and public-transport layers into one intermodal graph by projecting stops, platforms
   and station access points onto the walking network.
-- Compute shortest paths and OD matrices with Numba-backed CSR routines, cutoff thresholds and adaptive
+- Compute shortest paths and OD matrices with CSR routines written in Rust, cutoff thresholds and adaptive
   graph reversal for unbalanced origin-destination sets.
+- Find routes between two points with bidirectional search, A* or ALT landmarks, alternative routes by the
+  penalty method and the k shortest routes.
+- Measure networks: statistics by area, zone or node surroundings, the nearest objects, sums and diversity of
+  objects within a travel cost, reach, closeness, gravity and betweenness centralities.
+- Add heights and grades from a raster, spot heights or contours, and make travel times depend on the slope.
 - Work with connected, weakly connected and strongly connected UrbanGraph components.
 - Convert to and from NetworkX through optional compatibility utilities.
 - Snap geometries to graph nodes with `nearest_nodes` and validate custom graph edits.
@@ -81,11 +92,14 @@ IduEdu supports Python 3.11 through 3.14. The core package uses the standard geo
 including GeoPandas, Shapely, PyProj, NumPy, Pandas and SciPy. NetworkX utilities are optional
 compatibility helpers.
 
-Use `pip install "iduedu[io]"` to enable `.urbangraph` parquet archive read/write helpers.
+Use `pip install "iduedu[io]"` to enable `.urbangraph` parquet archive read/write helpers and
+`pip install "iduedu[elevation]"` to read elevation rasters with rasterio.
 
-Use `pip install "iduedu[pbf]"` to build the same OSM graphs offline from local `.osm.pbf` extracts (for example
-Geofabrik downloads) instead of the Overpass API; see the
-[configuration guide](https://iduclub.github.io/IduEdu/configuration.html).
+Wheels include the compiled Rust core; building from source needs a stable Rust toolchain (1.82 or newer).
+
+The same OSM graphs can be built offline from local `.osm.pbf` extracts (for example Geofabrik downloads)
+instead of the Overpass API, with no extra dependency; see the
+[data sources guide](https://iduclub.github.io/IduEdu/building/sources.html).
 
 ## Quickstart
 
@@ -123,7 +137,7 @@ pt_graph = get_gtfs_public_transport_graph(
 ```
 
 The source can be a GTFS directory, a ZIP archive, or a list of feeds to merge. See the
-[GTFS guide](https://iduclub.github.io/IduEdu/api/gtfs.html) for schedule aggregation, geometry fallbacks,
+[GTFS guide](https://iduclub.github.io/IduEdu/building/gtfs.html) for schedule aggregation, geometry fallbacks,
 single-departure handling and intermodal joining.
 
 ### Compute an OD matrix
@@ -166,7 +180,7 @@ paths = result.paths  # materialize and cache all requested routes
 Use `output="paths"` for routes alone, `mode="pairwise"` to match inputs by position, and `iter_od_matrix`
 to process origin rows in blocks. The general `single_source_dijkstra`, `multi_source_dijkstra` (nearest source),
 and `dijkstra_parallel` (independent source rows) helpers also support selecting distances, paths, or both.
-See the [routing API](https://iduclub.github.io/IduEdu/api/matrices.html) for shapes, lazy storage, and memory limits.
+See the [routing guide](https://iduclub.github.io/IduEdu/routing/shortest_paths.html) for shapes, lazy storage, and memory limits.
 
 ### Reconstruct a route
 
@@ -199,24 +213,29 @@ main_graph = subgraph_by_nodes(graph, component_nodes)
 
 Common entry points are available directly from `iduedu`:
 
-- Builders: `get_drive_graph`, `get_walk_graph`, `get_public_transport_graph`,
+- Builders: `get_drive_graph`, `get_walk_graph`, `get_bike_graph`, `get_public_transport_graph`,
   `get_gtfs_public_transport_graph`, `get_intermodal_graph`, `join_pt_walk_graph`, `get_4326_boundary`.
-- GTFS: `merge_gtfs_feeds`; `read_gtfs_feed`, `validate_gtfs_feed` and `GTFSFeed` live in `iduedu.gtfs`.
+- GTFS: `merge_gtfs_feeds`, `deduplicate_across_feeds`; `read_gtfs_feed`, `validate_gtfs_feed` and `GTFSFeed` live in `iduedu.gtfs`.
 - Transport modes: `TransportSpec`, `TransportRegistry`, `DEFAULT_REGISTRY`, `DEFAULT_REGISTRY_W_TRAIN`.
 - Graph model: `UrbanGraph`, `UrbanGraphChanges`.
 - Editing and transforms: `clip_urban_graph`, `join_urban_graphs`, `project_objects2urban_graph`,
   `apply_urban_graph_changes`, `subgraph_by_nodes`, `relabel_urban_graph`, `simplify_multiedges`,
-  `to_directed`, `to_undirected`.
-- Graph utilities: `nearest_nodes`, `validate_graph`, `UrbanGraph.nearest_nodes`,
+  `to_directed`, `to_undirected`, `consolidate_intersections`, `unique_segments`.
+- Graph utilities: `nearest_nodes`, `nearest_edges`, `validate_graph`, `UrbanGraph.nearest_nodes`,
   `UrbanGraph.validate`.
 - Graph IO: `read_urban_graph`, `write_urban_graph`, `UrbanGraph.read`, `UrbanGraph.write`.
 - Components: `connected_components`, `weakly_connected_components`, `strongly_connected_components`,
   `largest_component`.
 - Shortest paths and matrices: `single_source_dijkstra`, `multi_source_dijkstra`, `dijkstra_parallel`,
   `od_matrix`, `iter_od_matrix`, `ShortestPathResult`, `single_source_dijkstra_path`,
-  `multi_source_dijkstra_nearest_source`, `path_to_edges`. Deprecated since 2.4.1 (removed in 3.0):
-  `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`, `dijkstra_path_length_parallel`,
-  `multi_source_dijkstra_path`.
+  `multi_source_dijkstra_nearest_source`, `path_to_edges`, `shortest_path`, `alternative_paths`,
+  `k_shortest_paths`. Removed in 3.0 (use the general helpers with
+  `output=...`): `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`,
+  `dijkstra_path_length_parallel`, `multi_source_dijkstra_path`.
+- Network analysis: `graph_stats`, `local_stats`, `edge_stats`, `transport_stats`, `streets_per_node`,
+  `route_directness`, `nearest_objects`, `aggregate_objects`, `diversity`, `centrality`, `edge_betweenness`,
+  `add_elevation`, `apply_grade_speed`.
+- Local OSM files: `use_pbf`, `download_osm_pbf`, `split_by_polygons`, `snapshot_time`, `PbfSource`.
 - Optional NetworkX helpers (install `networkx` separately): `urban_graph2nx_graph`, `nx_graph2urban_graph`,
   `graph2gdf`, `gdf2graph`, `read_gml`, `write_gml`, `clip_nx_graph`, `reproject_graph`.
 

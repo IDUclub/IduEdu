@@ -1,0 +1,28 @@
+[package]
+name = "iduedu-rs"
+# kept in sync with pyproject.toml by python-semantic-release; never bump by hand
+version = "2.4.2"
+edition = "2021"
+rust-version = "1.82"
+license = "BSD-3-Clause"
+description = "Rust core of the IduEdu Python package"
+repository = "https://github.com/IDUclub/IduEdu"
+readme = "README.md"
+publish = false
+
+[lib]
+name = "iduedu_rust"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+flate2 = "1.1"
+numpy = "0.30"
+osmpbf = "0.3.8"
+pyo3 = { version = "0.30", features = ["abi3-py311"] }
+rayon = "1.10"
+regex = "1.13.1"
+
+[profile.release]
+codegen-units = 1
+lto = "fat"

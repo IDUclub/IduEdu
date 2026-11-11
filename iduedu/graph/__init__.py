@@ -3,6 +3,7 @@ from .adapters import (
     urban_graph2nx_graph,
 )
 from .transformers import (
+    consolidate_intersections,
     keep_largest_connected_component,
     simplify_multiedges,
     to_directed,
@@ -22,18 +23,17 @@ from .components import (
 )
 from .shortest_paths import (
     ShortestPathResult,
+    alternative_paths,
     dijkstra_parallel,
     iter_od_matrix,
+    k_shortest_paths,
     multi_source_dijkstra,
     single_source_dijkstra,
-    dijkstra_path_length_parallel,
-    multi_source_dijkstra_path,
     multi_source_dijkstra_nearest_source,
-    multi_source_dijkstra_path_length,
     od_matrix,
     path_to_edges,
+    shortest_path,
     single_source_dijkstra_path,
-    single_source_dijkstra_path_length,
 )
 from .urban_graph import UrbanGraph
 from .editors import (
@@ -45,6 +45,11 @@ from .editors import (
     relabel_urban_graph,
     subgraph_by_nodes,
 )
-from .graph_inputs import nearest_nodes, resolve_graph_nodes_input
+from .graph_inputs import nearest_edges, nearest_nodes, resolve_graph_nodes_input
+from .segments import unique_segments
+from .elevation import add_elevation, apply_grade_speed
+from .centrality import centrality, edge_betweenness
+from .aggregations import aggregate_objects, diversity, nearest_objects
+from .stats import edge_stats, graph_stats, local_stats, route_directness, streets_per_node, transport_stats
 from .io import read_urban_graph, write_urban_graph
 from .validation import validate_graph

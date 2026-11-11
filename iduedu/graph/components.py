@@ -3,8 +3,7 @@ from typing import Any, Literal
 
 import numpy as np
 
-from iduedu._numba.components import connected_components_numba, strongly_connected_components_numba
-from iduedu._numba.csr import sparse_row2numba_bool_matrix
+from iduedu import _rust
 from iduedu.graph.adjacency import build_boolean_adjacency_matrix
 from iduedu.graph.urban_graph import UrbanGraph
 
@@ -14,6 +13,10 @@ ComponentMode = Literal["auto", "connected", "weak", "strong"]
 def _validate_graph(graph: UrbanGraph) -> None:
     if not isinstance(graph, UrbanGraph):
         raise TypeError(f"graph must be UrbanGraph, got {type(graph).__name__}")
+
+
+def _pattern(matrix):
+    return np.asarray(matrix.indptr, dtype=np.int32), np.asarray(matrix.indices, dtype=np.int32)
 
 
 def _components_from_labels(nodelist: list[Any], labels: np.ndarray) -> list[set[Any]]:
@@ -46,7 +49,7 @@ def connected_components(graph: UrbanGraph) -> list[set[Any]]:
 
     nodelist = graph.nodes_gdf.index.to_list()
     adjacency = build_boolean_adjacency_matrix(graph, nodelist=nodelist, weak=True)
-    return _components_from_labels(nodelist, connected_components_numba(sparse_row2numba_bool_matrix(adjacency)))
+    return _components_from_labels(nodelist, _rust.connected_components(*_pattern(adjacency)))
 
 
 def weakly_connected_components(graph: UrbanGraph) -> list[set[Any]]:
@@ -63,7 +66,7 @@ def weakly_connected_components(graph: UrbanGraph) -> list[set[Any]]:
     _validate_graph(graph)
     nodelist = graph.nodes_gdf.index.to_list()
     adjacency = build_boolean_adjacency_matrix(graph, nodelist=nodelist, weak=True)
-    return _components_from_labels(nodelist, connected_components_numba(sparse_row2numba_bool_matrix(adjacency)))
+    return _components_from_labels(nodelist, _rust.connected_components(*_pattern(adjacency)))
 
 
 def strongly_connected_components(graph: UrbanGraph) -> list[set[Any]]:
@@ -89,10 +92,8 @@ def strongly_connected_components(graph: UrbanGraph) -> list[set[Any]]:
 
     nodelist = graph.nodes_gdf.index.to_list()
     adjacency = build_boolean_adjacency_matrix(graph, nodelist=nodelist, weak=False)
-    labels = strongly_connected_components_numba(
-        sparse_row2numba_bool_matrix(adjacency),
-        sparse_row2numba_bool_matrix(adjacency.T.tocsr()),
-    )
+    reverse = adjacency.T.tocsr()
+    labels = _rust.strongly_connected_components(*_pattern(adjacency), *_pattern(reverse))
     return _components_from_labels(nodelist, labels)
 
 

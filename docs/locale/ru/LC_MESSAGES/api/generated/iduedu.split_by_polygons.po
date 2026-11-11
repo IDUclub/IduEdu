@@ -23,8 +23,8 @@ msgstr "Записывает по одному компактному, полн�
 msgid "Parameters"
 msgstr "Параметры"
 
-msgid "Sorted regional OSM file (``.osm.pbf`` as distributed by Geofabrik, or any format libosmium reads)."
-msgstr "Отсортированный региональный файл OSM (``.osm.pbf`` в том виде, как его распространяет Geofabrik, или любой формат, который читает libosmium)."
+msgid "Regional ``.osm.pbf`` file, as distributed by Geofabrik."
+msgstr "Региональный файл ``.osm.pbf`` в том виде, как его распространяет Geofabrik."
 
 #, python-brace-format
 msgid "``{name: polygon}`` in EPSG:4326. Use the polygons (or larger ones) you will later build graphs for; as with Overpass, only the exterior ring counts. ``name`` becomes the file name and must not contain path separators."
@@ -32,9 +32,6 @@ msgstr "``{name: polygon}`` в EPSG:4326. Используйте полигон�
 
 msgid "Output directory, created if missing."
 msgstr "Папка для результатов, создаётся при отсутствии."
-
-msgid "Node-location index for the spatial pass, as accepted by ``osmium.index.create_map``. ``\"flex_mem\"`` keeps it in memory. For country-sized files use a disk-backed index: ``\"sparse_file_array\"`` or ``\"dense_file_array\"`` alone put it in an anonymous temporary file that libosmium removes itself; ``\"dense_file_array,/scratch/nodes.idx\"`` names the file (it is left in place, and on Windows stays locked until the process exits). ``dense_file_array`` suits extracts with a large share of all node ids (big countries), ``sparse_file_array`` smaller ones."
-msgstr "Индекс координат узлов для пространственного прохода в формате ``osmium.index.create_map``. ``\"flex_mem\"`` хранит его в памяти. Для файлов размером со страну используйте дисковый индекс: ``\"sparse_file_array\"`` или ``\"dense_file_array\"`` без имени файла помещают его в анонимный временный файл, который libosmium удаляет сама; ``\"dense_file_array,/scratch/nodes.idx\"`` задаёт файл явно (он остаётся на месте, а в Windows заблокирован до завершения процесса). ``dense_file_array`` подходит для выгрузок с большой долей всех идентификаторов узлов (большие страны), ``sparse_file_array`` — для меньших."
 
 msgid "Ways carrying at least one of these keys are selected spatially. ``None`` selects every way. Ways without them still enter a city file as members of selected relations."
 msgstr "Линии хотя бы с одним из этих ключей отбираются пространственно. ``None`` отбирает все линии. Линии без них всё равно попадают в файл города как участники выбранных отношений."
@@ -65,8 +62,11 @@ msgstr "``{name: path}`` записанных файлов."
 msgid "Raises"
 msgstr "Исключения"
 
-msgid "When pyosmium is not installed."
-msgstr "Если pyosmium не установлен."
+msgid "When ``region_pbf`` does not exist."
+msgstr "Если ``region_pbf`` не существует."
+
+msgid "When ``region_pbf`` is not an OSM ``.pbf`` file, or for an invalid name."
+msgstr "Если ``region_pbf`` не является файлом OSM ``.pbf`` или имя недопустимо."
 
 msgid "When an output exists and ``overwrite`` is False."
 msgstr "Если выходной файл существует, а ``overwrite`` равен False."

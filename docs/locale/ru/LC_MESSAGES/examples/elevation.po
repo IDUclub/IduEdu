@@ -1,0 +1,58 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-10 21:29+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Elevation and cycling"
+msgstr "Рельеф и велосипед"
+
+msgid "This notebook adds heights and grades to a walk graph, makes walking times depend on the slope, and builds a bike graph with its level of traffic stress. Heights normally come from a raster file (`add_elevation(graph, \"dem.tif\")`, which needs `pip install \"iduedu[elevation]\"`). So that the notebook runs anywhere, it uses a hill of 60 m defined as a function of the coordinates; Vasilyevsky Island itself is flat."
+msgstr "Этот блокнот добавляет пешеходному графу высоты и уклоны, делает время ходьбы зависящим от уклона и строит велосипедный граф с уровнем транспортного стресса. Обычно высоты берутся из растрового файла (`add_elevation(graph, \"dem.tif\")`, для чего нужен `pip install \"iduedu[elevation]\"`). Чтобы блокнот работал везде, он использует холм высотой 60 м, заданный функцией от координат; сам Васильевский остров плоский."
+
+msgid "`graph_stats` now reports heights and grades. `grade_mean` is the mean absolute grade weighted by length."
+msgstr "Теперь `graph_stats` выводит высоты и уклоны. `grade_mean` — средний уклон по модулю, взвешенный по длине."
+
+msgid "Walking times on slopes"
+msgstr "Время ходьбы на склонах"
+
+msgid "`apply_grade_speed` divides the time of every edge by the relative speed of a model. Tobler's hiking function is fastest on a gentle descent of 5 %. The flat times stay in `time_min_flat`."
+msgstr "`apply_grade_speed` делит время каждого ребра на относительную скорость модели. Функция пешего хода Тоблера даёт наибольшую скорость на пологом спуске в 5 %. Время по ровному сохраняется в `time_min_flat`."
+
+msgid "A bike graph"
+msgstr "Велосипедный граф"
+
+msgid "`get_bike_graph` keeps every way a bicycle may use and gives each edge its cycling infrastructure (`cycle_infra`) and level of traffic stress (`lts`, 1 to 4). With `elevation` it also adds grades and the cycling speed model."
+msgstr "`get_bike_graph` сохраняет все пути, доступные велосипеду, и даёт каждому ребру вид велоинфраструктуры (`cycle_infra`) и уровень транспортного стресса (`lts`, от 1 до 4). С `elevation` он также добавляет уклоны и велосипедную модель скорости."
+
+msgid "`max_lts=2` keeps the network that most adults are willing to ride, and `keep_largest_subgraph` (the default) its largest strongly connected component: the part where every place can be reached from every other without riding in heavy traffic. Compare it with all the edges up to level 2."
+msgstr "`max_lts=2` сохраняет сеть, по которой готово ездить большинство взрослых, а `keep_largest_subgraph` (по умолчанию) — её наибольшую компоненту сильной связности: часть, где из каждого места можно попасть в любое другое, не выезжая в плотный поток. Сравните её со всеми рёбрами до уровня 2."
+
+msgid "Most edges up to level 2 here are service roads inside the blocks. The streets between them are secondary and tertiary roads with `maxspeed=RU:urban`, which is not a number, so they take the default of 60 km/h for their class, the urban limit in Russia, and reach level 4. The low-stress edges therefore fall into many small pieces: even with the direction ignored, the largest piece holds 2 692 of the 13 644 nodes. Cycle lanes mapped on those streets would join them."
+msgstr "Большинство рёбер до уровня 2 здесь — внутриквартальные проезды. Улицы между ними — вторичные и третичные дороги с `maxspeed=RU:urban`; это не число, поэтому они получают значение по умолчанию для своего класса, 60 км/ч (городское ограничение в России), и уровень 4. Поэтому рёбра с низким стрессом распадаются на много небольших частей: даже без учёта направления наибольшая часть содержит 2 692 из 13 644 узлов. Велополосы, нанесённые на эти улицы, соединили бы их."
+
+msgid "Heights from a raster"
+msgstr "Высоты из растра"
+
+msgid "With a digital elevation model the call is the same, and the raster may be in any CRS:"
+msgstr "С цифровой моделью рельефа вызов тот же, а растр может быть в любой системе координат:"
+
+msgid "Global models such as Copernicus GLO-30 measure roofs and trees in cities; use a terrain model for street grades. Spot heights and contour lines in a GeoDataFrame work as well (`column=` names the height column)."
+msgstr "Глобальные модели, такие как Copernicus GLO-30, в городах измеряют крыши и деревья; для уклонов улиц используйте модель рельефа. Отметки высот и горизонтали в GeoDataFrame тоже подходят (`column=` называет столбец высоты)."
+
+msgid "Your own area"
+msgstr "Своя территория"
+
+msgid "Replace `OSM_ID` with the id of an OSM boundary relation, or pass `territory=` a shapely polygon in EPSG:4326 or a GeoDataFrame. Measures near the border of a graph are biased, because the network beyond it is missing: build the graph for a larger area and pass the study area as `area=` to `graph_stats` and `centrality`. For many runs on one region, read a local OSM file instead of Overpass with `iduedu.use_pbf(...)` (see the data sources page)."
+msgstr "Замените `OSM_ID` на id отношения границы OSM или передайте в `territory=` полигон shapely в EPSG:4326 или GeoDataFrame. Меры у границы графа смещены, потому что сети за границей нет: стройте граф для большей территории и передавайте исследуемую территорию как `area=` в `graph_stats` и `centrality`. Для многих расчётов по одному региону читайте локальный файл OSM вместо Overpass через `iduedu.use_pbf(...)` (см. страницу об источниках данных)."
+

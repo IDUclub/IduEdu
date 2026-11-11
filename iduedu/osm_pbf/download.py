@@ -9,8 +9,7 @@ resume and an md5 check) and cuts a compact file for the territory out of it wit
         graph = get_intermodal_graph(osm_id=1114252)
 
 Regional files and cut files are cached under ``config.overpass_cache_dir`` (``geofabrik/`` and
-``geofabrik/territories/``); a cut file that already exists is returned without any download. Cutting needs
-the optional dependency pyosmium (``pip install 'iduedu[pbf]'``); downloading does not.
+``geofabrik/territories/``); a cut file that already exists is returned without any download.
 """
 
 import hashlib
@@ -228,7 +227,6 @@ def download_osm_pbf(
     out_dir: str | os.PathLike | None = None,
     update: bool = False,
     overwrite: bool = False,
-    location_storage: str = "flex_mem",
 ) -> Path:
     """OSM file for a territory, cut out of a Geofabrik extract: a drop-in replacement for Overpass downloads.
 
@@ -249,15 +247,12 @@ def download_osm_pbf(
             ``territories/`` subdirectory.
         update: Refresh a cached regional extract when Geofabrik has a newer one and cut again.
         overwrite: Cut again even if the territory file exists.
-        location_storage: Node-location index used while cutting (see
-            :func:`~iduedu.osm_pbf.split_by_polygons`); use ``"sparse_file_array"`` for country-sized extracts.
 
     Returns:
         Path of ``<name>.osm.pbf``.
 
     Raises:
         ValueError: If neither ``osm_id`` nor ``territory`` is given, or no extract covers the territory.
-        ImportError: When pyosmium is not installed and the file has to be cut.
     """
     if osm_id is None and territory is None:
         raise ValueError("Either osm_id or territory must be specified")
@@ -285,7 +280,6 @@ def download_osm_pbf(
         region_pbf,
         {name: polygon},
         target_dir,
-        location_storage=location_storage,
         keep_relations=keep,
         overwrite=True,
     )
