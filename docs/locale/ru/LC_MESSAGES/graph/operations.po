@@ -53,6 +53,12 @@ msgstr "Объекты"
 msgid ":func:`nearest_nodes`, :func:`nearest_edges`, :func:`project_objects2urban_graph`, :func:`apply_urban_graph_changes`"
 msgstr ":func:`nearest_nodes`, :func:`nearest_edges`, :func:`project_objects2urban_graph`, :func:`apply_urban_graph_changes`"
 
+msgid "Scenario edits"
+msgstr "Правки сценариев"
+
+msgid ":class:`GraphEdits`, :func:`resolve_graph_edits`, :class:`UrbanGraphChanges`"
+msgstr ":class:`GraphEdits`, :func:`resolve_graph_edits`, :class:`UrbanGraphChanges`"
+
 msgid "Storage and checks"
 msgstr "Хранение и проверка"
 
@@ -64,6 +70,9 @@ msgstr "Маршрут существует только внутри одной
 
 msgid ":func:`subgraph_by_nodes` keeps the given nodes and the edges between them. :func:`clip_urban_graph` keeps the part of a graph inside a polygon; a bare shapely polygon is read in EPSG:4326, as ``territory`` in the graph builders, and a GeoSeries or GeoDataFrame in its own CRS. :func:`join_urban_graphs` concatenates the tables of compatible graphs, and :func:`relabel_urban_graph` renumbers the nodes ``0 .. n-1``."
 msgstr ":func:`subgraph_by_nodes` сохраняет заданные узлы и рёбра между ними. :func:`clip_urban_graph` сохраняет часть графа внутри полигона; полигон shapely без обёртки читается в EPSG:4326, как ``territory`` в построителях графов, а GeoSeries или GeoDataFrame — в своей системе координат. :func:`join_urban_graphs` объединяет таблицы совместимых графов, а :func:`relabel_urban_graph` перенумеровывает узлы ``0 .. n-1``."
+
+msgid "With ``by=\"coordinates\"``, :func:`relabel_urban_graph` packs the latitude and longitude of every node, in units of 1e-7 degree (the precision of OpenStreetMap), into one int64 id. A street node then keeps its id when the graph is built again from newer data, and the graphs of two neighbouring territories share the ids of their common nodes. Two nodes closer than 1e-7 degree (about 1 cm) would get one id, and the function raises instead. Public transport graphs have such nodes, for example the stops of several routes at one platform, so the coordinate ids suit drive, walk and bike graphs."
+msgstr "С ``by=\"coordinates\"`` функция :func:`relabel_urban_graph` упаковывает широту и долготу каждого узла в единицах 1e-7 градуса (точность OpenStreetMap) в один идентификатор int64. Тогда узел улицы сохраняет идентификатор при новой сборке графа из более свежих данных, а графы двух соседних территорий получают одинаковые идентификаторы общих узлов. Два узла ближе 1e-7 градуса (около 1 см) получили бы один идентификатор, и функция вместо этого вызывает исключение. В графах общественного транспорта такие узлы есть, например остановки нескольких маршрутов у одной платформы, поэтому координатные идентификаторы подходят для автомобильных, пешеходных и велосипедных графов."
 
 msgid ":func:`to_directed` returns a directed graph whose direction comes from a boolean column, ``oneway`` by default; edges without a value get ``default_direction_value`` (``False``: both directions). :func:`to_undirected` drops the direction. :func:`simplify_multiedges` keeps one of the parallel edges between two nodes, the cheapest by ``weight`` with ``rule=\"min\"`` (the default)."
 msgstr ":func:`to_directed` возвращает ориентированный граф, направление которого берётся из логического столбца, по умолчанию ``oneway``; рёбра без значения получают ``default_direction_value`` (``False``: в обе стороны). :func:`to_undirected` убирает направление. :func:`simplify_multiedges` сохраняет одно из параллельных рёбер между двумя узлами, самое дешёвое по ``weight`` при ``rule=\"min\"`` (по умолчанию)."
@@ -79,6 +88,15 @@ msgstr ":func:`nearest_nodes` возвращает ближайший узел �
 
 msgid ":func:`project_objects2urban_graph` inserts objects into the graph. The nearest edge of every object within ``max_dist`` is split at the projection point, and with ``add_link_edge=True`` (the default) a new node for the object and a link edge at ``speed_m_per_min`` join it to that point. The function returns the changes, an :class:`UrbanGraphChanges` with the nodes and edges to add and the edges to delete, and the node of every object. :func:`apply_urban_graph_changes` applies them; :meth:`UrbanGraph.project_objects` does both in one call. Keeping the changes apart lets a service store them in its own tables."
 msgstr ":func:`project_objects2urban_graph` вставляет объекты в граф. Ближайшее ребро каждого объекта в пределах ``max_dist`` разрезается в точке проекции, а с ``add_link_edge=True`` (по умолчанию) новый узел объекта и соединительное ребро со скоростью ``speed_m_per_min`` связывают его с этой точкой. Функция возвращает изменения, :class:`UrbanGraphChanges` с добавляемыми узлами и рёбрами и удаляемыми рёбрами, и узел каждого объекта. :func:`apply_urban_graph_changes` применяет их; :meth:`UrbanGraph.project_objects` делает и то и другое за один вызов. Раздельные изменения позволяют сервису хранить их в своих таблицах."
+
+msgid "A planning scenario closes streets, changes speeds or adds new links. Ids of nodes and edges change when the graph is built again from newer OSM data, and a simplified edge has no OSM way id, so a stored scenario keeps its edits as lines. :class:`GraphEdits` holds three tables: ``add`` with the lines of new edges and their attributes, ``remove`` with anchor lines of the network to remove and ``update`` with anchor lines and the new values of the edges along them. :func:`resolve_graph_edits` binds them to the current graph and returns an :class:`UrbanGraphChanges` and a report of the edits it could not bind."
+msgstr "Сценарий планирования перекрывает улицы, меняет скорости или добавляет новые связи. Идентификаторы узлов и рёбер меняются при новой сборке графа из более свежих данных OSM, а у упрощённого ребра нет идентификатора пути OSM, поэтому сохранённый сценарий хранит правки линиями. :class:`GraphEdits` содержит три таблицы: ``add`` с линиями новых рёбер и их атрибутами, ``remove`` с линиями-якорями удаляемой сети и ``update`` с линиями-якорями и новыми значениями рёбер вдоль них. :func:`resolve_graph_edits` привязывает их к текущему графу и возвращает :class:`UrbanGraphChanges` и отчёт о правках, которые привязать не удалось."
+
+msgid "An anchor selects the edges that run along it within ``tolerance``; a street that only crosses the anchor is not selected. An edge covered in part is split at the ends of the anchor, so only the covered part changes, even when the rebuilt graph has its junctions elsewhere. In a directed graph ``direction=\"along\"`` limits an edit to the direction the anchor is drawn in, and a two-way edge becomes two one-way edges. ``speed_kmh`` in ``update`` sets ``time_min`` from the edge length. Each end of an added line is attached to a node within ``tolerance``, or splits the nearest edge there, or becomes a new node. ``edge_types`` keeps the edits on one layer, for example the walking edges of an intermodal graph, whose transit edges often run along the same streets."
+msgstr "Якорь выбирает рёбра, которые идут вдоль него в пределах ``tolerance``; улица, которая лишь пересекает якорь, не выбирается. Частично покрытое ребро разрезается по концам якоря, поэтому меняется только покрытая часть, даже если в пересобранном графе перекрёстки расположены иначе. В ориентированном графе ``direction=\"along\"`` ограничивает правку направлением, в котором нарисован якорь, и двустороннее ребро становится двумя односторонними. ``speed_kmh`` в ``update`` задаёт ``time_min`` по длине ребра. Каждый конец добавленной линии присоединяется к узлу в пределах ``tolerance``, или разрезает ближайшее ребро в этом месте, или становится новым узлом. ``edge_types`` оставляет правки на одном слое, например на пешеходных рёбрах интермодального графа, рёбра транспорта которого часто идут по тем же улицам."
+
+msgid "An anchor that the graph covers by less than ``min_coverage`` of its length, or an added line that would join a node to itself, is skipped and reported. :class:`UrbanGraphChanges` also sets new values on edges by key with ``edges_to_update``; :func:`apply_urban_graph_changes` deletes edges first, then updates, then adds."
+msgstr "Якорь, который граф покрывает меньше чем на ``min_coverage`` его длины, или добавленная линия, которая соединила бы узел с самим собой, пропускается и попадает в отчёт. :class:`UrbanGraphChanges` также задаёт новые значения рёбер по ключу через ``edges_to_update``; :func:`apply_urban_graph_changes` сначала удаляет рёбра, затем обновляет, затем добавляет."
 
 msgid ":func:`write_urban_graph` and :func:`read_urban_graph` store and read ``.urbangraph`` archives, and :func:`validate_graph` checks the tables after your own edits (see :doc:`urban_graph`)."
 msgstr ":func:`write_urban_graph` и :func:`read_urban_graph` записывают и читают архивы ``.urbangraph``, а :func:`validate_graph` проверяет таблицы после ваших правок (см. :doc:`urban_graph`)."
@@ -170,8 +188,10 @@ msgstr "Объединяет два совместимых ``UrbanGraph``, со�
 msgid ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
 msgstr ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
 
-msgid "Relabel node ids to a dense ``RangeIndex`` and update edge endpoints."
-msgstr "Перенумеровывает идентификаторы узлов в плотный ``RangeIndex`` и обновляет концы рёбер."
+# | msgid "Relabel node ids to a dense ``RangeIndex`` and update edge
+# | endpoints."
+msgid "Relabel node ids and update edge endpoints."
+msgstr "Перенумеровывает узлы и обновляет концы рёбер."
 
 msgid ":py:obj:`to_directed <iduedu.to_directed>`"
 msgstr ":py:obj:`to_directed <iduedu.to_directed>`"
@@ -232,6 +252,20 @@ msgstr ":py:obj:`UrbanGraphChanges <iduedu.UrbanGraphChanges>`"
 
 msgid "Set of table changes that can be applied to an ``UrbanGraph``."
 msgstr "Набор изменений таблиц, который можно применить к ``UrbanGraph``."
+
+# | msgid ":py:obj:`graph2gdf <iduedu.graph2gdf>`"
+msgid ":py:obj:`GraphEdits <iduedu.GraphEdits>`"
+msgstr ":py:obj:`GraphEdits <iduedu.GraphEdits>`"
+
+msgid "Edits of a graph given by lines in any CRS, resolved by :func:`resolve_graph_edits`."
+msgstr "Правки графа, заданные линиями в любой CRS; к графу их привязывает :func:`resolve_graph_edits`."
+
+# | msgid ":py:obj:`reproject_graph <iduedu.reproject_graph>`"
+msgid ":py:obj:`resolve_graph_edits <iduedu.resolve_graph_edits>`"
+msgstr ":py:obj:`resolve_graph_edits <iduedu.resolve_graph_edits>`"
+
+msgid "Bind geometric edits to the current graph."
+msgstr "Привязывает геометрические правки к текущему графу."
 
 msgid ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
 msgstr ":py:obj:`read_urban_graph <iduedu.read_urban_graph>`"
@@ -325,6 +359,9 @@ msgstr ":func:`consolidate_intersections` работает только с ра�
 
 msgid ":func:`project_objects2urban_graph` attaches every object to one edge; an object far from any edge (beyond ``max_dist``) stays unattached."
 msgstr ":func:`project_objects2urban_graph` присоединяет каждый объект к одному ребру; объект далеко от всех рёбер (дальше ``max_dist``) остаётся неприсоединённым."
+
+msgid ":func:`resolve_graph_edits` finds edges by distance: two streets closer than ``tolerance`` and running side by side are both selected by an anchor along one of them. Set ``tolerance`` below the distance between parallel carriageways, or limit the edits with ``edge_types``."
+msgstr ":func:`resolve_graph_edits` находит рёбра по расстоянию: если две улицы идут рядом ближе ``tolerance``, якорь вдоль одной из них выбирает обе. Задайте ``tolerance`` меньше расстояния между параллельными проезжими частями или ограничьте правки через ``edge_types``."
 
 msgid "Example notebook"
 msgstr "Пример в блокноте"

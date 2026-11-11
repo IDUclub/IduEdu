@@ -66,6 +66,8 @@ The graph model
     project_objects2urban_graph
     apply_urban_graph_changes
     UrbanGraphChanges
+    GraphEdits
+    resolve_graph_edits
 
 Routing
 -------

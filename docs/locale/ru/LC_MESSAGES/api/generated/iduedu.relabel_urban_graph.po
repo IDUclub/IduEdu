@@ -17,14 +17,28 @@ msgstr ""
 msgid "iduedu.relabel\\_urban\\_graph"
 msgstr "iduedu.relabel\\_urban\\_graph"
 
-msgid "Relabel node ids to a dense ``RangeIndex`` and update edge endpoints."
-msgstr "Перенумеровывает идентификаторы узлов в плотный ``RangeIndex`` и обновляет концы рёбер."
+# | msgid "Relabel node ids to a dense ``RangeIndex`` and update edge
+# | endpoints."
+msgid "Relabel node ids and update edge endpoints."
+msgstr "Перенумеровывает узлы и обновляет концы рёбер."
 
 msgid "The function does not mutate the source graph. For multigraphs, ``k`` is recalculated after relabeling to keep ``['u', 'v', 'k']`` unique."
 msgstr "Функция не меняет исходный граф. Для мультиграфов ``k`` пересчитывается после перенумерации, чтобы ``['u', 'v', 'k']`` оставались уникальными."
 
-msgid "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
-msgstr "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Source graph."
+msgstr "Исходный граф."
+
+msgid "``\"range\"`` numbers the nodes ``0 .. n - 1`` in their order. ``\"coordinates\"`` packs the latitude and longitude of every node, rounded to 1e-7 degree (the precision of OpenStreetMap), into one int64 id. Such ids do not change when the graph is built again from newer data, and graphs of neighbouring territories get equal ids for their shared nodes."
+msgstr "``\"range\"`` нумерует узлы ``0 .. n - 1`` в их порядке. ``\"coordinates\"`` упаковывает широту и долготу каждого узла, округлённые до 1e-7 градуса (точность OpenStreetMap), в один идентификатор int64. Такие идентификаторы не меняются при новой сборке графа из более свежих данных, а графы соседних территорий получают одинаковые идентификаторы общих узлов."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``by=\"coordinates\"`` and the graph has no CRS, or two nodes are closer     than 1e-7 degree (about 1 cm) and would get one id."
+msgstr "Если ``by=\"coordinates\"``, а у графа нет CRS или два узла ближе 1e-7 градуса (около 1 см) и получили бы один идентификатор."
 
 msgid "Return type"
 msgstr "Тип результата"
@@ -32,6 +46,6 @@ msgstr "Тип результата"
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
 
-msgid "Parameters"
-msgstr "Параметры"
+msgid "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
+msgstr "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
 

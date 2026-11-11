@@ -20,8 +20,13 @@ msgstr "iduedu.apply\\_urban\\_graph\\_changes"
 msgid "Apply prepared changes to an ``UrbanGraph``."
 msgstr "Применяет подготовленные изменения к ``UrbanGraph``."
 
-msgid "The function removes edges listed in ``changes.edges_to_delete``, appends new nodes and edges, and returns a new graph. Any previously cached adjacency matrix is considered stale after applying structural changes; rebuild it before running routing or accessibility calculations."
-msgstr "Функция удаляет рёбра из ``changes.edges_to_delete``, добавляет новые узлы и рёбра и возвращает новый граф. Закешированная ранее матрица смежности после структурных изменений считается устаревшей; постройте её заново перед маршрутизацией или расчётом доступности."
+# | msgid "The function removes edges listed in ``changes.edges_to_delete``,
+# | appends new nodes and edges, and returns a new graph. Any previously
+# cached
+# | adjacency matrix is considered stale after applying structural changes;
+# | rebuild it before running routing or accessibility calculations."
+msgid "The function removes edges listed in ``changes.edges_to_delete``, sets the values of ``changes.edges_to_update``, appends new nodes and edges, and returns a new graph. The new graph has no cached adjacency matrix; routing builds it on the first query."
+msgstr "Функция удаляет рёбра из ``changes.edges_to_delete``, задаёт значения из ``changes.edges_to_update``, добавляет новые узлы и рёбра и возвращает новый граф. У нового графа нет кэшированной матрицы смежности; маршрутизация строит её при первом запросе."
 
 msgid "Parameters"
 msgstr "Параметры"
@@ -47,8 +52,10 @@ msgstr "Новый ``UrbanGraph`` с применёнными изменения
 msgid "Raises"
 msgstr "Исключения"
 
-msgid "If graph and change topology flags differ or if     ``edges_to_delete`` references edges that are absent from the graph."
-msgstr "Если флаги топологии графа и изменений различаются или если ``edges_to_delete`` ссылается на рёбра, которых нет в графе."
+# | msgid "If graph and change topology flags differ or if
+# | ``edges_to_delete`` references edges that are absent from the graph."
+msgid "If graph and change topology flags differ, if     ``edges_to_delete`` or ``edges_to_update`` reference edges that are absent     from the graph, or if an edge is both deleted and updated."
+msgstr "Если флаги топологии графа и изменений различаются, если ``edges_to_delete`` или ``edges_to_update`` ссылаются на рёбра, которых нет в графе, или если ребро одновременно удаляется и обновляется."
 
 msgid "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html"

@@ -20,8 +20,11 @@ msgstr "iduedu.UrbanGraphChanges"
 msgid "Set of table changes that can be applied to an ``UrbanGraph``."
 msgstr "Набор изменений таблиц, который можно применить к ``UrbanGraph``."
 
-msgid "The class is used as an intermediate result when projecting objects onto a graph. It stores new nodes, new edges and edge keys that should be removed from the source graph before split edge segments are appended."
-msgstr "Класс используется как промежуточный результат при проецировании объектов на граф. Он хранит новые узлы, новые рёбра и ключи рёбер, которые нужно удалить из исходного графа перед добавлением отрезков разбитых рёбер."
+# | msgid "The class is used as an intermediate result when projecting objects
+# | onto a graph. It stores new nodes, new edges and edge keys that should be
+# | removed from the source graph before split edge segments are appended."
+msgid "The class is used as an intermediate result when projecting objects onto a graph or resolving geometric edits. It stores new nodes, new edges, edge keys that should be removed from the source graph and new attribute values of kept edges."
+msgstr "Класс используется как промежуточный результат при проецировании объектов на граф и привязке геометрических правок. Он хранит новые узлы, новые рёбра, ключи рёбер, которые нужно удалить из исходного графа, и новые значения атрибутов оставшихся рёбер."
 
 msgid "Parameters"
 msgstr "Параметры"
@@ -34,6 +37,9 @@ msgstr "Новые узлы графа."
 
 msgid "Edge-key table for edges that should be removed."
 msgstr "Таблица ключей удаляемых рёбер."
+
+msgid "Edge keys with new attribute values: one row per edge, the key columns and any other columns except ``geometry``. A missing value (NaN) keeps the old value of the edge; a column absent from the graph is added."
+msgstr "Ключи рёбер с новыми значениями атрибутов: по строке на ребро, ключевые столбцы и любые другие, кроме ``geometry``. Пропущенное значение (NaN) оставляет старое значение ребра; столбец, которого нет в графе, добавляется."
 
 msgid "Must match ``UrbanGraph.is_multigraph``."
 msgstr "Должно совпадать с ``UrbanGraph.is_multigraph``."

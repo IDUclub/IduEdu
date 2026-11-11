@@ -1,0 +1,43 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-11 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.GraphEdits"
+msgstr "iduedu.GraphEdits"
+
+msgid "Edits of a graph given by lines in any CRS, resolved by :func:`resolve_graph_edits`."
+msgstr "Правки графа, заданные линиями в любой CRS; к графу их привязывает :func:`resolve_graph_edits`."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Lines of new edges. Columns other than ``geometry`` become edge attributes, except: ``time_min`` and ``length_meter`` (computed when absent), ``speed_kmh`` (gives ``time_min`` when it is absent) and ``oneway`` (bool, default ``False``: the edge can be travelled both ways)."
+msgstr "Линии новых рёбер. Столбцы, кроме ``geometry``, становятся атрибутами рёбер, за исключением ``time_min`` и ``length_meter`` (рассчитываются, если их нет), ``speed_kmh`` (даёт ``time_min``, если его нет) и ``oneway`` (bool, по умолчанию ``False``: по ребру можно двигаться в обе стороны)."
+
+msgid "Anchor lines; the network along each of them is removed. An optional ``direction`` column (``\"both\"``, the default, or ``\"along\"``) limits a directed graph to the direction the anchor is drawn in."
+msgstr "Линии-якоря; сеть вдоль каждой из них удаляется. Необязательный столбец ``direction`` (``\"both\"``, по умолчанию, или ``\"along\"``) в ориентированном графе ограничивает правку направлением, в котором нарисован якорь."
+
+msgid "Anchor lines with the new values of the edges along them, in any columns except ``u``, ``v`` and ``k``. A missing value keeps the old one. ``speed_kmh`` sets ``time_min`` (and ``speed_mpm`` when the graph has it) from the edge length unless ``time_min`` is given. ``direction`` works as in ``remove``."
+msgstr "Линии-якоря с новыми значениями рёбер вдоль них, в любых столбцах, кроме ``u``, ``v`` и ``k``. Пропущенное значение оставляет старое. ``speed_kmh`` задаёт ``time_min`` (и ``speed_mpm``, если он есть в графе) по длине ребра, если ``time_min`` не указан. ``direction`` работает как в ``remove``."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If a table is not a GeoDataFrame."
+msgstr "Если таблица — не GeoDataFrame."
+
+msgid "If a table has no CRS, a duplicated index, geometries other than non-empty LineStrings,     reserved columns, or an unknown ``direction``."
+msgstr "Если у таблицы нет CRS, индекс повторяется, геометрии — не непустые LineString, есть зарезервированные столбцы или неизвестное значение ``direction``."
+
