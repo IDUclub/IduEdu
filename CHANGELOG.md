@@ -2,6 +2,61 @@
 
 <!-- version list -->
 
+## v3.0.0 (2026-11-11)
+
+### Continuous Integration
+
+- **history**: Preserve release references after history cleanup
+  ([`d2986d3`](https://github.com/IDUclub/IduEdu/commit/d2986d3d7a8d00650e962d8715b783c2dec8a555))
+
+### Features
+
+- Rust core, point-to-point routing and network analysis
+  ([#30](https://github.com/IDUclub/IduEdu/pull/30),
+  [`e400472`](https://github.com/IDUclub/IduEdu/commit/e400472a5294bbb5efff6ae0ec00f981b94fd7ac))
+
+feat!: Rust core, point-to-point routing and network analysis
+
+The Numba kernels are replaced by a compiled Rust core (iduedu._rust, PyO3 abi3, rayon): CSR
+  builder, Dijkstra (one or many sources, cutoff, early exit, predecessors, nearest source, OD
+  rows), path rebuild and connected components. No JIT warm-up, numba and llvmlite are no longer
+  dependencies; wheels for Linux, Windows and macOS.
+
+OSM files are read and written by the Rust core instead of pyosmium: ways, nodes and relations with
+  a block index, per-city extracts for split_by_polygons. Street simplification merges segments only
+  across equal tags, so every edge keeps the tags of its ways; bridges and tunnels are separate
+  edges and kept as columns.
+
+New: - shortest_path (bidirectional, A*, ALT, Dijkstra), k_shortest_paths (Yen), alternative_paths
+  (penalty method), od_matrix(mode="pairwise"); - graph_stats, edge_stats, transport_stats,
+  local_stats, streets_per_node, route_directness; - nearest_objects, aggregate_objects, diversity;
+  - centrality (reach, harmonic, gravity, betweenness), edge_betweenness; - add_elevation,
+  apply_grade_speed (elevation extra: rasterio); - get_bike_graph with cycle infrastructure and
+  level of traffic stress; - nearest_edges, unique_segments, consolidate_intersections; - the cached
+  adjacency matrix is rebuilt when edge weights, directions or ends change.
+
+Docs are rewritten by topic (building, graph, routing, analysis) with figures, new example
+  notebooks, a function index, an upgrade guide and the full Russian translation.
+
+BREAKING CHANGE: single_source_dijkstra_path_length, multi_source_dijkstra_path_length,
+  dijkstra_path_length_parallel and multi_source_dijkstra_path are removed (functions and UrbanGraph
+  methods). Only .osm.pbf files are read; location_storage and the pbf extra are removed. Simplified
+  drive and walk graphs have an edge per run of equal tags (more nodes and edges, same geometry and
+  length). clip_urban_graph, UrbanGraph.clip and clip_nx_graph read a bare shapely polygon in
+  EPSG:4326. Parallel edges of opposite orientation in undirected graphs are no longer summed, so
+  walking times can be shorter. See docs/upgrading.rst.
+
+### Breaking Changes
+
+- Single_source_dijkstra_path_length, multi_source_dijkstra_path_length,
+  dijkstra_path_length_parallel and multi_source_dijkstra_path are removed (functions and UrbanGraph
+  methods). Only .osm.pbf files are read; location_storage and the pbf extra are removed. Simplified
+  drive and walk graphs have an edge per run of equal tags (more nodes and edges, same geometry and
+  length). clip_urban_graph, UrbanGraph.clip and clip_nx_graph read a bare shapely polygon in
+  EPSG:4326. Parallel edges of opposite orientation in undirected graphs are no longer summed, so
+  walking times can be shorter. See docs/upgrading.rst.
+
+
 ## v2.4.2 (2026-11-06)
 
 ### Bug Fixes
