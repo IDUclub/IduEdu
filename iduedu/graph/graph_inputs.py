@@ -4,6 +4,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+from pyproj import CRS
 from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.urban_graph import UrbanGraph
@@ -32,6 +33,21 @@ def geometries_in_crs(geometry, crs, name: str = "area") -> gpd.GeoSeries:
     if crs is not None and geometry.crs != crs:
         geometry = geometry.to_crs(crs)
     return geometry
+
+
+def projected_crs(urban_graph: UrbanGraph, what: str, *, required: bool = False):
+    """CRS of the graph (nodes, then edges, then the graph attribute), rejecting a geographic one.
+
+    ``what`` names the caller in the error; ``required`` also rejects a graph without a CRS.
+    """
+    if not isinstance(urban_graph, UrbanGraph):
+        raise TypeError(f"graph must be UrbanGraph, got {type(urban_graph).__name__}")
+    crs = getattr(urban_graph.nodes_gdf, "crs", None) or getattr(urban_graph.edges_gdf, "crs", None) or urban_graph.crs
+    if crs is None and required:
+        raise ValueError(f"{what} needs a graph with a CRS")
+    if crs is not None and CRS.from_user_input(crs).is_geographic:
+        raise ValueError(f"{what} needs a projected CRS; reproject the graph first")
+    return crs
 
 
 def area_in_crs(geometry, crs, name: str = "area") -> BaseGeometry:

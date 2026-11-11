@@ -47,9 +47,6 @@ msgstr "Обновить закешированную региональную �
 msgid "Cut again even if the territory file exists."
 msgstr "Вырезать заново, даже если файл территории уже есть."
 
-msgid "Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1."
-msgstr "Устарел и игнорируется; задавал индекс координат узлов pyosmium. Будет удалён в 3.1."
-
 msgid "Return type"
 msgstr "Тип результата"
 

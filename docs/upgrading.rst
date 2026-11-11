@@ -5,7 +5,7 @@ Upgrading to 3.0
 
 IduEdu 3.0 replaces the Numba kernels with a compiled Rust core and adds point-to-point routing, network
 statistics, object aggregations, centralities, elevation and bike graphs. Most code written for 2.x runs unchanged.
-This page lists what was removed, what changed its results and what is deprecated until 3.1.
+This page lists what was removed and what changed its results.
 
 Installation
 ------------
@@ -13,12 +13,12 @@ Installation
 - Numba and llvmlite are no longer dependencies, and there is no JIT warm-up on the first call. Wheels are
   published for Linux (x86_64, aarch64), Windows (x64) and macOS (arm64, x86_64); building from source needs a
   stable Rust toolchain (1.82 or newer).
-- pyosmium is no longer used: ``.osm.pbf`` files are read and written by the Rust core. The ``pbf`` extra is empty
-  and is removed in 3.1; ``pip install "iduedu[pbf]"`` still works until then.
+- pyosmium is no longer used: ``.osm.pbf`` files are read and written by the Rust core. The ``pbf`` extra is
+  removed; drop it from your requirements, since ``pip install "iduedu[pbf]"`` now warns about an unknown extra.
 - The new ``elevation`` extra installs rasterio for :func:`add_elevation` with raster files.
 
-Removed functions
------------------
+Removed functions and arguments
+-------------------------------
 
 The routing wrappers deprecated in 2.4.1 are removed, as functions and as :class:`UrbanGraph` methods. Each called a
 general function with a fixed ``output``:
@@ -39,8 +39,11 @@ general function with a fixed ``output``:
      - ``od_matrix(..., output="paths")``; despite its name it computed independent origin–destination routes,
        not a nearest-source search
 
+The ``location_storage`` argument of :class:`PbfSource`, :func:`split_by_polygons` and :func:`download_osm_pbf` is
+removed too: it chose the node index of pyosmium, and the Rust reader needs none.
+
 Changed behaviour
------------------
+-------------------------------
 
 Areas in EPSG:4326
    :func:`clip_urban_graph`, :meth:`UrbanGraph.clip` and :func:`clip_nx_graph` read a bare shapely polygon in
@@ -73,22 +76,6 @@ Single routes
    :func:`single_source_dijkstra_path` and :func:`od_matrix` with ``mode="pairwise"`` run the bidirectional search
    (see :doc:`routing/point_to_point`). The costs are the same; where several routes are equally short, another of
    them can be returned.
-
-Deprecated until 3.1
---------------------
-
-These arguments still work in 3.0 and raise a ``DeprecationWarning``; they are removed in 3.1.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 45 55
-
-   * - Deprecated
-     - Note
-   * - ``location_storage`` of :class:`PbfSource`, :func:`split_by_polygons` and :func:`download_osm_pbf`
-     - Ignored: the Rust reader needs no node index
-   * - The ``pbf`` extra
-     - Empty; remove it from your requirements
 
 New in 3.0
 ----------

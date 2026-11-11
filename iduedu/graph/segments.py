@@ -4,6 +4,7 @@ import geopandas as gpd
 import numpy as np
 import shapely
 
+from iduedu.graph.graph_inputs import projected_crs
 from iduedu.graph.urban_graph import UrbanGraph
 
 
@@ -55,10 +56,8 @@ def unique_segments(urban_graph: UrbanGraph, *, precision: float = 0.01) -> gpd.
     """
     if not np.isfinite(precision) or precision <= 0:
         raise ValueError("precision must be a positive number")
+    crs = projected_crs(urban_graph, "unique_segments")
     edges = urban_graph.edges_gdf
-    crs = getattr(edges, "crs", None) or urban_graph.crs
-    if crs is not None and getattr(crs, "is_geographic", False):
-        raise ValueError("unique_segments needs a projected CRS; reproject the graph first")
     columns = ["geometry", "length", "edge", "edge_count"]
     if edges.empty:
         return gpd.GeoDataFrame(columns=columns, geometry="geometry", crs=crs)

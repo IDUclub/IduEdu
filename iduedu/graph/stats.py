@@ -17,22 +17,13 @@ from scipy.sparse import csgraph
 from shapely.geometry.base import BaseGeometry
 
 from iduedu.constants.transport_specs import DEFAULT_REGISTRY_W_TRAIN
-from iduedu.graph.graph_inputs import area_in_crs, geometries_in_crs, resolve_graph_nodes_input
+from iduedu.graph.graph_inputs import area_in_crs, geometries_in_crs, projected_crs, resolve_graph_nodes_input
 from iduedu.graph.routing import _positions, _prepare_graph
 from iduedu.graph.segments import segment_arrays
 from iduedu.graph.urban_graph import UrbanGraph
-from iduedu.graph.within import band_label, cost_bands, sum_within, value_rows
+from iduedu.graph.within import band_label, cost_bands, ratio, sum_within, value_rows
 
 ORIENTATION_BINS = 36
-
-
-def _projected(urban_graph: UrbanGraph, what: str):
-    if not isinstance(urban_graph, UrbanGraph):
-        raise TypeError(f"graph must be UrbanGraph, got {type(urban_graph).__name__}")
-    crs = getattr(urban_graph.edges_gdf, "crs", None) or getattr(urban_graph.nodes_gdf, "crs", None) or urban_graph.crs
-    if crs is not None and getattr(crs, "is_geographic", False):
-        raise ValueError(f"{what} needs a projected CRS; reproject the graph first")
-    return crs
 
 
 def _zone_of(xy: np.ndarray, zones: np.ndarray) -> np.ndarray:
@@ -109,12 +100,6 @@ def _entropy(histogram: np.ndarray) -> np.ndarray:
     return np.where(total[:, 0] > 0, -terms.sum(axis=1), np.nan)
 
 
-def _ratio(a, b):
-    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return np.where(b > 0, a / b, np.nan)
-
-
 def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
     urban_graph: UrbanGraph,
     *,
@@ -176,7 +161,7 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
         TypeError: If ``urban_graph`` is not an ``UrbanGraph`` or ``area`` / ``zones`` have a wrong type.
         ValueError: If the CRS is geographic, or both ``area`` and ``zones`` are passed.
     """
-    crs = _projected(urban_graph, "graph_stats")
+    crs = projected_crs(urban_graph, "graph_stats")
     if area is not None and zones is not None:
         raise ValueError("Pass either area or zones, not both")
     streets = _Streets(urban_graph, edge_types)
@@ -225,19 +210,19 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
     out["edge_count"] = total(edge_zone)
     out["street_count"] = total(street_zone)
     out["street_length_total"] = total(seg_zone, seg_length)
-    out["street_length_mean"] = _ratio(total(street_zone, streets.street_length), out["street_count"])
-    out["streets_per_node_mean"] = _ratio(total(node_zone, degree), out["node_count"])
+    out["street_length_mean"] = ratio(total(street_zone, streets.street_length), out["street_count"])
+    out["streets_per_node_mean"] = ratio(total(node_zone, degree), out["node_count"])
     out["dead_end_count"] = total(node_zone, mask=dead_end)
-    out["dead_end_share"] = _ratio(out["dead_end_count"], out["node_count"])
+    out["dead_end_share"] = ratio(out["dead_end_count"], out["node_count"])
     out["intersection_count"] = total(node_zone, mask=intersection)
-    out["intersection_4way_share"] = _ratio(total(node_zone, mask=degree >= 4), out["intersection_count"])
+    out["intersection_4way_share"] = ratio(total(node_zone, mask=degree >= 4), out["intersection_count"])
 
     straight = (streets.lo != streets.hi) & (streets.straight > 0)
-    out["circuity_mean"] = _ratio(
+    out["circuity_mean"] = ratio(
         total(street_zone, streets.street_length, straight), total(street_zone, streets.straight, straight)
     )
-    out["self_loop_share"] = _ratio(total(street_zone, mask=streets.lo == streets.hi), out["street_count"])
-    out["parallel_street_share"] = _ratio(total(street_zone, mask=streets.parallel), out["street_count"])
+    out["self_loop_share"] = ratio(total(street_zone, mask=streets.lo == streets.hi), out["street_count"])
+    out["parallel_street_share"] = ratio(total(street_zone, mask=streets.parallel), out["street_count"])
 
     # Components and connectivity indices on the streets with both ends in the same zone.
     inside = (node_zone[streets.lo] == node_zone[streets.hi]) & (node_zone[streets.lo] >= 0)
@@ -252,13 +237,13 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
     largest = np.zeros(count)
     np.maximum.at(largest, part_zone, parts.to_numpy())
     out["component_count"] = components
-    out["largest_component_share"] = _ratio(largest, out["node_count"])
+    out["largest_component_share"] = ratio(largest, out["node_count"])
     v = out["node_count"]
     e = total(node_zone[streets.lo], mask=inside)
-    out["beta_index"] = _ratio(e, v)
-    out["gamma_index"] = _ratio(e, 3 * (v - 2))
+    out["beta_index"] = ratio(e, v)
+    out["gamma_index"] = ratio(e, 3 * (v - 2))
     out["cyclomatic_number"] = np.where(v > 0, e - v + components, np.nan)
-    out["meshedness"] = _ratio(e - v + components, 2 * v - 5)
+    out["meshedness"] = ratio(e - v + components, 2 * v - 5)
 
     # Bearings of both directions of every segment, in bins centred on 0°, 10°, ...
     if len(seg_start):
@@ -281,11 +266,11 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
     direction = urban_graph.edge_direction_column
     if urban_graph.is_directed and direction is not None and direction in edges.columns:
         oneway = edges[direction].to_numpy(dtype=bool)[streets.first]
-        out["oneway_share"] = _ratio(
+        out["oneway_share"] = ratio(
             total(street_zone, streets.street_length, oneway), total(street_zone, streets.street_length)
         )
     if {"length_meter", "time_min"} <= set(edges.columns):
-        out["speed_mean_kmh"] = 0.06 * _ratio(
+        out["speed_mean_kmh"] = 0.06 * ratio(
             total(edge_zone, edges["length_meter"].to_numpy()), total(edge_zone, edges["time_min"].to_numpy())
         )
 
@@ -298,14 +283,12 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
         np.maximum.at(high, node_zone[valid], z[valid])
         out["elevation_min"] = np.where(np.isfinite(low), low, np.nan)
         out["elevation_max"] = np.where(np.isfinite(high), high, np.nan)
-        out["elevation_mean"] = _ratio(total(node_zone, np.where(known, z, 0.0), known), total(node_zone, mask=known))
+        out["elevation_mean"] = ratio(total(node_zone, np.where(known, z, 0.0), known), total(node_zone, mask=known))
     if "grade" in edges.columns:
         grade = np.abs(pd.to_numeric(edges["grade"], errors="coerce").to_numpy(dtype=float))[streets.first]
         known = np.isfinite(grade)
         weighted = np.where(known, grade, 0.0) * streets.street_length
-        out["grade_mean"] = _ratio(
-            total(street_zone, weighted, known), total(street_zone, streets.street_length, known)
-        )
+        out["grade_mean"] = ratio(total(street_zone, weighted, known), total(street_zone, streets.street_length, known))
         steepest = np.full(count, -np.inf)
         column = "grade_max" if "grade_max" in edges.columns else "grade"
         steep = np.abs(pd.to_numeric(edges[column], errors="coerce").to_numpy(dtype=float))[streets.first]
@@ -330,9 +313,9 @@ def graph_stats(  # pylint: disable=too-many-locals, too-many-statements
     if zone_geoms is not None:
         area_km2 = shapely.area(zone_geoms) / 1e6
         out["area_km2"] = area_km2
-        out["node_density"] = _ratio(out["node_count"], area_km2)
-        out["intersection_density"] = _ratio(out["intersection_count"], area_km2)
-        out["street_density"] = _ratio(out["street_length_total"] / 1000.0, area_km2)
+        out["node_density"] = ratio(out["node_count"], area_km2)
+        out["intersection_density"] = ratio(out["intersection_count"], area_km2)
+        out["street_density"] = ratio(out["street_length_total"] / 1000.0, area_km2)
 
     if zones is not None:
         return pd.DataFrame(out, index=zone_index)
@@ -365,7 +348,7 @@ def edge_stats(
         KeyError: If ``edges_gdf`` has no column ``by``.
         ValueError: If the CRS is geographic.
     """
-    crs = _projected(urban_graph, "edge_stats")
+    crs = projected_crs(urban_graph, "edge_stats")
     edges = urban_graph.edges_gdf
     if by not in edges.columns:
         raise KeyError(f"graph.edges_gdf has no column {by!r}")
@@ -402,9 +385,7 @@ def edge_stats(
             .groupby("group")[["length", "time"]]
             .sum()
         )
-        result["speed_kmh"] = 0.06 * _ratio(
-            travel["length"].reindex(result.index), travel["time"].reindex(result.index)
-        )
+        result["speed_kmh"] = 0.06 * ratio(travel["length"].reindex(result.index), travel["time"].reindex(result.index))
     else:
         result["speed_kmh"] = np.nan
     result.index.name = by
@@ -494,7 +475,7 @@ def local_stats(
     Raises:
         ValueError: If the CRS is geographic, ``radius`` is invalid or a node is absent from the graph.
     """
-    _projected(urban_graph, "local_stats")
+    projected_crs(urban_graph, "local_stats")
     bands = cost_bands(radius, "radius")
     streets = _Streets(urban_graph, edge_types)
     n, degree = streets.n, streets.degree
@@ -527,9 +508,9 @@ def local_stats(
         out[f"intersection_count_{suffix}"] = intersections
         out[f"dead_end_count_{suffix}"] = dead_ends
         out[f"street_length_{suffix}"] = length
-        out[f"streets_per_node_mean_{suffix}"] = _ratio(degrees, node_count)
-        out[f"dead_end_share_{suffix}"] = _ratio(dead_ends, node_count)
-        out[f"intersections_per_km_{suffix}"] = _ratio(intersections, length / 1000.0)
+        out[f"streets_per_node_mean_{suffix}"] = ratio(degrees, node_count)
+        out[f"dead_end_share_{suffix}"] = ratio(dead_ends, node_count)
+        out[f"intersections_per_km_{suffix}"] = ratio(intersections, length / 1000.0)
     return pd.DataFrame(out, index=labels.rename("node"))
 
 
@@ -566,7 +547,7 @@ def route_directness(
         DataFrame of ratios, origins in rows and destinations in columns; ``NaN`` for unreachable pairs and
         for pairs at the same place. ``result.stack().mean()`` is the mean directness.
     """
-    _projected(urban_graph, "route_directness")
+    projected_crs(urban_graph, "route_directness")
 
     def resolve(node_ids, gdf, name):
         return resolve_graph_nodes_input(

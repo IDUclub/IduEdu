@@ -31,7 +31,7 @@ from shapely import MultiPolygon, Polygon, STRtree
 
 from iduedu import config
 from iduedu.constants.transport_specs import DEFAULT_REGISTRY_W_TRAIN, osm_route_values
-from iduedu.osm_pbf.reader import _MEMBER_CHARS, _selection_polygon, open_pbf, warn_location_storage
+from iduedu.osm_pbf.reader import _MEMBER_CHARS, _selection_polygon, open_pbf
 
 logger = config.logger
 
@@ -97,7 +97,6 @@ def split_by_polygons(
     polygons: Mapping[str, Polygon | MultiPolygon],
     out_dir: str | os.PathLike,
     *,
-    location_storage: str | None = None,
     way_keys: Iterable[str] | None = DEFAULT_WAY_KEYS,
     route_values: Iterable[str] | None = None,
     keep_relations: Mapping[str, Iterable[int]] | None = None,
@@ -111,7 +110,6 @@ def split_by_polygons(
             build graphs for; as with Overpass, only the exterior ring counts. ``name`` becomes the
             file name and must not contain path separators.
         out_dir: Output directory, created if missing.
-        location_storage: Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1.
         way_keys: Ways carrying at least one of these keys are selected spatially. ``None`` selects
             every way. Ways without them still enter a city file as members of selected relations.
         route_values: OSM ``route`` values of the relations to keep; defaults to every mode of
@@ -129,7 +127,6 @@ def split_by_polygons(
         ValueError: When ``region_pbf`` is not an OSM ``.pbf`` file, or for an invalid name.
         FileExistsError: When an output exists and ``overwrite`` is False.
     """
-    warn_location_storage(location_storage)
     region_pbf = Path(region_pbf)
     file = open_pbf(region_pbf)
     if not polygons:

@@ -23,6 +23,7 @@ from scipy.ndimage import map_coordinates
 from scipy.sparse.linalg import spsolve
 from scipy.spatial import cKDTree
 
+from iduedu.graph.graph_inputs import projected_crs
 from iduedu.graph.urban_graph import UrbanGraph
 
 RASTER_HINT = (
@@ -30,15 +31,6 @@ RASTER_HINT = (
     "Install it with: pip install 'iduedu[elevation]'"
 )
 Sampler = Callable[[np.ndarray], np.ndarray]
-
-
-def _graph_crs(urban_graph: UrbanGraph):
-    crs = getattr(urban_graph.nodes_gdf, "crs", None) or getattr(urban_graph.edges_gdf, "crs", None) or urban_graph.crs
-    if crs is None:
-        raise ValueError("the graph has no CRS")
-    if getattr(crs, "is_geographic", False):
-        raise ValueError("elevation needs a graph in a projected CRS; reproject the graph first")
-    return crs
 
 
 def _raster_sampler(path: Path, crs, bounds, band: int) -> Sampler:
@@ -247,11 +239,9 @@ def add_elevation(  # pylint: disable=too-many-locals
         ImportError: If ``elevation`` is a raster path and rasterio is not installed.
         ValueError: If the graph CRS is missing or geographic, or the source does not cover the graph.
     """
-    if not isinstance(urban_graph, UrbanGraph):
-        raise TypeError(f"graph must be UrbanGraph, got {type(urban_graph).__name__}")
+    crs = projected_crs(urban_graph, "add_elevation", required=True)
     if not np.isfinite(sample_distance) or sample_distance <= 0:
         raise ValueError("sample_distance must be a positive number")
-    crs = _graph_crs(urban_graph)
     result = urban_graph.copy()
     nodes, edges = result.nodes_gdf, result.edges_gdf
     xy = np.column_stack([nodes.geometry.x.to_numpy(), nodes.geometry.y.to_numpy()]).reshape(-1, 2)

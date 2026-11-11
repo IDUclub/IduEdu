@@ -14,6 +14,7 @@ from scipy.spatial import cKDTree
 from iduedu.config import config
 from iduedu.graph.components import largest_component
 from iduedu.graph.editors import subgraph_by_nodes
+from iduedu.graph.graph_inputs import projected_crs
 from iduedu.graph.urban_graph import UrbanGraph
 
 logger = config.logger
@@ -257,13 +258,9 @@ def consolidate_intersections(
         TypeError: If ``graph`` is not an ``UrbanGraph``.
         ValueError: If ``tolerance`` is negative, the CRS is geographic or an edge is not a LineString.
     """
-    if not isinstance(graph, UrbanGraph):
-        raise TypeError(f"graph must be UrbanGraph, got {type(graph).__name__}")
+    projected_crs(graph, "consolidate_intersections")
     if not np.isfinite(tolerance) or tolerance < 0:
         raise ValueError("tolerance must be a non-negative number")
-    crs = graph.nodes_gdf.crs or graph.crs
-    if crs is not None and CRS.from_user_input(crs).is_geographic:
-        raise ValueError("consolidate_intersections needs a projected CRS; reproject the graph first")
 
     nodes, edges = graph.nodes_gdf, graph.edges_gdf
     n = len(nodes)

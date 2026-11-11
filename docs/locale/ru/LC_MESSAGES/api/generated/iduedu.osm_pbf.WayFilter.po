@@ -23,6 +23,3 @@ msgstr "Разобранный фильтр тегов Overpass; вызов со
 msgid "Parameters"
 msgstr "Параметры"
 
-msgid "Keys every matching way must carry; useful to pre-filter ways before the full check."
-msgstr "Ключи, которые должны быть у каждой подходящей линии; полезно для предварительного отбора линий перед полной проверкой."
-

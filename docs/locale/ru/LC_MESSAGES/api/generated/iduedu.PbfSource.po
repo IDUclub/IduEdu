@@ -29,9 +29,6 @@ msgstr "Параметры"
 msgid "The ``.osm.pbf`` file."
 msgstr "Файл ``.osm.pbf``."
 
-msgid "Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1."
-msgstr "Устарел и игнорируется; задавал индекс координат узлов pyosmium. Будет удалён в 3.1."
-
 msgid "Raises"
 msgstr "Исключения"
 

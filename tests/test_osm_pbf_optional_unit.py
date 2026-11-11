@@ -1,12 +1,6 @@
 # pylint: disable=redefined-outer-name, protected-access, unused-argument
-"""The downloader dispatch to the pbf source, and pbf mode in an interpreter where pyosmium cannot be imported."""
+"""The downloader dispatch to the pbf source."""
 
-import json
-import os
-import subprocess
-import sys
-import textwrap
-from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -17,7 +11,6 @@ from iduedu.overpass import downloaders
 
 pytestmark = pytest.mark.unit
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
 SQUARE = box(30.0, 59.0, 30.01, 59.01)
 
 
@@ -120,50 +113,3 @@ def test_overpass_mode_is_unchanged(monkeypatch):
     monkeypatch.setattr(downloaders, "_pbf_source", lambda: pytest.fail("pbf source used in overpass mode"))
     assert downloaders.get_network_by_filters(SQUARE, '["highway"]')["id"].tolist() == [3]
     assert 'way["highway"](poly:' in sent[0]["data"]["data"]
-
-
-_NO_OSMIUM_SCRIPT = textwrap.dedent(
-    """
-    import json, sys
-    sys.modules["osmium"] = None  # every "import osmium" now raises ModuleNotFoundError(name="osmium")
-
-    import iduedu
-    from iduedu import _rust, config, get_walk_graph
-    from shapely import box
-
-    path = sys.argv[1]
-    nodes = [(1, 30.0, 59.0, []), (2, 30.001, 59.0, []), (3, 30.001, 59.001, [])]
-    _rust.write_pbf(path, nodes, [(1, [1, 2, 3], [("highway", "residential")])], [], replication_timestamp=0)
-    result = {
-        "ways": len(iduedu.PbfSource(path).ways_by_filter(box(29.99, 58.99, 30.01, 59.01), '["highway"]')),
-        "split": sorted(iduedu.split_by_polygons(path, {"a": box(29.99, 58.99, 30.01, 59.01)}, "cut")),
-        "snapshot": str(iduedu.snapshot_time(path)),
-    }
-    with config.use_pbf(path):
-        result["walk_edges"] = len(get_walk_graph(territory=box(29.99, 58.99, 30.01, 59.01)).edges_gdf)
-    result["osmium_loaded"] = sys.modules.get("osmium") is not None
-    print(json.dumps(result))
-    """
-)
-
-
-def test_pbf_mode_needs_no_osmium(tmp_path):
-    proc = subprocess.run(
-        [sys.executable, "-c", _NO_OSMIUM_SCRIPT, str(tmp_path / "city.osm.pbf")],
-        capture_output=True,
-        text=True,
-        cwd=tmp_path,
-        timeout=300,
-        check=False,
-        env={**os.environ, "PYTHONPATH": str(REPO_ROOT), "ENABLE_TQDM": "0"},
-    )
-    assert proc.returncode == 0, proc.stderr
-    result = json.loads(proc.stdout.strip().splitlines()[-1])
-    assert result == {
-        "ways": 1,
-        "split": ["a"],
-        "snapshot": "1970-01-01 00:00:00+00:00",
-        "walk_edges": result["walk_edges"],
-        "osmium_loaded": False,
-    }
-    assert result["walk_edges"] > 0

@@ -139,12 +139,6 @@ impl LandmarkTable {
     fn nbytes(&self) -> usize {
         self.table.nbytes()
     }
-
-    /// The most an estimate can exceed the real cost by through float32 rounding.
-    #[getter]
-    fn slack(&self) -> f32 {
-        self.table.slack
-    }
 }
 
 /// Costs of point-to-point queries, and their routes as a flat node array with offsets.

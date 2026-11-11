@@ -18,7 +18,7 @@ import pandas as pd
 from iduedu.graph.graph_inputs import resolve_graph_nodes_input
 from iduedu.graph.routing import _cutoff_float, _positions, _prepare_graph, _resolve_cutoff
 from iduedu.graph.urban_graph import UrbanGraph
-from iduedu.graph.within import band_betas, band_label, cost_bands, spread_within, sum_within, value_rows
+from iduedu.graph.within import band_betas, band_label, cost_bands, ratio, spread_within, sum_within, value_rows
 
 Direction = Literal["from", "to"]
 Decay = Literal["linear", "exp", "inverse"]
@@ -183,11 +183,6 @@ def _sums_at_origins(  # pylint: disable=too-many-locals
     return sums[origin_inverse]
 
 
-def _ratio(a, b):
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return np.where(b > 0, a / b, np.nan)
-
-
 def aggregate_objects(  # pylint: disable=too-many-locals
     urban_graph: UrbanGraph,
     cutoff: float | Iterable[float],
@@ -273,7 +268,7 @@ def aggregate_objects(  # pylint: disable=too-many-locals
         out[f"count_{suffix}"] = sums[:, b, 0]
         for j, column in enumerate(columns):
             out[f"{column}_sum_{suffix}"] = sums[:, b, 1 + 2 * j]
-            out[f"{column}_mean_{suffix}"] = _ratio(sums[:, b, 1 + 2 * j], sums[:, b, 2 + 2 * j])
+            out[f"{column}_mean_{suffix}"] = ratio(sums[:, b, 1 + 2 * j], sums[:, b, 2 + 2 * j])
     return pd.DataFrame(out, index=origins.index)
 
 

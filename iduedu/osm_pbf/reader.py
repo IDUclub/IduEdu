@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import datetime as dt
 import os
-import warnings
 from itertools import chain
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -66,17 +65,6 @@ def open_pbf(path: str | os.PathLike) -> _rust.PbfFile:
             f"{exc}. IduEdu reads OSM data from .osm.pbf files only; convert other formats first, "
             f"for example with: osmium cat {path.name} -o {path.stem}.osm.pbf"
         ) from None
-
-
-def warn_location_storage(location_storage) -> None:
-    """``location_storage`` chose libosmium's node index; the Rust reader needs none."""
-    if location_storage is not None:
-        warnings.warn(
-            "location_storage is deprecated and will be removed in IduEdu 3.1.0; it is ignored, since OSM files "
-            "are read without pyosmium",
-            DeprecationWarning,
-            stacklevel=3,
-        )
 
 
 def _utc(stamp: int | None) -> dt.datetime | None:
@@ -261,15 +249,13 @@ class PbfSource:
 
     Parameters:
         path: The ``.osm.pbf`` file.
-        location_storage: Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1.
 
     Raises:
         FileNotFoundError: When ``path`` does not exist.
         ValueError: When the file is not an OSM ``.pbf`` file.
     """
 
-    def __init__(self, path: str | os.PathLike, *, location_storage: str | None = None):
-        warn_location_storage(location_storage)
+    def __init__(self, path: str | os.PathLike):
         self.path = Path(path)
         self._file = open_pbf(self.path)
 

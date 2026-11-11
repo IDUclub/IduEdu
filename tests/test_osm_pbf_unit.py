@@ -464,10 +464,9 @@ def test_way_filter_rejects_unsupported_syntax(text):
         parse_way_filter(text)
 
 
-def test_way_filter_required_keys_and_network_presets():
+def test_way_filter_network_presets():
     walk = parse_way_filter(Network.WALK.filter)
     drive = parse_way_filter(Network.DRIVE.filter)
-    assert walk.required_keys == ("highway",)
     assert walk({"highway": "footway"}) and not drive({"highway": "footway"})
     assert drive({"highway": "primary", "oneway": "yes"}) and walk({"highway": "primary"})
     assert not walk({"highway": "residential", "sidewalk": "separate"})
@@ -582,11 +581,6 @@ def test_pbf_source_missing_or_foreign_file(tmp_path):
     xml.write_text("<osm version='0.6'></osm>", encoding="utf-8")
     with pytest.raises(ValueError, match="osmium cat city.osm -o city.osm.pbf"):
         PbfSource(xml)
-
-
-def test_location_storage_is_deprecated(city_pbf):
-    with pytest.warns(DeprecationWarning, match="3.1"):
-        PbfSource(city_pbf, location_storage="flex_mem")
 
 
 def test_repeated_queries_use_the_block_index(city, city_pbf):
@@ -734,11 +728,6 @@ def test_split_city_file_answers_like_the_region(split_city, region_pbf, no_over
 
 def test_split_keeps_the_snapshot_time(split_city, region_pbf):
     assert snapshot_time(split_city) == snapshot_time(region_pbf) == dt.datetime(2026, 10, 1, 20, 21, 2, tzinfo=dt.UTC)
-
-
-def test_split_location_storage_is_deprecated(region_pbf, tmp_path):
-    with pytest.warns(DeprecationWarning, match="location_storage"):
-        split_by_polygons(region_pbf, {"a": POLY}, tmp_path, location_storage="flex_mem")
 
 
 def test_split_validates_names_and_existing_files(region_pbf, tmp_path):

@@ -27,7 +27,7 @@ from tqdm.auto import tqdm
 
 from iduedu import config
 from iduedu.osm_pbf.extract import split_by_polygons
-from iduedu.osm_pbf.reader import PbfSource, warn_location_storage
+from iduedu.osm_pbf.reader import PbfSource
 from iduedu.overpass.downloaders import _boundary_from_elements, get_4326_boundary, get_boundary_by_osm_id
 
 logger = config.logger
@@ -227,7 +227,6 @@ def download_osm_pbf(
     out_dir: str | os.PathLike | None = None,
     update: bool = False,
     overwrite: bool = False,
-    location_storage: str | None = None,
 ) -> Path:
     """OSM file for a territory, cut out of a Geofabrik extract: a drop-in replacement for Overpass downloads.
 
@@ -248,7 +247,6 @@ def download_osm_pbf(
             ``territories/`` subdirectory.
         update: Refresh a cached regional extract when Geofabrik has a newer one and cut again.
         overwrite: Cut again even if the territory file exists.
-        location_storage: Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1.
 
     Returns:
         Path of ``<name>.osm.pbf``.
@@ -256,7 +254,6 @@ def download_osm_pbf(
     Raises:
         ValueError: If neither ``osm_id`` nor ``territory`` is given, or no extract covers the territory.
     """
-    warn_location_storage(location_storage)
     if osm_id is None and territory is None:
         raise ValueError("Either osm_id or territory must be specified")
     polygon = get_4326_boundary(territory=territory) if territory is not None else None

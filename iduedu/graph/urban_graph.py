@@ -10,7 +10,7 @@ from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.adjacency import build_adjacency_matrix
 from iduedu.graph.routing_result import ShortestPathResult
-from iduedu.graph.validation import gdf_crs, sync_graph_crs, validate_graph
+from iduedu.graph.validation import sync_graph_crs, validate_graph
 
 
 class UrbanGraph:
@@ -146,10 +146,6 @@ class UrbanGraph:
             crs=crs,
             graph_type=graph_type,
         )
-
-    @staticmethod
-    def _gdf_crs(frame) -> Any | None:
-        return gdf_crs(frame)
 
     def _sync_crs(self) -> None:
         sync_graph_crs(self)

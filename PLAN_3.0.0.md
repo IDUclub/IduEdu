@@ -12,9 +12,9 @@ Status legend: `[ ]` to do, `[~]` in progress, `[x]` done.
 - Everything deprecated in 2.4.1 with "will be removed in IduEdu 3.0" is removed in 3.0.0:
   `single_source_dijkstra_path_length`, `multi_source_dijkstra_path_length`, `dijkstra_path_length_parallel`,
   `multi_source_dijkstra_path` (functions and `UrbanGraph` methods).
-- Anything else that 3.0.0 renames or replaces keeps a shim that raises `DeprecationWarning`
-  ("... is deprecated and will be removed in IduEdu 3.1.0") and is removed in 3.1.0.
-- An "Upgrading to 3.0" page in the docs lists every removal and every deprecation (as ObjectNat does).
+- Anything else that 3.0.0 renames or replaces is removed in 3.0.0 too, without deprecation shims (decided
+  2026-11-11: one major release, not a 3.1.0 for the shims).
+- An "Upgrading to 3.0" page in the docs lists every removal and every changed result (as ObjectNat does).
 
 ## Stage 1. Rust core instead of Numba
 
@@ -63,7 +63,7 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
      `.pbf` (zlib, dense nodes, no metadata) for `split_by_polygons`. NW Russia extract: split for St Petersburg
      and Leningrad oblast 86.5 → 17.2 s with identical elements (1.6M nodes, 425k ways, 1854 relations);
      `routes_by_poly` on St Petersburg 6.7 → 1.8 s, identical output. Only `.osm.pbf` is read now (`.osm`/`.opl`:
-     convert with `osmium cat`); the `pbf` extra stays empty until 3.1, `location_storage` is deprecated.
+     convert with `osmium cat`); the `pbf` extra and `location_storage` are removed.
    - [x] Edge merging rewritten (`rust/src/chains.rs`): segments are joined into junction-to-junction edges only
      where they are alone at a point, follow one another and carry equal tags, instead of `line_merge` over
      everything and a nearest-midpoint join that lost the tags of all but one way. Bridges and tunnels always
@@ -124,14 +124,15 @@ OD workloads, no JIT warm-up (the Numba cache never hits today: ~5.7 s per fresh
     Breaking changes to list there (so far):
     - the four 2.4.1 routing helpers are removed;
     - `.osm.pbf` only (no `.osm` / `.opl`), split files carry no element metadata; `location_storage` and the
-      `pbf` extra are deprecated;
+      `pbf` extra are removed;
     - simplified drive / walk graphs: an edge per run of equal tags (more nodes and edges), `bridge` and `tunnel`
       always kept;
     - `clip_urban_graph`, `UrbanGraph.clip`, `clip_nx_graph`: a bare shapely polygon is read in EPSG:4326
       (pass `gpd.GeoSeries([polygon], crs=graph.crs)` for metres);
     - walk graph weights: parallel edges are no longer summed (shorter routes, the bug fix of step 3).
-15. [ ] 3.1.0: remove the shims deprecated in 3.0.0 (`location_storage` of `PbfSource`, `split_by_polygons`,
-    `download_osm_pbf`; the empty `pbf` extra).
+15. [x] No 3.1.0 for shims: `location_storage` (`PbfSource`, `split_by_polygons`, `download_osm_pbf`) and the
+    empty `pbf` extra are removed in 3.0.0. Review of `dev` before the merge: dead helpers removed, the
+    projected-CRS check and `ratio` shared.
 16. [x] Docs rework along ObjectNat's structure: building / graph / routing / analysis pages (Overview, Inputs,
     Method, Outputs, Functions, Figures, Limitations, References, Example notebook), figures from
     `docs/figures/make_figures.py` on the `assets` branch, notebooks `routing_methods`, `network_analysis`,

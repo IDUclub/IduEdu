@@ -33,9 +33,6 @@ msgstr "``{name: polygon}`` в EPSG:4326. Используйте полигон�
 msgid "Output directory, created if missing."
 msgstr "Папка для результатов, создаётся при отсутствии."
 
-msgid "Deprecated and ignored; it chose pyosmium's node-location index. Removed in 3.1."
-msgstr "Устарел и игнорируется; задавал индекс координат узлов pyosmium. Будет удалён в 3.1."
-
 msgid "Ways carrying at least one of these keys are selected spatially. ``None`` selects every way. Ways without them still enter a city file as members of selected relations."
 msgstr "Линии хотя бы с одним из этих ключей отбираются пространственно. ``None`` отбирает все линии. Линии без них всё равно попадают в файл города как участники выбранных отношений."
 

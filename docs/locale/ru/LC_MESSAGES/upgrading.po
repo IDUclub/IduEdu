@@ -17,8 +17,8 @@ msgstr ""
 msgid "Upgrading to 3.0"
 msgstr "Переход на 3.0"
 
-msgid "IduEdu 3.0 replaces the Numba kernels with a compiled Rust core and adds point-to-point routing, network statistics, object aggregations, centralities, elevation and bike graphs. Most code written for 2.x runs unchanged. This page lists what was removed, what changed its results and what is deprecated until 3.1."
-msgstr "IduEdu 3.0 заменяет ядра Numba скомпилированным Rust-ядром и добавляет маршруты между двумя точками, статистику сети, агрегацию объектов, центральности, рельеф и велосипедные графы. Большая часть кода, написанного для 2.x, работает без изменений. На этой странице перечислено, что удалено, что изменило результаты и что объявлено устаревшим до 3.1."
+msgid "IduEdu 3.0 replaces the Numba kernels with a compiled Rust core and adds point-to-point routing, network statistics, object aggregations, centralities, elevation and bike graphs. Most code written for 2.x runs unchanged. This page lists what was removed and what changed its results."
+msgstr "IduEdu 3.0 заменяет ядра Numba скомпилированным Rust-ядром и добавляет маршруты между двумя точками, статистику сети, агрегацию объектов, центральности, рельеф и велосипедные графы. Большая часть кода, написанного для 2.x, работает без изменений. На этой странице перечислено, что удалено и что изменило результаты."
 
 msgid "Installation"
 msgstr "Установка"
@@ -26,14 +26,14 @@ msgstr "Установка"
 msgid "Numba and llvmlite are no longer dependencies, and there is no JIT warm-up on the first call. Wheels are published for Linux (x86_64, aarch64), Windows (x64) and macOS (arm64, x86_64); building from source needs a stable Rust toolchain (1.82 or newer)."
 msgstr "Numba и llvmlite больше не нужны, и нет прогрева JIT при первом вызове. Колёса публикуются для Linux (x86_64, aarch64), Windows (x64) и macOS (arm64, x86_64); для сборки из исходников нужен стабильный инструментарий Rust (1.82 или новее)."
 
-msgid "pyosmium is no longer used: ``.osm.pbf`` files are read and written by the Rust core. The ``pbf`` extra is empty and is removed in 3.1; ``pip install \"iduedu[pbf]\"`` still works until then."
-msgstr "pyosmium больше не используется: файлы ``.osm.pbf`` читает и пишет Rust-ядро. Дополнение ``pbf`` пусто и удаляется в 3.1; ``pip install \"iduedu[pbf]\"`` работает до тех пор."
+msgid "pyosmium is no longer used: ``.osm.pbf`` files are read and written by the Rust core. The ``pbf`` extra is removed; drop it from your requirements, since ``pip install \"iduedu[pbf]\"`` now warns about an unknown extra."
+msgstr "pyosmium больше не используется: файлы ``.osm.pbf`` читает и пишет Rust-ядро. Дополнение ``pbf`` удалено; уберите его из зависимостей, так как ``pip install \"iduedu[pbf]\"`` теперь предупреждает о неизвестном дополнении."
 
 msgid "The new ``elevation`` extra installs rasterio for :func:`add_elevation` with raster files."
 msgstr "Новое дополнение ``elevation`` устанавливает rasterio для :func:`add_elevation` с растровыми файлами."
 
-msgid "Removed functions"
-msgstr "Удалённые функции"
+msgid "Removed functions and arguments"
+msgstr "Удалённые функции и аргументы"
 
 msgid "The routing wrappers deprecated in 2.4.1 are removed, as functions and as :class:`UrbanGraph` methods. Each called a general function with a fixed ``output``:"
 msgstr "Обёртки маршрутизации, объявленные устаревшими в 2.4.1, удалены как функции и как методы :class:`UrbanGraph`. Каждая вызывала общую функцию с фиксированным ``output``:"
@@ -67,6 +67,9 @@ msgstr "``multi_source_dijkstra_path``"
 
 msgid "``od_matrix(..., output=\"paths\")``; despite its name it computed independent origin–destination routes, not a nearest-source search"
 msgstr "``od_matrix(..., output=\"paths\")``; несмотря на имя, она считала независимые маршруты между точками отправления и назначения, а не поиск от ближайшего источника"
+
+msgid "The ``location_storage`` argument of :class:`PbfSource`, :func:`split_by_polygons` and :func:`download_osm_pbf` is removed too: it chose the node index of pyosmium, and the Rust reader needs none."
+msgstr "Аргумент ``location_storage`` в :class:`PbfSource`, :func:`split_by_polygons` и :func:`download_osm_pbf` тоже удалён: он выбирал индекс узлов pyosmium, а Rust-читателю индекс не нужен."
 
 msgid "Changed behaviour"
 msgstr "Изменения в поведении"
@@ -106,30 +109,6 @@ msgstr "Отдельные маршруты"
 
 msgid ":func:`single_source_dijkstra_path` and :func:`od_matrix` with ``mode=\"pairwise\"`` run the bidirectional search (see :doc:`routing/point_to_point`). The costs are the same; where several routes are equally short, another of them can be returned."
 msgstr ":func:`single_source_dijkstra_path` и :func:`od_matrix` с ``mode=\"pairwise\"`` используют двунаправленный поиск (см. :doc:`routing/point_to_point`). Стоимости те же; если несколько маршрутов одинаково коротки, может вернуться другой из них."
-
-msgid "Deprecated until 3.1"
-msgstr "Устаревшее до 3.1"
-
-msgid "These arguments still work in 3.0 and raise a ``DeprecationWarning``; they are removed in 3.1."
-msgstr "Эти аргументы ещё работают в 3.0 и вызывают ``DeprecationWarning``; в 3.1 они удаляются."
-
-msgid "Deprecated"
-msgstr "Устарело"
-
-msgid "Note"
-msgstr "Примечание"
-
-msgid "``location_storage`` of :class:`PbfSource`, :func:`split_by_polygons` and :func:`download_osm_pbf`"
-msgstr "``location_storage`` в :class:`PbfSource`, :func:`split_by_polygons` и :func:`download_osm_pbf`"
-
-msgid "Ignored: the Rust reader needs no node index"
-msgstr "Игнорируется: Rust-читателю не нужен индекс узлов"
-
-msgid "The ``pbf`` extra"
-msgstr "Дополнение ``pbf``"
-
-msgid "Empty; remove it from your requirements"
-msgstr "Пусто; уберите его из своих зависимостей"
 
 msgid "New in 3.0"
 msgstr "Новое в 3.0"

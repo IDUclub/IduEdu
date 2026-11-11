@@ -15,6 +15,13 @@ from iduedu.graph.urban_graph import UrbanGraph
 DECAYS = ("flat", "linear", "exp", "inverse")
 
 
+def ratio(a, b) -> np.ndarray:
+    """``a / b`` where ``b`` is positive, NaN elsewhere."""
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.where(b > 0, a / b, np.nan)
+
+
 def cost_bands(cutoffs: float | Iterable[float] | None, name: str = "cutoffs") -> np.ndarray:
     """Ascending unique float32 cutoffs; ``None`` is one unlimited band."""
     if cutoffs is None:
