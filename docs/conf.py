@@ -84,6 +84,8 @@ intersphinx_mapping = {
     "networkx": ("https://networkx.org/documentation/stable/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
 }
+# A stalled download of an inventory must not hang the build (the gettext step fetches them every time).
+intersphinx_timeout = 15
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_preprocess_types = True

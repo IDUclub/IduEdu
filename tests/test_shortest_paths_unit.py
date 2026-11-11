@@ -561,3 +561,59 @@ def test_path_to_edges_out_and_back_route_reuses_edges_in_order():
     assert list(route.geometry.iloc[2].coords) == [(20.0, 0.0), (10.0, 0.0)]
     with pytest.raises(ValueError, match=r"absent or disallowed in graph: \(0, 2\)"):
         path_to_edges(graph, [0, 1, 0, 2])
+
+
+def _cost_to_end(graph, weight="time_min"):
+    return _dense(single_source_dijkstra(graph, 0, weight=weight, output="distances"))[3]
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        pytest.param(lambda edges: edges.__setitem__("time_min", edges["time_min"] * 2), id="column-assigned"),
+        pytest.param(lambda edges: edges.loc.__setitem__((1, "time_min"), 4.0), id="loc-in-place"),
+    ],
+)
+def test_weight_edits_after_a_search_rebuild_the_matrix(edit):
+    graph = undirected_line_graph()
+    assert _cost_to_end(graph) == 7.0
+    edit(graph.edges_gdf)
+    assert _cost_to_end(graph) == pytest.approx(float(graph.edges_gdf["time_min"].sum()))
+
+
+def test_new_edge_table_and_new_edge_ends_rebuild_the_matrix():
+    graph = undirected_line_graph()
+    assert _cost_to_end(graph) == 7.0
+    edges = graph.edges_gdf.copy()
+    edges["time_min"] = [1.0, 1.0, 1.0]
+    graph.edges_gdf = edges
+    assert _cost_to_end(graph) == 3.0
+    graph.edges_gdf["v"] = [1, 3, 2]  # 1 -> 3 directly, 2 hangs on 3
+    assert _cost_to_end(graph) == 2.0
+
+
+def test_direction_edits_rebuild_the_matrix():
+    graph = directed_oneway_graph()
+    reverse = single_source_dijkstra(graph, 3, weight="time_min", output="distances")
+    assert _dense(reverse) == {3: 0.0}
+    graph.edges_gdf.loc[2, "oneway"] = False
+    assert _dense(single_source_dijkstra(graph, 3, weight="time_min", output="distances")) == {3: 0.0, 2: 4.0, 1: 6.0}
+
+
+def test_bad_weights_written_after_a_search_are_rejected():
+    graph = undirected_line_graph()
+    _cost_to_end(graph)
+    graph.edges_gdf.loc[0, "time_min"] = np.nan
+    with pytest.raises(ValueError, match="non-negative values without NaN"):
+        _cost_to_end(graph)
+
+
+def test_unchanged_tables_reuse_the_matrix_and_a_manual_rebuild_is_trusted():
+    graph = undirected_line_graph()
+    first = routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False)
+    assert routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False) is first
+    graph.edges_gdf.loc[0, "time_min"] = 3.0
+    matrix = graph.update_adjacency_matrix(weight="time_min")
+    routing._prepare_graph(graph, weight="time_min", cutoff=None, reverse=False)
+    assert graph.adjacency_matrix is matrix
+    assert _cost_to_end(graph) == 9.0

@@ -104,8 +104,9 @@ kernels have their own `cargo test` and the Python-level checks in `tests/test_r
 - `edges_gdf` — required columns: `u`, `v`, `geometry`, `length_meter`, `time_min`; multigraph adds `k`
 
 The adjacency matrix (`scipy.sparse.csr_matrix`) is built lazily via `update_adjacency_matrix()` and stored on the
-object. It is invalidated whenever nodes/edges change — callers must call `update_adjacency_matrix()` again after any
-structural edit.
+object. `routing._prepare_graph` rebuilds it when the node order, the weight name, the weight or direction values
+(also edited in place) or the `u`/`v` columns change: copies of those columns are kept in the `_SOURCE` slot of
+`_csr_cache`. Only in-place edits of `u`/`v` values go unnoticed.
 
 Default weight for routing: `time_min`. Alternative: `length_meter`.
 

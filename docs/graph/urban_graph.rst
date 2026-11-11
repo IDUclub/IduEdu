@@ -89,10 +89,21 @@ Routing and analysis functions turn the edge table into a CSR matrix of one weig
 3. Every edge of an undirected graph and every two-way edge of a directed one gives entries in both directions.
 
 The matrix is stored on the graph (``graph.adjacency_matrix``) with a copy for the Rust core and is reused by later
-calls with the same weight. :meth:`UrbanGraph.update_adjacency_matrix` rebuilds it, and
-:meth:`UrbanGraph.to_csr` builds a matrix without storing it. After changing the values of an edge column that a
-graph has already been routed on, call ``graph.update_adjacency_matrix(weight=...)`` before the next query.
-Functions that return a new graph (the editors, :func:`add_elevation`, :func:`apply_grade_speed`) need no such call.
+calls with the same weight while the edge table still holds what the matrix was built from. Before every query the
+weight column and the direction column are compared with copies kept with the matrix, so an edit of the weights
+rebuilds the matrix, whether it assigns a new column, changes values in place (``edges_gdf.loc[...] = ...``) or
+assigns a new ``edges_gdf``. The comparison costs about 0.4 ms per million edges. New ``u`` and ``v`` columns and a
+new edge table are found too.
+
+.. code-block:: python
+
+   cost, _ = graph.shortest_path(a, b)
+   closed = graph.edges_gdf["name"] == "Bolshoy Prospekt"
+   graph.edges_gdf.loc[closed, "time_min"] = 1e6       # the next query sees the closure
+   detour, _ = graph.shortest_path(a, b)
+
+:meth:`UrbanGraph.update_adjacency_matrix` rebuilds the matrix by hand, for example with
+``multigraph_rule="max"``, and :meth:`UrbanGraph.to_csr` builds a matrix without storing it.
 
 Node and edge types
 -------------------
@@ -204,7 +215,6 @@ edits:
 
    graph.edges_gdf["time_min"] = graph.edges_gdf["length_meter"] / 80
    graph.validate()
-   graph.update_adjacency_matrix(weight="time_min")
 
 Storage
 -------
@@ -257,8 +267,8 @@ Functions
 Limitations
 -----------
 
-- The adjacency matrix is not rebuilt when edge values change inside a graph that has been routed on; call
-  :meth:`UrbanGraph.update_adjacency_matrix` after such edits.
+- Values of ``u`` and ``v`` changed in place (``edges_gdf.loc[i, "u"] = ...``) are not detected; assign new
+  columns or a new edge table, or call :meth:`UrbanGraph.update_adjacency_matrix`.
 - Weights must be non-negative and without missing values.
 - Node ids can be any hashable values, but integer ids keep the tables and the archives compact.
 

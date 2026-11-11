@@ -57,8 +57,9 @@ def _cutoff_float(cutoff):
 # UrbanGraph._csr_cache: [adjacency matrix, CsrGraph, transposed CsrGraph | None, node id array | None,
 # (nodes index, edges table, weight) last validated for this matrix | None,
 # (nodes table, its geometry array, x, y) of the node coordinates in matrix order | None,
-# {landmark count: LandmarkTable} for ALT searches | None]
-_MATRIX, _FORWARD, _REVERSE, _NODE_IDS, _CHECKED, _COORDS, _LANDMARKS = range(7)
+# {landmark count: LandmarkTable} for ALT searches | None,
+# copies of the edge columns the matrix was built from (see _matrix_source) | None]
+_MATRIX, _FORWARD, _REVERSE, _NODE_IDS, _CHECKED, _COORDS, _LANDMARKS, _SOURCE = range(8)
 PAIR_METHODS = ("bidirectional", "astar", "alt", "dijkstra")
 #: Landmarks of method="alt": more make the estimate sharper and the tables larger (8 bytes per node
 #: and landmark on a directed graph, 4 on an undirected one).
@@ -83,6 +84,7 @@ def _cache(urban_graph):
             None,
             None,
             None,
+            None,
         ]  # pylint: disable=protected-access
     return cache
 
@@ -97,6 +99,59 @@ def _csr_graph(urban_graph, *, reverse):
     return cache[_REVERSE]
 
 
+def _array_id(values):
+    """Identity of the memory behind a column: changes when the column is replaced, not when edited in place."""
+    interface = values.__array_interface__
+    return interface["data"][0], interface["shape"], interface["typestr"]
+
+
+def _matrix_source(urban_graph, weight):
+    """Everything the adjacency matrix of ``weight`` is built from.
+
+    The direction settings, copies of the ``u``, ``v``, weight and direction columns, and the identity of the
+    memory behind ``u`` and ``v``.
+    """
+    edges = urban_graph.edges_gdf
+    column = urban_graph.edge_direction_column if urban_graph.is_directed else None
+    names = ["u", "v", weight] + ([column] if column is not None else [])
+    arrays = tuple(edges[name].to_numpy() for name in names)
+    copies = tuple(np.array(values, copy=True) for values in arrays)
+    return weight, urban_graph.is_directed, column, copies, (_array_id(arrays[0]), _array_id(arrays[1]))
+
+
+def _equal(a, b):
+    if a.shape != b.shape or a.dtype != b.dtype:
+        return False
+    if a.dtype.kind in "biufc":
+        return bool(np.array_equal(a, b))
+    return pd.Series(a, copy=False).equals(pd.Series(b, copy=False))
+
+
+def _same_source(source, urban_graph, weight, *, full):
+    """Whether the edge columns still hold what the cached matrix was built from.
+
+    The weight and direction columns are compared value by value, so edits in place (``edges.loc[...] = ...``)
+    are found too; this costs about 0.4 ms per million edges. ``u`` and ``v`` are compared by value only with
+    ``full``; otherwise a check that their memory was not replaced is enough, because the ends of the edges are
+    changed by assigning new columns or a new table.
+    """
+    if source is None:
+        return False
+    source_weight, directed, column, copies, ends = source
+    current_column = urban_graph.edge_direction_column if urban_graph.is_directed else None
+    if (source_weight, directed, column) != (weight, urban_graph.is_directed, current_column):
+        return False
+    edges = urban_graph.edges_gdf
+    names = ["u", "v", weight] + ([column] if column is not None else [])
+    if any(name not in edges for name in names):
+        return False
+    current = [edges[name].to_numpy() for name in names]
+    if not full and (_array_id(current[0]), _array_id(current[1])) != ends:
+        return False
+    checked = range(len(names)) if full else range(2, len(names))
+    return all(_equal(current[i], copies[i]) for i in checked)
+
+
 def _already_validated(urban_graph, weight):
     cache = urban_graph._csr_cache  # pylint: disable=protected-access
     if cache is None or cache[_CHECKED] is None or urban_graph.adjacency_matrix is None:
@@ -107,6 +162,7 @@ def _already_validated(urban_graph, weight):
         and urban_graph.adjacency_weight == weight == checked_weight
         and nodes_index is urban_graph.nodes_gdf.index
         and edges is urban_graph.edges_gdf
+        and _same_source(cache[_SOURCE], urban_graph, weight, full=False)
     )
 
 
@@ -128,13 +184,20 @@ def _prepare_graph(urban_graph, *, weight, cutoff, reverse):
     if weights.isna().any() or (weights < 0).any():
         raise ValueError(f"graph.edges_gdf[{weight!r}] must contain non-negative values without NaN")
     nodelist = nodes_index.to_list()
+    cache = urban_graph._csr_cache  # pylint: disable=protected-access
+    # A matrix built outside this function (update_adjacency_matrix, an archive) has no recorded source and is
+    # trusted; a recorded source that no longer matches the edge table means the matrix is stale.
+    source = cache[_SOURCE] if cache is not None and cache[_MATRIX] is urban_graph.adjacency_matrix else None
     if (
         urban_graph.adjacency_matrix is None
         or urban_graph.adjacency_weight != weight
         or urban_graph.adjacency_nodelist != nodelist
+        or (source is not None and not _same_source(source, urban_graph, weight, full=True))
     ):
         urban_graph.update_adjacency_matrix(nodelist=nodelist, weight=weight)
-    _cache(urban_graph)[_CHECKED] = (nodes_index, edges, weight)
+    cache = _cache(urban_graph)
+    cache[_CHECKED] = (nodes_index, edges, weight)
+    cache[_SOURCE] = _matrix_source(urban_graph, weight)
     return _csr_graph(urban_graph, reverse=reverse)
 
 
@@ -173,9 +236,12 @@ def _check_pair_method(method):
         raise ValueError(f"method must be one of {PAIR_METHODS}, got {method!r}")
 
 
-def _kernel_pairs(graph, sources, targets, *, weight, cutoff, method, routes, max_workers):
-    """Costs and routes of the pairs sources[i] -> targets[i] (positions) by a point-to-point search."""
-    matrix = _prepare_graph(graph, weight=weight, cutoff=cutoff, reverse=False)
+def _kernel_pairs(graph, sources, targets, *, cutoff, method, routes, max_workers):
+    """Costs and routes of the pairs sources[i] -> targets[i] (positions) by a point-to-point search.
+
+    The caller has prepared the graph for the weight (``_prepare_graph``).
+    """
+    matrix = _csr_graph(graph, reverse=False)
     sources = np.ascontiguousarray(sources, dtype=np.int32)
     targets = np.ascontiguousarray(targets, dtype=np.int32)
     if method == "astar":
@@ -609,7 +675,6 @@ def _od_pairs(graph, origins, destinations, *, weight, dtype, cutoff, max_worker
         graph,
         origin_positions,
         destination_positions,
-        weight=weight,
         cutoff=cutoff,
         method=method,
         routes=output != "distances",
@@ -874,7 +939,6 @@ def _pair_route(urban_graph, source_node, target_node, *, weight, cutoff, method
         urban_graph,
         positions[:1],
         positions[1:],
-        weight=weight,
         cutoff=cutoff,
         method=method,
         routes=True,

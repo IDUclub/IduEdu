@@ -64,6 +64,11 @@ Local OSM files
    ``osmium cat city.osm -o city.osm.pbf``. Files written by :func:`split_by_polygons` carry no element metadata
    (versions, timestamps, users).
 
+Edits of edge weights
+   The cached adjacency matrix is rebuilt when the weights, directions or ends of the edges change after a query,
+   also when the weights are edited in place. In 2.x such edits were ignored until
+   :meth:`UrbanGraph.update_adjacency_matrix` was called, and the queries returned the old costs.
+
 Single routes
    :func:`single_source_dijkstra_path` and :func:`od_matrix` with ``mode="pairwise"`` run the bidirectional search
    (see :doc:`routing/point_to_point`). The costs are the same; where several routes are equally short, another of

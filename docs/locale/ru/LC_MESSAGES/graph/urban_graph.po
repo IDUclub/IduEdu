@@ -104,8 +104,11 @@ msgstr "Параллельные рёбра между двумя узлами, 
 msgid "Every edge of an undirected graph and every two-way edge of a directed one gives entries in both directions."
 msgstr "Каждое ребро неориентированного графа и каждое двустороннее ребро ориентированного дают записи в обоих направлениях."
 
-msgid "The matrix is stored on the graph (``graph.adjacency_matrix``) with a copy for the Rust core and is reused by later calls with the same weight. :meth:`UrbanGraph.update_adjacency_matrix` rebuilds it, and :meth:`UrbanGraph.to_csr` builds a matrix without storing it. After changing the values of an edge column that a graph has already been routed on, call ``graph.update_adjacency_matrix(weight=...)`` before the next query. Functions that return a new graph (the editors, :func:`add_elevation`, :func:`apply_grade_speed`) need no such call."
-msgstr "Матрица хранится в графе (``graph.adjacency_matrix``) вместе с копией для Rust-ядра и повторно используется последующими вызовами с тем же весом. :meth:`UrbanGraph.update_adjacency_matrix` перестраивает её, а :meth:`UrbanGraph.to_csr` строит матрицу без сохранения. После изменения значений столбца рёбер у графа, по которому уже искали маршруты, вызовите ``graph.update_adjacency_matrix(weight=...)`` перед следующим запросом. Функциям, которые возвращают новый граф (редакторы, :func:`add_elevation`, :func:`apply_grade_speed`), такой вызов не нужен."
+msgid "The matrix is stored on the graph (``graph.adjacency_matrix``) with a copy for the Rust core and is reused by later calls with the same weight while the edge table still holds what the matrix was built from. Before every query the weight column and the direction column are compared with copies kept with the matrix, so an edit of the weights rebuilds the matrix, whether it assigns a new column, changes values in place (``edges_gdf.loc[...] = ...``) or assigns a new ``edges_gdf``. The comparison costs about 0.4 ms per million edges. New ``u`` and ``v`` columns and a new edge table are found too."
+msgstr "Матрица хранится в графе (``graph.adjacency_matrix``) вместе с копией для ядра на Rust и используется последующими вызовами с тем же весом, пока таблица рёбер содержит то, из чего матрица построена. Перед каждым запросом столбец веса и столбец направления сравниваются с копиями, сохранёнными вместе с матрицей, поэтому любое изменение весов перестраивает матрицу: присваивание нового столбца, изменение значений на месте (``edges_gdf.loc[...] = ...``) или присваивание новой ``edges_gdf``. Сравнение стоит около 0,4 мс на миллион рёбер. Новые столбцы ``u`` и ``v`` и новая таблица рёбер тоже обнаруживаются."
+
+msgid ":meth:`UrbanGraph.update_adjacency_matrix` rebuilds the matrix by hand, for example with ``multigraph_rule=\"max\"``, and :meth:`UrbanGraph.to_csr` builds a matrix without storing it."
+msgstr ":meth:`UrbanGraph.update_adjacency_matrix` перестраивает матрицу вручную, например с ``multigraph_rule=\"max\"``, а :meth:`UrbanGraph.to_csr` строит матрицу, не сохраняя её."
 
 msgid "Node and edge types"
 msgstr "Типы узлов и рёбер"
@@ -317,8 +320,8 @@ msgstr "Проверяет все требования к узлам, рёбра
 msgid "Limitations"
 msgstr "Ограничения"
 
-msgid "The adjacency matrix is not rebuilt when edge values change inside a graph that has been routed on; call :meth:`UrbanGraph.update_adjacency_matrix` after such edits."
-msgstr "Матрица смежности не перестраивается, когда значения рёбер меняются в графе, по которому уже искали маршруты; после таких правок вызывайте :meth:`UrbanGraph.update_adjacency_matrix`."
+msgid "Values of ``u`` and ``v`` changed in place (``edges_gdf.loc[i, \"u\"] = ...``) are not detected; assign new columns or a new edge table, or call :meth:`UrbanGraph.update_adjacency_matrix`."
+msgstr "Значения ``u`` и ``v``, изменённые на месте (``edges_gdf.loc[i, \"u\"] = ...``), не обнаруживаются; присвойте новые столбцы или новую таблицу рёбер либо вызовите :meth:`UrbanGraph.update_adjacency_matrix`."
 
 msgid "Weights must be non-negative and without missing values."
 msgstr "Веса должны быть неотрицательными и без пропусков."

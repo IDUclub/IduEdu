@@ -95,6 +95,12 @@ msgstr "Локальные файлы OSM"
 msgid "Only ``.osm.pbf`` files are read; convert ``.osm`` and ``.opl`` files with ``osmium cat city.osm -o city.osm.pbf``. Files written by :func:`split_by_polygons` carry no element metadata (versions, timestamps, users)."
 msgstr "Читаются только файлы ``.osm.pbf``; файлы ``.osm`` и ``.opl`` преобразуйте командой ``osmium cat city.osm -o city.osm.pbf``. Файлы, записанные :func:`split_by_polygons`, не содержат метаданных элементов (версий, отметок времени, пользователей)."
 
+msgid "Edits of edge weights"
+msgstr "Изменения весов рёбер"
+
+msgid "The cached adjacency matrix is rebuilt when the weights, directions or ends of the edges change after a query, also when the weights are edited in place. In 2.x such edits were ignored until :meth:`UrbanGraph.update_adjacency_matrix` was called, and the queries returned the old costs."
+msgstr "Кэшированная матрица смежности перестраивается, когда после запроса меняются веса, направления или концы рёбер, в том числе когда веса изменены на месте. В 2.x такие изменения игнорировались до вызова :meth:`UrbanGraph.update_adjacency_matrix`, и запросы возвращали старые стоимости."
+
 msgid "Single routes"
 msgstr "Отдельные маршруты"
 
