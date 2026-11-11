@@ -197,8 +197,10 @@ msgstr "Объединяет два совместимых ``UrbanGraph``, со�
 msgid ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
 msgstr ":py:obj:`relabel_urban_graph <iduedu.relabel_urban_graph>`"
 
-msgid "Relabel node ids to a dense ``RangeIndex`` and update edge endpoints."
-msgstr "Перенумеровывает идентификаторы узлов в плотный ``RangeIndex`` и обновляет концы рёбер."
+# | msgid "Relabel node ids to a dense ``RangeIndex`` and update edge
+# | endpoints."
+msgid "Relabel node ids and update edge endpoints."
+msgstr "Перенумеровывает узлы и обновляет концы рёбер."
 
 msgid ":py:obj:`to_directed <iduedu.to_directed>`"
 msgstr ":py:obj:`to_directed <iduedu.to_directed>`"
@@ -283,6 +285,20 @@ msgstr ":py:obj:`UrbanGraphChanges <iduedu.UrbanGraphChanges>`"
 
 msgid "Set of table changes that can be applied to an ``UrbanGraph``."
 msgstr "Набор изменений таблиц, который можно применить к ``UrbanGraph``."
+
+# | msgid ":py:obj:`graph_stats <iduedu.graph_stats>`"
+msgid ":py:obj:`GraphEdits <iduedu.GraphEdits>`"
+msgstr ":py:obj:`GraphEdits <iduedu.GraphEdits>`"
+
+msgid "Edits of a graph given by lines in any CRS, resolved by :func:`resolve_graph_edits`."
+msgstr "Правки графа, заданные линиями в любой CRS; к графу их привязывает :func:`resolve_graph_edits`."
+
+# | msgid ":py:obj:`reproject_graph <iduedu.reproject_graph>`"
+msgid ":py:obj:`resolve_graph_edits <iduedu.resolve_graph_edits>`"
+msgstr ":py:obj:`resolve_graph_edits <iduedu.resolve_graph_edits>`"
+
+msgid "Bind geometric edits to the current graph."
+msgstr "Привязывает геометрические правки к текущему графу."
 
 msgid "Routing"
 msgstr "Маршруты"

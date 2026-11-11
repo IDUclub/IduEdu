@@ -26,6 +26,8 @@ buildings or stops to them. They return new graphs and leave the source unchange
    * - Objects
      - :func:`nearest_nodes`, :func:`nearest_edges`, :func:`project_objects2urban_graph`,
        :func:`apply_urban_graph_changes`
+   * - Scenario edits
+     - :class:`GraphEdits`, :func:`resolve_graph_edits`, :class:`UrbanGraphChanges`
    * - Storage and checks
      - :func:`read_urban_graph`, :func:`write_urban_graph`, :func:`validate_graph`
 
@@ -46,6 +48,13 @@ Cutting and joining
 of a graph inside a polygon; a bare shapely polygon is read in EPSG:4326, as ``territory`` in the graph builders,
 and a GeoSeries or GeoDataFrame in its own CRS. :func:`join_urban_graphs` concatenates the tables of compatible
 graphs, and :func:`relabel_urban_graph` renumbers the nodes ``0 .. n-1``.
+
+With ``by="coordinates"``, :func:`relabel_urban_graph` packs the latitude and longitude of every node, in units
+of 1e-7 degree (the precision of OpenStreetMap), into one int64 id. A street node then keeps its id when the graph
+is built again from newer data, and the graphs of two neighbouring territories share the ids of their common
+nodes. Two nodes closer than 1e-7 degree (about 1 cm) would get one id, and the function raises instead. Public
+transport graphs have such nodes, for example the stops of several routes at one platform, so the coordinate ids
+suit drive, walk and bike graphs.
 
 Topology
 --------
@@ -80,6 +89,38 @@ object and a link edge at ``speed_m_per_min`` join it to that point. The functio
 an :class:`UrbanGraphChanges` with the nodes and edges to add and the edges to delete, and the node of every
 object. :func:`apply_urban_graph_changes` applies them; :meth:`UrbanGraph.project_objects` does both in one call.
 Keeping the changes apart lets a service store them in its own tables.
+
+Scenario edits
+--------------
+
+A planning scenario closes streets, changes speeds or adds new links. Ids of nodes and edges change when the graph
+is built again from newer OSM data, and a simplified edge has no OSM way id, so a stored scenario keeps its edits
+as lines. :class:`GraphEdits` holds three tables: ``add`` with the lines of new edges and their attributes,
+``remove`` with anchor lines of the network to remove and ``update`` with anchor lines and the new values of the
+edges along them. :func:`resolve_graph_edits` binds them to the current graph and returns an
+:class:`UrbanGraphChanges` and a report of the edits it could not bind.
+
+An anchor selects the edges that run along it within ``tolerance``; a street that only crosses the anchor is not
+selected. An edge covered in part is split at the ends of the anchor, so only the covered part changes, even when
+the rebuilt graph has its junctions elsewhere. In a directed graph ``direction="along"`` limits an edit to the
+direction the anchor is drawn in, and a two-way edge becomes two one-way edges. ``speed_kmh`` in ``update`` sets
+``time_min`` from the edge length. Each end of an added line is attached to a node within ``tolerance``, or splits
+the nearest edge there, or becomes a new node. ``edge_types`` keeps the edits on one layer, for example the
+walking edges of an intermodal graph, whose transit edges often run along the same streets.
+
+An anchor that the graph covers by less than ``min_coverage`` of its length, or an added line that would join a
+node to itself, is skipped and reported. :class:`UrbanGraphChanges` also sets new values on edges by key with
+``edges_to_update``; :func:`apply_urban_graph_changes` deletes edges first, then updates, then adds.
+
+.. code-block:: python
+
+   edits = GraphEdits(
+       remove=closed_streets,                                   # lines in any CRS
+       update=slow_zone.assign(speed_kmh=20),
+       add=new_paths.assign(highway="footway"),
+   )
+   changes, report = resolve_graph_edits(walk, edits, tolerance=5, speed_kmh=5)
+   scenario = apply_urban_graph_changes(walk, changes)
 
 .. code-block:: python
 
@@ -124,6 +165,8 @@ Functions
     project_objects2urban_graph
     apply_urban_graph_changes
     UrbanGraphChanges
+    GraphEdits
+    resolve_graph_edits
     read_urban_graph
     write_urban_graph
     validate_graph
@@ -165,6 +208,9 @@ Limitations
   different junctions; check the result on a map and set ``tolerance`` to the width of the junctions.
 - :func:`project_objects2urban_graph` attaches every object to one edge; an object far from any edge (beyond
   ``max_dist``) stays unattached.
+- :func:`resolve_graph_edits` finds edges by distance: two streets closer than ``tolerance`` and running side by
+  side are both selected by an anchor along one of them. Set ``tolerance`` below the distance between parallel
+  carriageways, or limit the edits with ``edge_types``.
 
 Example notebook
 ----------------

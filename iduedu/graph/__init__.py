@@ -46,6 +46,7 @@ from .editors import (
     subgraph_by_nodes,
 )
 from .graph_inputs import nearest_edges, nearest_nodes, resolve_graph_nodes_input
+from .edits import GraphEdits, resolve_graph_edits
 from .segments import unique_segments
 from .elevation import add_elevation, apply_grade_speed
 from .centrality import centrality, edge_betweenness

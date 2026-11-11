@@ -2,6 +2,7 @@
 from .config import use_pbf
 from .constants.transport_specs import DEFAULT_REGISTRY, DEFAULT_REGISTRY_W_TRAIN, TransportRegistry, TransportSpec
 from .graph import (
+    GraphEdits,
     UrbanGraph,
     UrbanGraphChanges,
     add_elevation,
@@ -33,6 +34,7 @@ from .graph import (
     project_objects2urban_graph,
     read_urban_graph,
     relabel_urban_graph,
+    resolve_graph_edits,
     route_directness,
     simplify_multiedges,
     streets_per_node,

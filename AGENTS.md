@@ -121,7 +121,9 @@ iduedu/
     urban_graph.py   — UrbanGraph class (data + adjacency matrix + method dispatch)
     adjacency.py     — build_adjacency_matrix() from edges_gdf → CSR
     components.py    — connected/weakly/strongly connected component algorithms
-    editors.py       — subgraph_by_nodes, clip, join, relabel, project_objects2urban_graph
+    editors.py       — subgraph_by_nodes, clip, join, relabel (also by coordinates), project_objects2urban_graph,
+                       UrbanGraphChanges and apply_urban_graph_changes (delete, update, add)
+    edits.py         — GraphEdits, resolve_graph_edits(): scenario edits stored as lines, bound to the graph
     transformers.py  — keep_largest_component, simplify_multiedges, to_directed/undirected
     routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both) and
                        the point-to-point kernels behind them (bidirectional, A*, ALT landmarks cached per matrix)

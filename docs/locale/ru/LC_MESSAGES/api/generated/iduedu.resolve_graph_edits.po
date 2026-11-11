@@ -1,0 +1,73 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-11 18:55+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.resolve\\_graph\\_edits"
+msgstr "iduedu.resolve\\_graph\\_edits"
+
+msgid "Bind geometric edits to the current graph."
+msgstr "Привязывает геометрические правки к текущему графу."
+
+msgid "Anchors of ``remove`` and ``update`` select the edges that lie along them within ``tolerance``; an edge covered only in part is split at the ends of the anchor, and only the covered part is changed. Crossing streets are not selected: the edge has to run along the anchor. Each end of an ``add`` line is attached to a node within ``tolerance``, or splits the nearest edge within ``tolerance`` at the projection of the end, or becomes a new node. Split edges keep their attributes, with length and travel time shared out by length."
+msgstr "Якоря ``remove`` и ``update`` выбирают рёбра, которые лежат вдоль них в пределах ``tolerance``; ребро, покрытое лишь частично, разрезается по концам якоря, и меняется только покрытая часть. Пересекающие улицы не выбираются: ребро должно идти вдоль якоря. Каждый конец линии ``add`` присоединяется к узлу в пределах ``tolerance``, или разрезает ближайшее ребро в пределах ``tolerance`` в точке проекции конца, или становится новым узлом. Разрезанные рёбра сохраняют атрибуты, а длина и время в пути делятся пропорционально длине."
+
+msgid "Edits that cannot be bound are skipped and reported instead of raising, so a stored scenario still applies after the graph is rebuilt."
+msgstr "Правки, которые не удалось привязать, пропускаются и попадают в отчёт, а не вызывают исключение, поэтому сохранённый сценарий применяется и после новой сборки графа."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph in a projected CRS; ``tolerance`` is in its units."
+msgstr "Граф в проекционной CRS; ``tolerance`` задаётся в её единицах."
+
+msgid "Edits to bind."
+msgstr "Привязываемые правки."
+
+msgid "Search distance for nodes and edges, in metres for the graphs of the builders."
+msgstr "Расстояние поиска узлов и рёбер; для графов сборщиков — в метрах."
+
+msgid "Speed of added lines that have neither ``time_min`` nor ``speed_kmh``."
+msgstr "Скорость на добавленных линиях, у которых нет ни ``time_min``, ни ``speed_kmh``."
+
+msgid "Least share of an anchor's length that the selected edges must cover; an anchor with less is reported and skipped."
+msgstr "Наименьшая доля длины якоря, которую должны покрыть выбранные рёбра; якорь с меньшей долей попадает в отчёт и пропускается."
+
+msgid "Ids of new nodes: ``\"next\"`` continues after the largest id of the graph, ``\"coordinates\"`` packs the coordinates as :func:`relabel_urban_graph` with ``by=\"coordinates\"`` does."
+msgstr "Идентификаторы новых узлов: ``\"next\"`` продолжает нумерацию после наибольшего идентификатора графа, ``\"coordinates\"`` упаковывает координаты, как :func:`relabel_urban_graph` с ``by=\"coordinates\"``."
+
+msgid "Edit only edges whose ``type`` is one of these, and attach added lines only to their nodes, for example ``[\"walk\"]`` in an intermodal graph, so that a closed street does not remove the transit edges drawn along it."
+msgstr "Править только рёбра, чей ``type`` входит в этот список, и присоединять добавленные линии только к их узлам, например ``[\"walk\"]`` в интермодальном графе, чтобы перекрытая улица не удаляла рёбра транспорта, проложенные вдоль неё."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.editors.UrbanGraphChanges\\`\\, \\:py\\:class\\:\\`\\~pandas.DataFrame\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~iduedu.graph.editors.UrbanGraphChanges\\`\\, \\:py\\:class\\:\\`\\~pandas.DataFrame\\`\\]`"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Pair ``(changes, report)``. ``changes`` is applied with :func:`apply_urban_graph_changes`. ``report`` has a row per skipped edit: ``kind`` (``\"add\"``, ``\"remove\"`` or ``\"update\"``), ``edit`` (its index), ``reason`` and ``coverage`` (the share of an anchor covered by the graph)."
+msgstr "Пара ``(changes, report)``. ``changes`` применяется функцией :func:`apply_urban_graph_changes`. В ``report`` по строке на каждую пропущенную правку: ``kind`` (``\"add\"``, ``\"remove\"`` или ``\"update\"``), ``edit`` (её индекс), ``reason`` и ``coverage`` (доля якоря, покрытая графом)."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If the graph CRS is missing or geographic, the parameters are out of range, or a new node id     is already in the graph."
+msgstr "Если у графа нет CRS или она географическая, параметры вне допустимых значений или идентификатор нового узла уже есть в графе."
+
+msgid "If ``edge_types`` is given and the edges have no ``type`` column."
+msgstr "Если задан ``edge_types``, а у рёбер нет столбца ``type``."
+

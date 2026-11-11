@@ -21,13 +21,16 @@ class UrbanGraphChanges:
     """Set of table changes that can be applied to an ``UrbanGraph``.
 
     The class is used as an intermediate result when projecting objects onto a
-    graph. It stores new nodes, new edges and edge keys that should be removed from
-    the source graph before split edge segments are appended.
+    graph or resolving geometric edits. It stores new nodes, new edges, edge keys that
+    should be removed from the source graph and new attribute values of kept edges.
 
     Args:
         edges_gdf: New graph edges.
         nodes_gdf: New graph nodes.
         edges_to_delete: Edge-key table for edges that should be removed.
+        edges_to_update: Edge keys with new attribute values: one row per edge, the key
+            columns and any other columns except ``geometry``. A missing value (NaN) keeps
+            the old value of the edge; a column absent from the graph is added.
         is_multigraph: Must match ``UrbanGraph.is_multigraph``.
         is_directed: Whether edge keys should be interpreted as directed ``u -> v``
             keys.
@@ -40,6 +43,7 @@ class UrbanGraphChanges:
     edges_gdf: gpd.GeoDataFrame | None = None
     nodes_gdf: gpd.GeoDataFrame | None = None
     edges_to_delete: pd.DataFrame | None = None
+    edges_to_update: pd.DataFrame | None = None
     is_multigraph: bool = False
     is_directed: bool = False
 
@@ -50,6 +54,8 @@ class UrbanGraphChanges:
             self._validate_edges()
         if self.edges_to_delete is not None:
             self._validate_edges_to_delete()
+        if self.edges_to_update is not None:
+            self._validate_edges_to_update()
 
     def _edge_key_cols(self) -> list[str]:
         return ["u", "v", "k"] if self.is_multigraph else ["u", "v"]
@@ -100,13 +106,63 @@ class UrbanGraphChanges:
         if etd[key_cols].isna().any().any():
             raise ValueError(f"edges_to_delete columns {key_cols} must not contain NaN")
 
+    def _validate_edges_to_update(self) -> None:
+        etu = self.edges_to_update
+        if not isinstance(etu, pd.DataFrame):
+            raise TypeError(f"edges_to_update must be DataFrame, got {type(etu).__name__}")
+        if etu.empty:
+            return
+        key_cols = self._edge_key_cols()
+        missing = set(key_cols) - set(etu.columns)
+        if missing:
+            raise ValueError(f"edges_to_update missing required columns: {sorted(missing)}")
+        if etu[key_cols].isna().any().any():
+            raise ValueError(f"edges_to_update columns {key_cols} must not contain NaN")
+        if etu[key_cols].duplicated().any():
+            raise ValueError(f"edges_to_update must have unique {key_cols} keys")
+        forbidden = {"geometry", "u", "v", "k"} & (set(etu.columns) - set(key_cols))
+        if isinstance(etu, gpd.GeoDataFrame) or forbidden:
+            raise ValueError(f"edges_to_update cannot change {sorted(forbidden) or ['geometry']}")
+        if len(etu.columns) == len(key_cols):
+            raise ValueError("edges_to_update has no value columns")
 
-def relabel_urban_graph(graph_gdf: UrbanGraph) -> UrbanGraph:
+
+# Packed coordinate ids: latitude and longitude in units of 1e-7 degree (the precision of OSM), shifted to be
+# non-negative and combined as lat * LON_SPAN + lon, which stays below 2**63.
+_COORD_SCALE = 10_000_000
+_LAT_SHIFT = 90 * _COORD_SCALE
+_LON_SHIFT = 180 * _COORD_SCALE
+_LON_SPAN = 2 * _LON_SHIFT + 1
+
+
+def coordinate_node_ids(points: gpd.GeoSeries) -> np.ndarray:
+    """Stable int64 node ids packed from the EPSG:4326 coordinates of ``points`` at 1e-7 degree."""
+    if points.crs is None:
+        raise ValueError("coordinate node ids need points with a CRS")
+    lonlat = points.to_crs(4326) if not points.crs.equals("EPSG:4326") else points
+    lon = np.rint(lonlat.x.to_numpy() * _COORD_SCALE).astype(np.int64) + _LON_SHIFT
+    lat = np.rint(lonlat.y.to_numpy() * _COORD_SCALE).astype(np.int64) + _LAT_SHIFT
+    return lat * _LON_SPAN + lon
+
+
+def relabel_urban_graph(graph_gdf: UrbanGraph, *, by: Literal["range", "coordinates"] = "range") -> UrbanGraph:
     """
-    Relabel node ids to a dense ``RangeIndex`` and update edge endpoints.
+    Relabel node ids and update edge endpoints.
 
     The function does not mutate the source graph. For multigraphs, ``k`` is
     recalculated after relabeling to keep ``['u', 'v', 'k']`` unique.
+
+    Args:
+        graph_gdf: Source graph.
+        by: ``"range"`` numbers the nodes ``0 .. n - 1`` in their order. ``"coordinates"``
+            packs the latitude and longitude of every node, rounded to 1e-7 degree (the
+            precision of OpenStreetMap), into one int64 id. Such ids do not change when the
+            graph is built again from newer data, and graphs of neighbouring territories get
+            equal ids for their shared nodes.
+
+    Raises:
+        ValueError: If ``by="coordinates"`` and the graph has no CRS, or two nodes are closer
+            than 1e-7 degree (about 1 cm) and would get one id.
 
     See also:
         https://iduclub.github.io/IduEdu/examples/graph_operations.html
@@ -115,8 +171,18 @@ def relabel_urban_graph(graph_gdf: UrbanGraph) -> UrbanGraph:
     nodes = graph_gdf.nodes_gdf.copy()
     edges = graph_gdf.edges_gdf.copy()
 
-    mapping = {old: new for new, old in enumerate(nodes.index)}
-    nodes.index = pd.RangeIndex(len(nodes))
+    if by == "range":
+        new_index = pd.RangeIndex(len(nodes))
+    elif by == "coordinates":
+        geometry = nodes.geometry if nodes.crs is not None else nodes.geometry.set_crs(graph_gdf.crs)
+        new_index = pd.Index(coordinate_node_ids(geometry), name=nodes.index.name)
+        if new_index.has_duplicates:
+            shared = nodes.index[new_index.duplicated(keep=False)][:10].tolist()
+            raise ValueError(f"Nodes closer than 1e-7 degree would share a coordinate id: {shared}")
+    else:
+        raise ValueError(f"by must be 'range' or 'coordinates', got {by!r}")
+    mapping = dict(zip(nodes.index, new_index))
+    nodes.index = new_index
 
     if not edges.empty:
         edges["u"] = edges["u"].map(mapping)
@@ -698,13 +764,31 @@ def project_objects2urban_graph(
     )
 
 
+def _update_edges(edges: gpd.GeoDataFrame, updates: pd.DataFrame, key_cols: list[str]) -> gpd.GeoDataFrame:
+    """Edges with the values of ``updates`` set by key; NaN in ``updates`` keeps the old value."""
+    position = pd.MultiIndex.from_frame(edges[key_cols]).get_indexer(pd.MultiIndex.from_frame(updates[key_cols]))
+    if (position < 0).any():
+        missing = updates.loc[position < 0, key_cols]
+        raise ValueError(
+            f"Some edges_to_update are not present in graph.edges_gdf: {missing.head(10).to_dict('records')}"
+        )
+    edges = edges.copy()
+    for column in updates.columns.difference(key_cols, sort=False):
+        new = pd.Series(updates[column].to_numpy(), index=position)
+        if column in edges.columns:
+            old = edges[column].reset_index(drop=True)
+        else:
+            old = pd.Series(np.nan, index=pd.RangeIndex(len(edges)))
+        edges[column] = new.combine_first(old).sort_index().to_numpy()
+    return edges
+
+
 def apply_urban_graph_changes(graph_gdf: UrbanGraph, changes: UrbanGraphChanges) -> UrbanGraph:
     """Apply prepared changes to an ``UrbanGraph``.
 
-    The function removes edges listed in ``changes.edges_to_delete``, appends new
-    nodes and edges, and returns a new graph. Any previously cached adjacency matrix
-    is considered stale after applying structural changes; rebuild it before running
-    routing or accessibility calculations.
+    The function removes edges listed in ``changes.edges_to_delete``, sets the values of
+    ``changes.edges_to_update``, appends new nodes and edges, and returns a new graph.
+    The new graph has no cached adjacency matrix; routing builds it on the first query.
 
     Args:
         graph_gdf: Source graph.
@@ -715,8 +799,9 @@ def apply_urban_graph_changes(graph_gdf: UrbanGraph, changes: UrbanGraphChanges)
         New ``UrbanGraph`` with changes applied.
 
     Raises:
-        ValueError: If graph and change topology flags differ or if
-            ``edges_to_delete`` references edges that are absent from the graph.
+        ValueError: If graph and change topology flags differ, if
+            ``edges_to_delete`` or ``edges_to_update`` reference edges that are absent
+            from the graph, or if an edge is both deleted and updated.
 
     See also:
         https://iduclub.github.io/IduEdu/examples/objects_and_nearest_nodes.html
@@ -733,8 +818,19 @@ def apply_urban_graph_changes(graph_gdf: UrbanGraph, changes: UrbanGraphChanges)
     new_nodes = changes.nodes_gdf
     new_edges = changes.edges_gdf
     edges_to_delete = changes.edges_to_delete
+    edges_to_update = changes.edges_to_update
 
     key_cols = ["u", "v", "k"] if graph_gdf.is_multigraph else ["u", "v"]
+
+    if (
+        edges_to_delete is not None
+        and not edges_to_delete.empty
+        and edges_to_update is not None
+        and not edges_to_update.empty
+    ):
+        both = edges_to_update[key_cols].merge(edges_to_delete[key_cols].drop_duplicates(), on=key_cols)
+        if not both.empty:
+            raise ValueError(f"Edges both deleted and updated: {both.head(10).to_dict('records')}")
 
     if edges_to_delete is not None and not edges_to_delete.empty:
 
@@ -753,6 +849,9 @@ def apply_urban_graph_changes(graph_gdf: UrbanGraph, changes: UrbanGraphChanges)
 
         edges = edges.merge(delete_keys.assign(_delete_marker=True), on=key_cols, how="left")
         edges = edges[edges["_delete_marker"].isna()].drop(columns="_delete_marker")
+
+    if edges_to_update is not None and not edges_to_update.empty:
+        edges = _update_edges(edges, edges_to_update, key_cols)
 
     if new_nodes is not None and not new_nodes.empty:
         intersect = nodes.index.intersection(new_nodes.index)
