@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v3.1.0 (2026-11-11)
+
+### Features
+
+- **graph**: Scenario edits bound to the graph by geometry
+  ([#31](https://github.com/IDUclub/IduEdu/pull/31),
+  [`8f6281d`](https://github.com/IDUclub/IduEdu/commit/8f6281d01e57456ab8c6e419f20b2841170e7267))
+
+GraphEdits holds the edits of a scenario as lines: add (new edges with their attributes), remove and
+  update (anchor lines and new values). resolve_graph_edits binds them to the current graph as an
+  UrbanGraphChanges and reports the edits it could not bind, so a stored scenario still applies
+  after the graph is rebuilt from newer data. Anchors select the edges running along them within the
+  tolerance and split partly covered edges at their ends; direction="along" edits one direction of a
+  directed graph; speed_kmh sets time_min from the length; edge_types keeps the edits on one layer
+  of an intermodal graph.
+
+UrbanGraphChanges gets edges_to_update (new values by edge key, NaN keeps the old one);
+  apply_urban_graph_changes deletes, then updates, then adds. relabel_urban_graph(by="coordinates")
+  packs the coordinates of every node into a stable int64 id, for street graphs.
+
+
 ## v3.0.0 (2026-11-11)
 
 ### Continuous Integration
