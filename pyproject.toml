@@ -1,7 +1,7 @@
 [project]
 name = "iduedu"
 # kept in sync with rust/Cargo.toml, iduedu/_version.py and CITATION.cff by python-semantic-release
-version = "3.1.0"
+version = "3.1.1"
 description = "IduEdu is a Python package for the creation and manipulation of complex city networks from OpenStreetMap and GTFS feeds."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"

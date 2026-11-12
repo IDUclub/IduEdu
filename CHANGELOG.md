@@ -2,6 +2,26 @@
 
 <!-- version list -->
 
+## v3.1.1 (2026-11-12)
+
+### Bug Fixes
+
+- Large node ids, loguru sinks and PT links found by graph-api
+  ([#32](https://github.com/IDUclub/IduEdu/pull/32),
+  [`6790930`](https://github.com/IDUclub/IduEdu/commit/67909302450356af06f0182d3c48715ab7da0e7f))
+
+- project_objects2urban_graph, relabel_urban_graph and join_pt_walk_graph keep node ids above 2**53
+  exact: the nearest-edge join is inner and endpoints are remapped by position, so ids never pass
+  through floats. join_pt_walk_graph keeps PT ids the walk graph does not use. - Importing iduedu no
+  longer removes the loguru sinks of the application; only the bare default sink of a fresh
+  interpreter is replaced, and configure_logging replaces only its own sinks. -
+  relabel_urban_graph(on_duplicate="hash") gives nodes that share a point stable negative ids, so PT
+  graphs can use coordinate ids; coordinate_node_ids is exported. - A route-less station link to a
+  platform shared by two lines joins the nodes of both lines instead of being dropped. - Quieter
+  logs (OD matrix note at DEBUG, removed nodes at INFO), progress bars only in a terminal or
+  Jupyter, text dtype for PT edge types; get_4326_boundary explains why multipolygons become a hull.
+
+
 ## v3.1.0 (2026-11-11)
 
 ### Features
