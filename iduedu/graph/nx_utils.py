@@ -34,7 +34,7 @@ def keep_largest_nx_component(graph: nx.Graph, copy: bool = True) -> nx.Graph:
         return graph.copy() if copy else graph
 
     removed = graph.number_of_nodes() - len(largest_component)
-    logger.warning(
+    logger.info(
         f"Removing {removed} nodes outside the largest {component_name} component. "
         f"Retaining {len(largest_component)} of {graph.number_of_nodes()} nodes."
     )

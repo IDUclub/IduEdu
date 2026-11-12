@@ -31,14 +31,27 @@ msgstr "Параметры"
 msgid "Source graph."
 msgstr "Исходный граф."
 
-msgid "``\"range\"`` numbers the nodes ``0 .. n - 1`` in their order. ``\"coordinates\"`` packs the latitude and longitude of every node, rounded to 1e-7 degree (the precision of OpenStreetMap), into one int64 id. Such ids do not change when the graph is built again from newer data, and graphs of neighbouring territories get equal ids for their shared nodes."
-msgstr "``\"range\"`` нумерует узлы ``0 .. n - 1`` в их порядке. ``\"coordinates\"`` упаковывает широту и долготу каждого узла, округлённые до 1e-7 градуса (точность OpenStreetMap), в один идентификатор int64. Такие идентификаторы не меняются при новой сборке графа из более свежих данных, а графы соседних территорий получают одинаковые идентификаторы общих узлов."
+# | msgid "``\"range\"`` numbers the nodes ``0 .. n - 1`` in their order.
+# | ``\"coordinates\"`` packs the latitude and longitude of every node,
+# rounded
+# | to 1e-7 degree (the precision of OpenStreetMap), into one int64 id. Such
+# ids
+# | do not change when the graph is built again from newer data, and graphs of
+# | neighbouring territories get equal ids for their shared nodes."
+msgid "``\"range\"`` numbers the nodes ``0 .. n - 1`` in their order. ``\"coordinates\"`` packs the latitude and longitude of every node, rounded to 1e-7 degree (the precision of OpenStreetMap), into one int64 id. Such ids do not change when the graph is built again from newer data, and graphs of neighbouring territories get equal ids for their shared nodes (see :func:`coordinate_node_ids`)."
+msgstr "``\"range\"`` нумерует узлы ``0 .. n - 1`` в их порядке. ``\"coordinates\"`` упаковывает широту и долготу каждого узла, округлённые до 1e-7 градуса (точность OpenStreetMap), в один идентификатор int64. Такие идентификаторы не меняются при новой сборке графа из более свежих данных, а графы соседних территорий получают одинаковые идентификаторы общих узлов (см. :func:`coordinate_node_ids`)."
+
+msgid "What ``by=\"coordinates\"`` does with nodes closer than 1e-7 degree (about 1 cm), which would get one id, such as the stops of several routes at one platform in a public transport graph. ``\"raise\"`` raises ``ValueError``. ``\"hash\"`` gives each of them a negative id hashed from the coordinate id, the node attributes and the rank among nodes with equal attributes, so the ids stay stable when the graph is built again in the same way; the other nodes keep their coordinate ids."
+msgstr "Что ``by=\"coordinates\"`` делает с узлами ближе 1e-7 градуса (около 1 см), которые получили бы один идентификатор, например с остановками нескольких маршрутов у одной платформы в графе общественного транспорта. ``\"raise\"`` вызывает ``ValueError``. ``\"hash\"`` даёт каждому из них отрицательный идентификатор — хеш координатного идентификатора, атрибутов узла и порядкового номера среди узлов с равными атрибутами, поэтому идентификаторы не меняются при такой же новой сборке графа; остальные узлы сохраняют координатные идентификаторы."
 
 msgid "Raises"
 msgstr "Исключения"
 
-msgid "If ``by=\"coordinates\"`` and the graph has no CRS, or two nodes are closer     than 1e-7 degree (about 1 cm) and would get one id."
-msgstr "Если ``by=\"coordinates\"``, а у графа нет CRS или два узла ближе 1e-7 градуса (около 1 см) и получили бы один идентификатор."
+# | msgid "If ``by=\"coordinates\"`` and the graph has no CRS, or two nodes
+# are
+# | closer     than 1e-7 degree (about 1 cm) and would get one id."
+msgid "If ``by=\"coordinates\"`` and the graph has no CRS, or nodes share a     coordinate id and ``on_duplicate=\"raise\"``."
+msgstr "Если ``by=\"coordinates\"``, а у графа нет CRS или у узлов совпадает координатный идентификатор при ``on_duplicate=\"raise\"``."
 
 msgid "Return type"
 msgstr "Тип результата"

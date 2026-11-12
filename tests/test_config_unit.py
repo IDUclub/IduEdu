@@ -1,5 +1,7 @@
 # pylint: disable=redefined-outer-name
 
+import sys
+
 import pytest
 from loguru import logger
 
@@ -37,6 +39,7 @@ def _clean_env(monkeypatch):
 
 
 def test_defaults_no_env_and_tty(monkeypatch):
+    monkeypatch.setattr(sys.modules["iduedu.config"], "_interactive_session", lambda: True)
     cfg = Config()
 
     assert cfg.overpass_url == "https://overpass-api.de/api/interpreter"
@@ -381,3 +384,50 @@ def test_top_level_use_pbf_switches_the_global_config(tmp_path):
         assert inside is iduedu.config
         assert (iduedu.config.osm_source, iduedu.config.pbf_path) == ("pbf", str(path))
     assert iduedu.config.osm_source == "overpass"
+
+
+def test_progress_bars_off_without_a_reader(monkeypatch):
+    monkeypatch.setattr(sys.modules["iduedu.config"], "_interactive_session", lambda: False)
+    assert Config().enable_tqdm_bar is False
+    monkeypatch.setenv("ENABLE_TQDM", "1")
+    assert Config().enable_tqdm_bar is True
+
+
+def _sink_ids() -> list[int]:
+    return list(logger._core.handlers)  # pylint: disable=protected-access
+
+
+def test_import_keeps_sinks_of_the_application(monkeypatch):
+    lines: list[str] = []
+    host = logger.add(lines.append, level="INFO", format="{name} {message}")
+    try:
+        before = _sink_ids()
+        cfg = Config()
+        assert _sink_ids() == before and cfg._log_handlers == []  # pylint: disable=protected-access
+        cfg.configure_logging("ERROR")
+        assert host in _sink_ids()
+        logger.patch(lambda record: record.update(name="app")).info("app message")
+        assert any("app message" in line for line in lines)
+        cfg.configure_logging("ERROR")  # a second call replaces only its own sinks
+        assert host in _sink_ids() and len(cfg._log_handlers) >= 1  # pylint: disable=protected-access
+    finally:
+        logger.remove(host)
+        for handler in list(cfg._log_handlers):  # pylint: disable=protected-access
+            logger.remove(handler)
+
+
+def test_configure_logging_filters_only_iduedu_messages():
+    lines: list[str] = []
+    cfg = Config()
+    cfg.configure_logging("WARNING")
+    own = cfg._log_handlers[0]  # pylint: disable=protected-access
+    logger.remove(own)
+    probe = logger.add(lines.append, level=30, filter="iduedu", format="{name} {message}")
+    try:
+        logger.patch(lambda record: record.update(name="iduedu.graph")).info("quiet")
+        logger.patch(lambda record: record.update(name="iduedu.graph")).warning("loud")
+        assert [line.strip() for line in lines] == ["iduedu.graph loud"]
+    finally:
+        logger.remove(probe)
+        for handler in cfg._log_handlers[1:]:  # pylint: disable=protected-access
+            logger.remove(handler)

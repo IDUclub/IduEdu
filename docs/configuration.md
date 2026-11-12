@@ -111,10 +111,17 @@ config.configure_logging(level="INFO")
 config.configure_logging(level="DEBUG", to_file="iduedu.log")
 ```
 
-IduEdu logs through [loguru](https://loguru.readthedocs.io/), available as `config.logger`. The default level
-is `WARNING`. `configure_logging` replaces every sink of the shared loguru logger, including sinks your own
-application added, then writes to standard error and, with `to_file`, to a file rotated at 20 MB and kept for
-14 days. `json=True` writes the bare message without time and level, for collectors that add their own.
+IduEdu logs through [loguru](https://loguru.readthedocs.io/), available as `config.logger`. In a fresh
+interpreter IduEdu replaces the default loguru sink on import, so that its own messages appear from `LOG_LEVEL`
+(`WARNING` by default) and the messages of other packages keep the default level and format. An application that
+set up loguru before importing IduEdu keeps its sinks untouched and receives the IduEdu messages there; it can
+mute them with `logger.disable("iduedu")`. `configure_logging` replaces only the sinks it added before and the
+default loguru sink, then writes IduEdu messages of `level` and above to standard error and, with `to_file`, to a
+file rotated at 20 MB and kept for 14 days. `json=True` writes the bare message without time and level, for
+collectors that add their own.
+
+Progress bars are shown when standard error is a terminal or the code runs in Jupyter, and hidden in services
+and scheduled jobs; `ENABLE_TQDM` or `set_enable_tqdm` overrides this.
 
 ## Environment variables
 
@@ -129,7 +136,7 @@ application added, then writes to standard error and, with `to_file`, to a file 
 | `OVERPASS_DATE` | unset | `set_overpass_date` |
 | `OVERPASS_CACHE_DIR` | `.iduedu_cache` | `set_overpass_cache(cache_dir=...)` |
 | `OVERPASS_CACHE_ENABLED` | `1`; `0` or `false` disables | `set_overpass_cache(enabled=...)` |
-| `ENABLE_TQDM` | `1`; `0` or `false` disables | `set_enable_tqdm` |
+| `ENABLE_TQDM` | on in a terminal or Jupyter; `1` enables, `0` or `false` disables | `set_enable_tqdm` |
 | `LOG_LEVEL` | `WARNING` | `configure_logging(level=...)` |
 | `IDUEDU_OSM_SOURCE` | `overpass`; `pbf` reads a local file | `set_osm_source` |
 | `IDUEDU_PBF_PATH` | unset | `set_osm_source("pbf", path=...)` |

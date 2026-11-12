@@ -140,6 +140,12 @@ def _graph_data_to_urban_graph(
             .drop_duplicates(subset=["_source_node_id"])
             .set_index("_source_node_id")["node_id"]
         )
+        shared_lookup = (
+            node_lookup[~node_lookup["_source_node_id"].isin(unique_source_ids)]
+            .dropna(subset=["_source_node_id"])
+            .groupby("_source_node_id")["node_id"]
+            .agg(list)
+        )
 
         for endpoint in ["u", "v"]:
             mapped_column = f"_{endpoint}_mapped"
@@ -151,6 +157,18 @@ def _graph_data_to_urban_graph(
             graph_edges_gdf[mapped_column] = graph_edges_gdf[mapped_column].fillna(
                 graph_edges_gdf[endpoint].map(source_lookup)
             )
+            # A link without a route (a subway station to its platforms) ending at an OSM node that several routes
+            # share, such as a cross-platform interchange, joins every node made from it.
+            shared = (
+                graph_edges_gdf[mapped_column].isna()
+                & graph_edges_gdf["route"].isna()
+                & graph_edges_gdf[endpoint].isin(shared_lookup.index)
+            )
+            if shared.any():
+                mapped = graph_edges_gdf[mapped_column].astype(object)
+                mapped[shared] = graph_edges_gdf.loc[shared, endpoint].map(shared_lookup)
+                graph_edges_gdf = pd.DataFrame(graph_edges_gdf).assign(**{mapped_column: mapped})
+                graph_edges_gdf = graph_edges_gdf.explode(mapped_column, ignore_index=True)
             graph_edges_gdf[endpoint] = graph_edges_gdf[mapped_column]
             graph_edges_gdf = graph_edges_gdf.drop(columns=[mapped_column])
         graph_edges_gdf = gpd.GeoDataFrame(graph_edges_gdf, geometry="geometry", crs=local_crs)
@@ -346,6 +364,7 @@ def _graph_data_to_urban_graph(
     edges_df = graph_edges_gdf[edge_columns].copy()
     edges_df[["u", "v"]] = edges_df[["u", "v"]].astype(int)
     edges_df["oneway"] = edges_df["oneway"].astype(bool)
+    edges_df["type"] = pd.Series(edges_df["type"].tolist(), index=edges_df.index)  # the text dtype of other builders
 
     edge_extra = graph_edges_gdf["extra_data"].map(lambda value: value if isinstance(value, dict) else {})
     edge_extra_df = pd.DataFrame.from_records(edge_extra.tolist(), index=graph_edges_gdf.index)

@@ -19,6 +19,35 @@ OsmSource = Literal["overpass", "pbf"]
 OSM_SOURCES = ("overpass", "pbf")
 
 
+_LOGURU_DEFAULT_FORMAT = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | "
+    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+)
+
+
+def _is_iduedu(record) -> bool:
+    name = record["name"] or ""
+    return name == "iduedu" or name.startswith("iduedu.")
+
+
+def _interactive_session() -> bool:
+    """Whether progress bars have a reader: a terminal on standard error or a Jupyter kernel."""
+    try:
+        if sys.stderr is not None and sys.stderr.isatty():
+            return True
+    except (AttributeError, ValueError):
+        pass
+    return "ipykernel" in sys.modules
+
+
+def _loguru_has_only_default_sink() -> bool:
+    """Whether loguru still has just the sink it starts with, so no application has configured it."""
+    try:
+        return list(logger._core.handlers) == [0]  # pylint: disable=protected-access
+    except AttributeError:  # another loguru layout: leave the sinks as they are
+        return False
+
+
 class Config:
     """Global runtime settings for the OSM data source, Overpass, caching, logging and graph builders."""
 
@@ -66,7 +95,10 @@ class Config:
         self.overpass_cache_enabled: bool = os.getenv("OVERPASS_CACHE_ENABLED", "1").lower() not in {"0", "false"}
 
         # --- UX ---
-        self.enable_tqdm_bar: bool = os.getenv("ENABLE_TQDM", "1") not in {"0", "false", "False"}
+        env_tqdm = os.getenv("ENABLE_TQDM")
+        self.enable_tqdm_bar: bool = (
+            env_tqdm.strip().lower() not in {"0", "false"} if env_tqdm is not None else _interactive_session()
+        )
 
         # --- Tags to keep on edges ---
         # bridge and tunnel are always kept on drive, walk and bike edges (see STRUCTURE_TAGS).
@@ -77,7 +109,12 @@ class Config:
 
         # --- Logging ---
         self.logger = logger
-        self.configure_logging(level=os.getenv("LOG_LEVEL", "WARNING").upper())
+        self._log_handlers: list[int] = []
+        self._replaced_default_sink = False
+        # The sinks of an application that set up loguru before importing IduEdu are left alone; only the bare
+        # default sink of a fresh interpreter is replaced, so that IduEdu stays at LOG_LEVEL in notebooks.
+        if _loguru_has_only_default_sink():
+            self.configure_logging(level=os.getenv("LOG_LEVEL", "WARNING").upper())
 
         # --- Internals ---
         self._lock = threading.RLock()
@@ -85,22 +122,51 @@ class Config:
     # ------------- Logging -------------
     def configure_logging(self, level: LogLevel = "INFO", *, to_file: str | None = None, json: bool = False):
         """
-        Configure Loguru: stderr sink (+optional file sink), level, formatting.
+        Write IduEdu messages of ``level`` and above to standard error and, with ``to_file``, to a file.
+
+        Only the sinks added by an earlier call and the default sink of loguru are replaced; sinks added by the
+        application stay. When the default sink is replaced, messages of other packages keep its level and format.
         """
-        self.logger.remove()
+        for handler_id in self._log_handlers:
+            try:
+                self.logger.remove(handler_id)
+            except ValueError:  # already removed by the application
+                pass
+        self._log_handlers = []
+        try:
+            self.logger.remove(0)
+            self._replaced_default_sink = True
+        except ValueError:
+            pass
+        replaced_default = self._replaced_default_sink
+
+        threshold = self.logger.level(level).no
         fmt = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {message}" if not json else "{message}"
-        self.logger.add(sys.stderr, level=level, backtrace=True, diagnose=False, format=fmt)
+        add = self._log_handlers.append
+        add(self.logger.add(sys.stderr, level=threshold, filter=_is_iduedu, backtrace=True, diagnose=False, format=fmt))
+        if replaced_default:
+            add(
+                self.logger.add(
+                    sys.stderr,
+                    level=os.getenv("LOGURU_LEVEL", "DEBUG"),
+                    filter=lambda record: not _is_iduedu(record),
+                    format=os.getenv("LOGURU_FORMAT", _LOGURU_DEFAULT_FORMAT),
+                )
+            )
         if to_file:
-            self.logger.add(
-                to_file,
-                level=level,
-                rotation="20 MB",
-                retention="14 days",
-                compression="zip",
-                enqueue=True,
-                backtrace=True,
-                diagnose=False,
-                format=fmt,
+            add(
+                self.logger.add(
+                    to_file,
+                    level=threshold,
+                    filter=_is_iduedu,
+                    rotation="20 MB",
+                    retention="14 days",
+                    compression="zip",
+                    enqueue=True,
+                    backtrace=True,
+                    diagnose=False,
+                    format=fmt,
+                )
             )
 
     # ------------- Overpass control -------------

@@ -258,3 +258,24 @@ def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypa
     assert "bus" in parsed_types
     assert "train" not in parsed_types
     assert graph.edges_gdf.empty
+
+
+def test_station_link_to_a_platform_shared_by_two_lines_joins_both_line_nodes():
+    nodes = _nodes(
+        {
+            "node_id": ["S", "P", "P"],
+            "type": ["subway_station", "subway_platform", "subway_platform"],
+            "route": [None, "1", "2"],
+        },
+        [Point(0, 0), Point(0, 40), Point(0, 40)],
+    )
+    edges = gpd.GeoDataFrame(
+        {"u": ["S"], "v": ["P"], "type": ["subway_station"], "route": [None], "oneway": [False]},
+        geometry=[LineString([(0, 0), (0, 40)])],
+        crs=CRS,
+    )
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
+    links = graph.edges_gdf[graph.edges_gdf["type"] == "subway_station"]
+    platform_nodes = graph.nodes_gdf.index[graph.nodes_gdf["type"] == "subway_platform"]
+    assert len(platform_nodes) == 2 and set(links["v"]) == set(platform_nodes)
+    assert graph.edges_gdf["type"].dtype == pd.Series(["walk"]).dtype  # the text dtype of the other builders

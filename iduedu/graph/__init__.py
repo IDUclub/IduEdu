@@ -40,6 +40,7 @@ from .editors import (
     UrbanGraphChanges,
     apply_urban_graph_changes,
     clip_urban_graph,
+    coordinate_node_ids,
     join_urban_graphs,
     project_objects2urban_graph,
     relabel_urban_graph,

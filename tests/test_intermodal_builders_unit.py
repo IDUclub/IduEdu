@@ -389,3 +389,37 @@ def test_join_pt_walk_graph_returns_pt_graph_when_walk_graph_empty():
     result = join_pt_walk_graph(pt_graph, empty_walk)
 
     assert result is pt_graph
+
+
+def _with_ids(graph: UrbanGraph, mapping: dict) -> UrbanGraph:
+    edges = graph.edges_gdf.copy()
+    edges["u"] = edges["u"].map(mapping).astype("int64")
+    edges["v"] = edges["v"].map(mapping).astype("int64")
+    return UrbanGraph(
+        graph.nodes_gdf.rename(index=mapping),
+        edges,
+        is_multigraph=graph.is_multigraph,
+        is_directed=graph.is_directed,
+        edge_direction_column=graph.edge_direction_column,
+        crs=graph.crs,
+        graph_type=graph.type,
+    )
+
+
+def test_join_pt_walk_graph_keeps_ids_above_2_53_and_unused_pt_ids():
+    big = 5_400_000_000_000_000_001  # a coordinate id: floats cannot hold it
+    walk = _with_ids(_walk_line_graph(), {100: big, 101: big + 2})
+    pt = _with_ids(tiny_public_transport_graph_with_sequence_attrs(), {200: -7, 201: big + 5})
+    joined = join_pt_walk_graph(pt, walk, keep_largest_subgraph=False)
+    ids = set(joined.nodes_gdf.index)
+    assert {big, big + 2, big + 5} <= ids  # the stop keeps its id; the platform became a walk node
+    assert set(joined.edges_gdf["u"]) | set(joined.edges_gdf["v"]) <= ids
+    assert joined.edges_gdf["u"].dtype == "int64"
+
+
+def test_join_pt_walk_graph_renumbers_pt_ids_the_walk_graph_uses():
+    walk = _walk_line_graph()
+    pt = _with_ids(tiny_public_transport_graph_with_sequence_attrs(), {200: 200, 201: 100})  # 100 is a walk node
+    joined = join_pt_walk_graph(pt, walk, keep_largest_subgraph=False)
+    stop = joined.nodes_gdf.index[joined.nodes_gdf.geometry.geom_equals_exact(Point(40.0, 0.0), 1e-9)]
+    assert len(stop) == 1 and stop[0] not in (100, 101)

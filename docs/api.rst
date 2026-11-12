@@ -67,6 +67,7 @@ The graph model
     apply_urban_graph_changes
     UrbanGraphChanges
     GraphEdits
+    coordinate_node_ids
     resolve_graph_edits
 
 Routing

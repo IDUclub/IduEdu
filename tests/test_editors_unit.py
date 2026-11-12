@@ -326,3 +326,46 @@ def test_changes_rejects_edges_missing_required_columns():
     )
     with pytest.raises(ValueError, match="missing required columns"):
         UrbanGraphChanges(edges_gdf=bad_edges, is_multigraph=False)
+
+
+# ---------------------------------------------------------------------------
+# large and coordinate node ids
+# ---------------------------------------------------------------------------
+
+BIG = 5_400_000_000_000_000_001  # floats cannot hold it
+
+
+def test_project_objects_keeps_node_ids_above_2_53():
+    coords = {BIG: (0.0, 0.0), BIG + 2: (100.0, 0.0)}
+    graph = _two_node_graph(coords, [{"u": BIG, "v": BIG + 2}])
+    objects = gpd.GeoDataFrame(geometry=[Point(0.0, 5.0), Point(50.0, 5.0)], crs=CRS)
+    changes, object2node = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+    result = apply_urban_graph_changes(graph, changes)
+    ids = set(result.nodes_gdf.index)
+    assert {BIG, BIG + 2} <= ids and set(object2node) <= ids
+    assert set(result.edges_gdf["u"]) | set(result.edges_gdf["v"]) <= ids
+    assert changes.edges_to_delete[["u", "v"]].values.tolist() == [[BIG, BIG + 2]]
+
+
+def test_relabel_by_coordinates_keeps_exact_int64_ids():
+    result = relabel_urban_graph(undirected_line_graph(), by="coordinates")
+    assert result.edges_gdf["u"].dtype == "int64" and result.nodes_gdf.index.min() > 2**53
+    assert set(result.edges_gdf["u"]) | set(result.edges_gdf["v"]) <= set(result.nodes_gdf.index)
+
+
+def test_relabel_by_coordinates_hashes_nodes_that_share_a_point():
+    coords = {0: (0.0, 0.0), 1: (0.0, 0.0), 2: (0.0, 0.0), 3: (10.0, 0.0)}
+    nodes = _nodes(coords)
+    nodes["route"] = ["1", "2", "2", None]
+    edges = _edges(coords, [{"u": 0, "v": 3}, {"u": 1, "v": 3}, {"u": 2, "v": 3}])
+    graph = UrbanGraph(nodes, edges, is_multigraph=False, is_directed=True, crs=CRS, graph_type="public_transport")
+    with pytest.raises(ValueError, match="on_duplicate='hash'"):
+        relabel_urban_graph(graph, by="coordinates")
+    first = relabel_urban_graph(graph, by="coordinates", on_duplicate="hash")
+    again = relabel_urban_graph(graph, by="coordinates", on_duplicate="hash")
+    ids = first.nodes_gdf.index
+    assert ids.equals(again.nodes_gdf.index) and ids.is_unique
+    assert (ids[:3] < 0).all() and ids[3] > 0  # equal points hashed, the lone node keeps its coordinate id
+    assert set(first.edges_gdf["u"]) == set(ids[:3])
+    with pytest.raises(ValueError, match="on_duplicate"):
+        relabel_urban_graph(graph, by="coordinates", on_duplicate="skip")
