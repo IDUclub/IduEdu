@@ -1,0 +1,6 @@
+﻿iduedu.transport\_stats
+=======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: transport_stats

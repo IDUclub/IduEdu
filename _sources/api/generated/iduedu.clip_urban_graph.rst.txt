@@ -1,0 +1,6 @@
+﻿iduedu.clip\_urban\_graph
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: clip_urban_graph

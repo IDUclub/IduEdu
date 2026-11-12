@@ -1,0 +1,19 @@
+﻿iduedu.gtfs.GTFSFeed
+====================
+
+.. currentmodule:: iduedu.gtfs
+
+.. autoclass:: GTFSFeed
+   :members:
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~GTFSFeed.get
+   
+   

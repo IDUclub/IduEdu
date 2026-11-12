@@ -1,0 +1,6 @@
+﻿iduedu.iter\_od\_matrix
+=======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: iter_od_matrix

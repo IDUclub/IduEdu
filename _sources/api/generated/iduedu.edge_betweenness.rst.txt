@@ -1,0 +1,6 @@
+﻿iduedu.edge\_betweenness
+========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: edge_betweenness

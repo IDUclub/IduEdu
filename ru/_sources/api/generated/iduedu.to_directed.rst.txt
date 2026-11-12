@@ -1,0 +1,6 @@
+﻿iduedu.to\_directed
+===================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: to_directed

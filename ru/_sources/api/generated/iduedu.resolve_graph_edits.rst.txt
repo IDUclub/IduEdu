@@ -1,0 +1,6 @@
+﻿iduedu.resolve\_graph\_edits
+============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: resolve_graph_edits

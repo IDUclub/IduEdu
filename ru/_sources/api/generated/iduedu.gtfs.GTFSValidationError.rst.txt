@@ -1,0 +1,6 @@
+﻿iduedu.gtfs.GTFSValidationError
+===============================
+
+.. currentmodule:: iduedu.gtfs
+
+.. autoexception:: GTFSValidationError

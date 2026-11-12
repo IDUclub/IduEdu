@@ -1,0 +1,6 @@
+﻿iduedu.k\_shortest\_paths
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: k_shortest_paths

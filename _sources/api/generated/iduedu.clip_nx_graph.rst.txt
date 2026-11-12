@@ -1,0 +1,6 @@
+﻿iduedu.clip\_nx\_graph
+======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: clip_nx_graph

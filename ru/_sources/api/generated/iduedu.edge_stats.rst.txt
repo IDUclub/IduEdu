@@ -1,0 +1,6 @@
+﻿iduedu.edge\_stats
+==================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: edge_stats

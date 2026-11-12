@@ -1,0 +1,6 @@
+﻿iduedu.route\_directness
+========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: route_directness

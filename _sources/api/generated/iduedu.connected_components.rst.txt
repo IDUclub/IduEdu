@@ -1,0 +1,6 @@
+﻿iduedu.connected\_components
+============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: connected_components

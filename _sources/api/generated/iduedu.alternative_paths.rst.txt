@@ -1,0 +1,6 @@
+﻿iduedu.alternative\_paths
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: alternative_paths

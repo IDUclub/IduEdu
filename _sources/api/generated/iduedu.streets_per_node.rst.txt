@@ -1,0 +1,6 @@
+﻿iduedu.streets\_per\_node
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: streets_per_node

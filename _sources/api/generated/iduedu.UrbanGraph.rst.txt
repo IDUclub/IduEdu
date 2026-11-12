@@ -1,0 +1,68 @@
+﻿iduedu.UrbanGraph
+=================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: UrbanGraph
+   :members:
+
+   
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~UrbanGraph.add_elevation
+      ~UrbanGraph.aggregate_objects
+      ~UrbanGraph.alternative_paths
+      ~UrbanGraph.apply_grade_speed
+      ~UrbanGraph.centrality
+      ~UrbanGraph.clip
+      ~UrbanGraph.connected_components
+      ~UrbanGraph.consolidate_intersections
+      ~UrbanGraph.copy
+      ~UrbanGraph.dijkstra_parallel
+      ~UrbanGraph.diversity
+      ~UrbanGraph.edge_betweenness
+      ~UrbanGraph.edge_stats
+      ~UrbanGraph.empty
+      ~UrbanGraph.from_nx_graph
+      ~UrbanGraph.graph_stats
+      ~UrbanGraph.iter_od_matrix
+      ~UrbanGraph.join
+      ~UrbanGraph.k_shortest_paths
+      ~UrbanGraph.keep_largest_connected_component
+      ~UrbanGraph.largest_component
+      ~UrbanGraph.local_stats
+      ~UrbanGraph.multi_source_dijkstra
+      ~UrbanGraph.multi_source_dijkstra_nearest_source
+      ~UrbanGraph.nearest_edges
+      ~UrbanGraph.nearest_nodes
+      ~UrbanGraph.nearest_objects
+      ~UrbanGraph.od_matrix
+      ~UrbanGraph.path_to_edges
+      ~UrbanGraph.project_objects
+      ~UrbanGraph.read
+      ~UrbanGraph.relabel
+      ~UrbanGraph.route_directness
+      ~UrbanGraph.shortest_path
+      ~UrbanGraph.simplify_multiedges
+      ~UrbanGraph.single_source_dijkstra
+      ~UrbanGraph.single_source_dijkstra_path
+      ~UrbanGraph.streets_per_node
+      ~UrbanGraph.strongly_connected_components
+      ~UrbanGraph.subgraph_by_nodes
+      ~UrbanGraph.to_csr
+      ~UrbanGraph.to_directed
+      ~UrbanGraph.to_nx_graph
+      ~UrbanGraph.to_undirected
+      ~UrbanGraph.transport_stats
+      ~UrbanGraph.unique_segments
+      ~UrbanGraph.update_adjacency_matrix
+      ~UrbanGraph.validate
+      ~UrbanGraph.weakly_connected_components
+      ~UrbanGraph.write
+   
+   

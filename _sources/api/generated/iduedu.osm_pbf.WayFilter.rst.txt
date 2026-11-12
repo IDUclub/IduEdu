@@ -1,0 +1,12 @@
+﻿iduedu.osm\_pbf.WayFilter
+=========================
+
+.. currentmodule:: iduedu.osm_pbf
+
+.. autoclass:: WayFilter
+   :members:
+
+   
+   
+   
+   

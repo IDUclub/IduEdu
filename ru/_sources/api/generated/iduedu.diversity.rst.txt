@@ -1,0 +1,6 @@
+﻿iduedu.diversity
+================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: diversity

@@ -1,0 +1,6 @@
+﻿iduedu.consolidate\_intersections
+=================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: consolidate_intersections

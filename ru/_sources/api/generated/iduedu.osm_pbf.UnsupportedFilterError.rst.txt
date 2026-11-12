@@ -1,0 +1,6 @@
+﻿iduedu.osm\_pbf.UnsupportedFilterError
+======================================
+
+.. currentmodule:: iduedu.osm_pbf
+
+.. autoexception:: UnsupportedFilterError

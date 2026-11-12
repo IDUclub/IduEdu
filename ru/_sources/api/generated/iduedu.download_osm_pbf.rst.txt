@@ -1,0 +1,6 @@
+﻿iduedu.download\_osm\_pbf
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: download_osm_pbf

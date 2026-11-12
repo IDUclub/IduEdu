@@ -1,0 +1,6 @@
+﻿iduedu.gtfs.validate\_gtfs\_feed
+================================
+
+.. currentmodule:: iduedu.gtfs
+
+.. autofunction:: validate_gtfs_feed

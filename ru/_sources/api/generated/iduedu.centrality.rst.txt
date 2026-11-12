@@ -1,0 +1,6 @@
+﻿iduedu.centrality
+=================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: centrality

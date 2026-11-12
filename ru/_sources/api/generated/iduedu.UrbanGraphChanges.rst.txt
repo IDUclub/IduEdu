@@ -1,0 +1,12 @@
+﻿iduedu.UrbanGraphChanges
+========================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: UrbanGraphChanges
+   :members:
+
+   
+   
+   
+   
