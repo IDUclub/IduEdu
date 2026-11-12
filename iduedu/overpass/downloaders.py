@@ -305,7 +305,8 @@ def get_4326_boundary(
 
     Accepts either an `osm_id` (relation id) to fetch the boundary from OSM, a direct
     `Polygon`/`MultiPolygon`, or a `GeoDataFrame`. Returns a single `Polygon` in lon/lat.
-    For `MultiPolygon`, the function returns its **convex hull** as a Polygon.
+    For `MultiPolygon`, the function returns its **convex hull** as a Polygon, so that bridges, dams and ferries
+    between the parts (a city with islands) stay in the graph and keep the parts connected.
 
     Parameters:
         osm_id (int | None): OSM relation id. If provided, boundary is fetched via Overpass (or read from

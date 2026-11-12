@@ -13,6 +13,7 @@ from .graph import (
     clip_urban_graph,
     connected_components,
     consolidate_intersections,
+    coordinate_node_ids,
     diversity,
     edge_betweenness,
     edge_stats,

@@ -125,8 +125,11 @@ msgstr "Аргумент `osm_edge_tags` функций построения з�
 msgid "Progress bars and logging"
 msgstr "Индикаторы прогресса и журналирование"
 
-msgid "IduEdu logs through [loguru](https://loguru.readthedocs.io/), available as `config.logger`. The default level is `WARNING`. `configure_logging` replaces every sink of the shared loguru logger, including sinks your own application added, then writes to standard error and, with `to_file`, to a file rotated at 20 MB and kept for 14 days. `json=True` writes the bare message without time and level, for collectors that add their own."
-msgstr "IduEdu ведёт журнал через [loguru](https://loguru.readthedocs.io/), он доступен как `config.logger`. Уровень по умолчанию — `WARNING`. `configure_logging` заменяет все приёмники общего логгера loguru, включая добавленные вашим приложением, затем пишет в стандартный поток ошибок и, с `to_file`, в файл, который ротируется по достижении 20 МБ и хранится 14 дней. `json=True` пишет только сообщение без времени и уровня — для сборщиков, которые добавляют их сами."
+msgid "IduEdu logs through [loguru](https://loguru.readthedocs.io/), available as `config.logger`. In a fresh interpreter IduEdu replaces the default loguru sink on import, so that its own messages appear from `LOG_LEVEL` (`WARNING` by default) and the messages of other packages keep the default level and format. An application that set up loguru before importing IduEdu keeps its sinks untouched and receives the IduEdu messages there; it can mute them with `logger.disable(\"iduedu\")`. `configure_logging` replaces only the sinks it added before and the default loguru sink, then writes IduEdu messages of `level` and above to standard error and, with `to_file`, to a file rotated at 20 MB and kept for 14 days. `json=True` writes the bare message without time and level, for collectors that add their own."
+msgstr "IduEdu пишет журнал через [loguru](https://loguru.readthedocs.io/), доступный как `config.logger`. В чистом интерпретаторе IduEdu при импорте заменяет стандартный приёмник loguru, чтобы её собственные сообщения выводились начиная с `LOG_LEVEL` (по умолчанию `WARNING`), а сообщения других пакетов сохраняли стандартные уровень и формат. Приложение, которое настроило loguru до импорта IduEdu, сохраняет свои приёмники нетронутыми и получает в них сообщения IduEdu; отключить их можно через `logger.disable(\"iduedu\")`. `configure_logging` заменяет только приёмники, добавленные им раньше, и стандартный приёмник loguru, затем пишет сообщения IduEdu уровня `level` и выше в стандартный поток ошибок и, с `to_file`, в файл с ротацией по 20 МБ и хранением 14 дней. `json=True` пишет только текст сообщения без времени и уровня — для сборщиков, которые добавляют их сами."
+
+msgid "Progress bars are shown when standard error is a terminal or the code runs in Jupyter, and hidden in services and scheduled jobs; `ENABLE_TQDM` or `set_enable_tqdm` overrides this."
+msgstr "Индикаторы выполнения показываются, когда стандартный поток ошибок — терминал или код выполняется в Jupyter, и скрыты в сервисах и задачах по расписанию; `ENABLE_TQDM` или `set_enable_tqdm` переопределяют это."
 
 msgid "Environment variables"
 msgstr "Переменные окружения"
@@ -221,6 +224,9 @@ msgstr "`set_overpass_cache(enabled=...)`"
 msgid "`ENABLE_TQDM`"
 msgstr "`ENABLE_TQDM`"
 
+msgid "on in a terminal or Jupyter; `1` enables, `0` or `false` disables"
+msgstr "включено в терминале или Jupyter; `1` включает, `0` или `false` отключает"
+
 msgid "`set_enable_tqdm`"
 msgstr "`set_enable_tqdm`"
 
@@ -257,8 +263,11 @@ msgstr "Справочник API"
 msgid "Global runtime settings for the OSM data source, Overpass, caching, logging and graph builders."
 msgstr "Глобальные настройки времени выполнения: источник данных OSM, Overpass, кеширование, журналирование и построение графов."
 
-msgid "Configure Loguru: stderr sink (+optional file sink), level, formatting."
-msgstr "Настраивает Loguru: приёмник stderr (и необязательный файловый приёмник), уровень, формат."
+msgid "Write IduEdu messages of ``level`` and above to standard error and, with ``to_file``, to a file."
+msgstr "Пишет сообщения IduEdu уровня ``level`` и выше в стандартный поток ошибок и, с ``to_file``, в файл."
+
+msgid "Only the sinks added by an earlier call and the default sink of loguru are replaced; sinks added by the application stay. When the default sink is replaced, messages of other packages keep its level and format."
+msgstr "Заменяются только приёмники, добавленные предыдущим вызовом, и стандартный приёмник loguru; приёмники, добавленные приложением, остаются. Когда стандартный приёмник заменяется, сообщения других пакетов сохраняют его уровень и формат."
 
 msgid "Parameters"
 msgstr "Параметры"

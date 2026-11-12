@@ -67,7 +67,7 @@ def keep_largest_connected_component(
         "strong": "strongly connected",
     }[mode]
     removed = len(graph.nodes_gdf) - len(component)
-    logger.warning(
+    logger.info(
         f"Removing {removed} nodes outside the largest {component_name} component. "
         f"Retaining {len(component)} of {len(graph.nodes_gdf)} nodes."
     )

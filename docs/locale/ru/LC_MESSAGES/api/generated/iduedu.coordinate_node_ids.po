@@ -1,0 +1,49 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-12 14:57+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.coordinate\\_node\\_ids"
+msgstr "iduedu.coordinate\\_node\\_ids"
+
+msgid "Stable int64 node ids packed from the coordinates of points."
+msgstr "Стабильные идентификаторы узлов int64, упакованные из координат точек."
+
+msgid "The longitude and latitude in EPSG:4326 are rounded to 1e-7 degree (the precision of OpenStreetMap), shifted to be non-negative and combined as ``(lat + 90°) * 3_600_000_001 + (lon + 180°)`` in units of 1e-7 degree, so ``divmod(node_id, 3_600_000_001)`` gives them back. The ids are below ``2**63`` and never negative."
+msgstr "Долгота и широта в EPSG:4326 округляются до 1e-7 градуса (точность OpenStreetMap), сдвигаются в неотрицательную область и объединяются как ``(lat + 90°) * 3_600_000_001 + (lon + 180°)`` в единицах 1e-7 градуса, так что ``divmod(node_id, 3_600_000_001)`` возвращает их обратно. Идентификаторы меньше ``2**63`` и никогда не отрицательны."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Points with a CRS, for example ``graph.nodes_gdf``."
+msgstr "Точки с CRS, например ``graph.nodes_gdf``."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~numpy.ndarray\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~numpy.ndarray\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Array of int64 ids in the order of ``points``."
+msgstr "Массив идентификаторов int64 в порядке ``points``."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If the points have no CRS."
+msgstr "Если у точек нет CRS."
+

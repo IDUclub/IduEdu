@@ -1,3 +1,5 @@
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -135,8 +137,24 @@ _LON_SHIFT = 180 * _COORD_SCALE
 _LON_SPAN = 2 * _LON_SHIFT + 1
 
 
-def coordinate_node_ids(points: gpd.GeoSeries) -> np.ndarray:
-    """Stable int64 node ids packed from the EPSG:4326 coordinates of ``points`` at 1e-7 degree."""
+def coordinate_node_ids(points: gpd.GeoSeries | gpd.GeoDataFrame) -> np.ndarray:
+    """Stable int64 node ids packed from the coordinates of points.
+
+    The longitude and latitude in EPSG:4326 are rounded to 1e-7 degree (the precision of OpenStreetMap), shifted
+    to be non-negative and combined as ``(lat + 90°) * 3_600_000_001 + (lon + 180°)`` in units of 1e-7 degree, so
+    ``divmod(node_id, 3_600_000_001)`` gives them back. The ids are below ``2**63`` and never negative.
+
+    Args:
+        points: Points with a CRS, for example ``graph.nodes_gdf``.
+
+    Returns:
+        Array of int64 ids in the order of ``points``.
+
+    Raises:
+        ValueError: If the points have no CRS.
+    """
+    if isinstance(points, gpd.GeoDataFrame):
+        points = points.geometry
     if points.crs is None:
         raise ValueError("coordinate node ids need points with a CRS")
     lonlat = points.to_crs(4326) if not points.crs.equals("EPSG:4326") else points
@@ -145,7 +163,28 @@ def coordinate_node_ids(points: gpd.GeoSeries) -> np.ndarray:
     return lat * _LON_SPAN + lon
 
 
-def relabel_urban_graph(graph_gdf: UrbanGraph, *, by: Literal["range", "coordinates"] = "range") -> UrbanGraph:
+def _hashed_node_ids(nodes: gpd.GeoDataFrame, coordinate_ids: np.ndarray, shared: np.ndarray) -> np.ndarray:
+    """Negative ids of nodes that share a coordinate id, from that id, their attributes and their rank among equals."""
+    columns = sorted((c for c in nodes.columns if c != nodes.geometry.name), key=str)
+    rows = nodes.loc[shared, columns].itertuples(index=False, name=None) if columns else iter(())
+    keys = [
+        f"{cid}|{json.dumps(list(row), default=str, ensure_ascii=False)}"
+        for cid, row in zip(coordinate_ids[shared], rows if columns else ([] for _ in range(int(shared.sum()))))
+    ]
+    rank = pd.Series(keys).groupby(keys, sort=False).cumcount().to_numpy()
+    ids = np.empty(len(keys), dtype=np.int64)
+    for i, (key, r) in enumerate(zip(keys, rank)):
+        digest = hashlib.blake2b(f"{key}|{r}".encode(), digest_size=8).digest()
+        ids[i] = -(int.from_bytes(digest, "big") & (2**63 - 1)) - 1
+    return ids
+
+
+def relabel_urban_graph(
+    graph_gdf: UrbanGraph,
+    *,
+    by: Literal["range", "coordinates"] = "range",
+    on_duplicate: Literal["raise", "hash"] = "raise",
+) -> UrbanGraph:
     """
     Relabel node ids and update edge endpoints.
 
@@ -158,11 +197,17 @@ def relabel_urban_graph(graph_gdf: UrbanGraph, *, by: Literal["range", "coordina
             packs the latitude and longitude of every node, rounded to 1e-7 degree (the
             precision of OpenStreetMap), into one int64 id. Such ids do not change when the
             graph is built again from newer data, and graphs of neighbouring territories get
-            equal ids for their shared nodes.
+            equal ids for their shared nodes (see :func:`coordinate_node_ids`).
+        on_duplicate: What ``by="coordinates"`` does with nodes closer than 1e-7 degree (about
+            1 cm), which would get one id, such as the stops of several routes at one platform
+            in a public transport graph. ``"raise"`` raises ``ValueError``. ``"hash"`` gives
+            each of them a negative id hashed from the coordinate id, the node attributes and
+            the rank among nodes with equal attributes, so the ids stay stable when the graph
+            is built again in the same way; the other nodes keep their coordinate ids.
 
     Raises:
-        ValueError: If ``by="coordinates"`` and the graph has no CRS, or two nodes are closer
-            than 1e-7 degree (about 1 cm) and would get one id.
+        ValueError: If ``by="coordinates"`` and the graph has no CRS, or nodes share a
+            coordinate id and ``on_duplicate="raise"``.
 
     See also:
         https://iduclub.github.io/IduEdu/examples/graph_operations.html
@@ -174,23 +219,37 @@ def relabel_urban_graph(graph_gdf: UrbanGraph, *, by: Literal["range", "coordina
     if by == "range":
         new_index = pd.RangeIndex(len(nodes))
     elif by == "coordinates":
+        if on_duplicate not in ("raise", "hash"):
+            raise ValueError(f"on_duplicate must be 'raise' or 'hash', got {on_duplicate!r}")
         geometry = nodes.geometry if nodes.crs is not None else nodes.geometry.set_crs(graph_gdf.crs)
-        new_index = pd.Index(coordinate_node_ids(geometry), name=nodes.index.name)
-        if new_index.has_duplicates:
-            shared = nodes.index[new_index.duplicated(keep=False)][:10].tolist()
-            raise ValueError(f"Nodes closer than 1e-7 degree would share a coordinate id: {shared}")
+        ids = coordinate_node_ids(geometry)
+        shared = pd.Index(ids).duplicated(keep=False)
+        if shared.any():
+            if on_duplicate == "raise":
+                examples = nodes.index[shared][:10].tolist()
+                raise ValueError(
+                    f"Nodes closer than 1e-7 degree would share a coordinate id: {examples}; " "use on_duplicate='hash'"
+                )
+            ids[shared] = _hashed_node_ids(nodes, ids, shared)
+            if pd.Index(ids).has_duplicates:  # pragma: no cover - a 63-bit hash collision
+                raise ValueError("Hashed node ids collide; relabel with by='range'")
+        new_index = pd.Index(ids, name=nodes.index.name)
     else:
         raise ValueError(f"by must be 'range' or 'coordinates', got {by!r}")
-    mapping = dict(zip(nodes.index, new_index))
+    old_index = nodes.index
     nodes.index = new_index
 
     if not edges.empty:
-        edges["u"] = edges["u"].map(mapping)
-        edges["v"] = edges["v"].map(mapping)
-        edges = edges.dropna(subset=["u", "v"]).copy()
+        # Positions instead of a dict map: a missing endpoint would turn the column into floats, which cannot hold
+        # the coordinate ids above 2**53.
+        u_position = old_index.get_indexer(edges["u"])
+        v_position = old_index.get_indexer(edges["v"])
+        kept = (u_position >= 0) & (v_position >= 0)
+        edges = edges[kept].copy()
+        edges["u"] = new_index.to_numpy()[u_position[kept]]
+        edges["v"] = new_index.to_numpy()[v_position[kept]]
 
         if not edges.empty:
-            edges[["u", "v"]] = edges[["u", "v"]].astype(int)
             if graph_gdf.is_multigraph:
                 edges["k"] = edges.groupby(["u", "v"], sort=False).cumcount()
             edges = edges.reset_index(drop=True)
@@ -503,26 +562,23 @@ def project_objects2urban_graph(
     def _new_edges_gdf() -> gpd.GeoDataFrame:
         if not new_edges_records:
             return gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=local_crs), crs=local_crs)
-        edges = gpd.GeoDataFrame(new_edges_records, geometry="geometry", crs=local_crs)
-        # Node ids taken from the nearest-edge join are floats there (the left join fills misses with NaN).
-        keys = [column for column in ("u", "v", "k") if column in edges.columns]
-        edges[keys] = edges[keys].astype(np.int64)
-        return edges
+        return gpd.GeoDataFrame(new_edges_records, geometry="geometry", crs=local_crs)
 
     def _object2node_map_from_records() -> pd.Series:
         if not object2node_records:
             return pd.Series(dtype=int)
         object2node = (
             pd.DataFrame(object2node_records)
-            .astype({"object_index": int, "node_id": int})
             .drop_duplicates(subset=["object_index"], keep="first")
             .set_index("object_index")["node_id"]
         )
         return object2node
 
     gdf_edges["edge_geometry"] = gdf_edges["geometry"]
+    # An inner join keeps u, v and k in their own dtype: a left join fills misses with NaN and turns them into
+    # floats, which cannot hold ids above 2**53 such as the coordinate ids of relabel_urban_graph.
     projection_join = rep_gdf.reset_index(names="object_index").sjoin_nearest(
-        gdf_edges, how="left", max_distance=max_dist
+        gdf_edges, how="inner", max_distance=max_dist
     )
     projection_join = projection_join.rename_geometry("object_geometry")
     projection_join = projection_join.rename(columns={"index_right": "edge_index"})
@@ -546,7 +602,7 @@ def project_objects2urban_graph(
     start_mask = projection_join["project_dist"].abs() <= endpoint_snap_tolerance
     end_mask = (projection_join["project_dist"] - edge_lengths).abs() <= endpoint_snap_tolerance
 
-    projection_join["node2connect"] = pd.NA
+    projection_join["node2connect"] = pd.Series(None, index=projection_join.index, dtype=object)  # ids as they are
     projection_join.loc[start_mask, "node2connect"] = projection_join.loc[start_mask, "u"]
     projection_join.loc[end_mask, "node2connect"] = projection_join.loc[end_mask, "v"]
 

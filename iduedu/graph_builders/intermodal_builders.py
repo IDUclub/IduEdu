@@ -2,6 +2,7 @@ import concurrent.futures
 from typing import Any
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from shapely import MultiPolygon, Polygon
 
@@ -185,8 +186,22 @@ def join_pt_walk_graph(
     pt_nodes_remapped = pt_nodes.loc[~pt_nodes.index.isin(projected_mapping.keys())].copy()
 
     relabel_mapping = dict(projected_mapping)
-    start_node_id = 0 if projected_walk.nodes_gdf.empty else int(pd.Index(projected_walk.nodes_gdf.index).max()) + 1
-    new_index = pd.RangeIndex(start_node_id, start_node_id + len(pt_nodes_remapped))
+    # PT nodes keep their ids where the walk graph does not use them (coordinate ids of both graphs stay stable);
+    # the others continue after the largest id of both.
+    walk_ids = pd.Index(projected_walk.nodes_gdf.index)
+    taken = pt_nodes_remapped.index.isin(walk_ids)
+    if not pd.api.types.is_integer_dtype(pt_nodes_remapped.index) or not pd.api.types.is_integer_dtype(walk_ids):
+        start_node_id = 0 if walk_ids.empty else int(walk_ids.max()) + 1
+        new_index = pd.RangeIndex(start_node_id, start_node_id + len(pt_nodes_remapped))
+    elif taken.any():
+        kept = pt_nodes_remapped.index[~taken]
+        start_node_id = int(walk_ids.append(kept).max()) + 1 if len(walk_ids) or len(kept) else 0
+        fresh = np.arange(start_node_id, start_node_id + int(taken.sum()), dtype=np.int64)
+        new_ids = pt_nodes_remapped.index.to_numpy(dtype=np.int64, copy=True)
+        new_ids[taken] = fresh
+        new_index = pd.Index(new_ids)
+    else:
+        new_index = pt_nodes_remapped.index
     relabel_mapping.update(dict(zip(pt_nodes_remapped.index, new_index)))
     pt_nodes_remapped.index = new_index
 
@@ -194,11 +209,17 @@ def join_pt_walk_graph(
 
     pt_edges_remapped = public_transport_g.edges_gdf.copy()
     if not pt_edges_remapped.empty:
-        pt_edges_remapped["u"] = pt_edges_remapped["u"].map(relabel_mapping)
-        pt_edges_remapped["v"] = pt_edges_remapped["v"].map(relabel_mapping)
-        pt_edges_remapped = pt_edges_remapped.dropna(subset=["u", "v"]).copy()
+        # Positions instead of a dict map: a missing endpoint would turn the ids into floats, which cannot hold
+        # the coordinate ids above 2**53.
+        old_ids = pd.Index(list(relabel_mapping.keys()))
+        target_ids = np.asarray(list(relabel_mapping.values()), dtype=np.int64)
+        u_position = old_ids.get_indexer(pt_edges_remapped["u"])
+        v_position = old_ids.get_indexer(pt_edges_remapped["v"])
+        kept_edges = (u_position >= 0) & (v_position >= 0)
+        pt_edges_remapped = pt_edges_remapped[kept_edges].copy()
+        pt_edges_remapped["u"] = target_ids[u_position[kept_edges]]
+        pt_edges_remapped["v"] = target_ids[v_position[kept_edges]]
     if not pt_edges_remapped.empty:
-        pt_edges_remapped[["u", "v"]] = pt_edges_remapped[["u", "v"]].astype(int)
         if "oneway" in pt_edges_remapped.columns:
             pt_edges_remapped["oneway"] = pt_edges_remapped["oneway"].map(
                 lambda value: True if pd.isna(value) else bool(value)

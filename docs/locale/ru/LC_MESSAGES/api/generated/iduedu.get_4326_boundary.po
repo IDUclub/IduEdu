@@ -20,8 +20,12 @@ msgstr "iduedu.get\\_4326\\_boundary"
 msgid "Normalize a territory boundary to a single EPSG:4326 Polygon."
 msgstr "Приводит границу территории к одному полигону Polygon в EPSG:4326."
 
-msgid "Accepts either an `osm_id` (relation id) to fetch the boundary from OSM, a direct `Polygon`/`MultiPolygon`, or a `GeoDataFrame`. Returns a single `Polygon` in lon/lat. For `MultiPolygon`, the function returns its **convex hull** as a Polygon."
-msgstr "Принимает `osm_id` (идентификатор отношения), чтобы загрузить границу из OSM, готовый `Polygon`/`MultiPolygon` или `GeoDataFrame`. Возвращает один `Polygon` в долготе и широте. Для `MultiPolygon` функция возвращает его **выпуклую оболочку** как Polygon."
+# | msgid "Accepts either an `osm_id` (relation id) to fetch the boundary from
+# | OSM, a direct `Polygon`/`MultiPolygon`, or a `GeoDataFrame`. Returns a
+# | single `Polygon` in lon/lat. For `MultiPolygon`, the function returns its
+# | **convex hull** as a Polygon."
+msgid "Accepts either an `osm_id` (relation id) to fetch the boundary from OSM, a direct `Polygon`/`MultiPolygon`, or a `GeoDataFrame`. Returns a single `Polygon` in lon/lat. For `MultiPolygon`, the function returns its **convex hull** as a Polygon, so that bridges, dams and ferries between the parts (a city with islands) stay in the graph and keep the parts connected."
+msgstr "Принимает `osm_id` (идентификатор отношения), чтобы загрузить границу из OSM, готовый `Polygon`/`MultiPolygon` или `GeoDataFrame`. Возвращает один `Polygon` в долготе и широте. Для `MultiPolygon` функция возвращает его **выпуклую оболочку** как Polygon, чтобы мосты, дамбы и паромы между частями (город с островами) оставались в графе и связывали части."
 
 msgid "Parameters"
 msgstr "Параметры"

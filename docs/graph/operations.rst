@@ -53,8 +53,10 @@ With ``by="coordinates"``, :func:`relabel_urban_graph` packs the latitude and lo
 of 1e-7 degree (the precision of OpenStreetMap), into one int64 id. A street node then keeps its id when the graph
 is built again from newer data, and the graphs of two neighbouring territories share the ids of their common
 nodes. Two nodes closer than 1e-7 degree (about 1 cm) would get one id, and the function raises instead. Public
-transport graphs have such nodes, for example the stops of several routes at one platform, so the coordinate ids
-suit drive, walk and bike graphs.
+transport graphs have such nodes, for example the stops of several routes at one platform; with
+``on_duplicate="hash"`` each of them gets a negative id hashed from the coordinate id, its attributes and its rank
+among equal nodes, which stays the same when the graph is built again in the same way.
+:func:`coordinate_node_ids` computes the ids of any points, for example new nodes of a service.
 
 Topology
 --------
@@ -155,6 +157,7 @@ Functions
     clip_urban_graph
     join_urban_graphs
     relabel_urban_graph
+    coordinate_node_ids
     to_directed
     to_undirected
     simplify_multiedges

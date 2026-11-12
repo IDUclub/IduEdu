@@ -637,7 +637,9 @@ def _resolve_od(graph, origins_nodes, destination_nodes, gdf_origins, gdf_destin
     if (gdf_origins is not None and graph_node_column not in gdf_origins.columns) or (
         gdf_destinations is not None and graph_node_column not in gdf_destinations.columns
     ):
-        config.logger.info("OD matrix uses nearest graph nodes. Project objects into UrbanGraph for precise distances.")
+        config.logger.debug(
+            "OD matrix uses nearest graph nodes. Project objects into UrbanGraph for precise distances."
+        )
     origins = resolve_graph_nodes_input(
         urban_graph=graph,
         nodes=origins_nodes,

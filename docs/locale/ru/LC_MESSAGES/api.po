@@ -293,6 +293,13 @@ msgstr ":py:obj:`GraphEdits <iduedu.GraphEdits>`"
 msgid "Edits of a graph given by lines in any CRS, resolved by :func:`resolve_graph_edits`."
 msgstr "Правки графа, заданные линиями в любой CRS; к графу их привязывает :func:`resolve_graph_edits`."
 
+# | msgid ":py:obj:`nearest_nodes <iduedu.nearest_nodes>`"
+msgid ":py:obj:`coordinate_node_ids <iduedu.coordinate_node_ids>`"
+msgstr ":py:obj:`coordinate_node_ids <iduedu.coordinate_node_ids>`"
+
+msgid "Stable int64 node ids packed from the coordinates of points."
+msgstr "Стабильные идентификаторы узлов int64, упакованные из координат точек."
+
 # | msgid ":py:obj:`reproject_graph <iduedu.reproject_graph>`"
 msgid ":py:obj:`resolve_graph_edits <iduedu.resolve_graph_edits>`"
 msgstr ":py:obj:`resolve_graph_edits <iduedu.resolve_graph_edits>`"
