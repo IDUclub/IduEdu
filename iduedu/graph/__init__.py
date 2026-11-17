@@ -49,6 +49,7 @@ from .editors import (
 from .graph_inputs import nearest_edges, nearest_nodes, resolve_graph_nodes_input
 from .edits import GraphEdits, resolve_graph_edits
 from .segments import unique_segments
+from .simplify import simplify_graph
 from .elevation import add_elevation, apply_grade_speed
 from .centrality import centrality, edge_betweenness
 from .aggregations import aggregate_objects, diversity, nearest_objects

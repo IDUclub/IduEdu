@@ -1,0 +1,58 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-17 18:25+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.simplify\\_graph"
+msgstr "iduedu.simplify\\_graph"
+
+msgid "Merge chains of edges through nodes of degree two into single edges."
+msgstr "Склеивает цепочки рёбер через узлы степени два в отдельные рёбра."
+
+msgid "Two edges are merged at a node when they are the only edges there, their ``keys`` are equal and their directions agree. In an undirected graph, and between two-way edges of a directed graph (the direction column is ``False``), an edge drawn against the chain is turned, so the merged geometry runs from ``u`` to ``v``. One-way edges are merged only head to tail, and a one-way edge is never merged with a two-way one. A ring without a junction becomes a loop at its first node."
+msgstr "Два ребра склеиваются в узле, если других рёбер там нет, их ``keys`` равны и направления согласованы. В неориентированном графе и между двусторонними рёбрами ориентированного графа (столбец направления равен ``False``) ребро, нарисованное против цепочки, разворачивается, так что склеенная геометрия идёт от ``u`` к ``v``. Односторонние рёбра склеиваются только конец к началу, а одностороннее ребро никогда не склеивается с двусторонним. Кольцо без перекрёстков становится петлёй в своём первом узле."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Any graph."
+msgstr "Любой граф."
+
+msgid "Edge columns that must be equal along a chain. By default all columns except ``u``, ``v``, ``k``, the geometry and ``sum_columns``; in a directed graph the direction column is among them."
+msgstr "Столбцы рёбер, которые должны быть равны вдоль цепочки. По умолчанию все столбцы, кроме ``u``, ``v``, ``k``, геометрии и ``sum_columns``; в ориентированном графе среди них есть столбец направления."
+
+msgid "Nodes that stay, for example nodes that objects or another table refer to."
+msgstr "Узлы, которые остаются, например узлы, на которые ссылаются объекты или другая таблица."
+
+msgid "Columns summed along a chain. By default ``length_meter``, ``time_min`` and every ``time_<name>_min`` column. The other columns take the values of the first edge."
+msgstr "Столбцы, суммируемые вдоль цепочки. По умолчанию ``length_meter``, ``time_min`` и все столбцы ``time_<name>_min``. Остальные столбцы берут значения первого ребра."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "New graph with the same flags. Nodes inside merged chains are removed; the other nodes keep their ids. In a graph without parallel edges, a chain whose ends another edge already joins stays split at its first inner node."
+msgstr "Новый граф с теми же флагами. Узлы внутри склеенных цепочек удаляются; остальные узлы сохраняют идентификаторы. В графе без параллельных рёбер цепочка, концы которой уже соединяет другое ребро, остаётся разрезанной в своём первом внутреннем узле."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``keys`` or ``sum_columns`` name columns the edges do not have."
+msgstr "Если ``keys`` или ``sum_columns`` называют столбцы, которых нет у рёбер."
+

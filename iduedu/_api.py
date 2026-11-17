@@ -37,6 +37,7 @@ from .graph import (
     relabel_urban_graph,
     resolve_graph_edits,
     route_directness,
+    simplify_graph,
     simplify_multiedges,
     streets_per_node,
     strongly_connected_components,
@@ -69,6 +70,7 @@ from .graph_builders.drive_walk_builders import get_drive_graph, get_walk_graph
 from .graph_builders.gtfs_builders import get_gtfs_public_transport_graph
 from .graph_builders.intermodal_builders import get_intermodal_graph, join_pt_walk_graph
 from .graph_builders.public_transport_builders import get_public_transport_graph
+from .graph_builders.street_builders import get_street_graph, mode_graph
 from .gtfs.merge import deduplicate_across_feeds, merge_gtfs_feeds
 from .osm_pbf import (
     PbfSource,

@@ -44,6 +44,20 @@ msgstr ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
 msgid "Build a cycling UrbanGraph from OpenStreetMap within a given territory."
 msgstr "Строит велосипедный UrbanGraph по OpenStreetMap в пределах заданной территории."
 
+# | msgid ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+msgid ":py:obj:`get_street_graph <iduedu.get_street_graph>`"
+msgstr ":py:obj:`get_street_graph <iduedu.get_street_graph>`"
+
+msgid "Build one street network for walking, driving and cycling, with every street stored once."
+msgstr "Строит одну уличную сеть для пешеходов, автомобилей и велосипедов, где каждая улица хранится один раз."
+
+# | msgid ":py:obj:`gdf2graph <iduedu.gdf2graph>`"
+msgid ":py:obj:`mode_graph <iduedu.mode_graph>`"
+msgstr ":py:obj:`mode_graph <iduedu.mode_graph>`"
+
+msgid "Take the graph of one mode from a street graph of :func:`get_street_graph`."
+msgstr "Выделяет граф одного режима из уличного графа :func:`get_street_graph`."
+
 msgid ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
 msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`"
 
@@ -219,6 +233,13 @@ msgstr ":py:obj:`simplify_multiedges <iduedu.simplify_multiedges>`"
 
 msgid "Collapse a multigraph ``UrbanGraph`` into a simple graph."
 msgstr "Сводит мультиграф ``UrbanGraph`` к простому графу."
+
+# | msgid ":py:obj:`clip_nx_graph <iduedu.clip_nx_graph>`"
+msgid ":py:obj:`simplify_graph <iduedu.simplify_graph>`"
+msgstr ":py:obj:`simplify_graph <iduedu.simplify_graph>`"
+
+msgid "Merge chains of edges through nodes of degree two into single edges."
+msgstr "Склеивает цепочки рёбер через узлы степени два в отдельные рёбра."
 
 msgid ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"
 msgstr ":py:obj:`consolidate_intersections <iduedu.consolidate_intersections>`"

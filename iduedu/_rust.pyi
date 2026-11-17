@@ -214,3 +214,10 @@ def write_pbf(
 def merge_chains(
     starts: npt.NDArray[np.uint32], ends: npt.NDArray[np.uint32], keys: npt.NDArray[np.uint32], n_nodes: int
 ) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.int64]]: ...
+def merge_oriented_chains(
+    starts: npt.NDArray[np.uint32],
+    ends: npt.NDArray[np.uint32],
+    keys: npt.NDArray[np.uint32],
+    two_way: npt.NDArray[np.bool_],
+    keep: npt.NDArray[np.bool_],
+) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.bool_], npt.NDArray[np.int64]]: ...

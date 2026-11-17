@@ -125,6 +125,7 @@ iduedu/
                        UrbanGraphChanges and apply_urban_graph_changes (delete, update, add)
     edits.py         — GraphEdits, resolve_graph_edits(): scenario edits stored as lines, bound to the graph
     transformers.py  — keep_largest_component, simplify_multiedges, to_directed/undirected
+    simplify.py      — simplify_graph(): chains through nodes of degree two merged, two-way edges turned
     routing.py       — Dijkstra wrappers (single/multi-source, parallel, OD matrix; distances, paths or both) and
                        the point-to-point kernels behind them (bidirectional, A*, ALT landmarks cached per matrix)
     point_to_point.py — shortest_path (bidirectional, A*, ALT, Dijkstra), alternative_paths (penalty method),
@@ -146,6 +147,7 @@ iduedu/
   graph_builders/
     drive_walk_builders.py      — get_drive_graph(), get_walk_graph()
     bike_builders.py            — get_bike_graph(): cycle infrastructure and level of traffic stress
+    street_builders.py          — get_street_graph(): one network with walk/drive/bike flags; mode_graph()
     public_transport_builders.py — get_public_transport_graph()
     gtfs_builders.py            — get_gtfs_public_transport_graph()
     intermodal_builders.py      — get_intermodal_graph(), join_pt_walk_graph()
@@ -177,7 +179,8 @@ rust/                — Rust core, compiled into iduedu._rust (see rust/README.
   src/penalty.rs     — alternative routes by the penalty method
   src/components.rs  — connected and strongly connected components
   src/analysis.rs    — sums of node values within a travel cost (gather/scatter, decay), nearest objects, betweenness
-  src/chains.rs      — merging street segments into junction-to-junction edges, only across equal tags
+  src/chains.rs      — merging street segments into junction-to-junction edges, only across equal tags; chains of a
+                       finished graph with two-way edges turned (simplify_graph)
   src/pbf.rs         — .pbf reading (osmpbf, parallel, block index): ways by tag filter, nodes, relations, header
   src/pbf_write.rs   — .pbf writing: per-territory extracts (osm_pbf/extract.py) and files from element lists
   src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, PbfFile, write_pbf
@@ -255,6 +258,6 @@ their outputs (`nb_execution_mode = "off"`).
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
 - Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
-  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`, `within.py`, `centrality.py`), `osm_pbf/` (`reader.py`, `extract.py`) and the edge merging of `drive_walk_builders.py`, never directly
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`, `within.py`, `centrality.py`, `simplify.py`), `osm_pbf/` (`reader.py`, `extract.py`) and the edge merging of `drive_walk_builders.py`, never directly
   from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
   run parallel work on rayon; `max_workers` maps to the number of rayon threads
