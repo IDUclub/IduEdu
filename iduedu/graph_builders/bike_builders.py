@@ -16,6 +16,7 @@ from iduedu.graph.elevation import add_elevation, apply_grade_speed
 from iduedu.graph.transformers import estimate_crs_for_bounds, keep_largest_connected_component
 from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.graph_builders.drive_walk_builders import (
+    ONEWAY_VALUES,
     STRUCTURE_TAGS,
     _assign_edge_keys,
     _build_edges_from_overpass,
@@ -43,6 +44,25 @@ def _text(edges: pd.DataFrame, column: str) -> pd.Series:
     if column not in edges.columns:
         return pd.Series("", index=edges.index, dtype="string")
     return edges[column].astype("string").str.strip().str.lower().fillna("")
+
+
+def _bike_direction(table: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    """Per way or edge: closed to bicycles in one direction, and that direction is against the drawing.
+
+    One-way for bicycles is the direction of the traffic, unless riding against it is allowed
+    (``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag).
+    """
+    oneway = _text(table, "oneway")
+    contraflow = (_text(table, "oneway:bicycle") == "no").to_numpy()
+    for column in ("cycleway", "cycleway:left", "cycleway:right", "cycleway:both"):
+        contraflow |= _text(table, column).str.startswith("opposite").to_numpy()
+    one_way = oneway.isin(ONEWAY_VALUES).to_numpy() & ~contraflow
+    return one_way, oneway.eq("-1").to_numpy() & ~contraflow
+
+
+def _bike_two_way(table: pd.DataFrame) -> np.ndarray:
+    """Ways open to bicycles in both directions."""
+    return ~_bike_direction(table)[0]
 
 
 def _highway_speed_kmh(highway: pd.Series) -> np.ndarray:
@@ -189,7 +209,12 @@ def get_bike_graph(  # pylint: disable=too-many-locals
 
     logger.info(f"Retrieving bike network via {osm_source_label()}...")
     edges = _build_edges_from_overpass(
-        polygon4326, road_filter, needed_tags=tags_to_retrieve, local_crs=local_crs, simplify=simplify
+        polygon4326,
+        road_filter,
+        needed_tags=tags_to_retrieve,
+        local_crs=local_crs,
+        simplify=simplify,
+        two_way=_bike_two_way,
     )
     if len(edges) == 0:
         logger.warning("No edges found, returning empty graph")
@@ -211,17 +236,12 @@ def get_bike_graph(  # pylint: disable=too-many-locals
         logger.warning("No edges left for bicycles, returning empty graph")
         return _empty(local_crs, network_type)
 
-    # One-way for bicycles: the direction of the traffic, unless riding against it is allowed.
-    oneway = _text(edges, "oneway")
-    contraflow = (_text(edges, "oneway:bicycle") == "no").to_numpy()
-    for column in ("cycleway", "cycleway:left", "cycleway:right", "cycleway:both"):
-        contraflow |= _text(edges, column).str.startswith("opposite").to_numpy()
-    reverse_mask = oneway.eq("-1").to_numpy() & ~contraflow
+    one_way, reverse_mask = _bike_direction(edges)
     if reverse_mask.any():
         edges.loc[reverse_mask, "geometry"] = edges.loc[reverse_mask, "geometry"].apply(
             lambda geom: LineString(list(geom.coords)[::-1])
         )
-    edges["oneway"] = oneway.isin({"yes", "true", "1", "-1"}).to_numpy() & ~contraflow
+    edges["oneway"] = one_way
 
     nodes, edges = _build_nodes_and_uv(edges, local_crs)
     edges["length_meter"] = edges.geometry.length.round(3)

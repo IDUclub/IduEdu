@@ -20,8 +20,24 @@ msgstr "iduedu.get\\_street\\_graph"
 msgid "Build one street network for walking, driving and cycling, with every street stored once."
 msgstr "Строит одну уличную сеть для пешеходов, автомобилей и велосипедов, где каждая улица хранится один раз."
 
-msgid "The ways of all ``modes`` are read in one request (or one pass over the local file) with the filters of :func:`get_walk_graph`, :func:`get_drive_graph` and :func:`get_bike_graph`. For each way and mode the builder decides, as those builders do, whether the mode may use it and in which directions: walking both ways; driving after ``oneway`` (``-1`` against the drawing, ``reversible`` both ways); cycling after ``oneway`` unless ``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag lets bicycles ride against it. Segments are merged into edges only where all of this, and the kept tags, stay the same, so an edge never spans a change for any mode; bridges and tunnels are separate edges. The geometry of every edge runs from ``u`` to ``v`` in the direction the way is drawn. :func:`mode_graph` takes the graph of one mode from it."
-msgstr "Пути всех ``modes`` читаются одним запросом (или одним проходом по локальному файлу) с фильтрами :func:`get_walk_graph`, :func:`get_drive_graph` и :func:`get_bike_graph`. Для каждого пути и режима сборщик решает так же, как эти сборщики, может ли режим им пользоваться и в каких направлениях: пешком в обе стороны; на автомобиле по ``oneway`` (``-1`` против направления рисования, ``reversible`` в обе стороны); на велосипеде по ``oneway``, если только ``oneway:bicycle=no`` или тег ``cycleway*=opposite*`` не разрешает ехать навстречу. Отрезки склеиваются в рёбра только там, где всё это и сохраняемые теги не меняются, поэтому ребро никогда не пересекает смену ни для одного режима; мосты и тоннели — отдельные рёбра. Геометрия каждого ребра идёт от ``u`` к ``v`` в направлении рисования пути. :func:`mode_graph` выделяет из неё граф одного режима."
+# | msgid "The ways of all ``modes`` are read in one request (or one pass over
+# | the local file) with the filters of :func:`get_walk_graph`,
+# | :func:`get_drive_graph` and :func:`get_bike_graph`. For each way and mode
+# | the builder decides, as those builders do, whether the mode may use it and
+# | in which directions: walking both ways; driving after ``oneway`` (``-1``
+# | against the drawing, ``reversible`` both ways); cycling after ``oneway``
+# | unless ``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag lets
+# bicycles
+# | ride against it. Segments are merged into edges only where all of this,
+# and
+# | the kept tags, stay the same, so an edge never spans a change for any
+# mode;
+# | bridges and tunnels are separate edges. The geometry of every edge runs
+# from
+# | ``u`` to ``v`` in the direction the way is drawn. :func:`mode_graph` takes
+# | the graph of one mode from it."
+msgid "The ways of all ``modes`` are read in one request (or one pass over the local file) with the filters of :func:`get_walk_graph`, :func:`get_drive_graph` and :func:`get_bike_graph`. For each way and mode the builder decides, as those builders do, whether the mode may use it and in which directions: walking both ways; driving after ``oneway`` (``-1`` against the drawing, ``reversible`` both ways); cycling after ``oneway`` unless ``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag lets bicycles ride against it. Segments are merged into edges only where all of this, and the kept tags, stay the same, so an edge never spans a change for any mode; bridges and tunnels are separate edges. The geometry of every edge runs from ``u`` to ``v``; only edges every mode may use both ways or not at all are written against the drawing of their way, so the direction flags of the others keep the drawing. :func:`mode_graph` takes the graph of one mode from it."
+msgstr "Пути всех ``modes`` читаются одним запросом (или одним проходом по локальному файлу) с фильтрами :func:`get_walk_graph`, :func:`get_drive_graph` и :func:`get_bike_graph`. Для каждого пути и режима сборщик решает так же, как эти сборщики, может ли режим им пользоваться и в каких направлениях: пешком в обе стороны; на автомобиле по ``oneway`` (``-1`` против направления рисования, ``reversible`` в обе стороны); на велосипеде по ``oneway``, если только ``oneway:bicycle=no`` или тег ``cycleway*=opposite*`` не разрешает ехать навстречу. Отрезки склеиваются в рёбра только там, где всё это и сохраняемые теги не меняются, поэтому ребро никогда не пересекает смену ни для одного режима; мосты и тоннели — отдельные рёбра. Геометрия каждого ребра идёт от ``u`` к ``v``; против направления рисования своего пути записываются только рёбра, которыми каждый режим может пользоваться в обе стороны или не может вовсе, поэтому флаги направления остальных рёбер сохраняют направление рисования. :func:`mode_graph` выделяет из неё граф одного режима."
 
 msgid "Parameters"
 msgstr "Параметры"

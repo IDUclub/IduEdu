@@ -104,3 +104,27 @@ def test_bike_graph_with_elevation_and_edge_cases(monkeypatch):
     _serve(monkeypatch, [])
     assert len(get_bike_graph(territory=AREA).nodes_gdf) == 0
     assert bike_builders.FOOTWAYS <= bike_builders.CAR_FREE
+
+
+def test_bike_graph_turns_only_ways_open_both_ways_for_bicycles(monkeypatch):
+    # Contraflow ways drawn head to head are two-way for bicycles and merge; one-way ways drawn head to head do not.
+    contraflow = {"highway": "residential", "oneway": "yes", "oneway:bicycle": "no"}
+    one_way = {"highway": "residential", "oneway": "yes"}
+    _serve(
+        monkeypatch,
+        [
+            _way(1, [30.000, 30.001], contraflow),
+            _way(2, [30.002, 30.001], contraflow),
+            _way(3, [30.010, 30.011], one_way),
+            _way(4, [30.012, 30.011], one_way),
+        ],
+    )
+    graph = get_bike_graph(territory=AREA, keep_largest_subgraph=False)
+    edges = graph.edges_gdf
+    two_way = edges[~edges["oneway"]]
+    assert len(two_way) == 1 and len(two_way.geometry.iloc[0].coords) == 3
+    assert len(edges[edges["oneway"]]) == 2
+    points = graph.nodes_gdf.geometry
+    for u, v, line in zip(edges["u"], edges["v"], edges.geometry):
+        assert line.coords[0] == pytest.approx(points[u].coords[0])
+        assert line.coords[-1] == pytest.approx(points[v].coords[0])

@@ -179,8 +179,9 @@ rust/                — Rust core, compiled into iduedu._rust (see rust/README.
   src/penalty.rs     — alternative routes by the penalty method
   src/components.rs  — connected and strongly connected components
   src/analysis.rs    — sums of node values within a travel cost (gather/scatter, decay), nearest objects, betweenness
-  src/chains.rs      — merging street segments into junction-to-junction edges, only across equal tags; chains of a
-                       finished graph with two-way edges turned (simplify_graph)
+  src/chains.rs      — one chain kernel (merge_oriented): street segments into junction-to-junction edges and the
+                       edges of a finished graph (simplify_graph); only across equal tags, two-way edges turned,
+                       one-way edges head to tail
   src/pbf.rs         — .pbf reading (osmpbf, parallel, block index): ways by tag filter, nodes, relations, header
   src/pbf_write.rs   — .pbf writing: per-territory extracts (osm_pbf/extract.py) and files from element lists
   src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, PbfFile, write_pbf

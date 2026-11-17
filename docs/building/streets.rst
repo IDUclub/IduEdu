@@ -76,9 +76,13 @@ Edges and tags
 
 Every OSM way is cut into its straight segments, and the drive and bike graphs get the direction of every segment
 from the ``oneway`` tag. With ``simplify=True`` the segments are joined back into edges at the points where exactly
-two segments meet, follow one another in the same direction and carry the same values of every tag the builder
-reads. An edge therefore runs from junction to junction and ends earlier wherever a tag changes, so it always has
-the tags of all its ways and never a mix of different ways. The merging runs in the Rust core.
+two segments meet, carry the same values of every tag the builder reads and their directions agree. Segments of
+ways open both ways always agree: where two such ways are drawn head to head or tail to tail, one of them is
+written the other way round (its ends swap and its line is reversed), so the edge stays one continuous line from
+``u`` to ``v``. Segments of one-way ways are joined only where one ends and the next starts, and never with
+segments of two-way ways. An edge therefore runs from junction to junction and ends earlier wherever a tag
+changes, so it always has the tags of all its ways and never a mix of different ways. The merging runs in the
+Rust core, in the same kernel as :func:`simplify_graph`.
 
 The builder reads three groups of tags:
 
@@ -180,19 +184,19 @@ filters, and in which directions. Walking goes both ways; driving follows ``onew
 
 Segments are merged where all of this stays the same, together with the kept tags, the road ``category`` and the
 cycling ``cycle_infra`` and ``lts``, so an edge never spans a change for any mode, and bridges and tunnels stay
-apart. Every edge is stored once, its geometry runs from ``u`` to ``v`` in the direction the way is drawn, and
-flags tell which modes may use it in which direction.
+apart. Every edge is stored once, its geometry runs from ``u`` to ``v``, and flags tell which modes may use it
+in which direction. Only edges every mode may use both ways or not at all are ever written against the drawing of
+their way, so the flags of the other edges keep the direction the way is drawn.
 
 :func:`mode_graph` takes the edges a mode may use in at least one direction, with the travel time of the mode as
 ``time_min``. Walking gives an undirected graph; driving and cycling give directed graphs with ``oneway``, and an
 edge open to the mode only against its drawing is turned. With ``simplify=True`` (the default) the edges are merged
 again through the nodes that have only two edges of this mode, with :func:`simplify_graph`: a road is not cut where
-only a footway joins it. Two-way edges drawn against each other are merged too, which the separate builders do not
-do, so the graph of a mode has slightly fewer edges than its builder gives.
+only a footway joins it.
 
 On Vasilyevsky Island the graphs of the three modes route like their builders: the same pairs of nodes are
 connected, distances agree within 1 cm, and travel times within 0.01 min, the rounding of ``time_min`` to
-0.001 min per edge. The street network of St Petersburg holds 32 317 km of streets, each once, in 812 thousand
+0.001 min per edge. The street network of St Petersburg holds 32 317 km of streets, each once, in 808 thousand
 edges; the walk, drive and bike graphs taken from it have 711, 44 and 329 thousand edges.
 
 Outputs
