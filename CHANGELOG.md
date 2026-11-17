@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v3.2.0 (2026-11-17)
+
+### Features
+
+- One chain kernel for the builders and simplify_graph
+  ([#34](https://github.com/IDUclub/IduEdu/pull/34),
+  [`6cbeaa9`](https://github.com/IDUclub/IduEdu/commit/6cbeaa9f3700ddca12ed7859d5607b190854fbc5))
+
+- One street graph for walk, drive and bike; simplify_graph
+  ([#33](https://github.com/IDUclub/IduEdu/pull/33),
+  [`e5167e4`](https://github.com/IDUclub/IduEdu/commit/e5167e4c17981bc7cde073b23af94c8bea4f345b))
+
+* feat: one street graph for walk, drive and bike; simplify_graph
+
+- get_street_graph(): one OSM pass with the filters of all modes, every street stored once, mode
+  flags and per-mode travel times on each edge - mode_graph(): the walk, drive or bike graph taken
+  from it, routing like its builder - simplify_graph(): chains through nodes of degree two merged in
+  any graph, two-way edges turned (Rust merge_oriented_chains) - get_network_by_filters() accepts
+  several filters in one Overpass query
+
+* fix(rust): iterate arcs by slice in reverse arcs (clippy 1.100 needless_range_loop)
+
+
 ## v3.1.1 (2026-11-12)
 
 ### Bug Fixes
