@@ -154,7 +154,7 @@ dependencies = [
 
 [[package]]
 name = "iduedu-rs"
-version = "2.4.2"
+version = "3.1.1"
 dependencies = [
  "flate2",
  "numpy",

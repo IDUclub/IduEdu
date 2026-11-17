@@ -1,0 +1,76 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-17 18:25+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.get\\_street\\_graph"
+msgstr "iduedu.get\\_street\\_graph"
+
+msgid "Build one street network for walking, driving and cycling, with every street stored once."
+msgstr "Строит одну уличную сеть для пешеходов, автомобилей и велосипедов, где каждая улица хранится один раз."
+
+msgid "The ways of all ``modes`` are read in one request (or one pass over the local file) with the filters of :func:`get_walk_graph`, :func:`get_drive_graph` and :func:`get_bike_graph`. For each way and mode the builder decides, as those builders do, whether the mode may use it and in which directions: walking both ways; driving after ``oneway`` (``-1`` against the drawing, ``reversible`` both ways); cycling after ``oneway`` unless ``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag lets bicycles ride against it. Segments are merged into edges only where all of this, and the kept tags, stay the same, so an edge never spans a change for any mode; bridges and tunnels are separate edges. The geometry of every edge runs from ``u`` to ``v`` in the direction the way is drawn. :func:`mode_graph` takes the graph of one mode from it."
+msgstr "Пути всех ``modes`` читаются одним запросом (или одним проходом по локальному файлу) с фильтрами :func:`get_walk_graph`, :func:`get_drive_graph` и :func:`get_bike_graph`. Для каждого пути и режима сборщик решает так же, как эти сборщики, может ли режим им пользоваться и в каких направлениях: пешком в обе стороны; на автомобиле по ``oneway`` (``-1`` против направления рисования, ``reversible`` в обе стороны); на велосипеде по ``oneway``, если только ``oneway:bicycle=no`` или тег ``cycleway*=opposite*`` не разрешает ехать навстречу. Отрезки склеиваются в рёбра только там, где всё это и сохраняемые теги не меняются, поэтому ребро никогда не пересекает смену ни для одного режима; мосты и тоннели — отдельные рёбра. Геометрия каждого ребра идёт от ``u`` к ``v`` в направлении рисования пути. :func:`mode_graph` выделяет из неё граф одного режима."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "OSM relation id of the territory boundary. Provide this or ``territory``."
+msgstr "Идентификатор отношения OSM для границы территории. Укажите его или ``territory``."
+
+msgid "Boundary in EPSG:4326 or a GeoDataFrame, used when ``osm_id`` is not given."
+msgstr "Граница в EPSG:4326 или GeoDataFrame; используется, если ``osm_id`` не задан."
+
+msgid "Modes to include, any of ``\"walk\"``, ``\"drive\"`` and ``\"bike\"``."
+msgstr "Включаемые режимы: любые из ``\"walk\"``, ``\"drive\"`` и ``\"bike\"``."
+
+msgid "Merge segments into edges that run from junction to junction."
+msgstr "Склеивать отрезки в рёбра от перекрёстка до перекрёстка."
+
+msgid "Keep only the largest connected part of the street network."
+msgstr "Оставить только наибольшую связную часть уличной сети."
+
+msgid "Clip edges by the exact boundary."
+msgstr "Обрезать рёбра по точной границе."
+
+msgid "Walking speed in metres per minute."
+msgstr "Скорость пешехода в метрах в минуту."
+
+msgid "Cycling speed on flat ground in metres per minute."
+msgstr "Скорость велосипеда на ровной местности в метрах в минуту."
+
+msgid "Let bicycles use footways and pedestrian streets without ``bicycle=yes``."
+msgstr "Пускать велосипеды на тротуары и пешеходные улицы без ``bicycle=yes``."
+
+msgid "``\"drive\"``, or ``\"drive_service\"`` to drive on service roads too."
+msgstr "``\"drive\"`` или ``\"drive_service\"``, чтобы ездить и по служебным проездам."
+
+msgid "OSM tags kept on the edges. By default ``highway``, ``name``, ``lanes``, ``maxspeed`` and ``surface``; ``bridge`` and ``tunnel`` are always kept."
+msgstr "Теги OSM, сохраняемые на рёбрах. По умолчанию ``highway``, ``name``, ``lanes``, ``maxspeed`` и ``surface``; ``bridge`` и ``tunnel`` сохраняются всегда."
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Undirected multigraph of type ``\"street\"``. Edges have ``length_meter``; the flags ``walk``, ``drive_forward``, ``drive_backward``, ``bike_forward`` and ``bike_backward`` (``forward`` is from ``u`` to ``v``); the travel times ``time_walk_min``, ``time_drive_min`` and ``time_bike_min``, NaN where the mode does not go; ``category`` for driving; ``cycle_infra`` and ``lts`` for cycling; the kept tags and ``bridge`` and ``tunnel``. ``time_min`` is NaN: route on the graph of a mode."
+msgstr "Неориентированный мультиграф типа ``\"street\"``. У рёбер есть ``length_meter``; флаги ``walk``, ``drive_forward``, ``drive_backward``, ``bike_forward`` и ``bike_backward`` (``forward`` — от ``u`` к ``v``); время в пути ``time_walk_min``, ``time_drive_min`` и ``time_bike_min``, NaN там, где режим не проходит; ``category`` для автомобилей; ``cycle_infra`` и ``lts`` для велосипедов; сохраняемые теги, ``bridge`` и ``tunnel``. ``time_min`` равен NaN: маршруты стройте по графу режима."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If ``modes`` is empty or names an unknown mode."
+msgstr "Если ``modes`` пуст или содержит неизвестный режим."
+

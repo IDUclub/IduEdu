@@ -59,6 +59,9 @@ msgstr "Длина, делённая на ``bike_speed`` (по умолчани�
 msgid "Every edge has ``length_meter`` (metres) and ``time_min`` (minutes) and a geometry in the local projected CRS of the territory. The territory and the OSM source are given as described in :doc:`sources`."
 msgstr "У каждого ребра есть ``length_meter`` (метры), ``time_min`` (минуты) и геометрия в локальной проекционной системе координат территории. Территория и источник OSM задаются, как описано в :doc:`sources`."
 
+msgid ":func:`get_street_graph` builds one network for all three modes, with every street stored once, and :func:`mode_graph` takes the graph of one mode from it (see `One network for all modes`_):"
+msgstr ":func:`get_street_graph` строит одну сеть для всех трёх режимов, где каждая улица хранится один раз, а :func:`mode_graph` выделяет из неё граф одного режима (см. `Одна сеть для всех режимов`_):"
+
 msgid "Inputs"
 msgstr "Входные данные"
 
@@ -233,6 +236,21 @@ msgstr "2 до 30 км/ч и двух полос, 3 до 50 км/ч и трёх 
 msgid "``max_lts`` keeps only the edges up to the given level, for example 2 for the network most adults are willing to ride. With ``elevation`` the builder adds heights and grades and rescales the travel times with the cycling model of :func:`apply_grade_speed`."
 msgstr "``max_lts`` сохраняет только рёбра до заданного уровня, например 2 для сети, по которой готово ездить большинство взрослых. С ``elevation`` построитель добавляет высоты и уклоны и пересчитывает время в пути по велосипедной модели :func:`apply_grade_speed`."
 
+msgid "One network for all modes"
+msgstr "Одна сеть для всех режимов"
+
+msgid "The walk, drive and bike graphs of a territory share most of their streets: a residential street is in all three. :func:`get_street_graph` reads the ways of the chosen ``modes`` in one request, or one pass over the local file, and decides for every way and mode what the separate builders decide: whether the mode may use the way, with the same filters, and in which directions. Walking goes both ways; driving follows ``oneway`` (``-1`` against the drawing, ``reversible`` both ways); cycling follows ``oneway`` unless the way lets bicycles ride against the traffic."
+msgstr "Пешеходный, автомобильный и велосипедный графы территории делят большую часть улиц: жилая улица есть во всех трёх. :func:`get_street_graph` читает пути выбранных ``modes`` одним запросом или одним проходом по локальному файлу и решает для каждого пути и режима то же, что отдельные сборщики: может ли режим пользоваться путём (с теми же фильтрами) и в каких направлениях. Пешком — в обе стороны; на автомобиле — по ``oneway`` (``-1`` против направления рисования, ``reversible`` в обе стороны); на велосипеде — по ``oneway``, если путь не разрешает велосипедам ехать навстречу движению."
+
+msgid "Segments are merged where all of this stays the same, together with the kept tags, the road ``category`` and the cycling ``cycle_infra`` and ``lts``, so an edge never spans a change for any mode, and bridges and tunnels stay apart. Every edge is stored once, its geometry runs from ``u`` to ``v`` in the direction the way is drawn, and flags tell which modes may use it in which direction."
+msgstr "Отрезки склеиваются там, где всё это не меняется вместе с сохраняемыми тегами, ``category`` дороги и велосипедными ``cycle_infra`` и ``lts``, поэтому ребро никогда не пересекает смену ни для одного режима, а мосты и тоннели остаются отдельными. Каждое ребро хранится один раз, его геометрия идёт от ``u`` к ``v`` в направлении рисования пути, а флаги говорят, какие режимы и в каком направлении могут по нему двигаться."
+
+msgid ":func:`mode_graph` takes the edges a mode may use in at least one direction, with the travel time of the mode as ``time_min``. Walking gives an undirected graph; driving and cycling give directed graphs with ``oneway``, and an edge open to the mode only against its drawing is turned. With ``simplify=True`` (the default) the edges are merged again through the nodes that have only two edges of this mode, with :func:`simplify_graph`: a road is not cut where only a footway joins it. Two-way edges drawn against each other are merged too, which the separate builders do not do, so the graph of a mode has slightly fewer edges than its builder gives."
+msgstr ":func:`mode_graph` берёт рёбра, которыми режим может пользоваться хотя бы в одном направлении, со временем в пути режима в ``time_min``. Пешеходный режим даёт неориентированный граф; автомобильный и велосипедный — ориентированные графы с ``oneway``, а ребро, открытое режиму только против направления рисования, разворачивается. С ``simplify=True`` (по умолчанию) рёбра снова склеиваются через узлы, у которых только два ребра этого режима, функцией :func:`simplify_graph`: дорога не разрезается там, где к ней примыкает только тротуар. Склеиваются и двусторонние рёбра, нарисованные навстречу друг другу, чего отдельные сборщики не делают, поэтому у графа режима немного меньше рёбер, чем даёт его сборщик."
+
+msgid "On Vasilyevsky Island the graphs of the three modes route like their builders: the same pairs of nodes are connected, distances agree within 1 cm, and travel times within 0.01 min, the rounding of ``time_min`` to 0.001 min per edge. The street network of St Petersburg holds 32 317 km of streets, each once, in 812 thousand edges; the walk, drive and bike graphs taken from it have 711, 44 and 329 thousand edges."
+msgstr "На Васильевском острове графы трёх режимов прокладывают маршруты как их сборщики: связаны те же пары узлов, расстояния совпадают с точностью до 1 см, а время в пути — до 0,01 мин, то есть до округления ``time_min`` до 0,001 мин на каждом ребре. Уличная сеть Санкт-Петербурга содержит 32 317 км улиц, каждую один раз, в 812 тысячах рёбер; выделенные из неё пешеходный, автомобильный и велосипедный графы имеют 711, 44 и 329 тысяч рёбер."
+
 msgid "Outputs"
 msgstr "Результаты"
 
@@ -241,6 +259,9 @@ msgstr "Каждый построитель возвращает :class:`UrbanGr
 
 msgid "For Vasilyevsky Island the walk graph has 22 289 nodes and 29 149 edges with ``simplify=True``, and 38 727 nodes and 45 587 edges with ``simplify=False``. The drive graph has 1 381 directed edges."
 msgstr "Для Васильевского острова пешеходный граф содержит 22 289 узлов и 29 149 рёбер при ``simplify=True`` и 38 727 узлов и 45 587 рёбер при ``simplify=False``. Автомобильный граф содержит 1 381 ориентированное ребро."
+
+msgid ":func:`get_street_graph` returns an undirected multigraph of type ``\"street\"``. Its edges have ``length_meter``; the flags ``walk``, ``drive_forward``, ``drive_backward``, ``bike_forward`` and ``bike_backward``, where ``forward`` is from ``u`` to ``v``; the travel times ``time_walk_min``, ``time_drive_min`` and ``time_bike_min``, missing where the mode does not go; ``category``, ``cycle_infra`` and ``lts``; the kept tags (by default ``highway``, ``name``, ``lanes``, ``maxspeed`` and ``surface``), ``bridge`` and ``tunnel``. Its ``time_min`` is missing, since routing needs the graph of a mode. :func:`mode_graph` returns the columns of the matching builder."
+msgstr ":func:`get_street_graph` возвращает неориентированный мультиграф типа ``\"street\"``. У его рёбер есть ``length_meter``; флаги ``walk``, ``drive_forward``, ``drive_backward``, ``bike_forward`` и ``bike_backward``, где ``forward`` — от ``u`` к ``v``; время в пути ``time_walk_min``, ``time_drive_min`` и ``time_bike_min``, пропущенное там, где режим не проходит; ``category``, ``cycle_infra`` и ``lts``; сохраняемые теги (по умолчанию ``highway``, ``name``, ``lanes``, ``maxspeed`` и ``surface``), ``bridge`` и ``tunnel``. Его ``time_min`` пропущен, поскольку для маршрутов нужен граф режима. :func:`mode_graph` возвращает столбцы соответствующего сборщика."
 
 msgid "Functions"
 msgstr "Функции"
@@ -262,6 +283,20 @@ msgstr ":py:obj:`get_bike_graph <iduedu.get_bike_graph>`"
 
 msgid "Build a cycling UrbanGraph from OpenStreetMap within a given territory."
 msgstr "Строит велосипедный UrbanGraph по OpenStreetMap в пределах заданной территории."
+
+# | msgid ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+msgid ":py:obj:`get_street_graph <iduedu.get_street_graph>`"
+msgstr ":py:obj:`get_street_graph <iduedu.get_street_graph>`"
+
+msgid "Build one street network for walking, driving and cycling, with every street stored once."
+msgstr "Строит одну уличную сеть для пешеходов, автомобилей и велосипедов, где каждая улица хранится один раз."
+
+# | msgid ":py:obj:`get_drive_graph <iduedu.get_drive_graph>`"
+msgid ":py:obj:`mode_graph <iduedu.mode_graph>`"
+msgstr ":py:obj:`mode_graph <iduedu.mode_graph>`"
+
+msgid "Take the graph of one mode from a street graph of :func:`get_street_graph`."
+msgstr "Выделяет граф одного режима из уличного графа :func:`get_street_graph`."
 
 msgid "Figures"
 msgstr "Рисунки"

@@ -1489,6 +1489,42 @@ fn merge_chains<'py>(
     Ok((order.into_pyarray(py), offsets.into_pyarray(py)))
 }
 
+/// Chains of edges that may be travelled against their drawing (see `chains::merge_oriented`): edges run
+/// from ``starts`` to ``ends``, ``two_way`` marks the edges travelled both ways and ``keep`` the nodes that
+/// must stay. Returns the edge order, whether each is travelled backwards, and ``n_chains + 1`` offsets.
+#[pyfunction]
+#[allow(clippy::type_complexity)]
+fn merge_oriented_chains<'py>(
+    py: Python<'py>,
+    starts: PyReadonlyArray1<'py, u32>,
+    ends: PyReadonlyArray1<'py, u32>,
+    keys: PyReadonlyArray1<'py, u32>,
+    two_way: PyReadonlyArray1<'py, bool>,
+    keep: PyReadonlyArray1<'py, bool>,
+) -> PyResult<(
+    Bound<'py, PyArray1<u32>>,
+    Bound<'py, PyArray1<bool>>,
+    Bound<'py, PyArray1<i64>>,
+)> {
+    let (s, e, k) = (starts.as_slice()?, ends.as_slice()?, keys.as_slice()?);
+    let (t, kp) = (two_way.as_slice()?, keep.as_slice()?);
+    if e.len() != s.len() || k.len() != s.len() || t.len() != s.len() {
+        return Err(PyValueError::new_err(
+            "starts, ends, keys and two_way must have the same length",
+        ));
+    }
+    let n_nodes = kp.len();
+    if s.iter().chain(e).any(|&v| v as usize >= n_nodes) {
+        return Err(PyValueError::new_err("edge node out of range of keep"));
+    }
+    let (order, reversed, offsets) = py.detach(|| chains::merge_oriented(s, e, k, t, kp, n_nodes));
+    Ok((
+        order.into_pyarray(py),
+        reversed.into_pyarray(py),
+        offsets.into_pyarray(py),
+    ))
+}
+
 #[pymodule(name = "_rust")]
 fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CsrGraph>()?;
@@ -1500,6 +1536,7 @@ fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PbfFile>()?;
     m.add_function(wrap_pyfunction!(write_pbf, m)?)?;
     m.add_function(wrap_pyfunction!(merge_chains, m)?)?;
+    m.add_function(wrap_pyfunction!(merge_oriented_chains, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

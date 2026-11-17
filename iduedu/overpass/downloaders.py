@@ -498,22 +498,29 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
     return json_result
 
 
-def get_network_by_filters(polygon: Polygon, way_filter: str) -> pd.DataFrame:
+def get_network_by_filters(polygon: Polygon, way_filter: str | list[str]) -> pd.DataFrame:
     """Download OSM way elements matching an Overpass filter inside a polygon.
 
-    In pbf mode the ways are read from ``config.pbf_path`` with the same filter and ``poly:`` semantics.
+    A list of filters returns every way that matches any of them, once. In pbf mode the ways are read from
+    ``config.pbf_path`` with the same filters and ``poly:`` semantics.
     """
+    filters = [way_filter] if isinstance(way_filter, str) else list(way_filter)
     if using_pbf():
-        logger.debug(f"Reading network with filters <{way_filter}> from {osm_source_label()} ...")
-        ways = _pbf_source().ways_table(polygon, way_filter)
+        logger.debug(f"Reading network with filters {filters} from {osm_source_label()} ...")
+        source = _pbf_source()
+        tables = [source.ways_table(polygon, one) for one in filters]
+        ways = tables[0] if len(tables) == 1 else pd.concat(tables, ignore_index=True)
+        if len(tables) > 1:
+            ways = ways.drop_duplicates(subset="id", ignore_index=True)
         logger.info("Network successfully read!")
         return ways
 
     polygon_coords = _poly_to_overpass(polygon)
     header = config.overpass_header
+    statements = "".join(f'way{one}(poly:"{polygon_coords}");' for one in filters)
     overpass_query = f"""
                     {header}
-                    (way{way_filter}(poly:"{polygon_coords}"););
+                    ({statements});
                     out geom;
     """
     cache_key_src = f"{config.overpass_url}\nPOST\n{overpass_query}"

@@ -21,7 +21,8 @@ buildings or stops to them. They return new graphs and leave the source unchange
    * - Cutting and joining
      - :func:`subgraph_by_nodes`, :func:`clip_urban_graph`, :func:`join_urban_graphs`, :func:`relabel_urban_graph`
    * - Topology
-     - :func:`to_directed`, :func:`to_undirected`, :func:`simplify_multiedges`, :func:`consolidate_intersections`,
+     - :func:`to_directed`, :func:`to_undirected`, :func:`simplify_multiedges`, :func:`simplify_graph`,
+       :func:`consolidate_intersections`,
        :func:`unique_segments`
    * - Objects
      - :func:`nearest_nodes`, :func:`nearest_edges`, :func:`project_objects2urban_graph`,
@@ -72,6 +73,13 @@ parts that edges inside it connect, so a bridge above a road stays apart. Each p
 position of its members, and the edges keep their geometry with moved end points. Parts wider than ``max_span``
 (four times the tolerance by default) stay unmerged. The function serves network statistics and centralities;
 it changes routing, because turns and one-way links inside a junction disappear.
+
+:func:`simplify_graph` merges chains of edges through nodes of degree two into single edges, in any graph. Two edges
+are merged at a node when they are the only edges there, the values of ``keys`` (by default every column except the
+costs and the geometry) are equal, and their directions agree: two-way edges always, one-way edges only head to
+tail. An edge drawn against the chain is turned, so the merged geometry runs from ``u`` to ``v``; ``length_meter``
+and the ``time_*`` columns are summed. ``keep_nodes`` keeps the nodes other tables refer to. The merging runs in the
+Rust core, about one second for a million edges.
 
 :func:`unique_segments` returns the straight pieces of the edge geometries with every physical segment once, also
 where two edges of a two-way street or a there-and-back pair share their points. Its total length is the network
@@ -161,6 +169,7 @@ Functions
     to_directed
     to_undirected
     simplify_multiedges
+    simplify_graph
     consolidate_intersections
     unique_segments
     nearest_nodes

@@ -18,6 +18,8 @@ Building graphs
     get_drive_graph
     get_walk_graph
     get_bike_graph
+    get_street_graph
+    mode_graph
     get_public_transport_graph
     get_gtfs_public_transport_graph
     get_intermodal_graph
@@ -55,6 +57,7 @@ The graph model
     to_directed
     to_undirected
     simplify_multiedges
+    simplify_graph
     consolidate_intersections
     unique_segments
     connected_components

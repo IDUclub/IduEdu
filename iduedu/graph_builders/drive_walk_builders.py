@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Callable, Literal
 
 import geopandas as gpd
 import numpy as np
@@ -102,8 +102,13 @@ def _get_highway_properties(highway) -> tuple[str, float]:
 STRUCTURE_TAGS = ("bridge", "tunnel")
 
 
-def _build_edges_from_overpass(
-    polygon: Polygon, way_filter: str, needed_tags: set[str], local_crs: CRS, simplify: bool = True
+def _build_edges_from_overpass(  # pylint: disable=too-many-locals
+    polygon: Polygon,
+    way_filter: str | list[str],
+    needed_tags: set[str],
+    local_crs: CRS,
+    simplify: bool = True,
+    way_columns: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Download OSM ways by filter, cut them into edges and project them to a local CRS.
@@ -116,20 +121,27 @@ def _build_edges_from_overpass(
 
     Parameters:
         polygon (Polygon): Boundary polygon in EPSG:4326 used to query OSM data.
-        way_filter (str): Overpass filter applied to ways (e.g., ``[ "highway" ~ "motorway|trunk|primary|..." ]``).
+        way_filter (str | list[str]): Overpass filter applied to ways (e.g.,
+            ``[ "highway" ~ "motorway|trunk|primary|..." ]``), or several filters whose ways are united.
         needed_tags (set[str]): OSM tags to put on the edges, besides the bridge and tunnel tags.
         local_crs (CRS): Projected CRS of the result.
         simplify (bool): Merge segments into junction-to-junction edges.
+        way_columns: Function of the way table (with its ``tags``) that returns more columns per way, indexed by
+            the ways to keep. The columns go on the edges and, like the tags, a change of them starts a new edge.
 
     Returns:
-        GeoDataFrame: Line features in the local CRS with ``geometry``, ``way_idx`` (row of the source way)
-        and one column per tag in ``needed_tags`` and in ``STRUCTURE_TAGS``.
+        GeoDataFrame: Line features in the local CRS with ``geometry``, ``way_idx`` (row of the source way),
+        one column per tag in ``needed_tags`` and in ``STRUCTURE_TAGS`` and the columns of ``way_columns``.
     """
     data = get_network_by_filters(polygon, way_filter)
     if len(data) == 0:
         return gpd.GeoDataFrame()
 
     ways = data[data["type"] == "way"].copy()
+    extra = None
+    if way_columns is not None and len(ways):
+        extra = way_columns(ways)
+        ways = ways.loc[extra.index]
     if len(ways) == 0:
         return gpd.GeoDataFrame()
 
@@ -164,6 +176,9 @@ def _build_edges_from_overpass(
     else:
         cols = {k: tags.map(lambda d, kk=k: d.get(kk) if isinstance(d, dict) else None) for k in tag_keys}
         tags_df = pd.DataFrame(cols, index=ways.index)
+    if extra is not None:
+        tags_df = tags_df.join(extra)
+        tag_keys = tag_keys + [c for c in extra.columns if c not in tag_keys]
 
     if simplify:
         # Ways with equal tags share a key; only segments with the same key are merged.

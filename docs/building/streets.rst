@@ -34,6 +34,14 @@ Three builders turn the OpenStreetMap ways of a territory into street networks.
 Every edge has ``length_meter`` (metres) and ``time_min`` (minutes) and a geometry in the local projected CRS of the
 territory. The territory and the OSM source are given as described in :doc:`sources`.
 
+:func:`get_street_graph` builds one network for all three modes, with every street stored once, and
+:func:`mode_graph` takes the graph of one mode from it (see `One network for all modes`_):
+
+.. code-block:: python
+
+   street = iduedu.get_street_graph(osm_id=1114252)        # walk, drive and bike together
+   drive = iduedu.mode_graph(street, "drive")               # routes like get_drive_graph
+
 Inputs
 ------
 
@@ -161,6 +169,32 @@ the infrastructure, the speed limit (``maxspeed`` or the default of the class) a
 ride. With ``elevation`` the builder adds heights and grades and rescales the travel times with the cycling model
 of :func:`apply_grade_speed`.
 
+One network for all modes
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The walk, drive and bike graphs of a territory share most of their streets: a residential street is in all three.
+:func:`get_street_graph` reads the ways of the chosen ``modes`` in one request, or one pass over the local file, and
+decides for every way and mode what the separate builders decide: whether the mode may use the way, with the same
+filters, and in which directions. Walking goes both ways; driving follows ``oneway`` (``-1`` against the drawing,
+``reversible`` both ways); cycling follows ``oneway`` unless the way lets bicycles ride against the traffic.
+
+Segments are merged where all of this stays the same, together with the kept tags, the road ``category`` and the
+cycling ``cycle_infra`` and ``lts``, so an edge never spans a change for any mode, and bridges and tunnels stay
+apart. Every edge is stored once, its geometry runs from ``u`` to ``v`` in the direction the way is drawn, and
+flags tell which modes may use it in which direction.
+
+:func:`mode_graph` takes the edges a mode may use in at least one direction, with the travel time of the mode as
+``time_min``. Walking gives an undirected graph; driving and cycling give directed graphs with ``oneway``, and an
+edge open to the mode only against its drawing is turned. With ``simplify=True`` (the default) the edges are merged
+again through the nodes that have only two edges of this mode, with :func:`simplify_graph`: a road is not cut where
+only a footway joins it. Two-way edges drawn against each other are merged too, which the separate builders do not
+do, so the graph of a mode has slightly fewer edges than its builder gives.
+
+On Vasilyevsky Island the graphs of the three modes route like their builders: the same pairs of nodes are
+connected, distances agree within 1 cm, and travel times within 0.01 min, the rounding of ``time_min`` to
+0.001 min per edge. The street network of St Petersburg holds 32 317 km of streets, each once, in 812 thousand
+edges; the walk, drive and bike graphs taken from it have 711, 44 and 329 thousand edges.
+
 Outputs
 -------
 
@@ -172,6 +206,13 @@ with ``elevation``, ``grade``, ``grade_max``, ``ascent`` and ``descent``.
 For Vasilyevsky Island the walk graph has 22 289 nodes and 29 149 edges with ``simplify=True``, and 38 727 nodes and
 45 587 edges with ``simplify=False``. The drive graph has 1 381 directed edges.
 
+:func:`get_street_graph` returns an undirected multigraph of type ``"street"``. Its edges have ``length_meter``;
+the flags ``walk``, ``drive_forward``, ``drive_backward``, ``bike_forward`` and ``bike_backward``, where
+``forward`` is from ``u`` to ``v``; the travel times ``time_walk_min``, ``time_drive_min`` and ``time_bike_min``,
+missing where the mode does not go; ``category``, ``cycle_infra`` and ``lts``; the kept tags (by default
+``highway``, ``name``, ``lanes``, ``maxspeed`` and ``surface``), ``bridge`` and ``tunnel``. Its ``time_min`` is
+missing, since routing needs the graph of a mode. :func:`mode_graph` returns the columns of the matching builder.
+
 Functions
 ---------
 
@@ -182,6 +223,8 @@ Functions
     get_drive_graph
     get_walk_graph
     get_bike_graph
+    get_street_graph
+    mode_graph
 
 Figures
 -------

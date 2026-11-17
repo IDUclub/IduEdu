@@ -4,15 +4,21 @@
 Options and edge cases that do not depend on real data are covered by the unit tests with mocked responses.
 """
 
+import numpy as np
+import pandas as pd
 import pytest
 from shapely import MultiPolygon, Polygon
 
 from iduedu import (
     DEFAULT_REGISTRY_W_TRAIN,
+    get_bike_graph,
     get_drive_graph,
     get_public_transport_graph,
+    get_street_graph,
     get_walk_graph,
     join_pt_walk_graph,
+    mode_graph,
+    od_matrix,
 )
 
 pytestmark = [pytest.mark.network, pytest.mark.slow]
@@ -195,3 +201,37 @@ def test_get_intermodal_graph_is_routable(intermodal_graph):
 
     assert lengths.loc[source] == 0.0
     assert lengths.notna().sum() > 1
+
+
+@pytest.fixture(scope="module")
+def street_graph(bounds):
+    return get_street_graph(territory=bounds)
+
+
+@pytest.mark.parametrize(
+    "mode, builder",
+    [("walk", get_walk_graph), ("drive", get_drive_graph), ("bike", get_bike_graph)],
+)
+def test_mode_graph_routes_like_its_builder(street_graph, bounds, mode, builder):
+    """Same reachable pairs and the same distances; times agree up to the per-edge rounding of time_min."""
+    reference = builder(territory=bounds, keep_largest_subgraph=False)
+    graph = mode_graph(street_graph, mode)
+    assert len(graph.edges_gdf) <= len(reference.edges_gdf)
+    assert graph.edges_gdf["length_meter"].sum() == pytest.approx(reference.edges_gdf["length_meter"].sum(), rel=1e-6)
+
+    def by_point(g):
+        return pd.Series(g.nodes_gdf.index, index=[(round(p.x, 3), round(p.y, 3)) for p in g.nodes_gdf.geometry])
+
+    ref_nodes, nodes = by_point(reference), by_point(graph)
+    common = ref_nodes.index.intersection(nodes.index)
+    picked = common[np.random.default_rng(0).choice(len(common), size=min(200, len(common)), replace=False)]
+    for weight, tolerance in (("length_meter", 0.05), ("time_min", 0.02)):
+        expected = od_matrix(
+            reference, origins_nodes=ref_nodes[picked[:30]], destination_nodes=ref_nodes[picked], weight=weight
+        ).to_numpy()
+        result = od_matrix(
+            graph, origins_nodes=nodes[picked[:30]], destination_nodes=nodes[picked], weight=weight
+        ).to_numpy()
+        assert np.array_equal(np.isfinite(expected), np.isfinite(result))
+        finite = np.isfinite(expected)
+        assert np.abs(expected[finite] - result[finite]).max() <= tolerance

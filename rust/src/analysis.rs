@@ -229,8 +229,10 @@ impl ReverseArcs {
         let mut tail = vec![0u32; g.indices.len()];
         let mut arc = vec![0u32; g.indices.len()];
         for u in 0..n {
-            for a in g.indptr[u] as usize..g.indptr[u + 1] as usize {
-                let v = g.indices[a] as usize;
+            let start = g.indptr[u] as usize;
+            let end = g.indptr[u + 1] as usize;
+            for (a, &v) in (start..end).zip(&g.indices[start..end]) {
+                let v = v as usize;
                 tail[next[v]] = u as u32;
                 arc[next[v]] = a as u32;
                 next[v] += 1;
