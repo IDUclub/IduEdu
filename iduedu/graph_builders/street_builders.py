@@ -67,6 +67,15 @@ def _mode_filters(modes: tuple[str, ...], drive_network: str) -> dict[str, str]:
     return {mode: presets[mode] for mode in modes}
 
 
+def _symmetric(table: pd.DataFrame) -> np.ndarray:
+    """Ways every mode may use in both directions or in none, so turning them keeps their flags true."""
+    same = np.ones(len(table), dtype=bool)
+    for forward, backward in (MODE_FLAGS["drive"], MODE_FLAGS["bike"]):
+        if forward in table.columns:
+            same &= (table[forward] == table[backward]).to_numpy()
+    return same
+
+
 def _way_modes(
     ways: pd.DataFrame, filters: dict[str, str], *, allow_footways: bool
 ) -> pd.DataFrame:  # pylint: disable=too-many-locals
@@ -135,7 +144,9 @@ def get_street_graph(  # pylint: disable=too-many-locals
     ``oneway`` unless ``oneway:bicycle=no`` or a ``cycleway*=opposite*`` tag lets bicycles ride against it.
     Segments are merged into edges only where all of this, and the kept tags, stay the same, so an edge never
     spans a change for any mode; bridges and tunnels are separate edges. The geometry of every edge runs from
-    ``u`` to ``v`` in the direction the way is drawn. :func:`mode_graph` takes the graph of one mode from it.
+    ``u`` to ``v``; only edges every mode may use both ways or not at all are written against the drawing of
+    their way, so the direction flags of the others keep the drawing. :func:`mode_graph` takes the graph of one
+    mode from it.
 
     Parameters:
         osm_id (int | None): OSM relation id of the territory boundary. Provide this or ``territory``.
@@ -179,6 +190,7 @@ def get_street_graph(  # pylint: disable=too-many-locals
         local_crs=local_crs,
         simplify=simplify,
         way_columns=lambda ways: _way_modes(ways, filters, allow_footways=allow_footways),
+        two_way=_symmetric,
     )
     if len(edges) == 0:
         logger.warning("No edges found, returning empty graph")

@@ -110,3 +110,18 @@ def test_modes_subset_and_errors(monkeypatch):
         get_street_graph(territory=TERRITORY, modes=["boat"])
     with pytest.raises(ValueError, match="mode must be"):
         mode_graph(walk_only, "boat")
+
+
+def test_ways_one_way_for_a_mode_are_not_turned_in_the_street_graph(monkeypatch):
+    # Two one-way roads drawn head to head: walking may use them both ways, driving may not, so the street graph
+    # keeps them apart (turning one would swap its drive flags); the walk graph merges them.
+    rows = [
+        _way(11, [A, B], highway="residential", oneway="yes"),
+        _way(12, [C, B], highway="residential", oneway="yes"),
+    ]
+    monkeypatch.setattr(drive_walk_builders, "get_network_by_filters", lambda polygon, way_filter: pd.DataFrame(rows))
+    street = get_street_graph(territory=TERRITORY)
+    assert len(street.edges_gdf) == 2
+    assert street.edges_gdf["drive_forward"].all() and not street.edges_gdf["drive_backward"].any()
+    assert len(mode_graph(street, "walk").edges_gdf) == 1
+    assert len(mode_graph(street, "drive").edges_gdf) == 2

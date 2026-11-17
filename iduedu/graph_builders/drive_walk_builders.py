@@ -102,6 +102,22 @@ def _get_highway_properties(highway) -> tuple[str, float]:
 STRUCTURE_TAGS = ("bridge", "tunnel")
 
 
+#: Values of the ``oneway`` tag that close a way to one direction (``-1``: against the drawing).
+ONEWAY_VALUES = frozenset({"yes", "true", "1", "-1"})
+
+
+def _oneway_text(table: pd.DataFrame) -> pd.Series:
+    """The ``oneway`` tag as lower-case text, ``"no"`` where it is absent."""
+    if "oneway" not in table.columns:
+        return pd.Series("no", index=table.index)
+    return table["oneway"].fillna("no").astype(str).str.lower().str.strip()
+
+
+def _drive_two_way(table: pd.DataFrame) -> np.ndarray:
+    """Ways open to cars in both directions."""
+    return ~_oneway_text(table).isin(ONEWAY_VALUES).to_numpy()
+
+
 def _build_edges_from_overpass(  # pylint: disable=too-many-locals
     polygon: Polygon,
     way_filter: str | list[str],
@@ -109,15 +125,19 @@ def _build_edges_from_overpass(  # pylint: disable=too-many-locals
     local_crs: CRS,
     simplify: bool = True,
     way_columns: Callable[[pd.DataFrame], pd.DataFrame] | None = None,
+    two_way: bool | Callable[[pd.DataFrame], np.ndarray] = False,
 ) -> gpd.GeoDataFrame:
     """
     Download OSM ways by filter, cut them into edges and project them to a local CRS.
 
     Every way is split into its straight segments. With ``simplify=True`` the segments are merged back into
     edges that run from junction to junction: two segments are joined at a point only when they are the
-    only segments there, follow one another, and carry the same tags (``needed_tags`` and the bridge and
-    tunnel tags). An edge therefore never mixes the attributes of different ways, and bridges and tunnels
-    stay separate edges. With ``simplify=False`` every segment is an edge.
+    only segments there, carry the same tags (``needed_tags`` and the bridge and tunnel tags) and their
+    directions agree. Segments of two-way ways always agree: where two ways are drawn head to head or tail
+    to tail, the segments of one are turned, so the edge geometry stays one line. Segments of one-way ways
+    are joined only where one ends and the next starts, and never with two-way ones. An edge therefore never
+    mixes the attributes of different ways, and bridges and tunnels stay separate edges. With
+    ``simplify=False`` every segment is an edge.
 
     Parameters:
         polygon (Polygon): Boundary polygon in EPSG:4326 used to query OSM data.
@@ -128,6 +148,8 @@ def _build_edges_from_overpass(  # pylint: disable=too-many-locals
         simplify (bool): Merge segments into junction-to-junction edges.
         way_columns: Function of the way table (with its ``tags``) that returns more columns per way, indexed by
             the ways to keep. The columns go on the edges and, like the tags, a change of them starts a new edge.
+        two_way: Whether ways may be travelled both ways: one value for all, or a function of the table of
+            tags (and ``way_columns``) of the ways that returns one bool per way.
 
     Returns:
         GeoDataFrame: Line features in the local CRS with ``geometry``, ``way_idx`` (row of the source way),
@@ -184,26 +206,34 @@ def _build_edges_from_overpass(  # pylint: disable=too-many-locals
         # Ways with equal tags share a key; only segments with the same key are merged.
         way_tags = tags_df.loc[way_indices]
         key_of_way = way_tags.groupby(tag_keys, dropna=False, sort=False).ngroup().to_numpy()
-        order, offsets = _rust.merge_chains(
+        if callable(two_way):
+            two_way_of_way = np.asarray(two_way(way_tags), dtype=bool)
+        else:
+            two_way_of_way = np.full(len(way_tags), bool(two_way))
+        order, reversed_, offsets = _rust.merge_oriented_chains(
             node_of[start].astype(np.uint32),
             node_of[start + 1].astype(np.uint32),
             key_of_way[way_of_segment].astype(np.uint32),
-            int(node_of.max()) + 1,
+            two_way_of_way[way_of_segment],
+            np.zeros(int(node_of.max()) + 1, dtype=bool),
         )
     else:
         order, offsets = np.arange(len(start)), np.arange(len(start) + 1)
+        reversed_ = np.zeros(len(start), dtype=bool)
 
-    # The points of an edge: the start of its first segment, then the end of every segment.
+    # The points of an edge: the tail of its first segment, then the head of every segment; a turned
+    # segment runs from its second point to its first.
     n_edges = len(offsets) - 1
     edge_of_segment = np.repeat(np.arange(n_edges), np.diff(offsets))
-    ordered = start[order]
-    points = np.empty(len(ordered) + n_edges, dtype=np.int64)
+    tails = np.where(reversed_, start[order] + 1, start[order])
+    heads = np.where(reversed_, start[order], start[order] + 1)
+    points = np.empty(len(order) + n_edges, dtype=np.int64)
     edge_of_point = np.empty(len(points), dtype=np.int64)
     first = offsets[:-1] + np.arange(n_edges)
-    points[first] = ordered[offsets[:-1]]
+    points[first] = tails[offsets[:-1]]
     edge_of_point[first] = np.arange(n_edges)
-    rest = np.arange(len(ordered)) + edge_of_segment + 1
-    points[rest] = ordered + 1
+    rest = np.arange(len(order)) + edge_of_segment + 1
+    points[rest] = heads
     edge_of_point[rest] = edge_of_segment
 
     x, y = Transformer.from_crs(4326, local_crs, always_xy=True).transform(lonlat[:, 0], lonlat[:, 1])
@@ -285,7 +315,12 @@ def get_drive_graph(
 
     logger.info(f"Retrieving drive network via {osm_source_label()}...")
     edges_gdf = _build_edges_from_overpass(
-        polygon4326, road_filter, needed_tags=tags_to_retrieve, local_crs=local_crs, simplify=simplify
+        polygon4326,
+        road_filter,
+        needed_tags=tags_to_retrieve,
+        local_crs=local_crs,
+        simplify=simplify,
+        two_way=_drive_two_way,
     )
 
     if len(edges_gdf) == 0:
@@ -307,17 +342,13 @@ def get_drive_graph(
                 graph_type=network_type,
             )
 
-    if "oneway" not in edges_gdf.columns:
-        edges_gdf["oneway"] = "no"
-
-    edges_gdf["oneway"] = edges_gdf["oneway"].fillna("no")
-    oneway_norm = edges_gdf["oneway"].astype(str).str.lower().str.strip()
+    oneway_norm = _oneway_text(edges_gdf)
     reverse_mask = oneway_norm.eq("-1")
     if reverse_mask.any():
         edges_gdf.loc[reverse_mask, "geometry"] = edges_gdf.loc[reverse_mask, "geometry"].apply(
             lambda geom: LineString(list(geom.coords)[::-1])
         )
-    edges_gdf["oneway"] = oneway_norm.isin({"yes", "true", "1", "-1"})
+    edges_gdf["oneway"] = oneway_norm.isin(ONEWAY_VALUES)
 
     nodes_gdf, edges_gdf = _build_nodes_and_uv(edges_gdf, local_crs)
 
@@ -434,7 +465,7 @@ def get_walk_graph(
 
     logger.info(f"Downloading walk network via {osm_source_label()} ...")
     edges_gdf = _build_edges_from_overpass(
-        polygon4326, road_filter, needed_tags=needed_tags, local_crs=local_crs, simplify=simplify
+        polygon4326, road_filter, needed_tags=needed_tags, local_crs=local_crs, simplify=simplify, two_way=True
     )
 
     if len(edges_gdf) == 0:
