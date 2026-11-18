@@ -4,12 +4,14 @@ B1 — Graph construction benchmark: IduEdu vs OSMnx vs Pyrosm vs cityseer.
 
 Measures wall time, node/edge counts, and resulting in-memory graph
 representation size for walk and drive graphs over the same AOI (bbox from the
-PBF header), with the simplify on/off ablation for IduEdu, OSMnx and cityseer
-(pyrosm has no comparable switch).
+PBF header), with the simplify on/off ablation for IduEdu, OSMnx and cityseer.
+Pyrosm is measured on its unsimplified graph, which is compared with the
+``simplify=False`` rows of the other arms.
 
 IduEdu is measured twice, once per data source. The ``iduedu`` arm fetches from
-Overpass like OSMnx and cityseer; the ``iduedu_pbf`` arm (IduEdu 2.3.0 and later,
-needs pyosmium) reads the same local PBF as pyrosm. Each competitor is therefore
+Overpass like OSMnx and cityseer; the ``iduedu_pbf`` arm (IduEdu 2.3.0 and later;
+from 3.0 read by the library's Rust core, before that by pyosmium) reads the same
+local PBF as pyrosm. Each competitor is therefore
 compared with IduEdu on the source it uses itself, and cityseer, which builds
 pedestrian networks only, is charged on walk alone.
 
@@ -157,8 +159,9 @@ def build_iduedu(polygon, network: str, simplify: bool):
 def build_iduedu_pbf(pbf_path: str, polygon, network: str, simplify: bool):
     """IduEdu answering the same queries from the local PBF that pyrosm reads.
 
-    The library builds a new ``PbfSource`` for every query and reads the file
-    again, so a repeated attempt is not served from memory: like pyrosm, every
+    From 3.0 the library keeps the ``PbfSource`` of the file, with the block index
+    of its first pass, between calls. :func:`clear_iduedu_pbf_cache` drops it before
+    every measured attempt, outside the timed region, so that, like pyrosm, every
     attempt pays for the file.
     """
     from iduedu import config, get_drive_graph, get_walk_graph
@@ -169,11 +172,32 @@ def build_iduedu_pbf(pbf_path: str, polygon, network: str, simplify: bool):
     return len(graph.nodes_gdf), len(graph.edges_gdf), graph
 
 
+def clear_iduedu_pbf_cache() -> None:
+    """Drop IduEdu's open ``PbfSource``, outside the timed region.
+
+    IduEdu 3 keeps one source per file (keyed by path, size and modification time)
+    in ``iduedu.overpass.downloaders._PBF_SOURCES``, so that the builders of one
+    territory share the file's block index. Without clearing it, a second attempt,
+    and the first one after the warm-up, would skip the pass over the file that
+    pyrosm pays on every attempt.
+    """
+    from iduedu.overpass import downloaders
+
+    sources = getattr(downloaders, "_PBF_SOURCES", None)
+    if sources is not None:
+        sources.clear()
+
+
 def iduedu_pbf_available() -> bool:
-    """True when the library's PBF source can run here (it needs pyosmium)."""
+    """True when the library can read a local PBF: its Rust reader from 3.0, pyosmium before."""
     import importlib.util
 
-    return importlib.util.find_spec("osmium") is not None
+    try:
+        from iduedu.osm_pbf.reader import open_pbf  # noqa: F401  (3.0 and later)
+
+        return True
+    except ImportError:
+        return importlib.util.find_spec("osmium") is not None
 
 
 def record_pbf_snapshot(area: str, pbf_path: str) -> None:
@@ -317,14 +341,39 @@ def cityseer_available() -> bool:
 
 
 def build_pyrosm(pbf_path: str, network: str):
+    """Pyrosm's unsimplified graph of the whole extract, read with its default engine.
+
+    ``simplify=False`` is passed explicitly: up to 0.18 it was the default of
+    ``to_graph``, and from 0.19 on pyrosm simplifies unless told otherwise.
+
+    The rerun on IduEdu 3.2 holds pyrosm at 0.26.0 (``AGENT_RUN.md``). From 0.27 its
+    walking network also takes ways built for cycling that the country lets
+    pedestrians use (``get_network(shared_paths="local")``) and changes other walking
+    rules; on pyrosm's test file the unsimplified walking graph grows from 781
+    vertices, as many as IduEdu's, to 1,385, and to 942 with ``shared_paths="tagged"``.
+    No argument restores the earlier network, so the arm would time another graph.
+    """
     from pyrosm import OSM
 
     network_type = "walking" if network == "walk" else "driving"
     osm = OSM(pbf_path)
     nodes, edges = osm.get_network(nodes=True, network_type=network_type)
-    graph = osm.to_graph(nodes, edges, graph_type="networkx", network_type=network_type)
+    graph = osm.to_graph(nodes, edges, graph_type="networkx", network_type=network_type, simplify=False)
     force_cleanup(osm, nodes, edges)
     return graph.number_of_nodes(), graph.number_of_edges(), graph
+
+
+def clear_pyrosm_cache(pbf_path: str) -> None:
+    """Remove pyrosm's cached reads of the file, outside the timed region.
+
+    From 0.19 pyrosm reads out of core by default and, with pyarrow installed, keeps
+    the result of each read in the temporary folder, so a second read of the same
+    file and network returns it without decoding the file. Clearing it before every
+    measured read makes each attempt a read of the file, as the first one is.
+    """
+    from pyrosm import OSM
+
+    OSM.clear_cache(pbf_path)
 
 
 def pyrosm_available() -> bool:
@@ -541,6 +590,7 @@ def main() -> None:
                 run_one(existing, "iduedu", "smoke", network, simplify, 1, build_iduedu, polygon, network, simplify)
                 run_one(existing, "osmnx", "smoke", network, simplify, 1, build_osmnx, polygon, network, simplify)
                 if smoke_pbf:
+                    clear_iduedu_pbf_cache()
                     run_one(
                         existing,
                         "iduedu_pbf",
@@ -574,7 +624,7 @@ def main() -> None:
     if not has_pyrosm:
         print("[warn] pyrosm not importable in this environment; run its rows from a conda env later")
     if not has_iduedu_pbf and (wanted is None or "iduedu_pbf" in wanted):
-        print("[warn] pyosmium not importable; the iduedu_pbf rows will be missing (pip install 'iduedu[pbf]')")
+        print("[warn] this IduEdu cannot read .osm.pbf files; the iduedu_pbf rows will be missing")
 
     for area in areas:
         try:
@@ -623,8 +673,10 @@ def main() -> None:
                 record_pbf_snapshot(area, pbf_path)
 
             # The PBF arm needs no Overpass, so its warm-up only loads the library
-            # and compiles its kernels; a failure here is not transient and is not
-            # retried. Warmed on the same file and polygon it is measured on.
+            # and its compiled extension (no JIT from 3.0); a failure here is not
+            # transient and is not retried. Warmed on the same file and polygon it is
+            # measured on; the file index it leaves behind is dropped before each
+            # measured attempt.
             pbf_warm = dict.fromkeys(networks, True)
             for network in networks:
                 if pbf_pending[network]:
@@ -660,11 +712,13 @@ def main() -> None:
             for network in networks:
                 if has_pyrosm:
                     for attempt in range(1, ATTEMPTS + 1):
+                        clear_pyrosm_cache(pbf_path)
                         run_one(existing, "pyrosm", area, network, None, attempt, build_pyrosm, pbf_path, network)
                 # Right after pyrosm: the two arms that read the same file, back to back.
                 if has_iduedu_pbf and pbf_warm[network]:
                     for simplify in SIMPLIFY_SETTINGS:
                         for attempt in range(1, ATTEMPTS + 1):
+                            clear_iduedu_pbf_cache()
                             run_one(
                                 existing,
                                 "iduedu_pbf",

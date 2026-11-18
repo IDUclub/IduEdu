@@ -1,5 +1,6 @@
-# Benchmark environments (recreate from requirements-bench.txt / environment-bench.yml)
-.venv-bench/
+# Benchmark environments (recreate from requirements-bench.txt / environment-bench.yml,
+# or, for a timing rerun, as timing/AGENT_RUN.md says)
+.venv-bench*/
 .venv-pyrosm-conda/
 
 # Downloaded OSM extracts — hundreds of MB, re-downloaded on demand

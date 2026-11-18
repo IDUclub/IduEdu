@@ -199,18 +199,20 @@ class BoundsInfo:
 
 
 def bbox_from_pbf(pbf_path: str) -> BoundsInfo:
-    """Read the bounding box from a PBF header (fast, no parsing of the body)."""
-    import osmium
+    """Read the bounding box from a PBF header (fast, no parsing of the body).
+
+    IduEdu 3 reads ``.osm.pbf`` files with its own Rust reader, whose header holds
+    the box as ``(left, bottom, right, top)`` in degrees, the order pyosmium gave
+    before 3.0. pyosmium is no longer installed.
+    """
     from shapely.geometry import box
 
-    reader = osmium.io.Reader(pbf_path)
-    header = reader.header()
-    reader.close()
-    if header.box is None:
+    from iduedu.osm_pbf.reader import open_pbf
+
+    header_box = open_pbf(pbf_path).header()["bbox"]
+    if header_box is None:
         raise RuntimeError(f"No bbox in PBF header: {pbf_path}")
-    bl = header.box().bottom_left
-    tr = header.box().top_right
-    bbox = (bl.lon, bl.lat, tr.lon, tr.lat)
+    bbox = tuple(float(v) for v in header_box)
     return BoundsInfo(polygon_4326=box(*bbox), bbox=bbox, pbf_path=pbf_path)
 
 
@@ -378,8 +380,15 @@ def urban_to_networkx(urban_graph, weight: str = "time_min"):
     """Directed MultiDiGraph equivalent of ``urban_graph`` (the competitors' input).
 
     Oneway edges become a single u->v arc; two-way edges are expanded to both
-    directions, exactly as the UrbanGraph adjacency does. Node ``x``/``y`` are
-    kept so competitors can build their own spatial index.
+    directions, exactly as the UrbanGraph adjacency does
+    (``iduedu.graph.adjacency``): every edge of an undirected graph is two-way; in a
+    directed graph with a direction column an edge is one-way where that column is
+    true; a directed graph without one keeps the stored direction only. Node
+    ``x``/``y`` are kept so competitors can build their own spatial index.
+
+    The rule used to read the ``oneway`` column alone and take an edge without it as
+    one-way. IduEdu 3 builds walk graphs undirected and without that column, so the
+    old rule turned every footpath into a one-way arc.
     """
     import networkx as nx
 
@@ -395,7 +404,12 @@ def urban_to_networkx(urban_graph, weight: str = "time_min"):
     u = edges["u"].to_numpy()
     v = edges["v"].to_numpy()
     w = edges[weight].to_numpy()
-    if "oneway" in edges.columns:
+    direction_column = getattr(urban_graph, "edge_direction_column", None)
+    if not getattr(urban_graph, "is_directed", True):
+        oneway = np.zeros(len(edges), dtype=bool)
+    elif direction_column is not None and direction_column in edges.columns:
+        oneway = edges[direction_column].to_numpy().astype(bool)
+    elif "oneway" in edges.columns:  # graphs read without their flags, as before
         oneway = edges["oneway"].to_numpy().astype(bool)
     else:
         oneway = np.ones(len(edges), dtype=bool)
@@ -507,14 +521,13 @@ def dump_environment(tag: str) -> None:
         "iduedu",
         "osmnx",
         "pyrosm",
-        "osmium",
         "cityseer",
         "networkx",
         "networkit",
         "igraph",
         "rustworkx",
         "peartree",
-        "numba",
+        "numba",  # cityseer and pyrosm may still pull it in; IduEdu 3 does not use it
         "numpy",
         "pandas",
         "geopandas",
@@ -572,15 +585,53 @@ def write_library_provenance() -> Path:
             for mode in sorted(reg.list_types())
         }
 
+    def install() -> dict:
+        """How the package got here: a wheel from an index, or a build from a local tree.
+
+        From 3.0 the kernels are a compiled Rust extension, so the same version number
+        can stand for a released wheel or for a local build with other compiler
+        settings. PEP 610's ``direct_url.json`` is absent for an index install and
+        names the tree for a local or editable one; the extension's hash identifies
+        the binary in both cases.
+        """
+        import hashlib
+        import importlib.metadata as md
+
+        dist = md.distribution("iduedu")
+        direct_url = dist.read_text("direct_url.json")
+        direct = json.loads(direct_url) if direct_url else None
+        package_dir = Path(iduedu.__file__).parent
+        extension = next(package_dir.glob("_rust*.pyd"), None) or next(package_dir.glob("_rust*.so"), None)
+        if direct is None:
+            kind = "index wheel"
+        elif direct.get("dir_info", {}).get("editable"):
+            kind = "editable"
+        else:
+            kind = "local build"
+        tags = [line[5:] for line in (dist.read_text("WHEEL") or "").splitlines() if line.startswith("Tag: ")]
+        return {
+            "kind": kind,
+            "direct_url": direct,
+            "wheel_tags": tags,
+            "rust_extension": extension.name if extension else None,
+            "rust_extension_sha256": hashlib.sha256(extension.read_bytes()).hexdigest() if extension else None,
+        }
+
     # Only changes inside the package matter for what was measured; the rest of the
     # repository (the papers, their drafts) is usually dirty while a paper is written.
-    library_dirty = git("status", "--porcelain", "--", ".")
+    # A wheel sits in site-packages, which may lie inside this repository (the bench
+    # environment is paper2026/.venv-bench-latest), so git would describe the paper's
+    # checkout and not the package: the git fields are left empty for a wheel.
+    installed = install()
+    from_tree = installed["kind"] != "index wheel"
+    library_dirty = git("status", "--porcelain", "--", ".") if from_tree else None
     info = {
         "purpose": "what the timing run was computed with; the table of model constants is generated from it",
         "iduedu_version": iduedu.__version__,
         "iduedu_path": str(Path(iduedu.__file__).parent),
-        "git_commit": git("rev-parse", "HEAD"),
-        "git_describe": git("describe", "--tags"),
+        "install": installed,
+        "git_commit": git("rev-parse", "HEAD") if from_tree else None,
+        "git_describe": git("describe", "--tags") if from_tree else None,
         "library_dirty_paths": library_dirty.splitlines() if library_dirty else [],
         "python": platform.python_version(),
         "registry": {
@@ -590,5 +641,8 @@ def write_library_provenance() -> Path:
     }
     out = RESULTS_DIR / "library_provenance.json"
     out.write_text(json.dumps(info, indent=2), encoding="utf-8")
-    print(f"[provenance] IduEdu {info['iduedu_version']} ({info['git_describe']}) -> {out}")
+    print(
+        f"[provenance] IduEdu {info['iduedu_version']} ({installed['kind']}"
+        f"{', ' + info['git_describe'] if info['git_describe'] else ''}) -> {out}"
+    )
     return out

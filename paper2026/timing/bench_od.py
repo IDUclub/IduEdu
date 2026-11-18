@@ -277,8 +277,9 @@ def main() -> None:
         attempts = ATTEMPTS
     print(f"[data] origins={len(origins):,} destinations={len(dest):,}")
 
-    # Warm-up (not recorded): Numba JIT for iduedu, competitor imports/first calls.
-    print("[warm] iduedu numba kernels + competitor imports")
+    # Warm-up (not recorded): the adjacency matrix the graph keeps for later calls
+    # (before IduEdu 3.0 also the Numba JIT), competitor imports and first calls.
+    print("[warm] iduedu adjacency matrix + competitor imports")
     warm_gdf = origins.iloc[:8]
     od_iduedu(graph, warm_gdf, warm_gdf, None)
     od_iduedu(graph, warm_gdf, warm_gdf, 5)
