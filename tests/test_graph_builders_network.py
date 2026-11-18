@@ -19,6 +19,8 @@ from iduedu import (
     join_pt_walk_graph,
     mode_graph,
     od_matrix,
+    route_edges,
+    route_stops,
 )
 
 pytestmark = [pytest.mark.network, pytest.mark.slow]
@@ -142,6 +144,18 @@ def test_get_public_transport_graph_multiple_types(ground_pt_graph):
     edge_types = set(ground_pt_graph.edges_gdf["type"].dropna().unique())
     assert {"bus", "tram"} <= edge_types
     assert "boarding" in edge_types
+
+
+def test_routes_of_the_osm_graph(ground_pt_graph, subway_graph):
+    for graph in (ground_pt_graph, subway_graph):
+        routes, edges = graph.routes, graph.edges_gdf
+        assert len(routes) > 0 and routes.index.str.fullmatch(r"osm:r\d+").all()
+        travel = edges[edges["type"].isin(set(routes["mode"]))]
+        assert travel["route_key"].notna().all() and travel["route_key"].isin(routes.index).all()
+        assert set(travel["route_key"]) == set(routes.index)
+        key = travel["route_key"].value_counts().index[0]
+        stops = route_stops(graph, key)
+        assert len(stops) == len(route_edges(graph, key)) + stops["part"].nunique()
 
 
 def test_get_single_pt_graph_where_not_exist(bounds):

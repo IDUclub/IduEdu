@@ -242,13 +242,13 @@ def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypa
             }
         )
 
-    def fake_ground_parser(row, local_crs, ref2speed, needed_tags):
-        parsed_types.append(row.transport_type)
+    def fake_ground_parser(routes, local_crs, ref2speed, needed_tags):
+        parsed_types.extend(routes["transport_type"])
         return gpd.GeoDataFrame(), gpd.GeoDataFrame()
 
     monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [object()])
     monkeypatch.setattr(public_transport_builders, "overpass_routes_to_df", fake_routes_to_df)
-    monkeypatch.setattr(public_transport_builders, "overpass_ground_transport2edgenode", fake_ground_parser)
+    monkeypatch.setattr(public_transport_builders, "ground_routes_tables", fake_ground_parser)
 
     # 'train' is present in the Overpass response but was not requested and is not
     # in the default registry: it must be filtered out (no KeyError, no train edges).

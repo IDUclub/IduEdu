@@ -1,3 +1,4 @@
+import hashlib
 from datetime import date, datetime, time
 from math import sqrt
 from pathlib import Path
@@ -11,6 +12,7 @@ from shapely import LineString
 from shapely.ops import substring
 
 from iduedu import config
+from iduedu.graph.routes import empty_routes, normalize_routes, route_keys_of
 from iduedu.graph.transformers import estimate_crs_for_bounds
 from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.gtfs.merge import merge_gtfs_feeds
@@ -562,9 +564,105 @@ def _canonical_pattern_stops(trips: pd.DataFrame, stop_times: pd.DataFrame) -> p
     return rows.sort_values(["pattern_id", "stop_position"], kind="stable")
 
 
+def feed_id_of(feed: GTFSFeed) -> str:
+    """Default feed id of route keys: the file or directory name of the feed without ``.zip``.
+
+    A merged feed joins the names of its sources with ``+``. Colons, which separate the parts of a route key,
+    become underscores.
+    """
+    names = [part.strip() for part in Path(feed.source).name.split(" + ")]
+    names = [name[:-4] if name.lower().endswith(".zip") else name for name in names]
+    return "+".join(names).replace(":", "_") or "feed"
+
+
+def _pattern_route_keys(pattern_stops: pd.DataFrame, feed_id: str) -> dict[int, str]:
+    """``gtfs:<feed>:<route_id>:<direction>:<hash>`` of every pattern.
+
+    The hash (12 hex digits of SHA-1) covers the shape and the stop sequence with its pickup and drop-off
+    types, everything else that tells two patterns of a route and direction apart, so a key is stable while the
+    feed is and unique within it. A missing ``direction_id`` is written ``-``.
+    """
+    keys: dict[int, str] = {}
+    for pattern_id, group in pattern_stops.groupby("pattern_id", sort=False):
+        first = group.iloc[0]
+        tokens = [str(first["shape_id"])] + [
+            f"{stop}:{pickup}:{drop}"
+            for stop, pickup, drop in zip(group["stop_id"], group["pickup_type"], group["drop_off_type"])
+        ]
+        digest = hashlib.sha1("|".join(tokens).encode("utf-8")).hexdigest()[:12]
+        direction = str(first["direction_id"]) or "-"
+        keys[int(pattern_id)] = f"gtfs:{feed_id}:{first['route_id']}:{direction}:{digest}"
+    if len(set(keys.values())) != len(keys):
+        raise GTFSValidationError("two GTFS patterns got the same route key")
+    return keys
+
+
+def _gtfs_routes_table(
+    feed: GTFSFeed,
+    pattern_stops: pd.DataFrame,
+    route_keys: dict[int, str],
+    stop_names: dict[str, str],
+    waits: pd.Series,
+    feed_id: str,
+) -> pd.DataFrame:
+    """One row per pattern: the attributes of its route, its first and last stops and its interval."""
+    routes = feed["routes"].copy().set_index("route_id", drop=False)
+    agency = feed.get("agency")
+    agency_names: dict[str, str] = {}
+    if agency is not None and not agency.empty and "agency_name" in agency:
+        ids = agency["agency_id"] if "agency_id" in agency else pd.Series([""] * len(agency))
+        agency_names = dict(zip(ids.astype(str), agency["agency_name"].astype(str)))
+    only_agency = next(iter(agency_names.values())) if len(agency_names) == 1 else None
+    rows = []
+    for pattern_id, group in pattern_stops.groupby("pattern_id", sort=False):
+        first = group.iloc[0]
+        route_id = str(first["route_id"])
+        route = routes.loc[route_id] if route_id in routes.index else pd.Series(dtype=object)
+        short = str(route.get("route_short_name", "") or "")
+        long_name = str(route.get("route_long_name", "") or "")
+        colour = str(route.get("route_color", "") or "")
+        operator = agency_names.get(str(route.get("agency_id", "") or ""), only_agency)
+        interval = np.nan
+        for _, row in group.iterrows():
+            wait = waits.get((int(pattern_id), int(row["stop_position"])), np.nan)
+            if row["pickup_type"] != "1" and pd.notna(wait):
+                interval = round(2 * float(wait), 3)
+                break
+        rows.append(
+            {
+                "route_key": route_keys[int(pattern_id)],
+                "source": "gtfs",
+                "mode": str(first["type"]),
+                "ref": short or None,
+                "name": long_name or None,
+                "from": stop_names.get(str(group["stop_id"].iloc[0])) or None,
+                "to": stop_names.get(str(group["stop_id"].iloc[-1])) or None,
+                "network": None,
+                "operator": operator,
+                "colour": f"#{colour}" if colour else None,
+                "line_key": f"gtfs:{feed_id}:{route_id}",
+                "line_name": short or long_name or None,
+                "gtfs_feed": feed_id,
+                "gtfs_route_id": route_id,
+                "direction_id": str(first["direction_id"]) or None,
+                "shape_id": str(first["shape_id"]) or None,
+                "stops": len(group),
+                "interval_min": interval,
+            }
+        )
+    if not rows:
+        return empty_routes()
+    return normalize_routes(pd.DataFrame(rows).set_index("route_key"))
+
+
 def _empty_gtfs_graph(crs: Any | None = None) -> UrbanGraph:
     return UrbanGraph.empty(
-        crs=crs, is_multigraph=True, is_directed=True, edge_direction_column="oneway", graph_type="public_transport"
+        crs=crs,
+        is_multigraph=True,
+        is_directed=True,
+        edge_direction_column="oneway",
+        graph_type="public_transport",
+        routes=empty_routes(),
     )
 
 
@@ -576,8 +674,14 @@ def _build_graph_tables(
     segment_times: pd.Series,
     crs: Any | None,
     walk_speed_m_per_min: float,
+    feed_id: str,
 ) -> UrbanGraph:
     pattern_stops = _canonical_pattern_stops(trips, stop_times)
+    route_keys = _pattern_route_keys(pattern_stops, feed_id)
+    pattern_stops["route_key"] = pattern_stops["pattern_id"].map(lambda pattern: route_keys[int(pattern)])
+    keys_at_stop = pattern_stops.groupby(pattern_stops["stop_id"].astype(str), sort=False)["route_key"].agg(
+        route_keys_of
+    )
     served_ids = set(pattern_stops["stop_id"])
     pathways = feed.get("pathways")
     pathway_ids: set[str] = set()
@@ -640,6 +744,7 @@ def _build_graph_tables(
                 "stop_name": row.get("stop_name", ""),
                 "parent_station": row.get("parent_station", ""),
                 "stop_access": row.get("stop_access", ""),
+                "route_key": keys_at_stop.get(str(stop_id)),
                 "geometry": stop_points.loc[stop_id],
             }
         )
@@ -684,6 +789,7 @@ def _build_graph_tables(
                     "direction_id": str(row["direction_id"]),
                     "shape_id": shape_id,
                     "route": row.get("route_short_name", ""),
+                    "route_key": row["route_key"],
                     "geometry": route_point,
                 }
             )
@@ -718,6 +824,7 @@ def _build_graph_tables(
                 "pattern_id": int(pattern_id),
                 "stop_position": int(row["stop_position"]),
                 "route": row.get("route_short_name", ""),
+                "route_key": row["route_key"],
             }
             wait = waits.get(key, np.nan)
             if row["pickup_type"] != "1" and pd.notna(wait):
@@ -770,6 +877,7 @@ def _build_graph_tables(
                 route_id=str(row["route_id"]),
                 pattern_id=int(pattern_id),
                 route=row.get("route_short_name", ""),
+                route_key=row["route_key"],
             )
 
     if pathways is not None and not pathways.empty:
@@ -825,6 +933,10 @@ def _build_graph_tables(
         edge_records[-1]["oneway"] = False
 
     nodes = gpd.GeoDataFrame(node_records, geometry="geometry", crs=local_crs).set_index("node_id")
+    stop_names = {}
+    if "stop_name" in feed["stops"]:
+        stop_names = dict(zip(feed["stops"]["stop_id"].astype(str), feed["stops"]["stop_name"].astype(str)))
+    routes = _gtfs_routes_table(feed, pattern_stops, route_keys, stop_names, waits, feed_id)
     if not edge_records:
         return UrbanGraph(
             nodes_gdf=nodes,
@@ -838,6 +950,7 @@ def _build_graph_tables(
             edge_direction_column="oneway",
             crs=local_crs,
             graph_type="public_transport",
+            routes=routes,
         )
     edges = gpd.GeoDataFrame(edge_records, geometry="geometry", crs=local_crs)
     edges["k"] = edges.groupby(["u", "v"], sort=False).cumcount()
@@ -851,6 +964,7 @@ def _build_graph_tables(
         edge_direction_column="oneway",
         crs=local_crs,
         graph_type="public_transport",
+        routes=routes,
     )
 
 
@@ -879,6 +993,7 @@ def get_gtfs_public_transport_graph(
     crs: Any | None = None,
     single_departure_wait_min: float | None = None,
     walk_speed_m_per_min: float = DEFAULT_WALK_SPEED_M_PER_MIN,
+    feed_id: str | None = None,
 ) -> UrbanGraph:
     """Build a static public-transport ``UrbanGraph`` from a local GTFS feed.
 
@@ -922,6 +1037,21 @@ def get_gtfs_public_transport_graph(
             omitted.
         walk_speed_m_per_min: Fallback speed for pathways without an explicit
             traversal time.
+        feed_id: Name of the feed in its route keys
+            (``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``). Defaults to the file or
+            directory name of the feed without ``.zip`` (the names of merged sources joined
+            by ``+``). Give each feed its own, stable name when keys from several feeds
+            are stored together.
+
+    Returns:
+        Directed multigraph of type ``"public_transport"`` with a ``routes`` table, one row
+        per pattern (the trips of a route in one direction calling at the same stops) with
+        ``ref``, ``name``, ``from`` and ``to`` (first and last stop), ``operator``,
+        ``colour``, ``line_key`` and ``line_name`` (the GTFS route), ``gtfs_route_id``,
+        ``direction_id``, ``shape_id``, ``stops`` and ``interval_min`` (the mean time between
+        departures at its first stop, twice its boarding wait). Route nodes and edges carry
+        the ``route_key`` of their pattern; a platform lists the keys of the patterns
+        calling there.
     """
 
     if single_departure_wait_min is not None and single_departure_wait_min < 0:
@@ -974,4 +1104,15 @@ def get_gtfs_public_transport_graph(
     waits = _boarding_wait_times(
         source, trips, stop_times, parsed_start, parsed_end, single_departure_wait_min, day_types
     )
-    return _build_graph_tables(source, trips, stop_times, waits, segment_times, crs, walk_speed_m_per_min)
+    if feed_id is not None and (not str(feed_id) or ":" in str(feed_id)):
+        raise ValueError("feed_id must be a non-empty name without ':'")
+    return _build_graph_tables(
+        source,
+        trips,
+        stop_times,
+        waits,
+        segment_times,
+        crs,
+        walk_speed_m_per_min,
+        feed_id=str(feed_id) if feed_id is not None else feed_id_of(source),
+    )

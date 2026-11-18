@@ -165,6 +165,7 @@ def simplify_graph(
         adjacency_weight=graph.adjacency_weight,
         crs=graph.crs,
         graph_type=graph.type,
+        routes=graph.routes,
     )
 
 

@@ -10,6 +10,7 @@ from shapely.geometry import LineString, Point
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import substring
 
+from iduedu.graph.routes import join_routes
 from iduedu.graph.urban_graph import UrbanGraph
 
 # Objects closer than this to their attachment point are mapped onto the existing node instead of
@@ -263,6 +264,7 @@ def relabel_urban_graph(
         adjacency_weight=graph_gdf.adjacency_weight,
         crs=graph_gdf.crs,
         graph_type=graph_gdf.type,
+        routes=graph_gdf.routes,
     )
     return relabeled_graph
 
@@ -307,6 +309,7 @@ def subgraph_by_nodes(graph_gdf: UrbanGraph, nodes) -> UrbanGraph:
         adjacency_weight=graph_gdf.adjacency_weight,
         crs=graph_gdf.crs,
         graph_type=graph_gdf.type,
+        routes=graph_gdf.routes,
     )
 
 
@@ -347,6 +350,7 @@ def clip_urban_graph(graph_gdf: UrbanGraph, polygon: BaseGeometry | gpd.GeoSerie
         adjacency_weight=graph_gdf.adjacency_weight,
         crs=graph_gdf.crs,
         graph_type=graph_gdf.type,
+        routes=graph_gdf.routes,
     )
     return clipped_graph
 
@@ -430,6 +434,7 @@ def join_urban_graphs(
         adjacency_weight=left.adjacency_weight,
         crs=left.crs,
         graph_type=graph_type if graph_type is not None else left.type,
+        routes=join_routes(left.routes, right.routes),
     )
 
 
@@ -928,4 +933,5 @@ def apply_urban_graph_changes(graph_gdf: UrbanGraph, changes: UrbanGraphChanges)
         adjacency_weight=graph_gdf.adjacency_weight,
         crs=graph_gdf.crs,
         graph_type=graph_gdf.type,
+        routes=graph_gdf.routes,
     )

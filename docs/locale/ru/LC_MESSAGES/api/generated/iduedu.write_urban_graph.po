@@ -20,8 +20,12 @@ msgstr "iduedu.write\\_urban\\_graph"
 msgid "Write an ``UrbanGraph`` to an ``.urbangraph`` archive."
 msgstr "Записывает ``UrbanGraph`` в архив ``.urbangraph``."
 
-msgid "The archive contains ``metadata.json``, ``nodes.parquet`` and ``edges.parquet``. If ``include_adjacency`` is true and the graph has a cached adjacency matrix, the cache is stored as ``adjacency.npz`` together with its nodelist."
-msgstr "Архив содержит ``metadata.json``, ``nodes.parquet`` и ``edges.parquet``. Если ``include_adjacency`` истинно и у графа есть закешированная матрица смежности, она сохраняется как ``adjacency.npz`` вместе со списком узлов."
+# | msgid "The archive contains ``metadata.json``, ``nodes.parquet`` and
+# | ``edges.parquet``. If ``include_adjacency`` is true and the graph has a
+# | cached adjacency matrix, the cache is stored as ``adjacency.npz`` together
+# | with its nodelist."
+msgid "The archive contains ``metadata.json``, ``nodes.parquet`` and ``edges.parquet``, and ``routes.parquet`` when the graph has a ``routes`` table. If ``include_adjacency`` is true and the graph has a cached adjacency matrix, the cache is stored as ``adjacency.npz`` together with its nodelist."
+msgstr "Архив содержит ``metadata.json``, ``nodes.parquet`` и ``edges.parquet``, а также ``routes.parquet``, если у графа есть таблица ``routes``. Если ``include_adjacency`` истинно и у графа есть закешированная матрица смежности, она сохраняется как ``adjacency.npz`` вместе со списком узлов."
 
 msgid "Parameters"
 msgstr "Параметры"

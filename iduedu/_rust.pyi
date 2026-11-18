@@ -218,3 +218,34 @@ def merge_oriented_chains(
     two_way: npt.NDArray[np.bool_],
     keep: npt.NDArray[np.bool_],
 ) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.bool_], npt.NDArray[np.int64]]: ...
+
+PtRoutes = tuple[
+    npt.NDArray[np.int64],  # node route
+    npt.NDArray[np.int64],  # node id: 2 * reference, + 1 for a made-up node
+    npt.NDArray[np.float64],  # node xy, (n, 2)
+    npt.NDArray[np.bool_],  # node is a platform
+    npt.NDArray[np.int64],  # edge route
+    npt.NDArray[np.int64],  # edge u
+    npt.NDArray[np.int64],  # edge v
+    npt.NDArray[np.bool_],  # edge is a boarding edge
+    npt.NDArray[np.int64],  # edge point offsets, n_edges + 1
+    npt.NDArray[np.float64],  # edge points, (m, 2)
+    npt.NDArray[np.float64],  # edge speed, NaN for boarding edges
+    list[tuple[int, str]],  # routes left out, with why
+]
+
+def parse_pt_routes(
+    xy: npt.NDArray[np.float64],
+    way_offsets: npt.NDArray[np.int64],
+    way_points: npt.NDArray[np.int64],
+    way_speeds: npt.NDArray[np.float64],
+    member_offsets: npt.NDArray[np.int64],
+    member_points: npt.NDArray[np.int64],
+    member_refs: npt.NDArray[np.int64],
+    member_ranks: npt.NDArray[np.int64],
+    member_platform: npt.NDArray[np.bool_],
+    member_stand_ins: npt.NDArray[np.int64],
+    member_stand_in_xy: npt.NDArray[np.float64],
+    kinds_apart: bool = False,
+    n_threads: int | None = None,
+) -> PtRoutes: ...

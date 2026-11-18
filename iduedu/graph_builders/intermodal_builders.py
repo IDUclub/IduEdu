@@ -42,6 +42,7 @@ def _as_directed_multigraph(graph: UrbanGraph) -> UrbanGraph:
         adjacency_weight=graph.adjacency_weight,
         crs=graph.crs,
         graph_type=graph.type,
+        routes=graph.routes,
     )
 
 
@@ -253,6 +254,7 @@ def join_pt_walk_graph(
             edge_direction_column="oneway",
             crs=walk_part.crs,
             graph_type="public_transport",
+            routes=public_transport_g.routes,
         )
 
     intermodal = join_urban_graphs(walk_part, pt_part, graph_type="intermodal")

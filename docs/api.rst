@@ -21,6 +21,9 @@ Building graphs
     get_street_graph
     mode_graph
     get_public_transport_graph
+    route_edges
+    route_stops
+    routes_in_area
     get_gtfs_public_transport_graph
     get_intermodal_graph
     join_pt_walk_graph

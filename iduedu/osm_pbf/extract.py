@@ -8,9 +8,11 @@ would, restricted to the objects IduEdu reads -- so :class:`~iduedu.osm_pbf.PbfS
 small file exactly as on the regional one:
 
 - ways carrying one of ``way_keys`` (by default ``highway``, ``railway``, ``public_transport``) that touch
-  the polygon under Overpass ``poly:`` semantics, with all their nodes;
+  the polygon under Overpass ``poly:`` semantics, with all their nodes; an empty ``way_keys`` selects none,
+  for a file of public-transport routes only;
 - public-transport route relations (``route`` in ``route_values``) with a node or way member touching
-  the polygon, with all their members complete, also outside the polygon;
+  the polygon, with all their members complete, also outside the polygon, and the ``route_master``
+  relations listing them (the lines, without their other members);
 - for subway routes, every relation sharing a node with them (their stop areas) with all members and
   their relation members complete, and the ``stop_area_group`` relations that contain those stop areas;
 - relations listed in ``keep_relations`` (for example the city boundary, so that ``osm_id=`` keeps
@@ -111,7 +113,9 @@ def split_by_polygons(
             file name and must not contain path separators.
         out_dir: Output directory, created if missing.
         way_keys: Ways carrying at least one of these keys are selected spatially. ``None`` selects
-            every way. Ways without them still enter a city file as members of selected relations.
+            every way, an empty sequence none: then a route enters a file by a node member (a stop or a
+            platform) in its polygon, and the file holds the routes alone, with their members. Ways
+            without the keys still enter a city file as members of selected relations.
         route_values: OSM ``route`` values of the relations to keep; defaults to every mode of
             ``DEFAULT_REGISTRY_W_TRAIN`` (bus, trolleybus, tram/light_rail, subway, monorail, train,
             taxi/share_taxi).
@@ -168,6 +172,8 @@ def split_by_polygons(
 def _select_ways(file, cities: list[_City], tree: STRtree, way_keys) -> None:
     """Ways with one of ``way_keys`` touching each city's polygon, with their nodes."""
     keys = list(way_keys) if way_keys is not None else None
+    if keys == []:
+        return
     ids, ref_offsets, refs, coord_offsets, lon, lat, _ = file.ways(
         any_keys=keys, bboxes=[c.polygon.bounds for c in cities], tags=False
     )
@@ -224,8 +230,16 @@ def _select_routes(file, cities: list[_City], tree: STRtree, route_values) -> di
 
 
 def _complete_relations(file, cities: list[_City], route_rels: dict, keep: dict) -> None:
-    """Add stop areas, stop-area groups, nested stop-area members and kept relations to the cities."""
+    """Add route masters, stop areas, stop-area groups, nested stop-area members and kept relations."""
     by_name = {c.name: c for c in cities}
+
+    # The lines of the routes: rel(br.routes)["type"="route_master"], the relation alone.
+    if route_rels:
+        for rid, members, _ in _relations(file, tags=[("type", "route_master")]):
+            route_refs = {ref for kind, ref, _ in members if kind == "r" and ref in route_rels}
+            for city in cities:
+                if route_refs & city.relations:
+                    city.relations.add(rid)
 
     keep_ids = sorted({i for ids in keep.values() for i in ids})
     if keep_ids:

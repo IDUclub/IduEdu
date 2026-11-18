@@ -71,8 +71,8 @@ msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban
 msgid "Returns"
 msgstr "Результат"
 
-msgid "Directed PT ``UrbanGraph`` with ``crs`` and ``type=\"public_transport\"``."
-msgstr "Ориентированный ``UrbanGraph`` общественного транспорта с ``crs`` и ``type=\"public_transport\"``."
+msgid "Directed PT ``UrbanGraph`` with ``crs`` and ``type=\"public_transport\"``. Route stops and the edges of a route carry its ``route_key`` (``osm:r<relation id>``), platforms the list of keys of the routes calling there, and ``graph.routes`` is the table of the routes: ``mode``, the relation tags of ``config.transport_route_attr``, ``osm_id``, ``osm_route`` and the ``route_master`` line as ``line_key`` and ``line_name``. With ``clip_by_territory`` it keeps the routes with an edge inside."
+msgstr "Ориентированный ``UrbanGraph`` общественного транспорта с ``crs`` и ``type=\"public_transport\"``. Остановки и рёбра маршрута несут его ``route_key`` (``osm:r<id отношения>``), платформы — список ключей маршрутов, которые на них останавливаются, а ``graph.routes`` — таблица маршрутов: ``mode``, теги отношения из ``config.transport_route_attr``, ``osm_id``, ``osm_route`` и линия ``route_master`` в виде ``line_key`` и ``line_name``. С ``clip_by_territory`` в ней остаются маршруты, у которых есть ребро внутри."
 
 msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html https://iduclub.github.io/IduEdu/examples/transport_registry.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html https://iduclub.github.io/IduEdu/examples/transport_registry.html"

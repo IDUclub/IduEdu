@@ -21,7 +21,8 @@ Inputs
 
 ``osm_id`` or ``territory``
    The territory, see :doc:`sources`. Every route relation that touches it is read with all its stops, also
-   those outside; ``clip_by_territory=True`` cuts the graph at the boundary.
+   those outside; ``clip_by_territory=True`` cuts the graph at the boundary, and the routes table then keeps only
+   the routes with an edge inside.
 
 ``transport_types``
    The modes to build: one name, a list, or ``None`` for every mode of the registry. A requested mode must exist in
@@ -40,10 +41,25 @@ Graph structure
 ~~~~~~~~~~~~~~~
 
 Every route gets its own chain of *route stops*, one node per stop of the route, connected by travel edges whose
-``type`` is the mode (``bus``, ``tram``, ...) and whose ``route`` is the route number. Routes that stop at the same
-place share a *platform* node, the place where passengers wait. A ``boarding`` edge leads from the platform to the
+``type`` is the mode (``bus``, ``tram``, ...), whose ``route`` is the route number and whose ``route_key`` names
+the route (see `Routes`_). Routes that stop at the same place share a *platform* node, the place where passengers
+wait. A ``boarding`` edge leads from the platform to the
 route stop and carries the waiting time of the mode; an ``alighting`` edge leads back at no cost. A transfer between
 routes therefore passes through a platform and pays the wait of the route boarded.
+
+Route paths
+~~~~~~~~~~~
+
+Every route, the subway included, is drawn from its relation by one kernel of the Rust core, all routes at once.
+The member ways are joined in the order the relation lists them. Pieces that share no vertex are ordered and turned
+so that the straight joins between them are as short as possible in total, and a join longer than 1 km is not
+drawn: the route is cut there into parts. Each platform is paired with one of its two nearest stops within 100 m,
+the closest pairs first. A stop left without a platform gets one 7 m beside the path (a subway stop takes the
+platform its stop area links it to, when there is one), and a platform without a stop serves as its own stop.
+Stops are projected onto the path and ordered along it; a part is turned round when at least three stops within
+100 m of it clearly list the opposite direction. Travel edges follow the path between consecutive stops, and their
+speed limit is the length-weighted speed of the ways under them. A route whose path cannot be drawn is left out
+with a warning.
 
 The subway is built from the stop areas of its stations. Station entrances (``subway_entry_exit`` nodes) are linked
 to the station by ``subway_entrance`` and ``subway_exit`` edges. Their length is the slanted distance from the
@@ -51,6 +67,23 @@ entrance down to the station, the straight distance combined with the ``depth`` 
 is that length at 0.75 m/s, the speed of an escalator. Stations of one interchange are linked by
 ``subway_transfer`` edges of 1.5 times their straight distance at 5 km/h. When a station lacks mapped entrances or
 exits, its node becomes a ``platform`` and is joined to the walk graph directly.
+
+Routes
+~~~~~~
+
+A route here is one *variant* of a line: one ``type=route`` relation of OpenStreetMap, such as bus 3 towards the
+station. Its key is ``osm:r<relation id>``, stable between builds while the relation exists. The route stops,
+travel edges and boarding and alighting edges of a route carry its ``route_key``, and a platform lists the keys of
+every route calling there. The key, not the number, decides which stops belong together: bus 3 there and back, or
+bus 3 and tram 3, have chains of their own even where they stop at the same points.
+
+The graph keeps a table of its routes, ``graph.routes``, one row per route and indexed by ``route_key``: the
+``mode``, the tags of the relation (``ref``, ``name``, ``from``, ``to``, ``network``, ``operator``, ``colour``,
+``interval``; set others with ``config.set_transport_route_attr``), ``osm_id``, the raw ``osm_route`` value, and
+the line, the ``route_master`` relation that lists the route, as ``line_key`` (``osm:r<master id>``) and
+``line_name``. The table holds attributes only: the geometry, the stops in their order, the length and the travel
+time of a route come from its edges, with :func:`route_edges` and :func:`route_stops`. :func:`routes_in_area`
+finds the routes with an edge or a stop in an area.
 
 Travel time between stops
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -181,11 +214,13 @@ Outputs
 -------
 
 A directed :class:`UrbanGraph` of type ``public_transport``. Nodes have ``type`` (``platform``, the mode of a route
-stop, ``subway_station``, ``subway_platform``, ``subway_entry_exit``), ``route`` and ``name``; subway stations also
+stop, ``subway_station``, ``subway_platform``, ``subway_entry_exit``), ``route``, ``route_key`` (the key of the
+route of a route stop, the list of keys of the routes at a platform) and ``name``; subway stations also
 ``depth``. Edges have ``type`` (the mode, ``boarding``, ``alighting``, ``subway_entrance``, ``subway_exit``,
-``subway_station``, ``subway_transfer``), ``route``, ``length_meter``, ``time_min`` and ``oneway``. Boarding and
-alighting edges have ``length_meter = 0``. :func:`transport_stats` summarises stops, routes and stop spacing by
-mode.
+``subway_station``, ``subway_transfer``), ``route``, ``route_key`` (missing on the edges of stations),
+``length_meter``, ``time_min`` and ``oneway``. Boarding and alighting edges have ``length_meter = 0``.
+``graph.routes`` is the table of its routes (see `Routes`_). :func:`transport_stats` summarises stops, routes and
+stop spacing by mode.
 
 Functions
 ---------
@@ -195,6 +230,9 @@ Functions
     :nosignatures:
 
     get_public_transport_graph
+    route_edges
+    route_stops
+    routes_in_area
     TransportSpec
     TransportRegistry
 
@@ -220,6 +258,9 @@ Limitations
   gives a shorter or broken chain.
 - The subway model needs mapped stop areas; entrances without a ``depth`` tag on the station are taken at ground
   level.
+- The graph has one projected CRS, the UTM zone of the centre of the territory. Over a country it stretches lengths
+  far from that zone; build such areas in parts. The routes alone of a large area, without its streets, are cut out
+  of a regional extract with ``split_by_polygons(..., way_keys=())`` or ``download_osm_pbf(..., way_keys=())``.
 
 Example notebook
 ----------------

@@ -64,6 +64,27 @@ msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`
 msgid "Build a directed public-transport graph for one or multiple transport modes within a territory."
 msgstr "Строит ориентированный граф общественного транспорта для одного или нескольких видов транспорта в пределах территории."
 
+# | msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgid ":py:obj:`route_edges <iduedu.route_edges>`"
+msgstr ":py:obj:`route_edges <iduedu.route_edges>`"
+
+msgid "Travel edges of one route in the order of travel."
+msgstr "Рёбра движения одного маршрута в порядке следования."
+
+# | msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgid ":py:obj:`route_stops <iduedu.route_stops>`"
+msgstr ":py:obj:`route_stops <iduedu.route_stops>`"
+
+msgid "Stop nodes of one route in the order the route calls at them."
+msgstr "Узлы остановок одного маршрута в том порядке, в каком маршрут их проходит."
+
+# | msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgid ":py:obj:`routes_in_area <iduedu.routes_in_area>`"
+msgstr ":py:obj:`routes_in_area <iduedu.routes_in_area>`"
+
+msgid "Routes of the graph with a travel edge or a stop in an area."
+msgstr "Маршруты графа, у которых есть ребро движения или остановка в области."
+
 msgid ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
 msgstr ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
 

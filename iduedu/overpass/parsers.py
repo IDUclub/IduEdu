@@ -1,33 +1,25 @@
 import math
 import re
 from collections import defaultdict
+from functools import lru_cache
 from itertools import chain, combinations
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import shapely
 from pyproj import Transformer
-from scipy.spatial import cKDTree
-from scipy.spatial.distance import cdist
-from shapely import LineString, MultiLineString, Point, line_merge
-from shapely.ops import substring
+from shapely import LineString, Point
 
-from iduedu import config
+from iduedu import _rust, config
 from iduedu.constants.highway_enums import HighwayType
 from iduedu.constants.transport_specs import canonical_transport_type
-from iduedu.graph.lines import cut_line, vertex_distances
 from iduedu.overpass.downloaders import fetch_member_tags
 
 logger = config.logger
 
 PLATFORM_ROLES = ["platform_entry_only", "platform", "platform_exit_only"]
 STOPS_ROLES = ["stop", "stop_exit_only", "stop_entry_only"]
-THRESHOLD_METERS = 100
-#: Longest straight join drawn between two pieces of one route. Pieces further apart are a hole in the
-#: relation rather than a short way OSM missed, and the route is cut there instead of bridged: in Delhi
-#: the joins cluster under 500 m, thin out towards 1 km and grow in number again beyond it, where a
-#: straight line would stand in for kilometres of road nobody mapped.
-MAX_JOIN_METERS = 1000
 SUBWAY_EDGE_COLUMNS = ["u_ref", "v_ref", "type", "length_meter", "time_min", "geometry", "oneway"]
 
 
@@ -143,76 +135,6 @@ def overpass_routes_to_df(json_routes: list[dict], enable_subway_details: bool) 
     return data
 
 
-def _transform_points(points, transformer) -> list[tuple[float, float]]:
-    """Project a list of ``{"lon": ..., "lat": ...}`` points in one call."""
-    if not points:
-        return []
-    xs, ys = transformer.transform([pt["lon"] for pt in points], [pt["lat"] for pt in points])
-    return list(zip(np.atleast_1d(xs).tolist(), np.atleast_1d(ys).tolist()))
-
-
-def transform_geometry(loc, transformer):
-    """Transform an Overpass node or way geometry and return projected coordinates."""
-    if isinstance(loc["geometry"], float):
-        return transformer.transform(loc["lon"], loc["lat"])
-    p = LineString(_transform_points(loc["geometry"], transformer)).centroid
-    return p.x, p.y
-
-
-def process_roles(route, roles, transformer):
-    """Extract projected member coordinates and references for selected roles."""
-    filtered = route[route["role"].isin(roles)]
-    coords = [
-        transform_geometry({"geometry": geometry, "lon": lon, "lat": lat}, transformer)
-        for geometry, lon, lat in zip(filtered["geometry"], filtered["lon"], filtered["lat"])
-    ]
-    return coords, filtered["ref"].tolist()
-
-
-def side_left_or_right(point, path):
-    """Return whether a point lies on the left or right side of a path."""
-    # 1 for left and 0 for right relative to the line.
-    dist = path.project(point)
-
-    d1 = dist - 1 if dist - 1 > 0 else 0
-    d2 = dist + 1 if dist + 1 < path.length else path.length
-    line = substring(path, d1, d2)
-    x1, y1 = line.coords[0]
-    x2, y2 = line.coords[-1]
-    x, y = point.coords[0]
-
-    cross_product = (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1)
-    if cross_product > 0:
-        return 1
-    return 0
-
-
-def offset_point(point, path_line, direction, distance=7) -> tuple[float, float]:
-    """Offset a point from a path by a fixed distance to one side."""
-    # Place the platform on one side of the track at a fixed offset.
-    dist = path_line.project(point)
-    d1 = dist - 1 if dist - 1 > 0 else 0
-    d2 = dist + 1.1 if dist + 1.1 < path_line.length else path_line.length
-    nearest_pt_on_line = path_line.interpolate(dist)
-    line = substring(path_line, d1, d2)
-
-    x1, y1 = line.coords[0]
-    x2, y2 = line.coords[-1]
-
-    dx, dy = x2 - x1, y2 - y1
-    length = math.sqrt(dx**2 + dy**2)
-    dx, dy = dx / length, dy / length
-
-    if direction == 0:  # Right
-        nx, ny = dy, -dx
-    else:  # Left
-        nx, ny = -dy, dx
-
-    offset_x = nearest_pt_on_line.x + nx * distance
-    offset_y = nearest_pt_on_line.y + ny * distance
-    return offset_x, offset_y
-
-
 def extract_needed(loc_obj: pd.Series, keys: list[str]) -> dict | None:  # pragma: no cover
     """Extract selected nested fields and tags from an Overpass element."""
     out = {}
@@ -242,570 +164,277 @@ def extract_needed(loc_obj: pd.Series, keys: list[str]) -> dict | None:  # pragm
     return out or None
 
 
-def _piece_ends(piece: tuple[int, int], n: int) -> tuple[int, int]:
-    """Return the endpoint indices a route piece is entered and left by.
+GROUND_EDGE_COLUMNS = ["u", "v", "type", "geometry", "oneway", "extra_data", "speed_m_min", "route", "route_key"]
+GROUND_NODE_COLUMNS = ["node_id", "geometry", "type", "route", "route_key"]
+_WAY_ROLES = frozenset({"", "forward", "backward"})
+_PLATFORM_ROLE_SET = frozenset(PLATFORM_ROLES)
+_STOP_ROLE_SET = frozenset(STOPS_ROLES)
+_NO_POINT = (np.nan, np.nan)
 
-    ``piece`` is ``(index, orientation)``: orientation 0 keeps the vertex order, 1 reverses it.
-    Endpoint ``i`` is the first vertex of piece ``i`` and endpoint ``n + i`` its last.
+
+@lru_cache(maxsize=8)
+def _to_local(local_crs) -> Transformer:
+    """EPSG:4326 to the local CRS, made once per CRS rather than once per route."""
+    return Transformer.from_crs("EPSG:4326", local_crs, always_xy=True)
+
+
+def _missing(value) -> bool:
+    """Missing as pandas sees a scalar: None or NaN."""
+    return value is None or (isinstance(value, float) and math.isnan(value))
+
+
+def _is_nan(value) -> bool:
+    """NaN, which never finds itself again as a dict key: a stop without a reference has no rank."""
+    return isinstance(value, float) and math.isnan(value)
+
+
+def _int64(values) -> np.ndarray:
+    return np.asarray(values, dtype=np.int64)
+
+
+def _member_refs(members: list[dict]) -> list:
+    """Member references as a pandas column of them holds them: floats when numbers miss some."""
+    refs = [member.get("ref") for member in members]
+    if not any(_missing(ref) for ref in refs):
+        return refs
+    if all(_missing(ref) or (isinstance(ref, (int, float, np.number)) and not isinstance(ref, bool)) for ref in refs):
+        return [np.nan if _missing(ref) else float(ref) for ref in refs]
+    return [np.nan if "ref" not in member else ref for ref, member in zip(refs, members)]
+
+
+def _lonlat(geometry) -> np.ndarray:
+    """A way's geometry as a ``(k, 2)`` lon/lat array: the PBF reader's array, or Overpass ``{"lat", "lon"}`` dicts."""
+    if isinstance(geometry, np.ndarray):
+        return geometry
+    if not isinstance(geometry, list):
+        return np.empty((0, 2))
+    return np.asarray([(point["lon"], point["lat"]) for point in geometry], dtype="f8").reshape(-1, 2)
+
+
+class _RouteInputs:  # pylint: disable=too-many-instance-attributes
+    """Flat arrays of route relations for the Rust kernel (``_rust.parse_pt_routes``), one pass over the members.
+
+    ``stand_in`` (for the subway) maps a stop reference to a platform known from its stop area, ``(node id,
+    (x, y) or None)``, which a stop left without a platform of the route takes instead of a made-up one.
     """
-    i, orientation = piece
-    return (i, n + i) if orientation == 0 else (n + i, i)
+
+    def __init__(self, ref2speed: dict | None = None, stand_in=None):
+        self.ref2speed = ref2speed or {}
+        self.stand_in = stand_in
+        # Way points, then member points: each run of offsets counts within its own chunks.
+        self.way_chunks: list[np.ndarray] = []
+        self.member_chunks: list[np.ndarray] = []
+        self.way_offsets, self.way_points, self.way_speeds = [0], [0], []
+        self.member_offsets, self.member_points = [0], [0]
+        self.member_refs: list[int] = []
+        self.member_ranks: list[int] = []
+        self.member_platform: list[bool] = []
+        self.member_stand_ins: list[int] = []
+        self.member_stand_in_xy: list[tuple[float, float]] = []
+        self.ref_index: dict = {}
+
+    def _reference(self, value) -> int:
+        return self.ref_index.setdefault(value, len(self.ref_index))
+
+    def add_route(self, members) -> None:
+        """Ways, stops and platforms of one relation; nothing for a route with no ways or nowhere to board."""
+        if not isinstance(members, list):
+            members = []
+        kept = [
+            (member, ref)
+            for member, ref in zip(members, _member_refs(members))
+            if not (_missing(member.get("lat")) and _missing(member.get("lon")) and _missing(member.get("geometry")))
+        ]
+        rank: dict = {}
+        boarding = []
+        ways = []
+        for position, (member, ref) in enumerate(kept):
+            role = member.get("role")
+            if role in _PLATFORM_ROLE_SET or role in _STOP_ROLE_SET:
+                if not _is_nan(ref):
+                    rank.setdefault(ref, position)
+                boarding.append((member, ref, role in _PLATFORM_ROLE_SET))
+            elif member.get("type") == "way" and ("" if _missing(role) else role) in _WAY_ROLES:
+                ways.append((member, ref))
+        if ways and boarding:
+            n_points = self.way_points[-1]
+            for member, ref in ways:
+                points = _lonlat(member.get("geometry"))
+                self.way_chunks.append(points)
+                n_points += len(points)
+                self.way_points.append(n_points)
+                self.way_speeds.append(float(self.ref2speed.get(ref, np.nan)))
+            n_points = self.member_points[-1]
+            for member, ref, is_platform in boarding:
+                geometry = member.get("geometry")
+                if isinstance(geometry, (list, np.ndarray)):
+                    points = _lonlat(geometry)
+                else:
+                    points = np.asarray([(member.get("lon", np.nan), member.get("lat", np.nan))], dtype="f8")
+                self.member_chunks.append(points)
+                n_points += len(points)
+                self.member_points.append(n_points)
+                self.member_refs.append(self._reference(ref))
+                self.member_ranks.append(-1 if _is_nan(ref) else rank[ref])
+                self.member_platform.append(is_platform)
+                known = None if is_platform or self.stand_in is None else self.stand_in(ref)
+                if known is None:
+                    self.member_stand_ins.append(-1)
+                    self.member_stand_in_xy.append(_NO_POINT)
+                else:
+                    self.member_stand_ins.append(self._reference(known[0]))
+                    self.member_stand_in_xy.append(_NO_POINT if known[1] is None else known[1])
+        self.way_offsets.append(len(self.way_speeds))
+        self.member_offsets.append(len(self.member_refs))
+
+    def parse(self, local_crs, kinds_apart: bool = False) -> tuple:
+        """Project the points and run the kernel; its arrays and the reference values in index order."""
+        lonlat = np.concatenate(self.way_chunks + self.member_chunks or [np.empty((0, 2))]).astype("f8", copy=False)
+        xy = np.empty(lonlat.shape, dtype=np.float64)
+        if len(lonlat):
+            xy[:, 0], xy[:, 1] = _to_local(local_crs).transform(lonlat[:, 0], lonlat[:, 1])
+        result = _rust.parse_pt_routes(
+            xy,
+            _int64(self.way_offsets),
+            _int64(self.way_points),
+            np.asarray(self.way_speeds, dtype=np.float64),
+            _int64(self.member_offsets),
+            _int64(self.member_points) + self.way_points[-1],
+            _int64(self.member_refs),
+            _int64(self.member_ranks),
+            np.asarray(self.member_platform, dtype=bool),
+            _int64(self.member_stand_ins),
+            np.asarray(self.member_stand_in_xy, dtype=np.float64).reshape(-1, 2),
+            kinds_apart=kinds_apart,
+        )
+        return result, list(self.ref_index)
 
 
-def _insertion_cost(sequence, pos: int, head: int, tail: int, distances: np.ndarray, n: int) -> float:
-    """Join length added by placing a piece with endpoints ``head``/``tail`` before ``sequence[pos]``."""
-    prev_tail = _piece_ends(sequence[pos - 1], n)[1] if pos > 0 else None
-    next_head = _piece_ends(sequence[pos], n)[0] if pos < len(sequence) else None
-    added = 0.0
-    if prev_tail is not None:
-        added += distances[prev_tail, head]
-    if next_head is not None:
-        added += distances[tail, next_head]
-    if prev_tail is not None and next_head is not None:
-        added -= distances[prev_tail, next_head]
-    return float(added)
-
-
-def _insert_cheapest(distances: np.ndarray, n: int, lengths: list[float]) -> list[tuple[int, int]]:
-    """Grow a chain from the longest piece, placing every other piece wherever it adds the least."""
-    seed = int(np.argmax(lengths))
-    sequence = [(seed, 0)]
-    remaining = set(range(n)) - {seed}
-    while remaining:
-        best = (np.inf, 0, None)
-        for i in sorted(remaining):
-            for orientation in (0, 1):
-                head, tail = _piece_ends((i, orientation), n)
-                for pos in range(len(sequence) + 1):
-                    added = _insertion_cost(sequence, pos, head, tail, distances, n)
-                    if added < best[0]:
-                        best = (added, pos, (i, orientation))
-        _, pos, piece = best
-        sequence.insert(pos, piece)
-        remaining.discard(piece[0])
-    return sequence
-
-
-def _improve_sequence(sequence, distances: np.ndarray, n: int, max_rounds: int = 50) -> list[tuple[int, int]]:
-    """Shorten the joins by reversing runs of pieces and by moving single pieces elsewhere."""
-    sequence = list(sequence)
-    for _ in range(max_rounds):
-        improved = False
-        size = len(sequence)
-
-        # Reversing a run flips every piece in it, so only the two joins around the run change.
-        for i in range(size):
-            for j in range(i, size):
-                head_i = _piece_ends(sequence[i], n)[0]
-                tail_j = _piece_ends(sequence[j], n)[1]
-                before = after = 0.0
-                if i > 0:
-                    prev_tail = _piece_ends(sequence[i - 1], n)[1]
-                    before += distances[prev_tail, head_i]
-                    after += distances[prev_tail, tail_j]
-                if j < size - 1:
-                    next_head = _piece_ends(sequence[j + 1], n)[0]
-                    before += distances[tail_j, next_head]
-                    after += distances[head_i, next_head]
-                if after < before - 1e-6:
-                    sequence[i : j + 1] = [(k, 1 - o) for k, o in reversed(sequence[i : j + 1])]
-                    improved = True
-
-        for idx in range(size):
-            piece = sequence[idx]
-            rest = sequence[:idx] + sequence[idx + 1 :]
-            best = (_insertion_cost(rest, idx, *_piece_ends(piece, n), distances, n) - 1e-6, None, None)
-            for orientation in (0, 1):
-                head, tail = _piece_ends((piece[0], orientation), n)
-                for pos in range(len(rest) + 1):
-                    added = _insertion_cost(rest, pos, head, tail, distances, n)
-                    if added < best[0]:
-                        best = (added, pos, (piece[0], orientation))
-            if best[1] is not None:
-                rest.insert(best[1], best[2])
-                sequence = rest
-                improved = True
-
-        if not improved:
-            break
-    return sequence
-
-
-def _link_unconnected(disconnected_ways, max_join: float = MAX_JOIN_METERS) -> list[dict]:  # pragma: no cover
-    """
-    disconnected_ways: list[dict], in relation member order, where each dict is:
-      {
-        "coords": list[tuple[float,float]],   # vertices
-        "speeds": list[float] | None,         # optional, speeds[k] is for the segment leaving vertex k
-      }
-
-    returns list[dict]: the parts of the route in travel order, each {"coords": ..., "speeds": ...}
-      - speeds is None if input had no speeds
-
-    The pieces are ordered and oriented so that the straight joins between them are as short as
-    possible in total. A chain grown greedily from its two ends cannot do that: once it has joined
-    two pieces it can never put a third between them, and a short detour OSM splits off at a
-    terminus got glued to whichever end of the route was nearer instead. In Delhi that drew
-    straight lines of up to 15 km across the city.
-
-    A join longer than ``max_join`` is never drawn: the route is cut there into separate parts.
-    """
-    ways = [w for w in disconnected_ways if w.get("coords")]
-    if not ways:
+def _node_values(codes: np.ndarray, ref_values: list) -> list:
+    """Node ids of the kernel's codes: the member reference, or ``from_<reference>`` for a made-up node."""
+    if len(codes) == 0:
         return []
-
-    any_has_speeds = any(("speeds" in w) and (w["speeds"] is not None) for w in ways)
-
-    if any_has_speeds:
-        for w in ways:
-            if ("speeds" not in w) or (w["speeds"] is None):
-                raise ValueError("Mixed ways: some have speeds and some don't")
-
-    if len(ways) == 1:
-        return [
-            {
-                "coords": ways[0]["coords"][:],
-                "speeds": (ways[0]["speeds"][:] if any_has_speeds else None),
-            }
-        ]
-
-    n = len(ways)
-    endpoints = [w["coords"][0] for w in ways] + [w["coords"][-1] for w in ways]
-    distances = cdist(endpoints, endpoints)
-    lengths = [LineString(w["coords"]).length if len(w["coords"]) > 1 else 0.0 for w in ways]
-
-    sequence = _improve_sequence(_insert_cheapest(distances, n, lengths), distances, n)
-
-    # The joins are the same either way round, so the member order decides which way the route runs.
-    order = [i for i, _ in sequence]
-    concordance = sum(int(np.sign(b - a)) for k, a in enumerate(order) for b in order[k + 1 :])
-    if concordance < 0 or (concordance == 0 and 2 * sum(o for _, o in sequence) > len(sequence)):
-        sequence = [(i, 1 - o) for i, o in reversed(sequence)]
-
-    parts: list[tuple[list, list[float]]] = []
-    connected_coords: list = []
-    segment_speeds: list[float] = []
-    previous = None
-    for piece in sequence:
-        i, orientation = piece
-        coords = ways[i]["coords"] if orientation == 0 else ways[i]["coords"][::-1]
-        speeds = []
-        if any_has_speeds:
-            speeds = ways[i]["speeds"][:-1] if orientation == 0 else ways[i]["speeds"][:-1][::-1]
-
-        if previous is not None and distances[_piece_ends(previous, n)[1], _piece_ends(piece, n)[0]] > max_join:
-            parts.append((connected_coords, segment_speeds))
-            connected_coords, segment_speeds = [], []
-
-        if connected_coords and connected_coords[-1] == coords[0]:
-            coords = coords[1:]
-        elif connected_coords and any_has_speeds:
-            # The straight join runs at the speed of the road it leaves.
-            segment_speeds.append(segment_speeds[-1] if segment_speeds else (speeds[0] if speeds else np.nan))
-
-        connected_coords += coords
-        segment_speeds += speeds
-        previous = piece
-
-    parts.append((connected_coords, segment_speeds))
-
-    # One speed per vertex, as the parsers expect: the last vertex repeats the segment before it.
-    return [
-        {"coords": coords, "speeds": (speeds + [speeds[-1] if speeds else np.nan]) if any_has_speeds else None}
-        for coords, speeds in parts
-    ]
+    unique, inverse = np.unique(codes, return_inverse=True)
+    values = np.empty(len(unique), dtype=object)
+    for i, code in enumerate(unique.tolist()):
+        ref = ref_values[code >> 1]
+        values[i] = f"from_{ref}" if code & 1 else ref
+    return values[inverse].tolist()
 
 
-def _nearest_part(point: Point, paths: list[LineString]) -> int:
-    """Index of the route part a point lies closest to."""
-    if len(paths) == 1:
-        return 0
-    return min(range(len(paths)), key=lambda k: paths[k].distance(point))
-
-
-def _member_rank(members: pd.DataFrame) -> dict:
-    """Position of every stop and platform in the relation, keyed as stop/platform pairs refer to them."""
-    rank = {}
-    if "ref" not in members.columns:
-        return rank
-    roles = set(PLATFORM_ROLES) | set(STOPS_ROLES)
-    for position, (role, ref) in enumerate(zip(members["role"], members["ref"])):
-        if role in roles:
-            rank.setdefault(ref, position)
-            rank.setdefault(f"from_{ref}", position)
-    return rank
-
-
-def _pairs_by_part(
-    stop_plat_pairs: list[dict], paths: list[LineString], member_rank: dict
-) -> tuple[list[tuple[int, list[dict]]], set[int]]:
-    """Group stop/platform pairs by the part their stop lies nearest, each group in travel order along its part.
-
-    Edges run only between consecutive stops of one part, so nothing is drawn across a hole the relation
-    leaves between two parts.
-
-    A part is reversed in ``paths`` when its stops clearly run against the relation's stop order. PTv2 lists
-    stops in the direction of travel whichever way the ways are listed or drawn, so relations listing their
-    ways from the far end are put right -- checked against one-way streets, the share of one-way segments
-    driven the legal way rises from 84% to 99.8% in Saint Petersburg and from 80% to 99.3% in Moscow. Stops
-    overrule the stitched direction only when they say so clearly, though: only stops within
-    ``THRESHOLD_METERS`` of the part vote, since a stop kilometres away projects onto the nearest end of the
-    part, at least three of them, and a majority of their pairs. Stop lists are sometimes jumbled or hold two
-    platforms for a whole route, and trusting them unconditionally reversed routes the ways had right.
-
-    Returns the groups and the indices of the parts that were reversed.
-    """
-    groups = defaultdict(list)
-    for item in stop_plat_pairs:
-        anchor = item["s"] if item["s"] is not None else item["p"]
-        groups[_nearest_part(Point(anchor), paths)].append(item)
-
-    reversed_parts = set()
-    for k, items in groups.items():
-        known = []
-        for item in items:
-            anchor = Point(item["s"] if item["s"] is not None else item["p"])
-            ranks = [member_rank[ref] for ref in (item["sref"], item["pref"]) if ref in member_rank]
-            if ranks and paths[k].distance(anchor) <= THRESHOLD_METERS:
-                known.append((paths[k].project(anchor), min(ranks)))
-        votes = [np.sign(a2 - a1) * np.sign(r2 - r1) for i, (a1, r1) in enumerate(known) for a2, r2 in known[i + 1 :]]
-        decided = sum(1 for vote in votes if vote != 0)
-        if len(known) >= 3 and decided and sum(votes) <= -0.5 * decided:
-            paths[k] = LineString(list(paths[k].coords)[::-1])
-            reversed_parts.add(k)
-        items.sort(key=lambda d, line=paths[k]: line.project(Point(d["p"])))
-    return sorted(groups.items(), key=lambda group: group[0]), reversed_parts
-
-
-def _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs):
-    items = []  # [(platform_coords, platform_ref, stop_coords, stop_ref); every pair must have a platform]
-
-    platform_len, stops_len = len(platforms), len(stops)
-    matched_p, matched_s = set(), set()
-    pairs = {}  # p_idx -> s_idx
-
-    if platform_len and stops_len:
-
-        stop_tree = cKDTree(stops)
-        k = min(2, stops_len)
-        dists, idxs = stop_tree.query(platforms, k=k)
-
-        dists = np.asarray(dists)
-        idxs = np.asarray(idxs)
-        if dists.ndim == 1:  # This happens when k == 1.
-            dists = dists[:, None]
-            idxs = idxs[:, None]
-
-        candidates = []
-        for p_i in range(platform_len):
-            for rank in range(dists.shape[1]):
-                dist = float(dists[p_i, rank])
-                if not np.isfinite(dist) or dist > THRESHOLD_METERS:
-                    continue
-                s_i = int(idxs[p_i, rank])
-                candidates.append((dist, p_i, s_i))
-
-        candidates.sort(key=lambda t: t[0])
-        for dist, p_i, s_i in candidates:
-            if p_i not in matched_p and s_i not in matched_s:
-                pairs[p_i] = s_i
-                matched_p.add(p_i)
-                matched_s.add(s_i)
-
-    for p_i, s_i in pairs.items():
-        items.append(
-            {
-                "p": platforms[p_i],
-                "pref": platforms_refs[p_i],
-                "s": stops[s_i],
-                "sref": stops_refs[s_i],
-            }
-        )
-    return items, matched_p, matched_s
-
-
-def _speed_on_interval(a: float, b: float, cumdist: np.ndarray, seg_speeds: np.ndarray) -> float:
-
-    if b < a:
-        a, b = b, a
-    if b <= a:
-        return float(np.nan)
-
-    i0 = int(np.searchsorted(cumdist, a, side="right") - 1)
-    i1 = int(np.searchsorted(cumdist, b, side="left"))
-
-    i0 = max(i0, 0)
-    i1 = min(i1, len(seg_speeds))
-
-    total_len = 0.0
-    acc = 0.0
-
-    for i in range(i0, i1):
-        if i < 0 or i >= len(seg_speeds):
-            continue
-        seg_a = cumdist[i]
-        seg_b = cumdist[i + 1]
-        overlap_a = max(a, seg_a)
-        overlap_b = min(b, seg_b)
-        ol = overlap_b - overlap_a
-        if ol > 0:
-            v = seg_speeds[i]
-            acc += ol * v
-            total_len += ol
-    return float(acc / total_len) if total_len > 0 else float(np.nan)
-
-
-def overpass_ground_transport2edgenode(
-    loc: pd.Series,
-    local_crs,
-    ref2speed,
-    needed_tags,
-) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Convert one ground-transport route relation into edge and node tables."""
-
-    nodes_data: list[dict] = []
-    edges_data: list[dict] = []
-
-    def add_node(node_id, point, node_type):
-        """Add a graph node record to the local accumulator."""
-        nodes_data.append({"node_id": node_id, "geometry": point, "type": node_type})
-
-    def add_edge(u, v, edge_type, geometry: LineString, extra_data=None, speed_m_min=None, oneway=True):
-        """Add a graph edge record to the local accumulator."""
-        payload = {"u": u, "v": v, "type": edge_type, "geometry": geometry, "oneway": bool(oneway)}
-        if extra_data is not None:
-            payload["extra_data"] = extra_data
-        if speed_m_min is not None:
-            payload["speed_m_min"] = speed_m_min
-        edges_data.append(payload)
-
-    transformer = Transformer.from_crs("EPSG:4326", local_crs, always_xy=True)
-    tags = loc.get("tags", {}) if isinstance(loc.get("tags"), dict) else {}
-    loc_id = loc.name
-    transport_type = loc.transport_type
-    transport_name = f"Unnamed_{loc_id}"
+def _route_label(tags: dict, loc_id) -> str:
     if "ref" in tags:
-        transport_name = tags["ref"]
-    elif "name" in tags:
-        transport_name = tags["name"]
+        return tags["ref"]
+    if "name" in tags:
+        return tags["name"]
+    return f"Unnamed_{loc_id}"
 
-    members = loc.get("members", [])
-    route = pd.DataFrame(members) if isinstance(members, list) else pd.DataFrame()
 
-    # ``ref`` belongs in this list: a relation whose members are absent or carry no
-    # ref produces a frame without the column, and every consumer below indexes it
-    # by name. One such relation used to raise KeyError and take the whole city
-    # with it -- Kenitra built no graph at all for want of a column of NaNs.
-    for col in ("geometry", "lat", "lon", "role", "type", "ref"):
-        if col not in route.columns:
-            route[col] = np.nan
+def _parse_route_rows(routes: pd.DataFrame, local_crs, inputs: _RouteInputs, kinds_apart: bool = False) -> dict:
+    """Run the kernel on the route relations of ``routes``: one call for all of them, in parallel.
 
-    route = route.dropna(subset=["lat", "lon", "geometry"], how="all")
-    platforms, platforms_refs = process_roles(route, PLATFORM_ROLES, transformer)
-    stops, stops_refs = process_roles(route, STOPS_ROLES, transformer)
+    For every relation the kernel stitches its ways in member order into its path (pieces that share no vertex
+    ordered by the shortest total join, cut where they lie more than a kilometre apart), pairs its stops with
+    its platforms, makes up the missing half of a pair, turns a part round when its stops clearly run against
+    it, and returns stop nodes projected onto the path, platform nodes, travel edges between consecutive stops
+    with the length-weighted speed of the ways under them, and boarding edges. A route that cannot be parsed
+    (no connected ways, a degenerate path) is left out with a warning.
 
-    ways_df = route[(route["type"] == "way") & (route["role"].fillna("").isin(["", "forward", "backward"]))][
-        ["ref", "geometry"]
-    ]
-    # A route listing no stops or platforms has nowhere to board. It used to get two synthetic stops at the ends
-    # of its path, which the coverage indicators then counted as mapped ones; it is left out instead.
-    if len(ways_df) == 0 or not (platforms or stops):
+    Returns the decoded arrays (``node_*`` and ``edge_*``) and, per route, ``labels``, ``keys`` and ``rows``.
+    """
+    labels, keys, rows = [], [], []
+    for loc_id, loc in routes.iterrows():
+        tags = loc.get("tags", {}) if isinstance(loc.get("tags"), dict) else {}
+        keys.append(osm_route_key(loc.get("id"), loc_id))
+        labels.append(_route_label(tags, loc_id))
+        rows.append(loc)
+        inputs.add_route(loc.get("members", []))
+    result, ref_values = inputs.parse(local_crs, kinds_apart=kinds_apart)
+    (node_route, node_id, node_xy, node_platform, edge_route, edge_u, edge_v, boarding, offsets, edge_xy, speed) = (
+        result[:11]
+    )
+    for position, message in result[11]:
+        logger.warning(f"Route {keys[position]} ({labels[position]}) is left out: {message}")
+    return {
+        "labels": np.asarray(labels, dtype=object),
+        "keys": np.asarray(keys, dtype=object),
+        "rows": rows,
+        "node_route": node_route,
+        "node_id": _node_values(node_id, ref_values),
+        "node_points": shapely.points(node_xy),
+        "node_platform": node_platform,
+        "edge_route": edge_route,
+        "edge_u": _node_values(edge_u, ref_values),
+        "edge_v": _node_values(edge_v, ref_values),
+        "edge_boarding": boarding,
+        "edge_lines": shapely.linestrings(edge_xy, indices=np.repeat(np.arange(len(edge_u)), np.diff(offsets))),
+        "edge_speed": speed,
+    }
+
+
+def ground_routes_tables(
+    routes: pd.DataFrame, local_crs, ref2speed: dict, needed_tags
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Edge and node tables of ground public-transport route relations, parsed by one Rust kernel call.
+
+    See :func:`_parse_route_rows` for what the kernel does. Travel edges carry the OSM tags ``needed_tags``
+    of their relation in ``extra_data``; records carry ``route`` and ``route_key``; within a route a node
+    appears once.
+    """
+    parsed = _parse_route_rows(routes, local_crs, _RouteInputs(ref2speed))
+    if len(parsed["node_id"]) == 0 and len(parsed["edge_u"]) == 0:
         return gpd.GeoDataFrame(), gpd.GeoDataFrame()
+    labels, keys = parsed["labels"], parsed["keys"]
+    types = np.asarray([loc.transport_type for loc in parsed["rows"]], dtype=object)
+    extras = [extract_needed(loc, needed_tags) for loc in parsed["rows"]]
 
-    # dict.get per way: Series.map(dict) turns the whole (city-sized) dict into a Series on every call.
-    ways = [
-        (_transform_points(geometry, transformer), float(ref2speed.get(ref, np.nan)))
-        for ref, geometry in zip(ways_df["ref"], ways_df["geometry"])
-    ]
-
-    connected_ways = [{"coords": [], "speeds": []}]
-    cur_way = 0
-    ways_in_component = 0
-
-    for coords, speed in ways:  # pragma: no cover
-        if not coords:
-            continue
-
-        dst = connected_ways[cur_way]
-
-        if not dst["coords"]:
-            dst["coords"] = coords
-            dst["speeds"] = [speed] * len(coords)
-            ways_in_component = 1
-            continue
-
-        if coords[0] == coords[-1]:
-            continue
-
-        touches = (coords[0], coords[-1])
-        if ways_in_component == 1 and dst["coords"][0] in touches and dst["coords"][-1] not in touches:
-            dst["coords"] = dst["coords"][::-1]
-            dst["speeds"] = dst["speeds"][::-1]
-
-        # current tail == new head: dst += coords[1:]
-        if dst["coords"][-1] == coords[0]:
-            dst["coords"] += coords[1:]
-            dst["speeds"] += [speed] * (len(coords) - 1)
-        # current tail == new tail: dst += coords[::-1][1:]
-        elif dst["coords"][-1] == coords[-1]:
-            rcoords = coords[::-1]
-            dst["coords"] += rcoords[1:]
-            dst["speeds"] += [speed] * (len(coords) - 1)
-        # current head == new head: coords[::-1] + dst[1:]
-        elif dst["coords"][0] == coords[0]:
-            new_coords = coords[::-1] + dst["coords"][1:]
-            new_speeds = ([speed] * (len(coords) - 1)) + dst["speeds"]
-            connected_ways[cur_way] = {"coords": new_coords, "speeds": new_speeds}
-
-        # current head == new tail: coords + dst[1:]
-        elif dst["coords"][0] == coords[-1]:
-            new_coords = coords + dst["coords"][1:]
-            new_speeds = ([speed] * (len(coords) - 1)) + dst["speeds"]
-            connected_ways[cur_way] = {"coords": new_coords, "speeds": new_speeds}
-
-        # no connecting point - start a new component
-        else:
-            connected_ways.append({"coords": coords, "speeds": [speed] * len(coords)})
-            cur_way += 1
-
-    for w in connected_ways:
-        if w["coords"] and len(w["speeds"]) != len(w["coords"]):
-            raise ValueError(f"speeds/coords mismatch: {len(w['speeds'])} vs {len(w['coords'])}")
-
-    if len(connected_ways) > 1:
-        # remove closed loop lines
-        to_del = [
-            i
-            for i, w in enumerate(connected_ways)
-            if w.get("coords") and len(w["coords"]) >= 2 and w["coords"][0] == w["coords"][-1]
-        ]
-
-        # If every path would be removed, keep at least the longest one.
-        if to_del and len(to_del) == len(connected_ways):
-            longest_index = max(to_del, key=lambda i: len(connected_ways[i].get("coords", [])))
-            to_del.remove(longest_index)
-
-        connected_ways = [w for j, w in enumerate(connected_ways) if j not in to_del]
-
-    if len(connected_ways) > 1:
-        parts = _link_unconnected(connected_ways)
-    else:
-        parts = connected_ways
-        if not parts[0].get("coords") or len(parts[0]["coords"]) < 2:
-            raise Exception("No connected ways")
-
-    extra = extract_needed(loc, needed_tags)
-
-    paths = [LineString(part["coords"]) for part in parts]
-
-    platform_len, stops_len = len(platforms), len(stops)
-
-    stop_plat_pairs, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
-
-    if stops_len:
-        base_dir = 1
-        if platform_len:
-            middle = Point(platforms[platform_len // 2])
-            base_dir = side_left_or_right(middle, paths[_nearest_part(middle, paths)])
-        for s_i in range(stops_len):
-            if s_i in matched_s:
-                continue
-            s_pt = Point(stops[s_i])
-            stop_plat_pairs.append(
-                {
-                    "p": offset_point(s_pt, paths[_nearest_part(s_pt, paths)], base_dir),
-                    "pref": f"from_{stops_refs[s_i]}",  # new platform
-                    "s": s_pt.xy,
-                    "sref": stops_refs[s_i],
-                }
-            )
-
-    for p_i in range(platform_len):
-        if p_i in matched_p:
-            continue
-        stop_plat_pairs.append(
-            {
-                "p": platforms[p_i],
-                "pref": platforms_refs[p_i],
-                "s": None,
-                "sref": f"from_{platforms_refs[p_i]}",
-            }
-        )
-
-    groups, reversed_parts = _pairs_by_part(stop_plat_pairs, paths, _member_rank(route))
-    for part_index, part_pairs in groups:
-        path = paths[part_index]
-        path_coords = np.asarray(path.coords)
-        steps = np.diff(path_coords, axis=0)
-        cumdist = np.concatenate([[0.0], np.cumsum(np.hypot(steps[:, 0], steps[:, 1]))])
-        vertex_dist = vertex_distances(path_coords)
-        seg_speeds = np.asarray(parts[part_index]["speeds"][:-1], dtype=float)
-        if part_index in reversed_parts:
-            seg_speeds = seg_speeds[::-1]
-        last_dist = None
-        last_projected_stop_id = None
-        last_projected_stop = None
-
-        for item in part_pairs:
-            plat_xy = item["p"]
-            plat_ref = item.get("pref")
-
-            stop_xy = item["s"]
-            if stop_xy is None:
-                stop_xy = plat_xy
-            stop_ref = item.get("sref")
-
-            platform = Point(plat_xy)
-            stop = Point(stop_xy)
-
-            stop_dist = path.project(stop)
-
-            projected_stop = path.interpolate(stop_dist)
-
-            # Platforms are unrealistically far from projected stops; likely OSM data error.
-            if projected_stop.distance(platform) > 100:
-                continue
-
-            add_node(node_id=stop_ref, point=projected_stop, node_type=transport_type)
-
-            if last_dist is not None:
-                seg = cut_line(path_coords, vertex_dist, last_dist, stop_dist, last_projected_stop, projected_stop)
-                v_avg = _speed_on_interval(last_dist, stop_dist, cumdist, seg_speeds)
-
-                add_edge(
-                    u=last_projected_stop_id,
-                    v=stop_ref,
-                    edge_type=transport_type,
-                    geometry=seg,
-                    extra_data=extra,
-                    speed_m_min=v_avg,
-                )
-
-            last_projected_stop_id = stop_ref
-            last_projected_stop = projected_stop
-            last_dist = stop_dist
-
-            add_node(node_id=plat_ref, point=platform, node_type="platform")
-            boarding_geom = LineString([projected_stop, platform])
-            add_edge(u=stop_ref, v=plat_ref, edge_type="boarding", geometry=boarding_geom, oneway=False)
-
+    node_route = parsed["node_route"]
+    node_types = types[node_route]
+    node_types[parsed["node_platform"]] = "platform"
     nodes_gdf = gpd.GeoDataFrame(
-        nodes_data,
-        columns=["node_id", "geometry", "type"],
-        geometry="geometry",
-        crs=local_crs,
-    ).drop_duplicates(subset=["node_id"])
-    edges_gdf = gpd.GeoDataFrame(
-        edges_data,
-        columns=["u", "v", "type", "geometry", "oneway", "extra_data", "speed_m_min"],
+        {
+            "node_id": parsed["node_id"],
+            "geometry": parsed["node_points"],
+            "type": node_types.tolist(),
+            "route": labels[node_route].tolist(),
+            "route_key": keys[node_route].tolist(),
+        },
+        columns=GROUND_NODE_COLUMNS,
         geometry="geometry",
         crs=local_crs,
     )
 
-    nodes_gdf["route"] = transport_name
-    edges_gdf["route"] = transport_name
-
+    edge_route, boarding = parsed["edge_route"], parsed["edge_boarding"]
+    edge_types = types[edge_route]
+    edge_types[boarding] = "boarding"
+    extra = np.asarray([np.nan if value is None else value for value in extras] + [np.nan], dtype=object)
+    edges_gdf = gpd.GeoDataFrame(
+        {
+            "u": parsed["edge_u"],
+            "v": parsed["edge_v"],
+            "type": edge_types.tolist(),
+            "geometry": parsed["edge_lines"],
+            "oneway": (~boarding).tolist(),
+            "extra_data": extra[np.where(boarding, len(extras), edge_route)].tolist(),
+            "speed_m_min": parsed["edge_speed"],
+            "route": labels[edge_route].tolist(),
+            "route_key": keys[edge_route].tolist(),
+        },
+        columns=GROUND_EDGE_COLUMNS,
+        geometry="geometry",
+        crs=local_crs,
+    )
     return edges_gdf, nodes_gdf
+
+
+def osm_route_key(relation_id, fallback) -> str:
+    """Key of an OSM route variant: ``osm:r<relation id>``; ``osm:row<n>`` when the id is unknown."""
+    try:
+        if relation_id is not None and not pd.isna(relation_id):
+            return f"osm:r{int(relation_id)}"
+    except (TypeError, ValueError):
+        pass
+    return f"osm:row{fallback}"
 
 
 def merge_on_ids(left: pd.DataFrame, right: pd.DataFrame, on: list[str]) -> pd.DataFrame:
@@ -822,6 +451,33 @@ def merge_on_ids(left: pd.DataFrame, right: pd.DataFrame, on: list[str]) -> pd.D
     return pd.merge(left, right, how="outer", on=on)
 
 
+def _stop_area_platforms(add_edges: pd.DataFrame, add_nodes: pd.DataFrame):
+    """For a subway stop: the platform its stop area links it to by a boarding edge, ``(node id, (x, y) or None)``.
+
+    Of several, the first among the stop-area nodes; None when the stop links to no platform.
+    """
+    neighbours: dict = defaultdict(list)
+    if {"u", "v", "type"} <= set(add_edges.columns):
+        boarding = add_edges[add_edges["type"] == "boarding"]
+        for u, v in zip(boarding["u"], boarding["v"]):
+            neighbours[u].append(v)
+            neighbours[v].append(u)
+    first: dict = {}
+    if {"node_id", "type", "geometry"} <= set(add_nodes.columns):
+        platforms = add_nodes[add_nodes["type"] == "subway_platform"]
+        for position, (node_id, geometry) in enumerate(zip(platforms["node_id"], platforms["geometry"])):
+            first.setdefault(node_id, (position, node_id, geometry))
+
+    def stand_in(ref):
+        found = [first[node] for node in neighbours.get(ref, ()) if node in first]
+        if not found:
+            return None
+        _, node_id, geometry = min(found, key=lambda item: item[0])
+        return node_id, (None if geometry is None or pd.isna(geometry) else (geometry.x, geometry.y))
+
+    return stand_in
+
+
 def overpass_subway2edgenode(
     subway_data: pd.DataFrame, local_crs, known_members: dict | None = None
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
@@ -830,11 +486,6 @@ def overpass_subway2edgenode(
     ``known_members``: stop-area member tags and coordinates that arrived with the
     route response; see :func:`patch_members_roles_inplace`.
     """
-
-    nodes_data: list[dict] = []
-    edges_data: list[dict] = []
-
-    transformer = Transformer.from_crs("EPSG:4326", local_crs, always_xy=True)
 
     transport_type = "subway"
 
@@ -847,171 +498,39 @@ def overpass_subway2edgenode(
     stop_areas_group = subway_data[subway_data["is_stop_area_group"]].copy()
     stations_data = subway_data[subway_data["is_station"]].copy()
 
-    def add_node(node_id, point, node_type, route=None):
-        """Add a graph node record to the local accumulator."""
-        payload = {"node_id": node_id, "geometry": point, "type": node_type}
-        if route is not None:
-            payload["route"] = route
-        nodes_data.append(payload)
-
-    def add_edge(u, v, edge_type, geometry, route=None, oneway=True):
-        """Add a graph edge record to the local accumulator."""
-        payload = {"u": u, "v": v, "type": edge_type, "geometry": geometry, "oneway": bool(oneway)}
-        if route is not None:
-            payload["route"] = route
-        edges_data.append(payload)
-
     add_edges, add_nodes = parse_overpass_subway_data(
         stop_areas, stop_areas_group, stations_data, local_crs, known_members=known_members
     )  # Entrances, exits, transfers and similar edges.
     add_edges = add_edges.rename(columns={"u_ref": "u", "v_ref": "v"})
     add_nodes = add_nodes.rename(columns={"ref_id": "node_id"})
 
-    for _, row in routes_data.iterrows():
-
-        loc_id = row.name
-        tags = row.get("tags", {})
-        tags = tags if isinstance(tags, dict) else {}
-        transport_name = f"Unnamed_{loc_id}"
-        if "ref" in tags:
-            transport_name = tags["ref"]
-        elif "name" in tags:
-            transport_name = tags["name"]
-        members = row.get("members", [])
-        if not isinstance(members, list):
-            continue
-        members = pd.DataFrame(members)
-        for col in ("geometry", "lat", "lon", "role", "type"):
-            if col not in members.columns:
-                members[col] = np.nan
-
-        members = members.dropna(subset=["lat", "lon", "geometry"], how="all")
-
-        platforms, platforms_refs = process_roles(members, PLATFORM_ROLES, transformer)
-        stops, stops_refs = process_roles(members, STOPS_ROLES, transformer)
-
-        ways_df = members[(members["type"] == "way") & (members["role"].fillna("").isin(["", "forward", "backward"]))]
-
-        # No stops or platforms, nowhere to board: left out, as in the ground parser.
-        if len(ways_df) == 0 or not (platforms or stops):
-            continue
-
-        lines = MultiLineString(
-            [LineString([transformer.transform(p["lon"], p["lat"]) for p in pts]) for pts in ways_df["geometry"].values]
-        )
-        merged_lines = line_merge(lines, directed=True)
-
-        if isinstance(merged_lines, LineString):
-            paths = [merged_lines]
-        else:
-            separated_lines = [line for line in merged_lines.geoms if isinstance(line, LineString)]
-            parts = _link_unconnected([{"coords": list(ls.coords)} for ls in separated_lines])
-            paths = [LineString(part["coords"]) for part in parts]
-            if not paths:
-                continue
-
-        platform_len, stops_len = len(platforms), len(stops)
-
-        stop_plat_pairs, matched_p, matched_s = _find_stop_platform_pairs(platforms, stops, platforms_refs, stops_refs)
-
-        if stops_len:
-            base_dir = 1
-            if platform_len:
-                middle = Point(platforms[platform_len // 2])
-                base_dir = side_left_or_right(middle, paths[_nearest_part(middle, paths)])
-            for s_i in range(stops_len):
-                if s_i in matched_s:
-                    continue
-                # Add a pair with a stop but without a platform.
-                add_edges_from_stop = add_edges[
-                    (add_edges["type"] == "boarding")
-                    & ((add_edges["u"] == stops_refs[s_i]) | (add_edges["v"] == stops_refs[s_i]))
-                ]
-                s_pt = Point(stops[s_i])
-                p_pt = offset_point(s_pt, paths[_nearest_part(s_pt, paths)], base_dir)  # new platform
-                p_ref = f"from_{stops_refs[s_i]}"
-
-                if len(add_edges_from_stop) > 0:
-                    candidate_node_ids = pd.concat(
-                        [
-                            add_edges_from_stop.loc[add_edges_from_stop["u"] == stops_refs[s_i], "v"],
-                            add_edges_from_stop.loc[add_edges_from_stop["v"] == stops_refs[s_i], "u"],
-                        ],
-                        ignore_index=True,
-                    )
-                    potential_nodes = add_nodes[add_nodes["node_id"].isin(candidate_node_ids)]
-                    for _, row in potential_nodes.iterrows():
-                        if row.type == "subway_platform":
-                            p_pt = row.geometry if not pd.isna(row.geometry) else p_pt
-                            p_ref = row.node_id
-                            break
-
-                stop_plat_pairs.append({"p": p_pt, "pref": p_ref, "s": stops[s_i], "sref": stops_refs[s_i]})
-
-        for p_i in range(platform_len):
-            if p_i in matched_p:
-                continue
-            # Add a pair with a platform that has no stop.
-            stop_plat_pairs.append(
-                {"p": platforms[p_i], "pref": platforms_refs[p_i], "s": None, "sref": f"from_{platforms_refs[p_i]}"}
-            )
-
-        groups, _ = _pairs_by_part(stop_plat_pairs, paths, _member_rank(members))
-        for part_index, part_pairs in groups:
-            path = paths[part_index]
-            last_dist = None
-            last_projected_stop_id = None
-
-            for item in part_pairs:
-                plat_xy = item["p"]
-                plat_ref = item.get("pref")
-
-                stop_xy = item["s"]
-                if stop_xy is None:
-                    stop_xy = plat_xy
-                stop_ref = item.get("sref")
-
-                platform = Point(plat_xy)
-                stop = Point(stop_xy)
-
-                stop_dist = path.project(stop)
-
-                projected_stop = path.interpolate(stop_dist)
-
-                # Platforms are unrealistically far from projected stops; likely OSM data error.
-                if projected_stop.distance(platform) > 100:
-                    continue
-
-                add_node(node_id=stop_ref, point=projected_stop, node_type=transport_type, route=transport_name)
-
-                if last_dist is not None:
-                    seg = substring(path, last_dist, stop_dist)
-                    if isinstance(seg, Point):
-                        seg = LineString((seg, seg))
-                    add_edge(
-                        u=last_projected_stop_id,
-                        v=stop_ref,
-                        edge_type=transport_type,
-                        geometry=seg,
-                        route=transport_name,
-                    )
-
-                last_projected_stop_id = stop_ref
-                last_dist = stop_dist
-
-                add_node(node_id=plat_ref, point=platform, node_type="subway_platform", route=transport_name)
-                add_edge(
-                    u=stop_ref,
-                    v=plat_ref,
-                    edge_type="boarding",
-                    geometry=LineString([projected_stop, platform]),
-                    route=transport_name,
-                    oneway=False,
-                )
+    # One kernel call for all subway routes, as for the ground ones; a stop without a platform of its route
+    # takes the platform its stop area links it to.
+    parsed = _parse_route_rows(
+        routes_data, local_crs, _RouteInputs(stand_in=_stop_area_platforms(add_edges, add_nodes)), kinds_apart=True
+    )
+    labels, keys = parsed["labels"], parsed["keys"]
+    node_route, edge_route, boarding = parsed["node_route"], parsed["edge_route"], parsed["edge_boarding"]
+    nodes_data = {
+        "node_id": parsed["node_id"],
+        "geometry": parsed["node_points"],
+        "type": np.where(parsed["node_platform"], "subway_platform", transport_type).tolist(),
+        "route": labels[node_route].tolist(),
+        "route_key": keys[node_route].tolist(),
+    }
+    edges_data = {
+        "u": parsed["edge_u"],
+        "v": parsed["edge_v"],
+        "type": np.where(boarding, "boarding", transport_type).tolist(),
+        "geometry": parsed["edge_lines"],
+        "oneway": (~boarding).tolist(),
+        "route": labels[edge_route].tolist(),
+        "route_key": keys[edge_route].tolist(),
+    }
 
     nodes_gdf = gpd.GeoDataFrame(
-        nodes_data, columns=["node_id", "geometry", "type", "route"], geometry="geometry", crs=local_crs
-    ).drop_duplicates(subset=["node_id", "route", "type"])
+        nodes_data, columns=["node_id", "geometry", "type", "route", "route_key"], geometry="geometry", crs=local_crs
+    ).drop_duplicates(subset=["node_id", "route_key", "type"])
 
     merged_nodes = merge_on_ids(add_nodes, nodes_gdf, ["node_id"])
 
@@ -1031,7 +550,7 @@ def overpass_subway2edgenode(
 
     edges_gdf = gpd.GeoDataFrame(
         edges_data,
-        columns=["u", "v", "type", "geometry", "oneway", "route"],
+        columns=["u", "v", "type", "geometry", "oneway", "route", "route_key"],
         geometry="geometry",
         crs=local_crs,
     )
@@ -1172,7 +691,7 @@ def parse_overpass_subway_data(
     graph_nodes = []
     graph_edges = []
 
-    transformer = Transformer.from_crs("EPSG:4326", to_crs, always_xy=True)
+    transformer = _to_local(to_crs)
 
     station_parent_ref = {}
     osm_roles_to_iduedu = {
