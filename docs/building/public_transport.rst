@@ -59,7 +59,8 @@ platform its stop area links it to, when there is one), and a platform without a
 Stops are projected onto the path and ordered along it; a part is turned round when at least three stops within
 100 m of it clearly list the opposite direction. Travel edges follow the path between consecutive stops, and their
 speed limit is the length-weighted speed of the ways under them. A route whose path cannot be drawn is left out
-with a warning.
+with a warning, and so is a route with a single stop in the data, a fragment of a route mostly outside it: boarding
+there leads nowhere.
 
 The subway is built from the stop areas of its stations. Station entrances (``subway_entry_exit`` nodes) are linked
 to the station by ``subway_entrance`` and ``subway_exit`` edges. Their length is the slanted distance from the

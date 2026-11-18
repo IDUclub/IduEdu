@@ -7,6 +7,7 @@ import pandas as pd
 from shapely import MultiPolygon, Polygon
 
 from iduedu import config
+from iduedu.constants.network_enums import WALK_ACCESS_NODE_TYPES
 from iduedu.graph.editors import apply_urban_graph_changes, join_urban_graphs, project_objects2urban_graph
 from iduedu.graph.transformers import keep_largest_connected_component
 from iduedu.graph.urban_graph import UrbanGraph
@@ -16,10 +17,6 @@ from iduedu.overpass.downloaders import get_4326_boundary
 
 logger = config.logger
 
-# Node types that are projected onto the walk network.
-# Subway objects that have no surface access are already retyped to ``platform`` by the parsers,
-# see ``parse_overpass_subway_data`` and ``overpass_subway2edgenode`` in ``iduedu/overpass/parsers.py``.
-PLATFORM_NODE_TYPES = {"platform", "station_entry_exit", "subway_entry_exit", "subway_entry", "subway_exit"}
 DEFAULT_WALK_SPEED_M_PER_MIN = 5 * 1000 / 60
 
 
@@ -97,7 +94,7 @@ def join_pt_walk_graph(
 
     pt_nodes = public_transport_g.nodes_gdf.copy()
     platform_mask = (
-        pt_nodes["type"].isin(PLATFORM_NODE_TYPES)
+        pt_nodes["type"].isin(WALK_ACCESS_NODE_TYPES)
         if "type" in pt_nodes.columns
         else pd.Series(False, index=pt_nodes.index)
     )

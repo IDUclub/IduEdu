@@ -107,3 +107,12 @@ def test_geometry_of_turned_edges_keeps_inner_points():
     rows = [{"u": 0, "v": 1}, {"u": 2, "v": 1, "geometry": LineString([(20, 0), (15, 3), (10, 0)])}]
     result = simplify_graph(_graph(coords, rows))
     assert list(result.edges_gdf.geometry.item().coords) == [(0, 0), (10, 0), (15, 3), (20, 0)]
+
+
+def test_nodes_walking_reaches_transport_at_stay():
+    """A subway station without entrances is a platform between two platform links; merged away, no walk join
+    could reach the station."""
+    graph = _graph(LINE, [{"u": 1, "v": 0}, {"u": 1, "v": 2}, {"u": 2, "v": 3}])
+    graph.nodes_gdf["type"] = ["subway_platform", "platform", "subway", "subway"]
+    result = simplify_graph(graph)
+    assert 1 in result.nodes_gdf.index and 2 not in result.nodes_gdf.index

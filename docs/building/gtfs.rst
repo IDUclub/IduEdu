@@ -179,7 +179,10 @@ A route of the graph is a *pattern*: the trips of a GTFS route in one direction 
 the same pickup and drop-off rules and follow the same shape. Its key is
 ``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``, the hash taken over the shape and the stop sequence, so it
 stays the same while the feed does. ``feed_id`` defaults to the file or directory name of the feed without
-``.zip``; give each feed a stable name of its own when keys of several feeds are stored together. Route stops and
+``.zip``; give each feed a stable name of its own when keys of several feeds are stored together. A merged feed has
+keys of its own: its ``feed_id`` joins the source names with ``+``, its route and stop ids carry the prefix of their
+source, and stops of different sources may have been merged, so a route has another key there than in a graph of its
+source alone, for example ``gtfs:si+subway:si:S66:1:<hash>``. Route stops and
 their edges carry the ``route_key`` of their pattern, platforms the keys of the patterns calling there, and
 ``graph.routes`` has one row per pattern: ``ref`` and ``name`` (``route_short_name`` and ``route_long_name``),
 ``from`` and ``to`` (the first and last stops), ``operator`` (the agency), ``colour``, the GTFS route as

@@ -544,7 +544,7 @@ def overpass_subway2edgenode(
             merged_nodes[base] = merged_nodes[col_x]
         else:
             merged_nodes[base] = merged_nodes[col_x].combine_first(merged_nodes[col_y])
-        merged_nodes.drop(columns=[col_x, col_y], inplace=True)
+        merged_nodes = merged_nodes.drop(columns=[col_x, col_y])
 
     merged_nodes = gpd.GeoDataFrame(merged_nodes, geometry="geometry", crs=local_crs)
 
@@ -567,7 +567,7 @@ def overpass_subway2edgenode(
             merged_edges[base] = merged_edges[col_x]
         else:
             merged_edges[base] = merged_edges[col_x].combine_first(merged_edges[col_y])
-        merged_edges.drop(columns=[col_x, col_y], inplace=True)
+        merged_edges = merged_edges.drop(columns=[col_x, col_y])
 
     merged_edges = gpd.GeoDataFrame(merged_edges, geometry="geometry", crs=local_crs)
 
@@ -629,8 +629,35 @@ def infer_role_from_tags(tags: dict) -> str:
     return ""
 
 
+#: Node type of a subway stop-area member by its role; a member with another role gets one from its tags.
+SUBWAY_ROLE_TYPES = {
+    "station": "subway_station",
+    "stop": "subway",
+    "platform": "subway_platform",
+    "entrance": "subway_entry_exit",
+    "subway_entrance": "subway_entry_exit",
+    "entrance_yes": "subway_entry_exit",
+    "entrance_main": "subway_entry_exit",
+    "entry_only": "subway_entry",
+    "entrance_entry_only": "subway_entry",
+    "entry": "subway_entry",
+    "exit_only": "subway_exit",
+    "entrance_exit_only": "subway_exit",
+    "exit": "subway_exit",
+}
+
+
+def _role_unknown(member: dict) -> bool:
+    """A stop-area member whose role the subway parser does not read: none, or one such as ``entrence``."""
+    return (member.get("role") or "").strip().lower() not in SUBWAY_ROLE_TYPES
+
+
 def patch_members_roles_inplace(stop_areas_df, known_members: dict | None = None):
-    """Fill missing subway stop-area member roles and geometry in place.
+    """Fill missing or unknown subway stop-area member roles and missing geometry in place.
+
+    A member whose role is empty or not one the parser reads (OSM has ``entrence`` and the like) takes the
+    role its tags give, see :func:`infer_role_from_tags`; a station whose entrances carry a misspelt role
+    would otherwise have no entrance and be joined to walking as a platform.
 
     ``known_members`` are the member tags and coordinates that arrived with the
     route response (see ``split_stop_area_members``). Only members absent from it
@@ -641,7 +668,7 @@ def patch_members_roles_inplace(stop_areas_df, known_members: dict | None = None
     missing = []
     for _, r in stop_areas_df.iterrows():
         for m in r.get("members") or []:
-            role_missing = (m.get("role") or "").strip() == ""
+            role_missing = _role_unknown(m)
 
             has_latlon = "lat" in m and "lon" in m and m["lat"] is not None and m["lon"] is not None
             has_geom = "geometry" in m and m["geometry"]
@@ -664,7 +691,7 @@ def patch_members_roles_inplace(stop_areas_df, known_members: dict | None = None
             key = (m["type"], int(m["ref"]))
             payload = tags_map.get(key, {})
 
-            if (m.get("role") or "").strip() == "":
+            if _role_unknown(m):
                 tags = payload.get("tags", {}) or {}
                 role = infer_role_from_tags(tags)
                 if role:
@@ -694,21 +721,7 @@ def parse_overpass_subway_data(
     transformer = _to_local(to_crs)
 
     station_parent_ref = {}
-    osm_roles_to_iduedu = {
-        "station": "subway_station",
-        "stop": "subway",
-        "platform": "subway_platform",
-        "entrance": "subway_entry_exit",
-        "subway_entrance": "subway_entry_exit",
-        "entrance_yes": "subway_entry_exit",
-        "entrance_main": "subway_entry_exit",
-        "entry_only": "subway_entry",
-        "entrance_entry_only": "subway_entry",
-        "entry": "subway_entry",
-        "exit_only": "subway_exit",
-        "entrance_exit_only": "subway_exit",
-        "exit": "subway_exit",
-    }
+    osm_roles_to_iduedu = SUBWAY_ROLE_TYPES
 
     def _collect_by_roles(members, parent_id):
         roles = defaultdict(list)

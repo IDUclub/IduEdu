@@ -867,7 +867,9 @@ fn pairs_by_part(pairs: Vec<Pair>, paths: &mut [Vec<Xy>]) -> (Vec<(usize, Vec<Pa
 // One route, all routes
 // ---------------------------------------------------------------------------------------------------------
 
-/// Nodes and edges of one route; nothing for a route without ways or without stops and platforms.
+/// Nodes and edges of one route; nothing for a route without ways or without stops and platforms, and
+/// nothing for a route left with a single stop (a fragment of a route mostly outside the data): boarding there
+/// leads nowhere.
 fn parse_route(route: &Route) -> Result<Parsed, String> {
     let mut out = Parsed::default();
     if route.ways.is_empty() || (route.stops.is_empty() && route.platforms.is_empty()) {
@@ -992,6 +994,9 @@ fn parse_route(route: &Route) -> Result<Parsed, String> {
                 speed: f64::NAN,
             });
         }
+    }
+    if out.edges.iter().all(|edge| edge.boarding) {
+        return Ok(Parsed::default());
     }
     Ok(out)
 }
@@ -1209,20 +1214,37 @@ mod tests {
         let way = [[0.0, 0.0], [1000.0, 0.0]];
         let mut stop = Member::new([500.0, 0.0], 0, 0);
         stop.stand_in = 0; // the stop node is also its own stop area's platform
+        let mut next = Member::new([900.0, 0.0], 1, 1);
+        next.stand_in = 1;
         let parse = |kinds_apart| {
             let route = Route {
                 ways: vec![Way {
                     coords: &way,
                     speed: 1.0,
                 }],
-                stops: vec![stop],
+                stops: vec![stop, next],
                 platforms: vec![],
                 kinds_apart,
             };
             parse_route(&route).unwrap().nodes.len()
         };
-        assert_eq!(parse(false), 1);
-        assert_eq!(parse(true), 2);
+        assert_eq!(parse(false), 2);
+        assert_eq!(parse(true), 4);
+    }
+
+    #[test]
+    fn a_route_with_a_single_stop_gives_nothing() {
+        let way = [[0.0, 0.0], [1000.0, 0.0]];
+        let route = Route {
+            ways: vec![Way {
+                coords: &way,
+                speed: 1.0,
+            }],
+            stops: vec![Member::new([500.0, 0.0], 0, 0)],
+            platforms: vec![Member::new([500.0, 8.0], 1, 1)],
+            kinds_apart: false,
+        };
+        assert_eq!(parse_route(&route).unwrap(), Parsed::default());
     }
 
     #[test]

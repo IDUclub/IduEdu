@@ -506,6 +506,27 @@ def test_only_members_missing_from_the_section_are_fetched(monkeypatch):
     assert asked == [("way", 3)]
 
 
+def test_a_role_the_parser_does_not_read_is_taken_from_the_tags(monkeypatch):
+    """Mezhdunarodnaya lists its entrances as ``entrence``: read as no entrance, the station became a platform."""
+    from iduedu.overpass import parsers
+
+    monkeypatch.setattr(parsers, "fetch_member_tags", lambda missing: {})
+    members = [
+        {"type": "node", "ref": 5, "role": "station", "lat": 59.9, "lon": 30.3},
+        {"type": "node", "ref": 6, "role": "entrence", "lat": 59.9001, "lon": 30.3001},
+        {"type": "node", "ref": 7, "role": "entrence", "lat": 59.9002, "lon": 30.3002},
+    ]
+    stop_areas = pd.DataFrame([_stop_area_row(10, members)])
+    known = {
+        ("node", 6): {"tags": {"railway": "subway_entrance", "entrance": "entrance"}},
+        ("node", 7): {"tags": {"railway": "subway_entrance", "entrance": "exit"}},
+    }
+
+    parsers.patch_members_roles_inplace(stop_areas, known)
+
+    assert [m["role"] for m in stop_areas.iloc[0]["members"]] == ["station", "entrance", "exit_only"]
+
+
 def test_merge_on_ids_accepts_all_string_keys_against_integer_keys():
     from iduedu.overpass.parsers import merge_on_ids
 

@@ -9,6 +9,7 @@ import pandas as pd
 import shapely
 
 from iduedu import _rust
+from iduedu.constants.network_enums import WALK_ACCESS_NODE_TYPES
 from iduedu.graph.urban_graph import UrbanGraph
 
 _TIME_COLUMN = re.compile(r"^time(_\w+)?_min$")
@@ -90,7 +91,8 @@ def simplify_graph(
         graph: Any graph.
         keys: Edge columns that must be equal along a chain. By default all columns except ``u``, ``v``, ``k``,
             the geometry and ``sum_columns``; in a directed graph the direction column is among them.
-        keep_nodes: Nodes that stay, for example nodes that objects or another table refer to.
+        keep_nodes: Nodes that stay, for example nodes that objects or another table refer to. The nodes a walk
+            graph joins public transport at (``type`` platform or a subway entrance or exit) always stay.
         sum_columns: Columns summed along a chain. By default ``length_meter``, ``time_min`` and every
             ``time_<name>_min`` column. The other columns take the values of the first edge.
 
@@ -123,6 +125,10 @@ def simplify_graph(
     if keep_nodes is not None:
         positions = node_index.get_indexer(pd.Index(list(keep_nodes)))
         keep[positions[positions >= 0]] = True
+    if "type" in nodes.columns:
+        # A station without entrances is a platform between two platform links: merged away, walking could
+        # no longer reach it.
+        keep |= nodes["type"].isin(WALK_ACCESS_NODE_TYPES).to_numpy()
     key_ids = _key_ids(edges, keys)
     two_way = _two_way(graph, edges)
 

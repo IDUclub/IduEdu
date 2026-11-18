@@ -12,10 +12,12 @@ from iduedu import (
     get_gtfs_public_transport_graph,
     get_public_transport_graph,
     join_urban_graphs,
+    nx_graph2urban_graph,
     read_urban_graph,
     route_edges,
     route_stops,
     routes_in_area,
+    urban_graph2nx_graph,
 )
 from iduedu.graph_builders import public_transport_builders
 from tests.factories import write_gtfs_feed
@@ -133,8 +135,15 @@ def test_builder_clip_keeps_only_routes_with_edges_inside(monkeypatch):
 def test_routes_survive_copy_join_pickle_and_urbangraph_files(pt_graph, tmp_path):
     assert pt_graph.copy().routes.equals(pt_graph.routes)
     assert pickle.loads(pickle.dumps(pt_graph)).routes.equals(pt_graph.routes)
-    path = pt_graph.write(tmp_path / "pt.urbangraph")
+    with_missing = pt_graph.copy()
+    nodes = with_missing.nodes_gdf
+    nodes["note"] = pd.Series([None] + [["x"]] * (len(nodes) - 1), index=nodes.index, dtype=object)
+    nodes["label"] = pd.Series([None] + ["x"] * (len(nodes) - 1), index=nodes.index, dtype=object)
+    path = with_missing.write(tmp_path / "pt.urbangraph")
     restored = read_urban_graph(path)
+    # pandas 3 reads text back as strings with NaN; a missing value written as None comes back as None.
+    for column, value in (("note", ["x"]), ("label", "x")):
+        assert restored.nodes_gdf[column].iloc[0] is None and restored.nodes_gdf[column].iloc[1] == value
     pd.testing.assert_frame_equal(restored.routes, pt_graph.routes, check_dtype=False)
     assert sorted(restored.nodes_gdf["route_key"].dropna().map(str)) == sorted(
         pt_graph.nodes_gdf["route_key"].dropna().map(str)
@@ -144,6 +153,11 @@ def test_routes_survive_copy_join_pickle_and_urbangraph_files(pt_graph, tmp_path
     assert street.routes is None and "routes" not in repr(street)
     joined = join_urban_graphs(street, pt_graph)
     assert joined.routes.equals(pt_graph.routes) and "routes=3" in repr(joined)
+    # Swapping the ends of edges drawn backwards wrote into a read-only array under copy-on-write pandas.
+    # An undirected nx.MultiGraph keyed boarding and alighting of one pair alike, and one of them was lost.
+    restored = nx_graph2urban_graph(urban_graph2nx_graph(pt_graph)).edges_gdf
+    edge_set = sorted(zip(pt_graph.edges_gdf["u"], pt_graph.edges_gdf["v"], pt_graph.edges_gdf["type"]))
+    assert sorted(zip(restored["u"], restored["v"], restored["type"])) == edge_set
     plain = street.write(tmp_path / "street.urbangraph")
     assert read_urban_graph(plain).routes is None
 
