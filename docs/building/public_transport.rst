@@ -43,7 +43,9 @@ Graph structure
 Every route gets its own chain of *route stops*, one node per stop of the route, connected by travel edges whose
 ``type`` is the mode (``bus``, ``tram``, ...), whose ``route`` is the route number and whose ``route_key`` names
 the route (see `Routes`_). Routes that stop at the same place share a *platform* node, the place where passengers
-wait. A ``boarding`` edge leads from the platform to the
+wait: platforms in one cell of a metre grid (coordinates rounded to whole metres) are one node at the first of them,
+and so are the stops of one route in one cell. Every edge is drawn to the nodes it joins, and an edge between stops
+merged into one node is left out. A ``boarding`` edge leads from the platform to the
 route stop and carries the waiting time of the mode; an ``alighting`` edge leads back at no cost. A transfer between
 routes therefore passes through a platform and pays the wait of the route boarded.
 

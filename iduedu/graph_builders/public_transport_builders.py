@@ -1,6 +1,7 @@
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import shapely
 from shapely import MultiPolygon, Polygon
 
 from iduedu import config
@@ -61,6 +62,25 @@ def _aggregate_nodes(nodes: pd.DataFrame, keys: list[str], *, dropna: bool, with
         merged.append(out)
     result["extra_data"] = merged
     return result[columns]
+
+
+def _snap_edge_ends(geometry: np.ndarray, node_points: np.ndarray, u: pd.Series, v: pd.Series) -> np.ndarray:
+    """Edge lines that start at the node ``u`` and end at the node ``v``.
+
+    Nodes in one metre cell are merged into the first of them, while the edges of the others keep their own ends,
+    up to a metre away; their first and last points are moved onto the node.
+    """
+    geometry = np.asarray(geometry, dtype=object).copy()
+    lines = ~shapely.is_missing(geometry) & (shapely.get_num_coordinates(geometry) >= 2)
+    if not lines.any():
+        return geometry
+    coords = shapely.get_coordinates(geometry[lines])
+    lasts = np.cumsum(shapely.get_num_coordinates(geometry[lines])) - 1
+    firsts = np.r_[0, lasts[:-1] + 1]
+    coords[firsts] = shapely.get_coordinates(node_points[u.to_numpy()[lines]])
+    coords[lasts] = shapely.get_coordinates(node_points[v.to_numpy()[lines]])
+    geometry[lines] = shapely.set_coordinates(geometry[lines].copy(), coords)
+    return geometry
 
 
 def _is_missing(value) -> bool:
@@ -315,6 +335,9 @@ def _graph_data_to_urban_graph(
     if missing_endpoints.any():
         logger.warning(f"Dropping {int(missing_endpoints.sum())} PT edges with missing endpoint nodes")
         graph_edges_gdf = graph_edges_gdf.loc[~missing_endpoints].copy()
+    # Stops of one route in one metre cell are one node, so an edge between them (a stop listed twice in a row, a
+    # terminus passed on the way in and out) leads nowhere.
+    graph_edges_gdf = graph_edges_gdf.loc[graph_edges_gdf["u"].to_numpy() != graph_edges_gdf["v"].to_numpy()]
 
     if graph_edges_gdf.empty:
         return UrbanGraph(
@@ -329,6 +352,9 @@ def _graph_data_to_urban_graph(
         )
 
     graph_edges_gdf[["u", "v"]] = graph_edges_gdf[["u", "v"]].astype(int)
+    graph_edges_gdf["geometry"] = _snap_edge_ends(
+        graph_edges_gdf.geometry.to_numpy(), nodes_gdf.geometry.to_numpy(), graph_edges_gdf["u"], graph_edges_gdf["v"]
+    )
 
     if "length_meter" not in graph_edges_gdf.columns:
         graph_edges_gdf["length_meter"] = np.nan

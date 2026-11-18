@@ -65,8 +65,21 @@ msgstr "Устройство графа"
 # | waiting time of the mode; an ``alighting`` edge leads back at no cost. A
 # | transfer between routes therefore passes through a platform and pays the
 # | wait of the route boarded."
-msgid "Every route gets its own chain of *route stops*, one node per stop of the route, connected by travel edges whose ``type`` is the mode (``bus``, ``tram``, ...), whose ``route`` is the route number and whose ``route_key`` names the route (see `Routes`_). Routes that stop at the same place share a *platform* node, the place where passengers wait. A ``boarding`` edge leads from the platform to the route stop and carries the waiting time of the mode; an ``alighting`` edge leads back at no cost. A transfer between routes therefore passes through a platform and pays the wait of the route boarded."
-msgstr "Каждый маршрут получает свою цепочку *остановок маршрута*, по узлу на каждую остановку, соединённых рёбрами движения, у которых ``type`` — вид транспорта (``bus``, ``tram``, ...), ``route`` — номер маршрута, а ``route_key`` — ключ маршрута (см. `Маршруты`_). Маршруты, останавливающиеся в одном месте, делят узел *платформы*, где ждут пассажиры. Ребро ``boarding`` ведёт от платформы к остановке маршрута и несёт время ожидания этого вида транспорта; ребро ``alighting`` ведёт обратно бесплатно. Поэтому пересадка между маршрутами проходит через платформу и оплачивает ожидание маршрута, на который садятся."
+# | msgid "Every route gets its own chain of *route stops*, one node per stop
+# of
+# | ``tram``, ...), whose ``route`` is the route number and whose
+# ``route_key``
+# | names the route (see `Routes`_). Routes that stop at the same place share
+# a
+# | *platform* node, the place where passengers wait. A ``boarding`` edge
+# leads
+# | from the platform to the route stop and carries the waiting time of the
+# | mode; an ``alighting`` edge leads back at no cost. A transfer between
+# routes
+# | therefore passes through a platform and pays the wait of the route
+# boarded."
+msgid "Every route gets its own chain of *route stops*, one node per stop of the route, connected by travel edges whose ``type`` is the mode (``bus``, ``tram``, ...), whose ``route`` is the route number and whose ``route_key`` names the route (see `Routes`_). Routes that stop at the same place share a *platform* node, the place where passengers wait: platforms in one cell of a metre grid (coordinates rounded to whole metres) are one node at the first of them, and so are the stops of one route in one cell. Every edge is drawn to the nodes it joins, and an edge between stops merged into one node is left out. A ``boarding`` edge leads from the platform to the route stop and carries the waiting time of the mode; an ``alighting`` edge leads back at no cost. A transfer between routes therefore passes through a platform and pays the wait of the route boarded."
+msgstr "Каждый маршрут получает свою цепочку *остановок маршрута*, по узлу на каждую остановку, соединённых рёбрами движения, у которых ``type`` — вид транспорта (``bus``, ``tram``, ...), ``route`` — номер маршрута, а ``route_key`` — ключ маршрута (см. `Маршруты`_). Маршруты, останавливающиеся в одном месте, делят узел *платформы*, где ждут пассажиры: платформы в одной клетке метровой сетки (координаты, округлённые до целых метров) становятся одним узлом в точке первой из них, как и остановки одного маршрута в одной клетке. Каждое ребро проводится к узлам, которые оно соединяет, а ребро между остановками, склеенными в один узел, не включается. Ребро ``boarding`` ведёт от платформы к остановке маршрута и несёт время ожидания этого вида транспорта; ребро ``alighting`` ведёт обратно бесплатно. Поэтому пересадка между маршрутами проходит через платформу и оплачивает ожидание маршрута, на который садятся."
 
 # | msgid "Outputs"
 # | msgid "Routes"
