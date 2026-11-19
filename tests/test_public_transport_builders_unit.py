@@ -266,6 +266,53 @@ def test_get_public_transport_graph_accepts_train_with_custom_registry(monkeypat
     assert graph.edges_gdf.empty
 
 
+LCC_RUSSIA = "+proj=lcc +lat_1=52 +lat_2=64 +lat_0=0 +lon_0=100 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+
+
+def _one_bus_route(territory):
+    lon0, lat0, lon1, _ = territory.bounds
+    lat = lat0 + 0.001
+    stops = [(lon0 + 0.001, lat), (lon1 - 0.001, lat)]
+    return [
+        {
+            "type": "relation",
+            "id": 7,
+            "tags": {"type": "route", "route": "bus", "ref": "7"},
+            "members": [
+                {"type": "node", "ref": 71, "role": "stop", "lon": stops[0][0], "lat": stops[0][1]},
+                {"type": "node", "ref": 72, "role": "stop", "lon": stops[1][0], "lat": stops[1][1]},
+                {"type": "way", "ref": 73, "role": "", "geometry": [{"lon": x, "lat": y} for x, y in stops]},
+            ],
+        }
+    ]
+
+
+def test_get_public_transport_graph_builds_in_the_given_crs(monkeypatch):
+    from pyproj import CRS, Transformer
+
+    monkeypatch.setattr(
+        public_transport_builders, "get_routes_by_poly", lambda polygon, types: _one_bus_route(TERRITORY)
+    )
+
+    default = get_public_transport_graph(transport_types="bus", territory=TERRITORY)
+    graph = get_public_transport_graph(transport_types="bus", territory=TERRITORY, crs=LCC_RUSSIA)
+
+    assert CRS.from_user_input(graph.crs).equals(CRS.from_user_input(LCC_RUSSIA))
+    assert CRS.from_user_input(default.crs).utm_zone is not None
+    stops = graph.nodes_gdf[graph.nodes_gdf["type"] == "bus"].geometry
+    route = _one_bus_route(TERRITORY)[0]["members"][:2]
+    to_lcc = Transformer.from_crs(4326, LCC_RUSSIA, always_xy=True)
+    expected = sorted(to_lcc.transform(m["lon"], m["lat"]) for m in route)
+    assert sorted((p.x, p.y) for p in stops) == pytest.approx(expected)
+    assert len(graph.edges_gdf) == len(default.edges_gdf)
+
+
+def test_get_public_transport_graph_rejects_a_geographic_crs(monkeypatch):
+    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: pytest.fail("read"))
+    with pytest.raises(ValueError, match="projected"):
+        get_public_transport_graph(transport_types="bus", territory=TERRITORY, crs=4326)
+
+
 def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypatch):
     # The subway station-context query can pull in unrelated route relations (e.g.
     # route=train sharing nodes with a metro station). Such leaked types must not
@@ -281,7 +328,7 @@ def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypa
             }
         )
 
-    def fake_ground_parser(routes, local_crs, ref2speed, needed_tags):
+    def fake_ground_parser(routes, local_crs, ref2speed, needed_tags, member_tags=None):
         parsed_types.extend(routes["transport_type"])
         return gpd.GeoDataFrame(), gpd.GeoDataFrame()
 

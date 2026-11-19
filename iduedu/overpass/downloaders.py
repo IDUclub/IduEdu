@@ -445,6 +445,8 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
             """
             way(r.routes_basic);
             out tags qt;
+            node(r.routes_basic);
+            out tags qt;
             """.strip()
         )
 

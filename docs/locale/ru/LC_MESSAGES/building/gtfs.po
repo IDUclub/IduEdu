@@ -125,8 +125,9 @@ msgstr "Результаты"
 # | stations with pathways ``pathway`` and ``station_link`` edges. To walk to
 # | the stops, build the walk graph first and give its CRS to the GTFS
 # builder:"
-msgid "A directed :class:`UrbanGraph` with the node and edge types of the OSM public-transport graph (:doc:`public_transport`): platforms, route stops, travel edges by mode, ``boarding`` and ``alighting`` edges, and for stations with pathways ``pathway`` and ``station_link`` edges."
-msgstr "Ориентированный :class:`UrbanGraph` с теми же типами узлов и рёбер, что у графа общественного транспорта OSM (:doc:`public_transport`): платформы, остановки маршрутов, рёбра движения по видам транспорта, рёбра ``boarding`` и ``alighting``, а у станций с переходами — рёбра ``pathway`` и ``station_link``."
+# | stations with pathways ``pathway`` and ``station_link`` edges."
+msgid "A directed :class:`UrbanGraph` with the node and edge types of the OSM public-transport graph (:doc:`public_transport`): platforms, route stops, travel edges by mode, ``boarding`` and ``alighting`` edges, and for stations with pathways ``pathway`` and ``station_link`` edges. Nodes made from ``stops.txt`` keep ``gtfs_stop_id``, ``name`` (the ``stop_name``, also kept as ``stop_name``), ``stop_code``, ``platform_code`` and ``wheelchair_boarding`` when the feed gives them; route stops have the ``gtfs_stop_id`` and ``name`` of their stop."
+msgstr "Ориентированный :class:`UrbanGraph` с теми же типами узлов и рёбер, что у графа общественного транспорта OSM (:doc:`public_transport`): платформы, остановки маршрутов, рёбра движения по видам транспорта, рёбра ``boarding`` и ``alighting``, а у станций с переходами — рёбра ``pathway`` и ``station_link``. Узлы, построенные из ``stops.txt``, хранят ``gtfs_stop_id``, ``name`` (``stop_name``, который также остаётся в ``stop_name``), ``stop_code``, ``platform_code`` и ``wheelchair_boarding``, если они есть в фиде; у остановок маршрутов — ``gtfs_stop_id`` и ``name`` их остановки."
 
 # | msgid "A route of the graph is a *pattern*: the trips of a GTFS route in
 # one

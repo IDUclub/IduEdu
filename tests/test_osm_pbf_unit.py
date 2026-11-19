@@ -161,6 +161,8 @@ class OsmData:
         out = []
         ways = sorted({ref for r in ground for t, ref, _ in self.rels[r][0] if t == "w"})
         out += [self.ov_tags("w", w) for w in ways]
+        nodes = sorted({ref for r in ground for t, ref, _ in self.rels[r][0] if t == "n"})
+        out += [self.ov_tags("n", n) for n in nodes]
         out += [self.ov_rel_geom(r) for r in ground]
         out += [self.ov_rel_geom(r) for r in stop_area_like]
         out += [self.ov_rel_body(g) for g in groups]
@@ -552,7 +554,12 @@ def test_routes_by_poly_ground_only_has_no_member_section(city, city_pbf):
     got = _routes(PbfSource(city_pbf), POLY, ["bus"])
     expected_routes = [1001, 1002]
     ways = sorted({ref for r in expected_routes for t, ref, _ in city.rels[r][0] if t == "w"})
-    assert got == [city.ov_tags("w", w) for w in ways] + [city.ov_rel_geom(r) for r in expected_routes]
+    nodes = sorted({ref for r in expected_routes for t, ref, _ in city.rels[r][0] if t == "n"})
+    assert got == (
+        [city.ov_tags("w", w) for w in ways]
+        + [city.ov_tags("n", n) for n in nodes]
+        + [city.ov_rel_geom(r) for r in expected_routes]
+    )
     assert not any(e["type"] == "section" for e in got)
 
 

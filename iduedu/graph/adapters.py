@@ -33,7 +33,8 @@ def nx_graph2urban_graph(
     This helper is intended for compatibility with libraries that still produce
     NetworkX graphs. Nodes must contain ``x`` and ``y`` coordinates, the graph must
     expose a ``crs`` attribute, and edges are expected to carry ``geometry``,
-    ``length_meter`` and ``time_min`` attributes.
+    ``length_meter`` and ``time_min`` attributes. The other node attributes become
+    columns of the node table.
 
     Args:
         nx_graph: NetworkX graph, directed graph, multigraph or multidigraph.
@@ -84,7 +85,12 @@ def nx_graph2urban_graph(
     except KeyError as exc:
         raise ValueError(f"NetworkX nodes must have required {exc.args[0]!r} attribute") from exc
 
-    nodes_gdf = gpd.GeoDataFrame(index=node_index, crs=crs, geometry=node_geoms)
+    # Every node attribute but the coordinates becomes a column; a node without it gets a missing value.
+    node_attrs = pd.DataFrame.from_records(
+        [{key: value for key, value in data.items() if key not in ("x", "y", "geometry")} for data in node_data],
+        index=pd.Index(node_index),
+    )
+    nodes_gdf = gpd.GeoDataFrame(node_attrs, crs=crs, geometry=node_geoms)
 
     if nx_graph.is_multigraph():
         edges_df = pd.DataFrame(list(nx_graph.edges(data=True, keys=True)), columns=["u", "v", "k", "data"])

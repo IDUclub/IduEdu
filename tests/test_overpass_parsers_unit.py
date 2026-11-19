@@ -8,6 +8,7 @@ from iduedu.overpass.parsers import (
     overpass_subway2edgenode,
     parse_maxspeed_to_m_per_min,
     parse_overpass_subway_data,
+    route_member_tags,
 )
 
 pytestmark = pytest.mark.unit
@@ -277,6 +278,69 @@ def test_ground_routes_tables_survives_members_without_ref(members):
 
     assert len(nodes) == 0
     assert len(edges) == 0
+
+
+def test_stop_area_nodes_keep_the_name_and_osm_id_of_their_members():
+    stop_areas = pd.DataFrame([_stop_area_row(10, _stop_area_members())])
+    stations = pd.DataFrame([{"type": "node", "id": 1, "tags": {"name": "Central", "depth": "-40"}, "members": None}])
+    empty = pd.DataFrame(columns=["id", "tags", "members"])
+    known = {
+        ("node", 2): {"tags": {"railway": "platform", "name": "Central", "local_ref": "1"}},
+        ("node", 4): {"tags": {"railway": "subway_entrance", "name": "Exit 3", "ref": "3", "wheelchair": "no"}},
+    }
+
+    _, nodes = parse_overpass_subway_data(stop_areas, empty, stations, LOCAL_CRS, known_members=known)
+
+    attrs = dict(zip(nodes["ref_id"], nodes["extra_data"]))
+    assert attrs[1] == {"name": "Central", "osm_id": "node/1", "depth": "-40"}
+    assert attrs[2] == {"name": "Central", "local_ref": "1", "osm_id": "node/2"}
+    assert attrs[3] == {"osm_id": "node/3"}
+    assert attrs[4] == {"name": "Exit 3", "ref": "3", "wheelchair": "no", "osm_id": "node/4"}
+
+
+def test_route_nodes_keep_the_name_and_osm_id_of_their_stops_and_platforms():
+    # Stop 601 has its platform 611; stop 602 has none, so its platform is made up from it.
+    members = [
+        _member(601, "stop", 59.9100, 30.3020),
+        _member(611, "platform", 59.91005, 30.3020),
+        _member(602, "stop", 59.9100, 30.3080),
+        {
+            "type": "way",
+            "ref": 620,
+            "role": "",
+            "geometry": [{"lat": 59.9100, "lon": 30.3000}, {"lat": 59.9100, "lon": 30.3100}],
+        },
+    ]
+    route = pd.Series({"id": 6, "tags": {"ref": "6"}, "transport_type": "bus", "members": members}, name=0)
+    member_tags = {
+        ("node", 601): {"public_transport": "stop_position", "name": "Depot", "ref": "  "},
+        ("node", 611): {"public_transport": "platform", "name": "Depot", "local_ref": "2", "wheelchair": "yes"},
+        ("node", 602): {"public_transport": "stop_position", "name": "Market", "ref": "M1"},
+    }
+
+    _, nodes = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [], member_tags=member_tags)
+
+    attrs = dict(zip(nodes["node_id"], nodes["extra_data"]))
+    assert attrs[601] == {"name": "Depot", "osm_id": "node/601"}
+    assert attrs[611] == {"name": "Depot", "local_ref": "2", "wheelchair": "yes", "osm_id": "node/611"}
+    assert attrs[602] == {"name": "Market", "ref": "M1", "osm_id": "node/602"}
+    assert attrs["from_602"] == {"name": "Market", "ref": "M1"}  # made up: the stop's tags, no OSM object
+    _, bare = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
+    assert bare["extra_data"].tolist() == [
+        {"osm_id": f"node/{ref}"} if isinstance(ref, int) else {} for ref in bare["node_id"]
+    ]
+
+
+def test_route_member_tags_reads_the_member_nodes_and_ways_of_a_response():
+    elements = pd.DataFrame(
+        [
+            {"type": "way", "id": 1, "tags": {"highway": "platform", "name": "P"}},
+            {"type": "node", "id": 2, "tags": {"name": "S"}},
+            {"type": "node", "id": 3},
+            {"type": "relation", "id": 4, "tags": {"route": "bus"}},
+        ]
+    )
+    assert route_member_tags(elements) == {("way", 1): {"highway": "platform", "name": "P"}, ("node", 2): {"name": "S"}}
 
 
 # ---------------------------------------------------------------------------

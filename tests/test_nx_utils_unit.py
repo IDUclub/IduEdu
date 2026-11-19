@@ -2,6 +2,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import networkx as nx
+import pandas as pd
 import pytest
 from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry
@@ -238,6 +239,21 @@ def test_opposite_edges_of_a_directed_multigraph_survive_the_round_trip():
     got = sorted(zip(restored.edges_gdf["u"], restored.edges_gdf["v"], restored.edges_gdf["type"]))
     assert got == [(0, 1, "boarding"), (1, 0, "alighting"), (1, 2, "bus")]
     assert not restored.edges_gdf[["u", "v", "k"]].duplicated().any()
+
+
+def test_node_attributes_survive_the_round_trip():
+    graph = _opposite_edges_graph(multigraph=True)
+    nodes = graph.nodes_gdf
+    nodes["name"] = ["Depot", None, "Market"]
+    nodes["route_key"] = pd.Series([["osm:r1", "osm:r2"], "osm:r1", None], index=nodes.index, dtype=object)
+    graph = UrbanGraph(nodes, graph.edges_gdf, is_multigraph=True, is_directed=True, edge_direction_column="oneway")
+
+    restored = nx_graph2urban_graph(urban_graph2nx_graph(graph)).nodes_gdf.sort_index()
+
+    assert restored["name"].tolist()[0::2] == ["Depot", "Market"] and pd.isna(restored["name"].iloc[1])
+    assert restored["route_key"].iloc[0] == ["osm:r1", "osm:r2"] and restored["route_key"].iloc[1] == "osm:r1"
+    assert not {"x", "y"} & set(restored.columns)
+    assert restored.geometry.geom_equals(nodes.geometry.sort_index()).all()
 
 
 def test_opposite_edges_do_not_fit_an_undirected_simple_graph():

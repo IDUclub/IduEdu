@@ -57,6 +57,15 @@ GTFS_EXTENDED_ROUTE_TYPES: tuple[tuple[int, int, str], ...] = (
 )
 
 
+def _stop_text(row, column: str) -> str | None:
+    """A ``stops.txt`` value as text, or None when the column is missing or the value empty."""
+    value = row.get(column)
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 def _parse_service_date(value: date | datetime | str | None) -> date | None:
     if value is None:
         return None
@@ -741,6 +750,10 @@ def _build_graph_tables(
                 "node_id": node_id,
                 "type": node_type(row),
                 "gtfs_stop_id": str(stop_id),
+                "name": _stop_text(row, "stop_name"),
+                "stop_code": _stop_text(row, "stop_code"),
+                "platform_code": _stop_text(row, "platform_code"),
+                "wheelchair_boarding": _stop_text(row, "wheelchair_boarding"),
                 "stop_name": row.get("stop_name", ""),
                 "parent_station": row.get("parent_station", ""),
                 "stop_access": row.get("stop_access", ""),
@@ -782,6 +795,7 @@ def _build_graph_tables(
                     "node_id": node_id,
                     "type": row["type"],
                     "gtfs_stop_id": str(row["stop_id"]),
+                    "name": node_records[stop_to_node[str(row["stop_id"])]]["name"],
                     "pattern_id": int(pattern_id),
                     "stop_position": int(row["stop_position"]),
                     "stop_sequence": int(row["stop_sequence"]),
