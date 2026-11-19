@@ -148,8 +148,10 @@ msgstr "Половина роста достигается при ``L = speed_ha
 msgid "Transport registry"
 msgstr "Реестр видов транспорта"
 
-msgid "A :class:`TransportRegistry` holds one :class:`TransportSpec` per mode:"
-msgstr ":class:`TransportRegistry` хранит по одной :class:`TransportSpec` на вид транспорта:"
+# | msgid "A :class:`TransportRegistry` holds one :class:`TransportSpec` per
+# | mode:"
+msgid "A :class:`TransportRegistry` holds a base :class:`TransportSpec` for each mode:"
+msgstr ":class:`TransportRegistry` хранит базовую :class:`TransportSpec` для каждого вида транспорта:"
 
 msgid "Parameter"
 msgstr "Параметр"
@@ -201,6 +203,9 @@ msgstr "Время ожидания на рёбрах ``boarding``, минуты
 
 msgid "``DEFAULT_REGISTRY`` covers buses, trolleybuses, trams, subways, monorails and share taxis (``taxi``); ``DEFAULT_REGISTRY_W_TRAIN`` adds trains."
 msgstr "``DEFAULT_REGISTRY`` охватывает автобусы, троллейбусы, трамваи, метро, монорельс и маршрутные такси (``taxi``); ``DEFAULT_REGISTRY_W_TRAIN`` добавляет поезда."
+
+msgid "The OSM builder uses a registered ``<mode>:<service>`` specification for travel on routes with the matching relation ``service`` tag and falls back to the base mode specification. ``DEFAULT_REGISTRY_W_TRAIN`` includes ``train:high_speed`` for ``route=train`` relations with ``service=high_speed``, calibrated to Sapsan timetables. Request ``train`` in ``transport_types``. Edge types, route modes and boarding waits still use the base mode."
+msgstr "При построении графа по данным OSM для расчёта времени в пути используется зарегистрированная спецификация ``<mode>:<service>``, если ей соответствует тег ``service`` отношения маршрута. В остальных случаях применяется базовая спецификация вида транспорта. В ``DEFAULT_REGISTRY_W_TRAIN`` входит ``train:high_speed`` для отношений ``route=train`` с тегом ``service=high_speed``. Её параметры подобраны по расписанию «Сапсана». В ``transport_types`` указывайте ``train``. Типы рёбер, виды транспорта в таблице маршрутов и время ожидания посадки по-прежнему определяются базовым видом транспорта."
 
 msgid "Mode"
 msgstr "Вид"
@@ -363,14 +368,18 @@ msgstr "Маршруты графа, у которых есть ребро дв�
 msgid ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
 msgstr ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
 
-msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
-msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+# | msgid "Configuration of a single public-transport mode used to estimate
+# | travel time on graph edges."
+msgid "Configuration of a public-transport mode or service used to estimate travel time on graph edges."
+msgstr "Параметры вида общественного транспорта или варианта сообщения для оценки времени в пути на рёбрах графа."
 
 msgid ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
 msgstr ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
 
-msgid "Registry of available public-transport modes and their specifications."
-msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+# | msgid "Registry of available public-transport modes and their
+# | specifications."
+msgid "Registry of public-transport specifications for modes and service variants."
+msgstr "Реестр спецификаций видов общественного транспорта и вариантов сообщения."
 
 msgid "Figures"
 msgstr "Рисунки"
