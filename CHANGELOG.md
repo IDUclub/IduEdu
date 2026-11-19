@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v3.3.2 (2026-11-19)
+
+### Bug Fixes
+
+- High-speed train speeds; join_pt_walk_graph six times faster
+  ([#40](https://github.com/IDUclub/IduEdu/pull/40),
+  [`4efc757`](https://github.com/IDUclub/IduEdu/commit/4efc757bb4e4589c8e87d5b25fbd3f04b27f3e3a))
+
+* fix(transport): high-speed trains get their own speed model
+
+Train routes tagged service=high_speed in OSM (Sapsan, Nevsky Express) used the commuter-fitted
+  train spec and took twice their scheduled time. A registry key "<mode>:<service>" now overrides
+  the mode spec for travel edges of routes with that service tag; DEFAULT_REGISTRY_W_TRAIN gets
+  train:high_speed, calibrated to Sapsan timetables (645 km: 221 min non-stop, 247 min over five
+  segments). Edge types, route modes and boarding waits stay with the plain mode.
+  TransportRegistry.list_modes() lists the requestable modes; the routes table keeps the service tag
+  by default.
+
+Closes #38
+
+* perf: join_pt_walk_graph six times faster, edges split at projections in Rust
+
+On St Petersburg (639k walk edges, 6.5k platforms) the join took 12 s; now 2 s with the same nodes,
+  edges, attributes and geometry. - Platform attributes collapse onto walk nodes without a Python
+  call per node. - project_objects2urban_graph splits edges in a new Rust kernel (split_edges, same
+  pieces as shapely.ops.substring) and builds nodes and connectors vectorised. - The join builds no
+  intermediate graphs and validates the result once.
+
+Closes #39
+
+
 ## v3.3.1 (2026-11-19)
 
 ### Bug Fixes
