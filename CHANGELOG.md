@@ -2,6 +2,57 @@
 
 <!-- version list -->
 
+## v3.3.0 (2026-11-19)
+
+### Continuous Integration
+
+- **release**: Manual run that publishes an existing release tag
+  ([#35](https://github.com/IDUclub/IduEdu/pull/35),
+  [`e9e0507`](https://github.com/IDUclub/IduEdu/commit/e9e0507533801fefb2d06575b3dd656670a57f38))
+
+### Features
+
+- Routes table of public-transport graphs, one Rust kernel for OSM routes
+  ([#36](https://github.com/IDUclub/IduEdu/pull/36),
+  [`93dc7c5`](https://github.com/IDUclub/IduEdu/commit/93dc7c5e91222987a6db760e7fa7b84ea16cf8c1))
+
+* feat: routes table of public-transport graphs, one Rust kernel for OSM routes
+
+- Edges and stop nodes carry route_key; UrbanGraph.routes holds one row per route variant (OSM
+  osm:r<id>, GTFS gtfs:<feed>:<route_id>:<direction>:<hash>) with its line (route_master or GTFS
+  route_id). route_edges, route_stops and routes_in_area query it; editors, simplify, joins and
+  .urbangraph keep it. - OSM route relations of every mode, the subway included, are parsed by one
+  Rust kernel (pt_routes.rs) in parallel. Its geometry repeats GEOS operation for operation, so the
+  graphs equal the Python ones. A route that cannot be drawn is left out with a warning instead of
+  failing the build. - The PBF reader keeps way coordinates as arrays and hands the ways of ground
+  routes over as shared read-only lon/lat arrays instead of per-point dicts. - The subway stitches
+  its ways in member order like the ground modes; the Python stitching, pairing and line cutting
+  helpers are removed. - Route masters are read from Overpass and PBF; download_osm_pbf and
+  split_by_polygons can cut routes-only files (way_keys=()).
+
+* fix: findings of the graph-api test of 3.3
+
+- Subway stop areas: a member role the parser does not read is taken from the tags of the member
+  (Mezhdunarodnaya, Devyatkino are stations with entrances again, none left typed platform) -
+  simplify_graph keeps the nodes a walk graph joins public transport at (platforms, subway entrances
+  and exits) - OSM routes with a single stop in the territory are left out: they have boarding edges
+  only - .urbangraph: object columns read back with None instead of NaN - nx_graph2urban_graph:
+  endpoints swapped in a copy, not in a read-only array of copy-on-write pandas -
+  urban_graph2nx_graph: opposite edges of a directed multigraph get their own key in the undirected
+  MultiGraph instead of overwriting each other; a simple graph with such edges raises a clear error
+  - No inplace drop/set_index in the subway parser and nx_utils - Docs and Russian catalogues:
+  merged-feed route keys, single-stop routes, simplify_graph access nodes
+
+* fix: public-transport edges end on their merged nodes
+
+Nodes in one metre cell are merged into the first of them, while the edges of the others kept their
+  own ends: 0.5% of the edges of the north-west cut ended up to 0.82 m from their node (median 7
+  mm), and nx_graph2urban_graph rejected the graph on its endpoint check. The first and last points
+  of every edge are now moved onto its nodes, and an edge between stops merged into one node (a stop
+  listed twice in a row, a terminus passed on the way in and out; 65 in the cut) is left out. The
+  merge rule stays as it was.
+
+
 ## v3.2.0 (2026-11-17)
 
 ### Features
