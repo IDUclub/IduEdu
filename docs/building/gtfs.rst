@@ -173,7 +173,9 @@ Outputs
 
 A directed :class:`UrbanGraph` with the node and edge types of the OSM public-transport graph (:doc:`public_transport`):
 platforms, route stops, travel edges by mode, ``boarding`` and ``alighting`` edges, and for stations with pathways
-``pathway`` and ``station_link`` edges.
+``pathway`` and ``station_link`` edges. Nodes made from ``stops.txt`` keep ``gtfs_stop_id``, ``name`` (the
+``stop_name``, also kept as ``stop_name``), ``stop_code``, ``platform_code`` and ``wheelchair_boarding`` when the
+feed gives them; route stops have the ``gtfs_stop_id`` and ``name`` of their stop.
 
 A route of the graph is a *pattern*: the trips of a GTFS route in one direction that call at the same stops with
 the same pickup and drop-off rules and follow the same shape. Its key is

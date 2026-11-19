@@ -87,6 +87,33 @@ def test_gtfs_builder_keeps_platforms_and_patterns_separate_and_uses_half_headwa
     assert graph.adjacency_matrix.shape == (len(graph.nodes_gdf), len(graph.nodes_gdf))
 
 
+def test_gtfs_nodes_keep_the_name_and_codes_of_their_stops(tmp_path):
+    feed = _feed(
+        tmp_path,
+        {
+            "stops.txt": (
+                "stop_id,stop_code,stop_name,stop_lat,stop_lon,platform_code,wheelchair_boarding\n"
+                "A,101,Depot,59.93,30.30,2,1\nB,,Market,59.94,30.30,,\n"
+            ),
+            "routes.txt": "route_id,route_short_name,route_type\nR,1,3\n",
+            "trips.txt": "route_id,service_id,trip_id\nR,svc,t1\nR,svc,t2\n",
+            "stop_times.txt": (
+                "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+                "t1,08:00:00,08:00:00,A,1\nt1,08:10:00,08:10:00,B,2\n"
+                "t2,08:20:00,08:20:00,A,1\nt2,08:30:00,08:30:00,B,2\n"
+            ),
+        },
+    )
+
+    nodes = get_gtfs_public_transport_graph(feed, crs=CRS).nodes_gdf
+    columns = ["name", "stop_code", "platform_code", "wheelchair_boarding"]
+    platforms = nodes[nodes["type"] == "platform"].set_index("gtfs_stop_id")[columns]
+    assert platforms.loc["A"].tolist() == ["Depot", "101", "2", "1"]
+    assert platforms.loc["B", "name"] == "Market" and platforms.loc["B", columns[1:]].isna().all()
+    stops = nodes[nodes["type"] == "bus"]
+    assert dict(zip(stops["gtfs_stop_id"], stops["name"])) == {"A": "Depot", "B": "Market"}
+
+
 def test_gtfs_builder_none_filters_mean_all_services_and_unbounded_time(tmp_path):
     feed = _feed(
         tmp_path,

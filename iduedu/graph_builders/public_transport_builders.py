@@ -1,7 +1,10 @@
+from typing import Any
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
+from pyproj import CRS
 from shapely import MultiPolygon, Polygon
 
 from iduedu import config
@@ -20,6 +23,7 @@ from iduedu.overpass.parsers import (
     ground_routes_tables,
     overpass_routes_to_df,
     overpass_subway2edgenode,
+    route_member_tags,
 )
 
 logger = config.logger
@@ -501,6 +505,7 @@ def _build_public_transport_graph(
     osm_edge_tags: list[str] | None,
     transport_registry: TransportRegistry,
     clip_by_territory: bool = False,
+    crs: Any | None = None,
 ) -> UrbanGraph:
     """
     Build a directed public-transport graph for one or multiple OSM public-transport modes inside a territory.
@@ -529,12 +534,20 @@ def _build_public_transport_graph(
             distances, traffic coefficient). Also used for transport-type validation in public APIs.
         clip_by_territory:
             If True, clip the final graph to the (projected) boundary.
+        crs:
+            Projected CRS of the graph; by default the local UTM zone of the territory.
     Returns:
         ``UrbanGraph``: Directed public-transport graph with ``oneway`` edge direction column.
     """
 
+    if crs is not None:
+        local_crs = CRS.from_user_input(crs)
+        if not local_crs.is_projected:
+            raise ValueError(f"crs must be projected in metres, got {local_crs.to_string()}")
+        local_crs = local_crs.to_epsg() or local_crs
     polygon = get_4326_boundary(osm_id=osm_id, territory=territory)
-    local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
+    if crs is None:
+        local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     # Subway parsing expects station information in the response.
     expect_subway = False
@@ -576,14 +589,18 @@ def _build_public_transport_graph(
     # registry knew about was silently discarded here after being downloaded: taxi
     # and monorail routes arrived from Overpass and never reached a graph.
     ground_types = set(transport_types) - {"subway"}
+    # Stop and platform nodes come with the routes for their tags; they are not routes themselves.
+    is_node = overpass_data["type"].eq("node") if "type" in overpass_data else pd.Series(False, overpass_data.index)
     ground_pt_data = overpass_data[
-        (overpass_data["transport_type"].isin(ground_types)) & (~overpass_data["is_way_data"])
+        (overpass_data["transport_type"].isin(ground_types)) & (~overpass_data["is_way_data"]) & ~is_node
     ].copy()
 
     if len(ground_pt_data) > 0:
         logger.debug(f"Parsing {len(ground_pt_data)} ground public transport routes")
         # One Rust kernel call for all routes, in parallel; one table each for their edges and nodes.
-        ground_edges, ground_nodes = ground_routes_tables(ground_pt_data, local_crs, ref2speed, needed_tags)
+        ground_edges, ground_nodes = ground_routes_tables(
+            ground_pt_data, local_crs, ref2speed, needed_tags, member_tags=route_member_tags(overpass_data)
+        )
         if len(ground_edges):
             graph_edges_gdf.append(ground_edges)
         if len(ground_nodes):
@@ -626,6 +643,7 @@ def get_public_transport_graph(
     clip_by_territory: bool = False,
     osm_edge_tags: list[str] | None = None,
     transport_registry: TransportRegistry | None = None,
+    crs: Any | None = None,
 ) -> UrbanGraph:
     """
     Build a directed public-transport graph for one or multiple transport modes within a territory.
@@ -658,6 +676,10 @@ def get_public_transport_graph(
             parameters such as free speed, acceleration and braking distances, dwell time and average waiting
             time for boarding edges).
             If None, ``DEFAULT_REGISTRY`` is used.
+        crs:
+            Projected CRS in metres for the graph (anything ``pyproj.CRS.from_user_input`` accepts). If None, the
+            UTM zone of the territory is estimated. Give one CRS to graphs built in parts to share coordinates,
+            or a conformal CRS of a large area (such as a Lambert conic) when routes reach far beyond one UTM zone.
 
     Returns:
         Directed PT ``UrbanGraph`` with ``crs`` and ``type="public_transport"``. Route stops and the edges of a
@@ -692,4 +714,5 @@ def get_public_transport_graph(
         osm_edge_tags=osm_edge_tags,
         transport_registry=registry,
         clip_by_territory=clip_by_territory,
+        crs=crs,
     )

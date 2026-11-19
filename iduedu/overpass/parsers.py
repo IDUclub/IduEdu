@@ -165,7 +165,9 @@ def extract_needed(loc_obj: pd.Series, keys: list[str]) -> dict | None:  # pragm
 
 
 GROUND_EDGE_COLUMNS = ["u", "v", "type", "geometry", "oneway", "extra_data", "speed_m_min", "route", "route_key"]
-GROUND_NODE_COLUMNS = ["node_id", "geometry", "type", "route", "route_key"]
+GROUND_NODE_COLUMNS = ["node_id", "geometry", "type", "route", "route_key", "extra_data"]
+# Tags a stop, platform or entrance node keeps of its OSM object, as columns of the same name.
+NODE_TAG_COLUMNS = ("name", "ref", "local_ref", "wheelchair")
 _WAY_ROLES = frozenset({"", "forward", "backward"})
 _PLATFORM_ROLE_SET = frozenset(PLATFORM_ROLES)
 _STOP_ROLE_SET = frozenset(STOPS_ROLES)
@@ -181,6 +183,58 @@ def _to_local(local_crs) -> Transformer:
 def _missing(value) -> bool:
     """Missing as pandas sees a scalar: None or NaN."""
     return value is None or (isinstance(value, float) and math.isnan(value))
+
+
+def osm_node_attributes(kind, ref, tags) -> dict:
+    """Attributes a graph node keeps of the OSM object it is made from.
+
+    The tags of ``NODE_TAG_COLUMNS`` that the object has, and ``osm_id`` as the object's path on
+    openstreetmap.org (``node/<id>``, ``way/<id>`` or ``relation/<id>``) when ``kind`` is given; a node made up
+    from another object (a platform from its stop) takes that object's tags but no ``osm_id``.
+    """
+    tags = tags if isinstance(tags, dict) else {}
+    out = {key: str(tags[key]).strip() for key in NODE_TAG_COLUMNS if not _missing(tags.get(key))}
+    out = {key: value for key, value in out.items() if value}
+    if kind in ("node", "way", "relation") and ref is not None:
+        out["osm_id"] = f"{kind}/{int(ref)}"
+    return out
+
+
+def route_member_tags(elements: pd.DataFrame) -> dict:
+    """Tags of the node and way members of route relations in a route response, keyed by ``(type, id)``."""
+    if elements is None or len(elements) == 0 or "type" not in elements or "tags" not in elements:
+        return {}
+    members = elements[elements["type"].isin(("node", "way"))]
+    return {
+        (kind, int(eid)): tags
+        for kind, eid, tags in zip(members["type"], members["id"], members["tags"])
+        if isinstance(tags, dict) and not _missing(eid)
+    }
+
+
+def _node_attributes(rows: list, node_route: np.ndarray, node_ids: list, member_tags: dict) -> list[dict]:
+    """``osm_node_attributes`` of every kernel node: of its stop or platform member, or, for a node made up
+    from a member (``from_<ref>``), that member's tags without ``osm_id``."""
+    kinds: dict[int, dict] = {}
+    out = []
+    for route, node_id in zip(node_route.tolist(), node_ids):
+        if route not in kinds:
+            members = rows[route].get("members")
+            kinds[route] = {
+                str(member.get("ref")): member.get("type")
+                for member in (members if isinstance(members, list) else [])
+                if member.get("role") in _PLATFORM_ROLE_SET or member.get("role") in _STOP_ROLE_SET
+            }
+        made_up = isinstance(node_id, str) and node_id.startswith("from_")
+        ref = node_id[len("from_") :] if made_up else str(node_id)
+        kind = kinds[route].get(ref)
+        try:
+            number = int(float(ref))
+        except (TypeError, ValueError):
+            number = None
+        tags = None if number is None else member_tags.get((kind, number))
+        out.append(osm_node_attributes(None if made_up else kind, None if made_up else number, tags))
+    return out
 
 
 def _is_nan(value) -> bool:
@@ -373,13 +427,13 @@ def _parse_route_rows(routes: pd.DataFrame, local_crs, inputs: _RouteInputs, kin
 
 
 def ground_routes_tables(
-    routes: pd.DataFrame, local_crs, ref2speed: dict, needed_tags
+    routes: pd.DataFrame, local_crs, ref2speed: dict, needed_tags, member_tags: dict | None = None
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Edge and node tables of ground public-transport route relations, parsed by one Rust kernel call.
 
     See :func:`_parse_route_rows` for what the kernel does. Travel edges carry the OSM tags ``needed_tags``
-    of their relation in ``extra_data``; records carry ``route`` and ``route_key``; within a route a node
-    appears once.
+    of their relation in ``extra_data``, nodes the attributes of their stop or platform (``member_tags``, see
+    :func:`osm_node_attributes`); records carry ``route`` and ``route_key``; within a route a node appears once.
     """
     parsed = _parse_route_rows(routes, local_crs, _RouteInputs(ref2speed))
     if len(parsed["node_id"]) == 0 and len(parsed["edge_u"]) == 0:
@@ -398,6 +452,7 @@ def ground_routes_tables(
             "type": node_types.tolist(),
             "route": labels[node_route].tolist(),
             "route_key": keys[node_route].tolist(),
+            "extra_data": _node_attributes(parsed["rows"], node_route, parsed["node_id"], member_tags or {}),
         },
         columns=GROUND_NODE_COLUMNS,
         geometry="geometry",
@@ -517,6 +572,12 @@ def overpass_subway2edgenode(
         "type": np.where(parsed["node_platform"], "subway_platform", transport_type).tolist(),
         "route": labels[node_route].tolist(),
         "route_key": keys[node_route].tolist(),
+        "extra_data": _node_attributes(
+            parsed["rows"],
+            node_route,
+            parsed["node_id"],
+            {key: payload.get("tags") for key, payload in (known_members or {}).items()},
+        ),
     }
     edges_data = {
         "u": parsed["edge_u"],
@@ -529,7 +590,10 @@ def overpass_subway2edgenode(
     }
 
     nodes_gdf = gpd.GeoDataFrame(
-        nodes_data, columns=["node_id", "geometry", "type", "route", "route_key"], geometry="geometry", crs=local_crs
+        nodes_data,
+        columns=["node_id", "geometry", "type", "route", "route_key", "extra_data"],
+        geometry="geometry",
+        crs=local_crs,
     ).drop_duplicates(subset=["node_id", "route_key", "type"])
 
     merged_nodes = merge_on_ids(add_nodes, nodes_gdf, ["node_id"])
@@ -746,13 +810,20 @@ def parse_overpass_subway_data(
 
         return stations, stops, platforms, entrances, entry_only, exit_only
 
-    def add_node(ref_id, x, y, node_type):
+    def add_node(ref_id, x, y, node_type, kind=None):
         """Add a graph node record to the local accumulator."""
         if x is None or y is None:
             return
-        else:
-            point = Point(transformer.transform(x, y))
-        graph_nodes.append({"ref_id": int(ref_id), "geometry": point, "type": osm_roles_to_iduedu.get(node_type)})
+        point = Point(transformer.transform(x, y))
+        tags = (known_members or {}).get((kind, int(ref_id)), {}).get("tags")
+        graph_nodes.append(
+            {
+                "ref_id": int(ref_id),
+                "geometry": point,
+                "type": osm_roles_to_iduedu.get(node_type),
+                "extra_data": osm_node_attributes(kind, ref_id, tags),
+            }
+        )
 
     def add_edge(u, v, edge_type, oneway=True):
         """Add a graph edge record to the local accumulator."""
@@ -774,7 +845,7 @@ def parse_overpass_subway_data(
                 logger.debug(f"Skipping stop area member without coordinates: {node}")
                 continue
 
-            add_node(node["ref"], node["lon"], node["lat"], node["role"])
+            add_node(node["ref"], node["lon"], node["lat"], node["role"], node.get("type"))
 
         ref2idx = {graph_nodes[i]["ref_id"]: i for i in range(start_idx, len(graph_nodes))}
 
@@ -825,22 +896,23 @@ def parse_overpass_subway_data(
             if pair[0] != pair[1]:
                 add_edge(pair[0], pair[1], "subway_transfer", oneway=False)
 
-    nodes_gdf = gpd.GeoDataFrame(graph_nodes, columns=["ref_id", "geometry", "type"], geometry="geometry", crs=to_crs)
+    nodes_gdf = gpd.GeoDataFrame(
+        graph_nodes, columns=["ref_id", "geometry", "type", "extra_data"], geometry="geometry", crs=to_crs
+    )
     edges_df = pd.DataFrame(graph_edges, columns=["u_ref", "v_ref", "type", "oneway"])
 
     if len(nodes_gdf) == 0:
         return _empty_subway_edges(to_crs), nodes_gdf
 
     nodes_gdf = nodes_gdf.dropna(subset=["geometry"]).drop_duplicates(subset=["ref_id"])
-    nodes_gdf["extra_data"] = [{} for _ in range(len(nodes_gdf))]
 
     for _, station_data in stations_data.iterrows():
         tags = station_data["tags"]
         ref_id = station_data["id"]
         station_ind = nodes_gdf[nodes_gdf["ref_id"] == int(ref_id)].index
-        extra_data = {k: v for k, v in tags.items() if k in ["name", "depth"]}
-        extra_data["depth"] = extra_data.get("depth", 0)
-        nodes_gdf.loc[station_ind, "extra_data"] = [extra_data for _ in station_ind]
+        extra_data = osm_node_attributes(station_data.get("type"), ref_id, tags)
+        extra_data["depth"] = tags.get("depth", 0)
+        nodes_gdf.loc[station_ind, "extra_data"] = [dict(extra_data) for _ in station_ind]
 
     edges_df = edges_df.drop_duplicates(subset=["u_ref", "v_ref", "type"])
 

@@ -426,8 +426,8 @@ class PbfSource:
         """Public-transport route elements in a polygon, shaped as ``get_routes_by_poly`` returns them.
 
         Reproduces, statement by statement and in the same order, the Overpass query of
-        :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways of ground routes
-        (``out tags``), the ground route relations (``out geom``) and their ``route_master`` relations
+        :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways and then of the member
+        nodes of ground routes (``out tags``), the ground route relations (``out geom``) and their ``route_master`` relations
         (``out body``) and, for ``subway``, the relations sharing a node with a subway route
         (``out geom``), their stop-area groups (``out body``), the stations among their members
         (``out tags``), the route masters of the subway routes (``out body``), the ``stop_area_members``
@@ -458,6 +458,8 @@ class PbfSource:
         if simple_route_types:
             member_ways = sorted({ref for r in routes_basic for k, ref, _ in store.rels[r][0] if k == "w"})
             out.extend(store.tags_element("w", w) for w in member_ways if w in store.ways)
+            member_nodes = sorted({ref for r in routes_basic for k, ref, _ in store.rels[r][0] if k == "n"})
+            out.extend(store.tags_element("n", n) for n in member_nodes if n in store.nodes)
             out.extend(store.geom_relation(r, arrays=True) for r in routes_basic)
             out.extend(self._route_masters(routes_basic))
 

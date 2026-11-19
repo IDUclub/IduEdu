@@ -20,8 +20,13 @@ msgstr "iduedu.nx\\_graph2urban\\_graph"
 msgid "Convert a NetworkX graph to an ``UrbanGraph``."
 msgstr "Преобразует граф NetworkX в ``UrbanGraph``."
 
-msgid "This helper is intended for compatibility with libraries that still produce NetworkX graphs. Nodes must contain ``x`` and ``y`` coordinates, the graph must expose a ``crs`` attribute, and edges are expected to carry ``geometry``, ``length_meter`` and ``time_min`` attributes."
-msgstr "Эта функция нужна для совместимости с библиотеками, которые по-прежнему выдают графы NetworkX. Узлы должны содержать координаты ``x`` и ``y``, у графа должен быть атрибут ``crs``, а у рёбер ожидаются атрибуты ``geometry``, ``length_meter`` и ``time_min``."
+# | msgid "This helper is intended for compatibility with libraries that still
+# | produce NetworkX graphs. Nodes must contain ``x`` and ``y`` coordinates,
+# the
+# | graph must expose a ``crs`` attribute, and edges are expected to carry
+# | ``geometry``, ``length_meter`` and ``time_min`` attributes."
+msgid "This helper is intended for compatibility with libraries that still produce NetworkX graphs. Nodes must contain ``x`` and ``y`` coordinates, the graph must expose a ``crs`` attribute, and edges are expected to carry ``geometry``, ``length_meter`` and ``time_min`` attributes. The other node attributes become columns of the node table."
+msgstr "Эта функция нужна для совместимости с библиотеками, которые по-прежнему выдают графы NetworkX. Узлы должны содержать координаты ``x`` и ``y``, у графа должен быть атрибут ``crs``, а у рёбер ожидаются атрибуты ``geometry``, ``length_meter`` и ``time_min``. Остальные атрибуты узлов становятся столбцами таблицы узлов."
 
 msgid "Parameters"
 msgstr "Параметры"

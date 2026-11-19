@@ -109,8 +109,16 @@ msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\
 # | with a subway route (``out geom``), their stop-area groups (``out body``),
 # | the stations among their members (``out tags``), the ``stop_area_members``
 # | section marker and all their members (``out center``)."
-msgid "Reproduces, statement by statement and in the same order, the Overpass query of :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways of ground routes (``out tags``), the ground route relations (``out geom``) and their ``route_master`` relations (``out body``) and, for ``subway``, the relations sharing a node with a subway route (``out geom``), their stop-area groups (``out body``), the stations among their members (``out tags``), the route masters of the subway routes (``out body``), the ``stop_area_members`` section marker and all their members (``out center``)."
-msgstr "Воспроизводит, оператор за оператором и в том же порядке, запрос Overpass функции :func:`iduedu.overpass.downloaders.get_routes_by_poly`: теги линий-участников наземных маршрутов (``out tags``), отношения наземных маршрутов (``out geom``) и их отношения ``route_master`` (``out body``) и, для ``subway``, отношения, имеющие общий узел с маршрутом метро (``out geom``), их группы зон остановок (``out body``), станции среди их участников (``out tags``), отношения ``route_master`` маршрутов метро (``out body``), маркер раздела ``stop_area_members`` и всех их участников (``out center``)."
+# | relations (``out geom``) and their ``route_master`` relations (``out
+# body``)
+# | and, for ``subway``, the relations sharing a node with a subway route
+# (``out
+# | geom``), their stop-area groups (``out body``), the stations among their
+# | members (``out tags``), the route masters of the subway routes (``out
+# | body``), the ``stop_area_members`` section marker and all their members
+# | (``out center``)."
+msgid "Reproduces, statement by statement and in the same order, the Overpass query of :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways and then of the member nodes of ground routes (``out tags``), the ground route relations (``out geom``) and their ``route_master`` relations (``out body``) and, for ``subway``, the relations sharing a node with a subway route (``out geom``), their stop-area groups (``out body``), the stations among their members (``out tags``), the route masters of the subway routes (``out body``), the ``stop_area_members`` section marker and all their members (``out center``)."
+msgstr "Воспроизводит, оператор за оператором и в том же порядке, запрос Overpass функции :func:`iduedu.overpass.downloaders.get_routes_by_poly`: теги линий-участников, а затем узлов-участников наземных маршрутов (``out tags``), отношения наземных маршрутов (``out geom``) и их отношения ``route_master`` (``out body``) и, для ``subway``, отношения, имеющие общий узел с маршрутом метро (``out geom``), их группы зон остановок (``out body``), станции среди их участников (``out tags``), отношения ``route_master`` маршрутов метро (``out body``), маркер раздела ``stop_area_members`` и всех их участников (``out center``)."
 
 #, python-brace-format
 msgid "One difference in shape: a way member of a ground route relation carries its ``geometry`` as a read-only ``(k, 2)`` lon/lat array, shared by all the routes along the way, not as a list of ``{\"lat\", \"lon\"}`` dicts; the route parser reads both."

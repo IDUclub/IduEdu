@@ -34,6 +34,12 @@ Inputs
    The speed and waiting-time parameters of every mode, ``DEFAULT_REGISTRY`` by default. Trains need a registry that
    defines them, such as ``DEFAULT_REGISTRY_W_TRAIN``. See `Transport registry`_.
 
+``crs``
+   The projected CRS of the graph, in metres. By default it is the UTM zone of the territory, which distorts the
+   parts of long routes far from that zone, such as long-distance trains. A conformal CRS of the whole area (a
+   Lambert conic, for example) keeps them, and one CRS given to graphs built in parts makes their shared stops
+   fall on the same coordinates.
+
 Method
 ------
 
@@ -218,10 +224,16 @@ Outputs
 
 A directed :class:`UrbanGraph` of type ``public_transport``. Nodes have ``type`` (``platform``, the mode of a route
 stop, ``subway_station``, ``subway_platform``, ``subway_entry_exit``), ``route``, ``route_key`` (the key of the
-route of a route stop, the list of keys of the routes at a platform) and ``name``; subway stations also
+route of a route stop, the list of keys of the routes at a platform) and the tags of the OSM object a node is
+made from: ``name``, ``ref`` (a stop code or an entrance number), ``local_ref`` (a platform or track number) and
+``wheelchair`` when tagged, and ``osm_id``, the object's path on openstreetmap.org such as ``node/123`` or
+``way/456``. A platform made up from its stop takes the stop's tags but no ``osm_id``; subway stations also have
 ``depth``. Edges have ``type`` (the mode, ``boarding``, ``alighting``, ``subway_entrance``, ``subway_exit``,
 ``subway_station``, ``subway_transfer``), ``route``, ``route_key`` (missing on the edges of stations),
-``length_meter``, ``time_min`` and ``oneway``. Boarding and alighting edges have ``length_meter = 0``.
+``length_meter``, ``time_min`` and ``oneway``. ``length_meter`` is the length of the geometry on travel edges
+only. Boarding, alighting and ``subway_station`` edges have ``length_meter = 0``, while their geometry is the
+straight segment between their nodes; ``subway_entrance`` and ``subway_exit`` edges have the slanted escalator
+length and ``subway_transfer`` edges 1.5 times the straight distance (see `Method`_).
 ``graph.routes`` is the table of its routes (see `Routes`_). :func:`transport_stats` summarises stops, routes and
 stop spacing by mode.
 

@@ -62,6 +62,9 @@ msgstr "Набор тегов OSM, сохраняемых на рёбрах и �
 msgid "Transport registry used to validate transport types and to compute per-edge travel times (via each mode's parameters such as free speed, acceleration and braking distances, dwell time and average waiting time for boarding edges). If None, ``DEFAULT_REGISTRY`` is used."
 msgstr "Реестр транспорта для проверки видов транспорта и расчёта времени в пути по рёбрам (по параметрам каждого вида, таким как свободная скорость, расстояния разгона и торможения, время стоянки и среднее время ожидания на рёбрах посадки). Если None, используется ``DEFAULT_REGISTRY``."
 
+msgid "Projected CRS in metres for the graph (anything ``pyproj.CRS.from_user_input`` accepts). If None, the UTM zone of the territory is estimated. Give one CRS to graphs built in parts to share coordinates, or a conformal CRS of a large area (such as a Lambert conic) when routes reach far beyond one UTM zone."
+msgstr "Проекционная CRS графа в метрах (всё, что принимает ``pyproj.CRS.from_user_input``). Если None, определяется зона UTM территории. Передайте одну CRS графам, собираемым по частям, чтобы у них были общие координаты, или конформную CRS большой области (например, коническую Ламберта), если маршруты уходят далеко за пределы одной зоны UTM."
+
 msgid "Return type"
 msgstr "Тип результата"
 
