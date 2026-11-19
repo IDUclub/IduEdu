@@ -20,14 +20,17 @@ msgstr "iduedu.multi\\_source\\_dijkstra"
 msgid "Search from the nearest member of one combined source set."
 msgstr "Поиск от ближайшего элемента одного общего множества источников."
 
-msgid "Options and Series results follow single_source_dijkstra. Supply either source_nodes or gdf_sources; geometries without graph_node_column are matched to nearest graph nodes. A combined result also exposes nearest_sources, indexed like distances. Ties choose the source appearing first in graph node order. This differs from dijkstra_parallel, which runs an independent search for each source."
-msgstr "Параметры и результаты в виде Series как у single_source_dijkstra. Передайте либо source_nodes, либо gdf_sources; геометрии без graph_node_column сопоставляются с ближайшими узлами графа. Совместный результат также содержит nearest_sources с тем же индексом, что distances. При равенстве выбирается источник, идущий первым в порядке узлов графа. В этом отличие от dijkstra_parallel, которая выполняет независимый поиск для каждого источника."
+msgid "Options and Series results follow single_source_dijkstra. Supply either source_nodes or gdf_sources; geometries without graph_node_column are matched to nearest graph nodes. A combined result also exposes ``nearest_sources`` as a pandas Series in distance order, with target node labels in every format and None for unreachable targets. Ties choose the source appearing first in graph node order. This differs from dijkstra_parallel, which runs an independent search for each source."
+msgstr "Параметры и результаты в виде Series соответствуют single_source_dijkstra. Передайте source_nodes или gdf_sources. Если столбец graph_node_column отсутствует, геометрии привязываются к ближайшим узлам графа. Совместный результат также содержит ``nearest_sources`` в виде pandas Series, следующей порядку расстояний. Во всех форматах её индекс содержит метки целевых узлов, а недостижимым узлам соответствует None. При равных стоимостях выбирается источник, который раньше идёт в порядке узлов графа. В dijkstra_parallel выполняется отдельный поиск для каждого источника."
+
+msgid "With ``output=\"distances\"`` or ``\"both\"``, ``distance_format=\"dense\"`` uses a one-dimensional NumPy array with ``np.inf`` for unreachable or out-of-cutoff nodes. With ``target_nodes=None``, it covers all nodes in ``nodes_gdf`` order. The default ``\"frame\"`` returns a Series. ``\"sparse\"`` is available only for matrix results."
+msgstr "При ``output=\"distances\"`` или ``\"both\"`` формат ``distance_format=\"dense\"`` использует одномерный массив NumPy со значением ``np.inf`` для недостижимых узлов и узлов за пределами порога. При ``target_nodes=None`` массив охватывает все узлы в порядке ``nodes_gdf``. Формат ``\"frame\"`` по умолчанию возвращает Series. Формат ``\"sparse\"`` доступен только для матриц."
 
 msgid "Return type"
 msgstr "Тип результата"
 
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\``"
 
 msgid "Parameters"
 msgstr "Параметры"

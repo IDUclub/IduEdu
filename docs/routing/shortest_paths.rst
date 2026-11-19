@@ -71,18 +71,29 @@ Outputs
 
 ``output`` selects what a function returns:
 
-- ``"distances"``: a sparse table of costs. Unreachable pairs and pairs beyond ``cutoff`` hold ``inf``; a node
+- ``"distances"``: costs, in a sparse pandas table by default. Unreachable pairs and pairs beyond ``cutoff`` hold ``inf``; a node
   reached from itself costs ``0``, and so do paths over zero-cost edges.
 - ``"paths"``: a sparse table of node paths. Each cell is a list of node ids from the source to the target, or
   ``None`` when the target is not reached.
 - ``"both"``: a :class:`ShortestPathResult` with ``distances`` and ``paths`` from the same searches.
 
-:func:`od_matrix` returns a table with the origins as rows and the destinations as columns. In pairwise mode the
+:func:`od_matrix` in frame format returns a table with the origins as rows and the destinations as columns. In pairwise mode the
 table has a ``(origin, destination)`` index and one column, ``dist`` or ``path``. Single-source and multi-source
 results are Series indexed by node id; with ``target_nodes=None`` they contain the reachable nodes only. The tables
 keep the node of every input object in ``attrs`` (``origin_nodes``, ``destination_nodes`` or ``source_nodes``).
 :func:`multi_source_dijkstra_nearest_source` returns the columns ``source_node`` (graph node id of the nearest
 source) and ``dist``; equal costs go to the source that comes first in the graph's node order.
+
+Use ``distance_format="dense"`` with ``output="distances"`` or ``output="both"`` to get a NumPy array with
+``np.inf`` for unreachable or out-of-cutoff pairs. For example, ``graph.od_matrix(origins_nodes=origins,
+destination_nodes=targets, distance_format="dense", output="both", path_storage="lazy")`` stores the array
+on ``result.distances``. Array positions follow input order, including duplicates, and match ``get_path_at``
+and the pandas path table. Pairwise, single-source and multi-source dense arrays have one value per row.
+All-to-all OD and parallel searches also support ``distance_format="sparse"``, a SciPy CSR array that
+stores reachable costs, including explicit zeros. Never call ``eliminate_zeros``. Use ``.tocoo()`` for
+the ``row``, ``col`` and ``data`` arrays. With ``target_nodes=None``, parallel and single- or multi-source
+arrays cover all nodes in ``graph.nodes_gdf`` order. The eager path table then also spans all nodes, so
+prefer ``path_storage="lazy"`` for individual route lookups.
 
 :func:`path_to_edges` turns a node path into the GeoDataFrame of its edges with the columns ``path_order``,
 ``path_u`` and ``path_v``. Between parallel edges it takes the cheapest one by ``weight``, as the search does, and

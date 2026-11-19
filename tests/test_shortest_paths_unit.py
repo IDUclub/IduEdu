@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.sparse import csr_array
 from scipy.sparse.csgraph import dijkstra as scipy_dijkstra
 
 from iduedu import (
@@ -30,6 +31,213 @@ pytestmark = [pytest.mark.unit, pytest.mark.rust]
 
 def _dense(series: pd.Series) -> dict:
     return {key: float(value) for key, value in series.sparse.to_dense().items()}
+
+
+def _assert_distance_array(result, expected, distance_format):
+    assert result.dtype == expected.dtype == np.float64
+    assert result.shape == expected.shape
+    if distance_format == "dense":
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, expected)
+    else:
+        assert isinstance(result, csr_array)
+        entries = result.tocoo()
+        assert result.nnz == np.isfinite(expected).sum()
+        np.testing.assert_array_equal(entries.data, expected[entries.row, entries.col])
+        assert np.count_nonzero(entries.data == 0) == np.count_nonzero(expected == 0)
+        reconstructed = np.full(expected.shape, np.inf)
+        reconstructed[entries.row, entries.col] = entries.data
+        np.testing.assert_array_equal(reconstructed, expected)
+
+
+def _assert_combined_array_result(result, distance_only, frame, path_storage, target_labels=None):
+    assert isinstance(result, ShortestPathResult)
+    assert result.paths_materialized == (path_storage == "eager")
+    distances = result.distances
+    assert type(distances) is type(distance_only)
+    assert distances.shape == distance_only.shape
+    assert distances.dtype == distance_only.dtype
+    if isinstance(distance_only, csr_array):
+        for field in ("indptr", "indices", "data"):
+            np.testing.assert_array_equal(getattr(distances, field), getattr(distance_only, field))
+    else:
+        np.testing.assert_array_equal(distances, distance_only)
+
+    path_frame = frame.paths
+    rows = np.arange(len(path_frame))
+    columns = np.arange(1 if isinstance(path_frame, pd.Series) else path_frame.shape[1])
+    index = path_frame.index
+    if target_labels is not None:
+        if isinstance(path_frame, pd.Series):
+            rows = index.get_indexer(target_labels)
+            index = target_labels
+        else:
+            columns = path_frame.columns.get_indexer(target_labels)
+    for row, frame_row in enumerate(rows):
+        for column, frame_col in enumerate(columns):
+            expected = frame.get_path_at(frame_row, frame_col) if frame_row >= 0 and frame_col >= 0 else None
+            assert result.get_path_at(row, column) == expected
+    assert result.paths_materialized == (path_storage == "eager")
+    assert type(result.paths) is type(path_frame)
+    pd.testing.assert_index_equal(result.paths.index, index)
+    if isinstance(path_frame, pd.DataFrame):
+        pd.testing.assert_index_equal(
+            result.paths.columns, path_frame.columns if target_labels is None else target_labels
+        )
+    if target_labels is None:
+        if isinstance(path_frame, pd.Series):
+            pd.testing.assert_series_equal(result.paths, path_frame)
+        else:
+            pd.testing.assert_frame_equal(result.paths, path_frame)
+
+
+@pytest.mark.parametrize("distance_format", ["dense", "sparse"])
+@pytest.mark.parametrize("batch_size", [None, 4])
+@pytest.mark.parametrize("path_storage", [None, "lazy", "eager"])
+def test_od_matrix_distance_arrays(distance_format, batch_size, path_storage):
+    graph = directed_oneway_graph()
+    options = {
+        "origins_nodes": np.array([3, 0, 2, 0, 1], dtype=graph.nodes_gdf.index.dtype),
+        "destination_nodes": np.array([2, 0, 2], dtype=graph.nodes_gdf.index.dtype),
+        "cutoff": 2,
+        "dtype": np.float64,
+    }
+
+    def blocks(**result_options):
+        if batch_size is None:
+            return [graph.od_matrix(**options, **result_options)]
+        return list(graph.iter_od_matrix(**options, **result_options, batch_size=batch_size))
+
+    expected = blocks()
+    actual = blocks(distance_format=distance_format)
+    if batch_size is not None:
+        assert [block.shape for block in actual] == [(4, 3), (1, 3)]
+    for result, frame in zip(actual, expected, strict=True):
+        _assert_distance_array(result, frame.to_numpy(np.float64, na_value=np.inf), distance_format)
+    if path_storage is not None:
+        combined = blocks(distance_format=distance_format, output="both", path_storage=path_storage)
+        frame_blocks = blocks(output="both")
+        assert combined[0].get_path(2, 0) == frame_blocks[0].get_path(2, 0)
+        for result, distances, frame in zip(combined, actual, frame_blocks, strict=True):
+            _assert_combined_array_result(result, distances, frame, path_storage)
+
+
+@pytest.mark.parametrize("distance_format", ["dense", "sparse"])
+@pytest.mark.parametrize("targets", [[11, 0, 2, 1, 0], None])
+@pytest.mark.parametrize("path_storage", [None, "lazy", "eager"])
+def test_parallel_distance_arrays(distance_format, targets, path_storage):
+    graph = disconnected_graph()
+    graph.nodes_gdf = graph.nodes_gdf.loc[[11, 2, 0, 1, 10]]
+    options = {
+        "source_nodes": [0, 1, 0],
+        "target_nodes": targets,
+        "cutoff": 1,
+        "dtype": np.float64,
+    }
+    frame = dijkstra_parallel(graph, **options, output="distances")
+    target_labels = None
+    if targets is None:
+        frame = frame.reindex(columns=graph.nodes_gdf.index, fill_value=np.inf)
+        target_labels = graph.nodes_gdf.index.rename("node")
+    result = graph.dijkstra_parallel(**options, output="distances", distance_format=distance_format)
+    _assert_distance_array(result, frame.to_numpy(np.float64, na_value=np.inf), distance_format)
+    if path_storage is not None:
+        combined = graph.dijkstra_parallel(
+            **options, output="both", distance_format=distance_format, path_storage=path_storage
+        )
+        frame_combined = dijkstra_parallel(graph, **options, output="both")
+        assert combined.get_path(1, 1) == frame_combined.get_path(1, 1) == [1]
+        assert combined.get_path(1, 11) is None
+        _assert_combined_array_result(combined, result, frame_combined, path_storage, target_labels)
+
+
+@pytest.mark.parametrize(
+    "function, sources",
+    [(single_source_dijkstra, {"source_node": 0}), (multi_source_dijkstra, {"source_nodes": [0, 1, 0]})],
+)
+@pytest.mark.parametrize("targets", [[11, 0, 2, 1, 0], None])
+@pytest.mark.parametrize("path_storage", [None, "lazy", "eager"])
+def test_series_distance_arrays(function, sources, targets, path_storage):
+    graph = disconnected_graph()
+    graph.nodes_gdf = graph.nodes_gdf.loc[[11, 2, 0, 1, 10]]
+    options = {**sources, "target_nodes": targets, "cutoff": 1, "dtype": np.float64}
+    frame = function(graph, **options, output="distances")
+    target_labels = None
+    if targets is None:
+        frame = frame.reindex(graph.nodes_gdf.index, fill_value=np.inf)
+        target_labels = graph.nodes_gdf.index.rename("node")
+    method = getattr(graph, function.__name__)
+    distances = method(**options, output="distances", distance_format="dense")
+    _assert_distance_array(distances, frame.to_numpy(np.float64, na_value=np.inf), "dense")
+    with pytest.raises(ValueError, match="sparse.*unavailable"):
+        method(**options, output="distances" if path_storage is None else "both", distance_format="sparse")
+    if path_storage is not None:
+        frame_combined = function(graph, **options, output="both")
+        result = method(**options, output="both", distance_format="dense", path_storage=path_storage)
+        assert result.get_path(1) == frame_combined.get_path(1)
+        assert result.get_path(11) is None
+        _assert_combined_array_result(result, distances, frame_combined, path_storage, target_labels)
+        if function is multi_source_dijkstra:
+            expected = frame_combined.nearest_sources
+            if target_labels is not None:
+                expected = expected.reindex(target_labels)
+                expected = expected.where(expected.notna(), None)
+            pd.testing.assert_series_equal(result.nearest_sources, expected)
+
+
+@pytest.mark.parametrize("method", ["dijkstra", "bidirectional"])
+@pytest.mark.parametrize("path_storage", [None, "lazy", "eager"])
+def test_pairwise_distance_arrays(method, path_storage):
+    graph = disconnected_graph()
+    options = {
+        "origins_nodes": [0, 0, 1, 11, 11],
+        "destination_nodes": [0, 2, 2, 0, 10],
+        "mode": "pairwise",
+        "cutoff": 1,
+        "dtype": np.float64,
+        "method": method,
+    }
+    frame = od_matrix(graph, **options)
+    expected = frame.to_numpy(np.float64, na_value=np.inf)[:, 0]
+    distances = od_matrix(graph, **options, distance_format="dense")
+    _assert_distance_array(distances, expected, "dense")
+    blocks = list(iter_od_matrix(graph, **options, distance_format="dense", batch_size=2))
+    assert [block.shape for block in blocks] == [(2,), (2,), (1,)]
+    np.testing.assert_array_equal(np.concatenate(blocks), expected)
+    output = "distances" if path_storage is None else "both"
+    with pytest.raises(ValueError, match="sparse.*pairwise"):
+        od_matrix(graph, **options, output=output, distance_format="sparse")
+    with pytest.raises(ValueError, match="sparse.*pairwise"):
+        list(iter_od_matrix(graph, **options, output=output, distance_format="sparse"))
+    if path_storage is not None:
+        result = od_matrix(graph, **options, output="both", distance_format="dense", path_storage=path_storage)
+        frame_combined = od_matrix(graph, **options, output="both")
+        assert result.get_path(1, 2) == frame_combined.get_path(1, 2) == [1, 2]
+        _assert_combined_array_result(result, distances, frame_combined, path_storage)
+        actual = iter_od_matrix(
+            graph, **options, batch_size=2, output="both", distance_format="dense", path_storage=path_storage
+        )
+        frame_blocks = iter_od_matrix(graph, **options, batch_size=2, output="both")
+        for result, distance_block, frame_block in zip(actual, blocks, frame_blocks, strict=True):
+            _assert_combined_array_result(result, distance_block, frame_block, path_storage)
+
+
+@pytest.mark.parametrize(
+    "function, inputs",
+    [
+        (od_matrix, {"origins_nodes": [0], "destination_nodes": [1]}),
+        (iter_od_matrix, {"origins_nodes": [0], "destination_nodes": [1]}),
+        (dijkstra_parallel, {"source_nodes": [0]}),
+        (single_source_dijkstra, {"source_node": 0}),
+        (multi_source_dijkstra, {"source_nodes": [0]}),
+    ],
+)
+@pytest.mark.parametrize("distance_format", ["dense", "sparse"])
+def test_array_distance_formats_reject_paths_only(function, inputs, distance_format):
+    with pytest.raises(ValueError, match="require output='distances'"):
+        result = function(disconnected_graph(), **inputs, output="paths", distance_format=distance_format)
+        if function is iter_od_matrix:
+            list(result)
 
 
 def test_single_source_dijkstra_respects_cutoff():

@@ -225,14 +225,19 @@ def resolve_graph_nodes_input(
                 raise KeyError(f"{gdf_name} has no node column {graph_node_column!r} and no geometry")
             result = nearest_nodes(urban_graph, gdf, graph_node_column=graph_node_column)
     else:
-        resolved_nodes = list(nodes)
-        if not resolved_nodes:
+        # Keep integer arrays in their native representation for large OD inputs.
+        resolved_nodes = nodes.copy() if _integer_node_array(nodes, graph_node_index) else list(nodes)
+        if len(resolved_nodes) == 0:
             raise ValueError(f"{nodes_name} must not be empty")
         if pd.isna(pd.Series(resolved_nodes)).any():
             raise ValueError(f"{nodes_name} must not contain NaN")
         result = pd.Series(resolved_nodes, index=pd.Index(resolved_nodes), name=graph_node_column)
 
-    missing_nodes = [node for node in result.to_numpy() if node not in graph_node_index]
+    values = result.to_numpy()
+    if _integer_node_array(values, graph_node_index):
+        missing_nodes = values[graph_node_index.get_indexer(values) < 0].tolist()
+    else:
+        missing_nodes = [node for node in values if node not in graph_node_index]
     if missing_nodes:
         preview = missing_nodes[:10]
         raise ValueError(
@@ -241,3 +246,33 @@ def resolve_graph_nodes_input(
         )
 
     return result
+
+
+def _integer_node_array(nodes, index):
+    return isinstance(nodes, np.ndarray) and nodes.ndim == 1 and nodes.dtype.kind in "iu" and nodes.dtype == index.dtype
+
+
+def _positions(graph, nodes):
+    # _prepare_graph aligns adjacency positions with the node index.
+    index = graph.nodes_gdf.index
+    if _integer_node_array(nodes, index):
+        positions = index.get_indexer(nodes)
+        missing = nodes[positions < 0].tolist()
+        if not missing:
+            return positions.astype(np.int32, copy=False)
+    else:
+        nodes = list(nodes)
+        position_of = graph.node_to_adjacency_pos
+        missing = [node for node in nodes if node not in position_of]
+        if not missing:
+            return np.array([position_of[node] for node in nodes], dtype=np.int32)
+    raise ValueError(f"Requested nodes are absent in graph: {missing[:10]}")
+
+
+def _targets(graph, target_nodes):
+    if target_nodes is None:
+        return np.empty(0, dtype=np.int32), None
+    nodes = list(target_nodes)
+    if not nodes:
+        raise ValueError("target_nodes must not be empty; use None for all reachable nodes")
+    return _positions(graph, nodes), pd.Index(nodes, name="node")

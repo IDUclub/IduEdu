@@ -50,15 +50,18 @@ msgstr "eager сразу создаёт пути; lazy требует output=bot
 msgid "Returned distance dtype. Kernel arithmetic remains float32."
 msgstr "Тип возвращаемых расстояний. Арифметика ядра остаётся float32."
 
+msgid "``\"frame\"`` (default) returns a pandas Series for distances. With ``output=\"distances\"`` or ``\"both\"``, ``\"dense\"`` uses a one-dimensional NumPy array in target order with ``np.inf`` for unreachable or out-of-cutoff nodes. With ``target_nodes=None``, it covers all nodes in ``nodes_gdf`` order. With ``\"both\"``, the path Series follows the same order and keeps the node labels. ``\"sparse\"`` is available only for matrix results."
+msgstr "Формат ``\"frame\"`` по умолчанию возвращает расстояния в виде pandas Series. При ``output=\"distances\"`` или ``\"both\"`` формат ``\"dense\"`` использует одномерный массив NumPy в порядке целевых узлов со значением ``np.inf`` для недостижимых узлов и узлов за пределами порога. При ``target_nodes=None`` массив охватывает все узлы в порядке ``nodes_gdf``. При ``\"both\"`` Series с путями следует тому же порядку и сохраняет метки узлов. Формат ``\"sparse\"`` доступен только для матриц."
+
 msgid "Return type"
 msgstr "Тип результата"
 
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\``"
 
 msgid "Returns"
 msgstr "Результат"
 
-msgid "A sparse Series indexed by target node ids, or ShortestPathResult with matching distance and path Series. Missing costs/paths are inf/None."
-msgstr "Разреженная Series с индексом по идентификаторам целевых узлов или ShortestPathResult с согласованными Series расстояний и путей. Отсутствующие стоимости и пути — inf/None."
+msgid "A sparse Series, a one-dimensional distance array, or a ShortestPathResult. Missing costs and paths are inf and None, respectively."
+msgstr "Разреженная Series, одномерный массив расстояний или ShortestPathResult. Отсутствующие стоимости и пути обозначаются соответственно inf и None."
 

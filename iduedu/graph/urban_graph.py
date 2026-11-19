@@ -10,7 +10,7 @@ from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.adjacency import build_adjacency_matrix
 from iduedu.graph.routes import normalize_routes, used_routes
-from iduedu.graph.routing_result import ShortestPathResult
+from iduedu.graph.routing_result import DistanceFormat, ShortestPathResult
 from iduedu.graph.validation import sync_graph_crs, validate_graph
 
 
@@ -71,6 +71,20 @@ class UrbanGraph:
         "_csr_cache",
     )
 
+    nodes_gdf: gpd.GeoDataFrame | pd.DataFrame
+    edges_gdf: gpd.GeoDataFrame | pd.DataFrame
+    crs: Any | None
+    type: str | None
+    is_multigraph: bool
+    is_directed: bool
+    edge_direction_column: str | None
+    adjacency_matrix: sparse.csr_matrix | None
+    adjacency_nodelist: list
+    node_to_adjacency_pos: dict
+    adjacency_weight: str
+    routes: pd.DataFrame | None
+    _csr_cache: Any
+
     def __init__(
         self,
         nodes_gdf: gpd.GeoDataFrame | pd.DataFrame,
@@ -86,6 +100,31 @@ class UrbanGraph:
     ):
         """Initialize graph tables, topology flags and adjacency cache state."""
 
+        self._init_tables(
+            nodes_gdf,
+            edges_gdf,
+            is_multigraph,
+            is_directed,
+            edge_direction_column,
+            adjacency_weight,
+            crs,
+            graph_type,
+            routes,
+        )
+        self.validate()
+
+    def _init_tables(
+        self,
+        nodes_gdf,
+        edges_gdf,
+        is_multigraph,
+        is_directed,
+        edge_direction_column,
+        adjacency_weight,
+        crs,
+        graph_type,
+        routes,
+    ):
         self.nodes_gdf = nodes_gdf
         self.edges_gdf = edges_gdf
         self.crs = crs
@@ -100,7 +139,23 @@ class UrbanGraph:
         self._csr_cache = None
         self.routes = used_routes(normalize_routes(routes), edges_gdf)
 
-        self.validate()
+    def _with_validated_tables(self, nodes_gdf, edges_gdf) -> "UrbanGraph":
+        """Create a fresh graph from derived tables with known-valid schema and topology."""
+        graph = UrbanGraph.__new__(UrbanGraph)
+        UrbanGraph._init_tables(
+            graph,
+            nodes_gdf,
+            edges_gdf,
+            self.is_multigraph,
+            self.is_directed,
+            self.edge_direction_column,
+            self.adjacency_weight,
+            self.crs,
+            self.type,
+            self.routes,
+        )
+        sync_graph_crs(graph)
+        return graph
 
     def __getstate__(self):
         # The Rust view of the adjacency matrix is rebuilt on demand and is not pickled.
@@ -434,7 +489,8 @@ class UrbanGraph:
         output: Literal["distances", "paths", "both"] = "both",
         path_storage: Literal["eager", "lazy"] = "eager",
         dtype: np.dtype = np.float32,
-    ) -> pd.Series | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.Series | ShortestPathResult | np.ndarray:
         """Search once for distances and/or routes. See :func:`iduedu.single_source_dijkstra`."""
         from iduedu.graph.routing import single_source_dijkstra
 
@@ -448,6 +504,7 @@ class UrbanGraph:
             output=output,
             path_storage=path_storage,
             dtype=dtype,
+            distance_format=distance_format,
         )
 
     def multi_source_dijkstra(
@@ -463,7 +520,8 @@ class UrbanGraph:
         output: Literal["distances", "paths", "both"] = "both",
         path_storage: Literal["eager", "lazy"] = "eager",
         dtype: np.dtype = np.float32,
-    ) -> pd.Series | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.Series | ShortestPathResult | np.ndarray:
         """Search from the nearest source. See :func:`iduedu.multi_source_dijkstra`."""
         from iduedu.graph.routing import multi_source_dijkstra
 
@@ -479,6 +537,7 @@ class UrbanGraph:
             output=output,
             path_storage=path_storage,
             dtype=dtype,
+            distance_format=distance_format,
         )
 
     def dijkstra_parallel(
@@ -496,7 +555,8 @@ class UrbanGraph:
         dtype: np.dtype = np.float32,
         max_workers: int | None = None,
         batch_size: int | None = None,
-    ) -> pd.DataFrame | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.DataFrame | ShortestPathResult | np.ndarray | sparse.csr_array:
         """Run independent source searches. See :func:`iduedu.dijkstra_parallel`."""
         from iduedu.graph.routing import dijkstra_parallel
 
@@ -514,6 +574,7 @@ class UrbanGraph:
             dtype=dtype,
             max_workers=max_workers,
             batch_size=batch_size,
+            distance_format=distance_format,
         )
 
     def single_source_dijkstra_path(
@@ -647,7 +708,8 @@ class UrbanGraph:
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         batch_size: int | None = None,
         method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
-    ) -> pd.DataFrame | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.DataFrame | ShortestPathResult | np.ndarray | sparse.csr_array:
         """Calculate an OD matrix of shortest paths on this graph.
 
         See also:
@@ -673,6 +735,7 @@ class UrbanGraph:
             mode=mode,
             batch_size=batch_size,
             method=method,
+            distance_format=distance_format,
         )
 
     def iter_od_matrix(
@@ -693,7 +756,8 @@ class UrbanGraph:
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         batch_size: int = 256,
         method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
-    ) -> Iterator[pd.DataFrame | ShortestPathResult]:
+        distance_format: DistanceFormat = "frame",
+    ) -> Iterator[pd.DataFrame | ShortestPathResult | np.ndarray | sparse.csr_array]:
         """Yield OD origin-row blocks. See :func:`iduedu.iter_od_matrix`."""
         from iduedu.graph.routing import iter_od_matrix
 
@@ -714,6 +778,7 @@ class UrbanGraph:
             mode=mode,
             batch_size=batch_size,
             method=method,
+            distance_format=distance_format,
         )
 
     def path_to_edges(

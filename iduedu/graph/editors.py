@@ -14,6 +14,10 @@ from shapely.ops import substring
 from iduedu import _rust
 from iduedu.graph.routes import join_routes
 from iduedu.graph.urban_graph import UrbanGraph
+from iduedu.graph.validation import (
+    matching_edge_positions,
+    validate_applied_changes,
+)
 
 # Objects closer than this to their attachment point are mapped onto the existing node instead of
 # getting a dedicated node: a shorter connector rounds to a zero length edge and cannot connect
@@ -216,8 +220,8 @@ def relabel_urban_graph(
         https://iduclub.github.io/IduEdu/examples/graph_operations.html
     """
 
-    nodes = graph_gdf.nodes_gdf.copy()
-    edges = graph_gdf.edges_gdf.copy()
+    nodes = graph_gdf.nodes_gdf
+    edges = graph_gdf.edges_gdf
 
     if by == "range":
         new_index = pd.RangeIndex(len(nodes))
@@ -240,35 +244,50 @@ def relabel_urban_graph(
     else:
         raise ValueError(f"by must be 'range' or 'coordinates', got {by!r}")
     old_index = nodes.index
-    nodes.index = new_index
+    nodes = nodes.set_axis(new_index)
 
-    if not edges.empty:
+    if edges.empty:
+        edges = edges.copy()
+    else:
         # Positions instead of a dict map: a missing endpoint would turn the column into floats, which cannot hold
         # the coordinate ids above 2**53.
         u_position = old_index.get_indexer(edges["u"])
         v_position = old_index.get_indexer(edges["v"])
         kept = (u_position >= 0) & (v_position >= 0)
-        edges = edges[kept].copy()
-        edges["u"] = new_index.to_numpy()[u_position[kept]]
-        edges["v"] = new_index.to_numpy()[v_position[kept]]
-
-        if not edges.empty:
-            if graph_gdf.is_multigraph:
-                edges["k"] = edges.groupby(["u", "v"], sort=False).cumcount()
+        if kept.all():
             edges = edges.reset_index(drop=True)
+        else:
+            edges = edges.loc[kept]
+            u_position, v_position = u_position[kept], v_position[kept]
+            if not edges.empty:
+                edges.index = pd.RangeIndex(len(edges))
+        ids = new_index.to_numpy()
+        edges["u"] = ids[u_position]
+        edges["v"] = ids[v_position]
+        if not edges.empty and graph_gdf.is_multigraph:
+            edges["k"] = _relabel_multigraph_keys(edges, u_position, v_position, len(nodes))
 
-    relabeled_graph = UrbanGraph(
-        nodes_gdf=nodes,
-        edges_gdf=edges,
-        is_multigraph=graph_gdf.is_multigraph,
-        is_directed=graph_gdf.is_directed,
-        edge_direction_column=graph_gdf.edge_direction_column,
-        adjacency_weight=graph_gdf.adjacency_weight,
-        crs=graph_gdf.crs,
-        graph_type=graph_gdf.type,
-        routes=graph_gdf.routes,
-    )
+    relabeled_graph = graph_gdf._with_validated_tables(nodes, edges)  # pylint: disable=protected-access
+    # A caller can designate a relabeled key as the direction column or active geometry.
+    if graph_gdf.edge_direction_column in ("u", "v", "k") or getattr(edges, "active_geometry_name", None) in (
+        "u",
+        "v",
+        "k",
+    ):
+        relabeled_graph.validate()
     return relabeled_graph
+
+
+def _relabel_multigraph_keys(edges, u, v, node_count):
+    if node_count**2 > np.iinfo(np.int64).max:
+        return edges.groupby(["u", "v"], sort=False).cumcount()
+    # Dense node positions let one integer represent each ordered endpoint pair.
+    pairs = pd.Series(u.astype(np.int64, copy=False) * node_count + v)
+    parallel = pairs.duplicated(keep=False)
+    repeated = pairs[parallel]
+    keys = np.zeros(len(pairs), dtype=np.int64)
+    keys[parallel] = repeated.groupby(repeated, sort=False).cumcount().to_numpy()
+    return keys
 
 
 def subgraph_by_nodes(graph_gdf: UrbanGraph, nodes) -> UrbanGraph:
@@ -294,17 +313,7 @@ def subgraph_by_nodes(graph_gdf: UrbanGraph, nodes) -> UrbanGraph:
 
     sub_nodes, sub_edges = _induced_tables(graph_gdf, graph_nodes.index.isin(nodes_index))
 
-    return UrbanGraph(
-        nodes_gdf=sub_nodes,
-        edges_gdf=sub_edges,
-        is_multigraph=graph_gdf.is_multigraph,
-        is_directed=graph_gdf.is_directed,
-        edge_direction_column=graph_gdf.edge_direction_column,
-        adjacency_weight=graph_gdf.adjacency_weight,
-        crs=graph_gdf.crs,
-        graph_type=graph_gdf.type,
-        routes=graph_gdf.routes,
-    )
+    return graph_gdf._with_validated_tables(sub_nodes, sub_edges)  # pylint: disable=protected-access
 
 
 def _induced_tables(graph, keep_nodes):
@@ -524,12 +533,10 @@ def _split_projected_edges(projections, edges, key_cols, speed):
 
     cuts = projections.sort_values(["edge_index", "project_dist"], kind="stable")
     cut_counts = cuts.groupby("edge_index", sort=False).size()
-    edge_rows = (
-        cut_counts.rename("cut_count")
-        .to_frame()
-        .merge(edges[key_cols + ["geometry"]], left_index=True, right_index=True, how="left", validate="many_to_one")
-    )
-    cut_offsets = np.r_[0, edge_rows["cut_count"].to_numpy(dtype=np.int64).cumsum()]
+    if not edges.index.is_unique:
+        raise pd.errors.MergeError("Merge keys are not unique in right dataset; not a many-to-one merge")
+    edge_rows = edges.loc[cut_counts.index][key_cols + ["geometry"]]
+    cut_offsets = np.r_[0, cut_counts.to_numpy(dtype=np.int64).cumsum()]
     cut_nodes = cuts["projection_node_id"].to_numpy(dtype=object)
     sources, starts, ends, pieces = _projection_pieces(
         edge_rows["geometry"].to_numpy(), cuts["project_dist"].to_numpy(), cut_offsets
@@ -657,7 +664,7 @@ def _restore_split_attributes(edges, connectors, split, direction_column):
 
     replaced = {"u", "v", "k", "geometry", "edge_geometry", "length_meter", "time_min", "edge_index"}
     columns = [column for column in edges.columns if column not in replaced]
-    attrs = edges.loc[split["edge_index"].unique(), columns].reset_index(names="edge_index")
+    attrs = edges.loc[split["edge_index"].unique()][columns].reset_index(names="edge_index")
     new_edges = new_edges.merge(attrs, on="edge_index", how="left", suffixes=("", "_source"))
     for col in columns:
         source_col = f"{col}_source"
@@ -757,10 +764,19 @@ def _project_objects(
         raise ValueError(f"max_dist must be > 0 or None, got {max_dist}")
 
     original_crs = crs or gdf_edges.crs or gdf_nodes.crs
-    local_crs = gdf_nodes.estimate_utm_crs()
+    # A projected CRS with metre axes already provides the units required by max_dist and edge lengths.
+    local_crs = (
+        original_crs
+        if original_crs is not None
+        and original_crs.is_projected
+        and all(axis.unit_conversion_factor == 1 for axis in original_crs.axis_info[:2])
+        else gdf_nodes.estimate_utm_crs()
+    )
     key_cols = ["u", "v", "k"] if is_multigraph else ["u", "v"]
-    match_edges = gdf_edges if gdf_edges.empty else gdf_edges[key_cols + ["geometry"]]
+    match_edges = gdf_edges
     if match_edges.crs != local_crs:
+        if not match_edges.empty:
+            match_edges = match_edges[key_cols + ["geometry"]]
         match_edges = match_edges.to_crs(local_crs)
     if gdf_nodes.crs != local_crs:
         gdf_nodes = gdf_nodes.to_crs(local_crs)
@@ -770,12 +786,7 @@ def _project_objects(
         rep_points = rep_points.to_crs(local_crs)
     rep_gdf = gpd.GeoDataFrame(geometry=rep_points.representative_point())
 
-    # The inner join preserves endpoint ids above 2**53 by avoiding NaN in the endpoint columns.
-    projection_join = rep_gdf.reset_index(names="object_index").sjoin_nearest(
-        match_edges.assign(edge_geometry=match_edges.geometry), how="inner", max_distance=max_dist
-    )
-    projection_join = projection_join.rename_geometry("object_geometry").rename(columns={"index_right": "edge_index"})
-    projection_join = projection_join.dropna(subset=["edge_index"])
+    projection_join = _nearest_projection_rows(rep_gdf, match_edges, key_cols, max_dist)
     topology = {"is_multigraph": is_multigraph, "is_directed": is_directed}
     if projection_join.empty:
         return UrbanGraphChanges(edges_to_delete=pd.DataFrame(columns=key_cols), **topology), pd.Series(dtype=int)
@@ -820,19 +831,44 @@ def _project_objects(
     )
     split, deleted = _split_projected_edges(projections, match_edges, key_cols, speed_m_per_min)
     edges = _restore_split_attributes(gdf_edges, connectors, split, direction_column)
-    return (
-        UrbanGraphChanges(
-            nodes_gdf=nodes.to_crs(original_crs) if not nodes.empty else None,
-            edges_gdf=(
-                gpd.GeoDataFrame(edges, geometry="geometry", crs=local_crs).to_crs(original_crs)
-                if not edges.empty
-                else None
-            ),
-            edges_to_delete=deleted,
-            **topology,
-        ),
-        mapping,
-    )
+    new_edges = gpd.GeoDataFrame(edges, geometry="geometry", crs=local_crs) if not edges.empty else None
+    new_nodes = nodes if not nodes.empty else None
+    if local_crs != original_crs:
+        if new_edges is not None:
+            new_edges = new_edges.to_crs(original_crs)
+        if new_nodes is not None:
+            new_nodes = new_nodes.to_crs(original_crs)
+    return UrbanGraphChanges(nodes_gdf=new_nodes, edges_gdf=new_edges, edges_to_delete=deleted, **topology), mapping
+
+
+def _nearest_projection_rows(points, edges, key_cols, max_dist):
+    points = points.reset_index(names="object_index")
+    standard_index = edges.index.nlevels == 1 and edges.index.name in (None, "index_right")
+    if edges.active_geometry_name != "geometry" or not standard_index:
+        # Preserve GeoPandas' index-column handling for nonstandard edge indices.
+        match_edges = edges if edges.empty else edges[key_cols + ["geometry"]]
+        joined = points.sjoin_nearest(
+            match_edges.assign(edge_geometry=match_edges.geometry), how="inner", max_distance=max_dist
+        )
+        return (
+            joined.rename_geometry("object_geometry")
+            .rename(columns={"index_right": "edge_index"})
+            .dropna(subset=["edge_index"])
+        )
+
+    # These are the same positional matches, including tie order, that an inner sjoin_nearest uses.
+    point_pos, edge_pos = edges.sindex.nearest(points.geometry, return_all=True, max_distance=max_dist)
+    edge_ids = edges.index.take(edge_pos)
+    present = edge_ids.notna()
+    if not present.any():
+        return gpd.GeoDataFrame()
+    matched = edges.iloc[edge_pos[present]]
+    joined = points.iloc[point_pos[present]].rename_geometry("object_geometry").reset_index(drop=True)
+    joined["edge_index"] = edge_ids[present]
+    joined["edge_geometry"] = matched.geometry.array
+    for key in key_cols:
+        joined[key] = matched[key].array
+    return joined
 
 
 def _update_edges(edges: gpd.GeoDataFrame, updates: pd.DataFrame, key_cols: list[str]) -> gpd.GeoDataFrame:
@@ -843,7 +879,7 @@ def _update_edges(edges: gpd.GeoDataFrame, updates: pd.DataFrame, key_cols: list
         raise ValueError(
             f"Some edges_to_update are not present in graph.edges_gdf: {missing.head(10).to_dict('records')}"
         )
-    edges = edges.copy()
+    edges = edges.set_axis(edges.index)
     for column in updates.columns.difference(key_cols, sort=False):
         new = pd.Series(updates[column].to_numpy(), index=position)
         if column in edges.columns:
@@ -884,17 +920,9 @@ def apply_urban_graph_changes(graph_gdf: UrbanGraph, changes: UrbanGraphChanges)
         raise ValueError("graph.is_directed and changes.is_directed mismatch")
 
     nodes, edges = _apply_graph_changes_to_tables(graph_gdf.nodes_gdf, graph_gdf.edges_gdf, changes)
-    return UrbanGraph(
-        nodes_gdf=nodes,
-        edges_gdf=edges,
-        is_multigraph=graph_gdf.is_multigraph,
-        is_directed=graph_gdf.is_directed,
-        edge_direction_column=graph_gdf.edge_direction_column,
-        adjacency_weight=graph_gdf.adjacency_weight,
-        crs=graph_gdf.crs,
-        graph_type=graph_gdf.type,
-        routes=graph_gdf.routes,
-    )
+    graph = graph_gdf._with_validated_tables(nodes, edges)  # pylint: disable=protected-access
+    validate_applied_changes(graph_gdf, graph, changes, changes._edge_key_cols())  # pylint: disable=protected-access
+    return graph
 
 
 def _apply_graph_changes_to_tables(source_nodes, source_edges, changes):
@@ -919,17 +947,34 @@ def _apply_graph_changes_to_tables(source_nodes, source_edges, changes):
     if edges_to_delete is not None and not edges_to_delete.empty:
 
         delete_keys = edges_to_delete[key_cols].drop_duplicates()
-        delete_index = pd.MultiIndex.from_frame(delete_keys)
-        matched = delete_index.get_indexer(pd.MultiIndex.from_frame(edges[key_cols]))
-        keep = matched < 0
-        absent = np.bincount(matched[~keep], minlength=len(delete_keys)) == 0
+        positions, matched = matching_edge_positions(edges, delete_keys, key_cols)
+        found = matched >= 0
+        absent = np.bincount(matched[found], minlength=len(delete_keys)) == 0
         if absent.any():
             raise ValueError(
                 "Some edges_to_delete are not present in graph.edges_gdf: "
                 f"{delete_keys.loc[absent].head(10).to_dict('records')}"
             )
-        edges = edges.loc[keep]
-        edges.index = pd.Index(np.flatnonzero(keep))
+        deleted = positions[found]
+        if (
+            len(deleted) <= 16
+            and new_edges is not None
+            and not new_edges.empty
+            and (edges_to_update is None or edges_to_update.empty)
+        ):
+            # Slice the retained runs and concatenate once, without copying all retained rows first.
+            retained = [
+                edges.iloc[start:stop]
+                for start, stop in zip(np.r_[0, deleted + 1], np.r_[deleted, len(edges)])
+                if start < stop
+            ]
+            edges = pd.concat([*(retained or [edges.iloc[:0]]), new_edges], ignore_index=True)
+            new_edges = None
+        else:
+            keep = np.ones(len(edges), dtype=bool)
+            keep[deleted] = False
+            edges = edges.loc[keep]
+            edges.index = pd.Index(np.flatnonzero(keep))
 
     if edges_to_update is not None and not edges_to_update.empty:
         edges = _update_edges(edges, edges_to_update, key_cols)
