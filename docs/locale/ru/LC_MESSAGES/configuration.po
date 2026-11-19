@@ -422,6 +422,9 @@ msgstr "Задаёт теги OSM, сохраняемые на рёбрах ве
 msgid "Set OSM edge tags retained by public-transport graph builders."
 msgstr "Задаёт теги OSM, сохраняемые на рёбрах графов общественного транспорта."
 
+msgid "Set the tags of OSM route relations kept in the ``routes`` table of public-transport graphs."
+msgstr "Задать теги отношений маршрутов OSM, сохраняемые в таблице ``routes`` графов общественного транспорта."
+
 msgid "Configure Overpass request pacing and retry behavior."
 msgstr "Настраивает темп запросов к Overpass и повторные попытки."
 

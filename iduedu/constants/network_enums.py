@@ -1,5 +1,11 @@
 from enum import Enum
 
+#: Node types of a public-transport graph that the walk graph is joined to: platforms (a subway station
+#: without mapped entrances is one too) and subway entrances and exits.
+WALK_ACCESS_NODE_TYPES = frozenset(
+    {"platform", "station_entry_exit", "subway_entry_exit", "subway_entry", "subway_exit"}
+)
+
 
 class Network(Enum):
     """Preset OpenStreetMap network filters used by graph builders."""

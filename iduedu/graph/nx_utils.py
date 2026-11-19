@@ -66,7 +66,7 @@ def _restore_edges_geom(nodes_gdf, edges_gdf) -> gpd.GeoDataFrame:
             nodes_gdf.loc[edges_wout_geom["u"], "geometry"], nodes_gdf.loc[edges_wout_geom["v"], "geometry"]
         )
     ]
-    edges_wout_geom.set_index(["u", "v"], inplace=True)
+    edges_wout_geom = edges_wout_geom.set_index(["u", "v"])
     edges_gdf.update(edges_wout_geom)
     return edges_gdf
 

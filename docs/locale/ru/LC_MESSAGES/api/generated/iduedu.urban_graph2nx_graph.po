@@ -32,6 +32,9 @@ msgstr "Преобразуемый табличный городской гра�
 msgid "Return type"
 msgstr "Тип результата"
 
+msgid "A directed graph with an edge direction column (``oneway``) becomes an undirected NetworkX graph whose edges keep that column and their geometry drawn from ``u`` to ``v``, as :func:`nx_graph2urban_graph` reads them back. An undirected ``MultiGraph`` keys the edges of a pair of nodes, not of a direction, so an edge whose key the opposite edge already holds (boarding and alighting, two one-way carriageways) gets the next free key."
+msgstr "Ориентированный граф со столбцом направления рёбер (``oneway``) становится неориентированным графом NetworkX, рёбра которого сохраняют этот столбец и геометрию, нарисованную от ``u`` к ``v``, так что :func:`nx_graph2urban_graph` читает их обратно. Неориентированный ``MultiGraph`` нумерует ключами рёбра пары узлов, а не направления, поэтому ребро, чей ключ уже занят встречным ребром (посадка и высадка, две односторонние проезжие части), получает следующий свободный ключ."
+
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:data\\:\\`\\~typing.Any\\``"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:data\\:\\`\\~typing.Any\\``"
 
@@ -40,4 +43,10 @@ msgstr "Результат"
 
 msgid "``networkx.Graph``, ``networkx.DiGraph``, ``networkx.MultiGraph`` or ``networkx.MultiDiGraph`` with node and edge attributes copied from the UrbanGraph tables."
 msgstr "``networkx.Graph``, ``networkx.DiGraph``, ``networkx.MultiGraph`` или ``networkx.MultiDiGraph`` с атрибутами узлов и рёбер, скопированными из таблиц UrbanGraph."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If a graph without parallel edges would become an undirected ``networkx.Graph`` while two of     its edges join the same nodes (``u`` to ``v`` and ``v`` to ``u``): such a graph holds one of them only."
+msgstr "Если граф без параллельных рёбер становится неориентированным ``networkx.Graph``, а два его ребра соединяют одни и те же узлы (``u`` с ``v`` и ``v`` с ``u``): такой граф хранит только одно из них."
 

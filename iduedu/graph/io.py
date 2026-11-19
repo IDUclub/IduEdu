@@ -23,6 +23,7 @@ NODES_FILE = "nodes.parquet"
 EDGES_FILE = "edges.parquet"
 ADJACENCY_FILE = "adjacency.npz"
 ADJACENCY_NODELIST_FILE = "adjacency_nodelist.parquet"
+ROUTES_FILE = "routes.parquet"
 
 
 def _stringify_mixed_columns(frame):
@@ -58,7 +59,8 @@ def write_urban_graph(
     """Write an ``UrbanGraph`` to an ``.urbangraph`` archive.
 
     The archive contains ``metadata.json``, ``nodes.parquet`` and
-    ``edges.parquet``. If ``include_adjacency`` is true and the graph has a
+    ``edges.parquet``, and ``routes.parquet`` when the graph has a ``routes``
+    table. If ``include_adjacency`` is true and the graph has a
     cached adjacency matrix, the cache is stored as ``adjacency.npz`` together
     with its nodelist.
 
@@ -89,17 +91,26 @@ def write_urban_graph(
     # Parquet cannot store object columns that mix scalars with lists/tuples/dicts
     # (e.g. collapsed PT ``route`` attributes on joined platform nodes). Such columns
     # are JSON-encoded before writing and decoded back on read.
+    metadata["nodes_object_columns"] = _object_columns(graph.nodes_gdf)
+    metadata["edges_object_columns"] = _object_columns(graph.edges_gdf)
     nodes_to_write, metadata["nodes_encoded_columns"] = _encode_object_columns(graph.nodes_gdf)
     edges_to_write, metadata["edges_encoded_columns"] = _encode_object_columns(graph.edges_gdf)
 
     nodes_to_write = _stringify_mixed_columns(nodes_to_write)
     edges_to_write = _stringify_mixed_columns(edges_to_write)
+    routes_to_write = None
+    if graph.routes is not None:
+        metadata["routes_object_columns"] = _object_columns(graph.routes)
+        routes_to_write, metadata["routes_encoded_columns"] = _encode_object_columns(graph.routes)
+        routes_to_write = _stringify_mixed_columns(routes_to_write)
 
     try:
         with TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
             nodes_to_write.to_parquet(tmp_path / NODES_FILE, index=True)
             edges_to_write.to_parquet(tmp_path / EDGES_FILE, index=True)
+            if routes_to_write is not None:
+                routes_to_write.to_parquet(tmp_path / ROUTES_FILE, index=True)
 
             if metadata["has_adjacency"]:
                 sparse.save_npz(tmp_path / ADJACENCY_FILE, graph.adjacency_matrix)
@@ -115,6 +126,8 @@ def write_urban_graph(
                 )
                 archive.write(tmp_path / NODES_FILE, NODES_FILE)
                 archive.write(tmp_path / EDGES_FILE, EDGES_FILE)
+                if routes_to_write is not None:
+                    archive.write(tmp_path / ROUTES_FILE, ROUTES_FILE)
                 if metadata["has_adjacency"]:
                     archive.write(tmp_path / ADJACENCY_FILE, ADJACENCY_FILE)
                     archive.write(tmp_path / ADJACENCY_NODELIST_FILE, ADJACENCY_NODELIST_FILE)
@@ -155,6 +168,13 @@ def read_urban_graph(path: str | Path, *, validate: bool = True) -> UrbanGraph:
             edges_gdf = _read_frame(archive, EDGES_FILE, metadata["edges_frame"])
             _decode_object_columns(nodes_gdf, metadata.get("nodes_encoded_columns", []))
             _decode_object_columns(edges_gdf, metadata.get("edges_encoded_columns", []))
+            _restore_object_columns(nodes_gdf, metadata.get("nodes_object_columns", []))
+            _restore_object_columns(edges_gdf, metadata.get("edges_object_columns", []))
+            routes = None
+            if metadata.get("has_routes") and ROUTES_FILE in archive.namelist():
+                routes = _read_frame(archive, ROUTES_FILE, "dataframe")
+                _decode_object_columns(routes, metadata.get("routes_encoded_columns", []))
+                _restore_object_columns(routes, metadata.get("routes_object_columns", []))
             graph = UrbanGraph(
                 nodes_gdf=nodes_gdf,
                 edges_gdf=edges_gdf,
@@ -164,6 +184,7 @@ def read_urban_graph(path: str | Path, *, validate: bool = True) -> UrbanGraph:
                 adjacency_weight=metadata["adjacency_weight"],
                 crs=metadata["crs"],
                 graph_type=metadata["graph_type"],
+                routes=routes,
             )
 
             if metadata.get("has_adjacency") and {ADJACENCY_FILE, ADJACENCY_NODELIST_FILE} <= set(archive.namelist()):
@@ -203,6 +224,7 @@ def _build_metadata(graph: UrbanGraph, *, include_adjacency: bool) -> dict:
         "edge_direction_column": graph.edge_direction_column,
         "adjacency_weight": graph.adjacency_weight,
         "has_adjacency": has_adjacency,
+        "has_routes": graph.routes is not None,
     }
 
 
@@ -257,6 +279,24 @@ def _encode_object_columns(frame: pd.DataFrame | gpd.GeoDataFrame) -> tuple[pd.D
     for column in encoded_columns:
         frame[column] = frame[column].map(_encode_value)
     return frame, encoded_columns
+
+
+def _object_columns(frame: pd.DataFrame | gpd.GeoDataFrame) -> list[str]:
+    """Names of the object columns of ``frame``, the geometry aside."""
+    geometry_name = frame.geometry.name if isinstance(frame, gpd.GeoDataFrame) else None
+    return [str(column) for column in frame.columns if column != geometry_name and frame[column].dtype == object]
+
+
+def _restore_object_columns(frame: pd.DataFrame | gpd.GeoDataFrame, columns: list[str]) -> None:
+    """Object columns as they were written, with missing values ``None``.
+
+    Parquet keeps text, not the Python object column: pandas 3 reads it back as strings with ``NaN`` where a
+    value was ``None``.
+    """
+    for column in columns:
+        if column in frame.columns:
+            values = frame[column].astype(object)
+            frame[column] = values.where(values.notna(), None)
 
 
 def _decode_object_columns(frame: pd.DataFrame | gpd.GeoDataFrame, columns: list[str]) -> None:

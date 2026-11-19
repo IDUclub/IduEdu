@@ -47,6 +47,9 @@ msgstr "Обновить закешированную региональную �
 msgid "Cut again even if the territory file exists."
 msgstr "Вырезать заново, даже если файл территории уже есть."
 
+msgid "Keys of the ways cut out with the territory, as in :func:`~iduedu.osm_pbf.split_by_polygons`; an empty sequence gives a file of the public-transport routes touching the territory alone (default name ``..._routes``), for :func:`~iduedu.get_public_transport_graph` over a large area."
+msgstr "Ключи линий, вырезаемых вместе с территорией, как в :func:`~iduedu.osm_pbf.split_by_polygons`; пустая последовательность даёт файл только маршрутов общественного транспорта, касающихся территории (имя по умолчанию ``..._routes``), для :func:`~iduedu.get_public_transport_graph` на большой территории."
+
 msgid "Return type"
 msgstr "Тип результата"
 

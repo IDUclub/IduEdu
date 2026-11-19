@@ -77,6 +77,45 @@ def test_graph_data_to_urban_graph_builds_boarding_and_travel_edges():
     assert travel["time_min"] > 0
 
 
+def test_edges_end_on_the_nodes_merged_in_one_metre_cell():
+    # Route A passes its terminus twice (a and a2, 0.5 m apart); routes A and B have their own platforms 0.36 m apart.
+    nodes = _nodes(
+        {
+            "node_id": ["a", "a2", "b", "p1", "s", "p2"],
+            "type": ["bus", "bus", "bus", "platform", "bus", "platform"],
+            "route": ["A", "A", "A", "A", "B", "B"],
+        },
+        [Point(0, 0), Point(0.4, 0.3), Point(0, 300), Point(0, 7.2), Point(5, 300), Point(0.3, 7.4)],
+    )
+    rows = [
+        ("a", "a2", "bus", "A", [(0, 0), (0.4, 0.3)]),
+        ("a2", "b", "bus", "A", [(0.4, 0.3), (0, 300)]),
+        ("a", "p1", "boarding", "A", [(0, 0), (0, 7.2)]),
+        ("s", "p2", "boarding", "B", [(5, 300), (0.3, 7.4)]),
+    ]
+    edges = gpd.GeoDataFrame(
+        {
+            "u": [r[0] for r in rows],
+            "v": [r[1] for r in rows],
+            "type": [r[2] for r in rows],
+            "route": [r[3] for r in rows],
+        },
+        geometry=[LineString(r[4]) for r in rows],
+        crs=CRS,
+    )
+    graph = _graph_data_to_urban_graph(nodes, edges, DEFAULT_REGISTRY, CRS)
+    nodes_gdf, edges_gdf = graph.nodes_gdf, graph.edges_gdf
+
+    assert (nodes_gdf["type"] == "platform").sum() == 1
+    assert not (edges_gdf["u"] == edges_gdf["v"]).any()
+    starts = [line.coords[0] for line in edges_gdf.geometry]
+    ends = [line.coords[-1] for line in edges_gdf.geometry]
+    assert starts == [nodes_gdf.geometry[u].coords[0] for u in edges_gdf["u"]]
+    assert ends == [nodes_gdf.geometry[v].coords[0] for v in edges_gdf["v"]]
+    travel = edges_gdf[edges_gdf["type"] == "bus"]
+    assert len(travel) == 1 and travel["length_meter"].iloc[0] == pytest.approx(LineString([(0, 0), (0, 300)]).length)
+
+
 def test_graph_data_to_urban_graph_uses_mode_specific_wait_times():
     nodes = _nodes(
         {
@@ -242,13 +281,13 @@ def test_get_public_transport_graph_drops_unrequested_leaked_route_type(monkeypa
             }
         )
 
-    def fake_ground_parser(row, local_crs, ref2speed, needed_tags):
-        parsed_types.append(row.transport_type)
+    def fake_ground_parser(routes, local_crs, ref2speed, needed_tags):
+        parsed_types.extend(routes["transport_type"])
         return gpd.GeoDataFrame(), gpd.GeoDataFrame()
 
     monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", lambda polygon, types: [object()])
     monkeypatch.setattr(public_transport_builders, "overpass_routes_to_df", fake_routes_to_df)
-    monkeypatch.setattr(public_transport_builders, "overpass_ground_transport2edgenode", fake_ground_parser)
+    monkeypatch.setattr(public_transport_builders, "ground_routes_tables", fake_ground_parser)
 
     # 'train' is present in the Overpass response but was not requested and is not
     # in the default registry: it must be filtered out (no KeyError, no train edges).

@@ -50,6 +50,9 @@ msgstr "Необязательная система координат граф�
 msgid "Optional semantic graph type such as ``\"drive\"``, ``\"walk\"`` or ``\"intermodal\"``."
 msgstr "Необязательный смысловой тип графа, например ``\"drive\"``, ``\"walk\"`` или ``\"intermodal\"``."
 
+msgid "Optional table of public-transport routes, one row per route variant, indexed by ``route_key`` (see :mod:`iduedu.graph.routes`). Edges refer to it by their ``route_key`` column; rows no edge refers to are dropped, so clipping or cutting a graph drops the routes it loses. Street graphs have none (``None``)."
+msgstr "Необязательная таблица маршрутов общественного транспорта, по строке на вариант маршрута, с индексом ``route_key`` (см. :mod:`iduedu.graph.routes`). Рёбра ссылаются на неё столбцом ``route_key``; строки, на которые не ссылается ни одно ребро, отбрасываются, поэтому обрезка или выделение части графа убирает потерянные маршруты. У уличных графов её нет (``None``)."
+
 msgid "Raises"
 msgstr "Исключения"
 
@@ -263,6 +266,27 @@ msgstr ":py:obj:`route_directness <iduedu.UrbanGraph.route_directness>`"
 msgid "Ratio of network to straight distance between origins and destinations."
 msgstr "Отношение расстояния по сети к расстоянию по прямой между исходными точками и точками назначения."
 
+# | msgid ":py:obj:`route_directness <iduedu.UrbanGraph.route_directness>`"
+msgid ":py:obj:`route_edges <iduedu.UrbanGraph.route_edges>`"
+msgstr ":py:obj:`route_edges <iduedu.UrbanGraph.route_edges>`"
+
+msgid "Travel edges of one route in the order of travel."
+msgstr "Рёбра движения одного маршрута в порядке следования."
+
+# | msgid ":py:obj:`route_directness <iduedu.UrbanGraph.route_directness>`"
+msgid ":py:obj:`route_stops <iduedu.UrbanGraph.route_stops>`"
+msgstr ":py:obj:`route_stops <iduedu.UrbanGraph.route_stops>`"
+
+msgid "Stop nodes of one route in calling order."
+msgstr "Узлы остановок одного маршрута в порядке следования."
+
+# | msgid ":py:obj:`route_directness <iduedu.UrbanGraph.route_directness>`"
+msgid ":py:obj:`routes_in_area <iduedu.UrbanGraph.routes_in_area>`"
+msgstr ":py:obj:`routes_in_area <iduedu.UrbanGraph.routes_in_area>`"
+
+msgid "Routes with an edge or a stop in an area."
+msgstr "Маршруты с ребром или остановкой в области."
+
 msgid ":py:obj:`shortest_path <iduedu.UrbanGraph.shortest_path>`"
 msgstr ":py:obj:`shortest_path <iduedu.UrbanGraph.shortest_path>`"
 
@@ -434,6 +458,21 @@ msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`set\\`\\\\ \\\\\\[\\:
 msgid "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/graph_operations.html"
 
+msgid "Travel edges of one route in the order of travel. See :func:`iduedu.route_edges`."
+msgstr "Рёбра движения одного маршрута в порядке следования. См. :func:`iduedu.route_edges`."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+
+msgid "Stop nodes of one route in calling order. See :func:`iduedu.route_stops`."
+msgstr "Узлы остановок одного маршрута в порядке следования. См. :func:`iduedu.route_stops`."
+
+msgid "Routes with an edge or a stop in an area. See :func:`iduedu.routes_in_area`."
+msgstr "Маршруты с ребром или остановкой в области. См. :func:`iduedu.routes_in_area`."
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
+
 msgid "Search once for distances and/or routes. See :func:`iduedu.single_source_dijkstra`."
 msgstr "Один поиск расстояний и/или маршрутов. См. :func:`iduedu.single_source_dijkstra`."
 
@@ -461,9 +500,6 @@ msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`tuple\\`\\\\ \\\\\\[\
 msgid "Return up to k shortest loopless paths. See :func:`iduedu.k_shortest_paths`."
 msgstr "Вернуть до k кратчайших путей без циклов. См. :func:`iduedu.k_shortest_paths`."
 
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\``"
-
 msgid "Return up to k distinct routes by the penalty method. See :func:`iduedu.alternative_paths`."
 msgstr "Вернуть до k разных маршрутов методом штрафов. См. :func:`iduedu.alternative_paths`."
 
@@ -475,9 +511,6 @@ msgstr "Выдаёт блоки строк OD-матрицы по точкам �
 
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\`\\]`"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\`\\]`"
-
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
 
 msgid "This constructor is useful for graphs received from external libraries when they already contain node coordinates, CRS metadata and edge attributes such as ``length_meter`` and ``time_min``. The conversion itself is performed by :func:`iduedu.nx_graph2urban_graph`."
 msgstr "Этот конструктор полезен для графов из внешних библиотек, в которых уже есть координаты узлов, метаданные системы координат и атрибуты рёбер, такие как ``length_meter`` и ``time_min``. Само преобразование выполняет :func:`iduedu.nx_graph2urban_graph`."

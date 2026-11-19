@@ -3,10 +3,19 @@ from pathlib import Path
 import geopandas as gpd
 import networkx as nx
 import pytest
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 
-from iduedu import clip_nx_graph, gdf2graph, graph2gdf, keep_largest_nx_component, read_gml, reproject_graph, write_gml
+from iduedu import (
+    UrbanGraph,
+    clip_nx_graph,
+    gdf2graph,
+    graph2gdf,
+    keep_largest_nx_component,
+    read_gml,
+    reproject_graph,
+    write_gml,
+)
 from iduedu.graph.adapters import nx_graph2urban_graph, urban_graph2nx_graph
 from tests.factories import undirected_line_graph
 
@@ -191,6 +200,49 @@ def test_round_trip_nx_preserves_structure_and_weights():
     assert not restored.is_directed
     edge_01 = restored.edges_gdf[(restored.edges_gdf["u"] == 0) & (restored.edges_gdf["v"] == 1)].iloc[0]
     assert edge_01["time_min"] == 1.0
+
+
+def _opposite_edges_graph(multigraph: bool) -> UrbanGraph:
+    """Boarding 0 -> 1 and alighting 1 -> 0 between a platform and a route stop, one-way both."""
+    nodes = gpd.GeoDataFrame(geometry=[Point(0, 0), Point(10, 0), Point(20, 0)], crs=3857)
+    rows = [
+        (0, 1, "boarding", [(0, 0), (10, 0)]),
+        (1, 0, "alighting", [(10, 0), (0, 0)]),
+        (1, 2, "bus", [(10, 0), (20, 0)]),
+    ]
+    edges = gpd.GeoDataFrame(
+        {
+            "u": [r[0] for r in rows],
+            "v": [r[1] for r in rows],
+            "type": [r[2] for r in rows],
+            "length_meter": [10.0, 10.0, 10.0],
+            "time_min": [2.0, 0.0, 1.0],
+            "oneway": [True, True, True],
+        },
+        geometry=[LineString(r[3]) for r in rows],
+        crs=3857,
+    )
+    if multigraph:
+        edges["k"] = 0
+    return UrbanGraph(nodes, edges, is_multigraph=multigraph, is_directed=True, edge_direction_column="oneway")
+
+
+def test_opposite_edges_of_a_directed_multigraph_survive_the_round_trip():
+    graph = _opposite_edges_graph(multigraph=True)
+
+    nx_graph = urban_graph2nx_graph(graph)
+    restored = nx_graph2urban_graph(nx_graph)
+
+    assert nx_graph.number_of_edges() == 3
+    assert restored.is_directed and restored.edge_direction_column == "oneway"
+    got = sorted(zip(restored.edges_gdf["u"], restored.edges_gdf["v"], restored.edges_gdf["type"]))
+    assert got == [(0, 1, "boarding"), (1, 0, "alighting"), (1, 2, "bus")]
+    assert not restored.edges_gdf[["u", "v", "k"]].duplicated().any()
+
+
+def test_opposite_edges_do_not_fit_an_undirected_simple_graph():
+    with pytest.raises(ValueError, match="both directions"):
+        urban_graph2nx_graph(_opposite_edges_graph(multigraph=False))
 
 
 def test_oneway_column_makes_graph_directed():

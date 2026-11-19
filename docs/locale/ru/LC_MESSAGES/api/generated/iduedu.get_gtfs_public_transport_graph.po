@@ -59,9 +59,19 @@ msgstr "Явное значение ожидания для остановки �
 msgid "Fallback speed for pathways without an explicit traversal time."
 msgstr "Скорость по умолчанию для переходов без явного времени прохождения."
 
+msgid "Name of the feed in its route keys (``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``). Defaults to the file or directory name of the feed without ``.zip`` (the names of merged sources joined by ``+``). Give each feed its own, stable name when keys from several feeds are stored together."
+msgstr "Имя фида в ключах его маршрутов (``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``). По умолчанию — имя файла или каталога фида без ``.zip`` (у объединённого фида имена источников через ``+``). Дайте каждому фиду своё постоянное имя, если ключи нескольких фидов хранятся вместе."
+
 msgid "Return type"
 msgstr "Тип результата"
 
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban\\_graph.UrbanGraph\\``"
+
+# | msgid "Return type"
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Directed multigraph of type ``\"public_transport\"`` with a ``routes`` table, one row per pattern (the trips of a route in one direction calling at the same stops) with ``ref``, ``name``, ``from`` and ``to`` (first and last stop), ``operator``, ``colour``, ``line_key`` and ``line_name`` (the GTFS route), ``gtfs_route_id``, ``direction_id``, ``shape_id``, ``stops`` and ``interval_min`` (the mean time between departures at its first stop, twice its boarding wait). Route nodes and edges carry the ``route_key`` of their pattern; a platform lists the keys of the patterns calling there."
+msgstr "Ориентированный мультиграф типа ``\"public_transport\"`` с таблицей ``routes``, по строке на паттерн (рейсы маршрута в одном направлении с одними и теми же остановками), со столбцами ``ref``, ``name``, ``from`` и ``to`` (первая и последняя остановки), ``operator``, ``colour``, ``line_key`` и ``line_name`` (маршрут GTFS), ``gtfs_route_id``, ``direction_id``, ``shape_id``, ``stops`` и ``interval_min`` (средний интервал между отправлениями с первой остановки, удвоенное ожидание посадки). Узлы и рёбра маршрута несут ``route_key`` своего паттерна; у платформы — список ключей паттернов, которые на ней останавливаются."
 

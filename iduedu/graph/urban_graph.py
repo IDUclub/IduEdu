@@ -9,6 +9,7 @@ from scipy import sparse
 from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.adjacency import build_adjacency_matrix
+from iduedu.graph.routes import normalize_routes, used_routes
 from iduedu.graph.routing_result import ShortestPathResult
 from iduedu.graph.validation import sync_graph_crs, validate_graph
 
@@ -40,6 +41,11 @@ class UrbanGraph:
             when possible.
         graph_type: Optional semantic graph type such as ``"drive"``,
             ``"walk"`` or ``"intermodal"``.
+        routes: Optional table of public-transport routes, one row per route
+            variant, indexed by ``route_key`` (see :mod:`iduedu.graph.routes`).
+            Edges refer to it by their ``route_key`` column; rows no edge refers
+            to are dropped, so clipping or cutting a graph drops the routes it
+            loses. Street graphs have none (``None``).
 
     Raises:
         TypeError: If node or edge tables use unsupported types.
@@ -61,6 +67,7 @@ class UrbanGraph:
         "adjacency_nodelist",
         "node_to_adjacency_pos",
         "adjacency_weight",
+        "routes",
         "_csr_cache",
     )
 
@@ -75,6 +82,7 @@ class UrbanGraph:
         adjacency_weight: str = "time_min",
         crs: Any | None = None,
         graph_type: str | None = None,
+        routes: pd.DataFrame | None = None,
     ):
         """Initialize graph tables, topology flags and adjacency cache state."""
 
@@ -90,6 +98,7 @@ class UrbanGraph:
         self.node_to_adjacency_pos = {}
         self.adjacency_weight = adjacency_weight
         self._csr_cache = None
+        self.routes = used_routes(normalize_routes(routes), edges_gdf)
 
         self.validate()
 
@@ -98,6 +107,7 @@ class UrbanGraph:
         return {name: getattr(self, name) for name in self.__slots__ if name != "_csr_cache"}
 
     def __setstate__(self, state):
+        self.routes = None  # graphs pickled before the routes table existed
         for name, value in state.items():
             setattr(self, name, value)
         self._csr_cache = None
@@ -112,7 +122,8 @@ class UrbanGraph:
         return (
             f"UrbanGraph(nodes={len(self.nodes_gdf)}, edges={len(self.edges_gdf)}, "
             f"is_multigraph={self.is_multigraph}, is_directed={self.is_directed}, "
-            f"edge_direction_column={self.edge_direction_column!r}, crs={crs_str!r}, type={self.type!r})"
+            f"edge_direction_column={self.edge_direction_column!r}, crs={crs_str!r}, type={self.type!r}"
+            + (f", routes={len(self.routes)})" if self.routes is not None else ")")
         )
 
     @classmethod
@@ -125,6 +136,7 @@ class UrbanGraph:
         edge_direction_column: str | None = None,
         adjacency_weight: str = "time_min",
         graph_type: str | None = None,
+        routes: pd.DataFrame | None = None,
     ) -> "UrbanGraph":
         """Create an empty graph with the requested topology metadata."""
         nodes_gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=crs), crs=crs)
@@ -145,6 +157,7 @@ class UrbanGraph:
             adjacency_weight=adjacency_weight,
             crs=crs,
             graph_type=graph_type,
+            routes=routes,
         )
 
     def _sync_crs(self) -> None:
@@ -172,6 +185,7 @@ class UrbanGraph:
             adjacency_weight=self.adjacency_weight,
             crs=self.crs,
             graph_type=self.type,
+            routes=None if self.routes is None else self.routes.copy(),
         )
 
         if self.adjacency_matrix is not None:
@@ -228,6 +242,7 @@ class UrbanGraph:
         self.edge_direction_column = other.edge_direction_column
         self.crs = other.crs
         self.type = other.type
+        self.routes = other.routes
         self.validate()
         self._sync_crs()
         self.adjacency_matrix = None
@@ -364,6 +379,27 @@ class UrbanGraph:
         from iduedu.graph.editors import subgraph_by_nodes
 
         return subgraph_by_nodes(self, nodes)
+
+    def route_edges(self, route_key: str) -> gpd.GeoDataFrame:
+        """Travel edges of one route in the order of travel. See :func:`iduedu.route_edges`."""
+
+        from iduedu.graph.routes import route_edges
+
+        return route_edges(self, route_key)
+
+    def route_stops(self, route_key: str) -> gpd.GeoDataFrame:
+        """Stop nodes of one route in calling order. See :func:`iduedu.route_stops`."""
+
+        from iduedu.graph.routes import route_stops
+
+        return route_stops(self, route_key)
+
+    def routes_in_area(self, area) -> pd.DataFrame:
+        """Routes with an edge or a stop in an area. See :func:`iduedu.routes_in_area`."""
+
+        from iduedu.graph.routes import routes_in_area
+
+        return routes_in_area(self, area)
 
     def keep_largest_connected_component(
         self,

@@ -1,12 +1,9 @@
-import math
-
 import pandas as pd
 import pytest
 
 from iduedu.overpass.parsers import (
-    _link_unconnected,
+    ground_routes_tables,
     infer_role_from_tags,
-    overpass_ground_transport2edgenode,
     overpass_routes_to_df,
     overpass_subway2edgenode,
     parse_maxspeed_to_m_per_min,
@@ -264,7 +261,7 @@ def test_overpass_subway2edgenode_builds_platforms_for_stops_without_platform_me
         pytest.param([{"type": "node", "role": "stop", "lat": 34.26, "lon": -6.58}], id="member_without_ref"),
     ],
 )
-def test_overpass_ground_transport2edgenode_survives_members_without_ref(members):
+def test_ground_routes_tables_survives_members_without_ref(members):
     """A relation whose members carry no ``ref`` must yield nothing, not raise.
 
     Such relations exist: OSM allows a route relation with no members at all.
@@ -276,7 +273,7 @@ def test_overpass_ground_transport2edgenode_survives_members_without_ref(members
         name=99,
     )
 
-    edges, nodes = overpass_ground_transport2edgenode(route, LOCAL_CRS, {}, [])
+    edges, nodes = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
 
     assert len(nodes) == 0
     assert len(edges) == 0
@@ -287,44 +284,7 @@ def test_overpass_ground_transport2edgenode_survives_members_without_ref(members
 # ---------------------------------------------------------------------------
 
 
-def _longest_step(coords):
-    return max(math.dist(a, b) for a, b in zip(coords, coords[1:]))
-
-
-def test_link_unconnected_puts_a_detour_between_the_pieces_around_it():
-    """A piece that belongs between two others goes there, not onto the far end of the route.
-
-    Delhi's "(+) TMS" leaves its corridor for a loop into a terminal whose closing ways are missing
-    from the relation. The corridor before and after the loop meet at one vertex, so the greedy
-    chain joined them first and could only glue the loop onto an end: a 14 km line across the city.
-    """
-    before = {"coords": [(-5000.0, 0.0), (0.0, 0.0)], "speeds": [1.0, 1.0]}
-    loop = {"coords": [(100.0, 300.0), (50.0, 60.0)], "speeds": [2.0, 2.0]}
-    after = {"coords": [(0.0, 0.0), (5000.0, 0.0)], "speeds": [3.0, 3.0]}
-
-    [linked] = _link_unconnected([before, loop, after])
-
-    # The loop leaves from and returns to the same vertex, so either way round it costs the same.
-    assert linked["coords"][:2] == [(-5000.0, 0.0), (0.0, 0.0)]
-    assert sorted(linked["coords"][2:4]) == [(50.0, 60.0), (100.0, 300.0)]
-    assert linked["coords"][4:] == [(0.0, 0.0), (5000.0, 0.0)]
-    assert _longest_step(linked["coords"][1:5]) < 400
-    # One speed per vertex, each for the segment leaving it; a straight join keeps the road it leaves.
-    assert linked["speeds"] == [1.0, 1.0, 2.0, 2.0, 3.0, 3.0]
-
-
-def test_link_unconnected_runs_in_member_order():
-    first = {"coords": [(0.0, 0.0), (1000.0, 0.0)]}
-    second = {"coords": [(1050.0, 0.0), (2000.0, 0.0)]}
-
-    [linked] = _link_unconnected([second, first])
-
-    # The joins are the same either way round; the members decide the direction.
-    assert linked["coords"] == [(2000.0, 0.0), (1050.0, 0.0), (1000.0, 0.0), (0.0, 0.0)]
-    assert linked["speeds"] is None
-
-
-def test_overpass_ground_transport2edgenode_follows_members_when_the_first_way_is_drawn_backwards():
+def test_ground_routes_tables_follows_members_when_the_first_way_is_drawn_backwards():
     """The route runs in member order even when its first way is drawn against the traffic.
 
     Every member after such a way used to be prepended to it, so the whole route came out reversed
@@ -348,25 +308,10 @@ def test_overpass_ground_transport2edgenode_follows_members_when_the_first_way_i
     ]
     route = pd.Series({"tags": {"ref": "7"}, "transport_type": "bus", "members": members}, name=77)
 
-    edges, _ = overpass_ground_transport2edgenode(route, LOCAL_CRS, {}, [])
+    edges, _ = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
 
     ride = edges[edges["type"] == "bus"]
     assert [(str(u), str(v)) for u, v in zip(ride["u"], ride["v"])] == [("401", "402")]
-
-
-def test_link_unconnected_cuts_the_route_at_a_hole():
-    """A join longer than a kilometre is a hole in the relation: the route is cut there, not bridged."""
-    near = {"coords": [(0.0, 0.0), (1000.0, 0.0)]}
-    close = {"coords": [(1900.0, 0.0), (3000.0, 0.0)]}
-    far = {"coords": [(4100.0, 0.0), (5000.0, 0.0)]}
-
-    parts = _link_unconnected([near, close, far])
-
-    # 900 m is still a way OSM missed; 1100 m is not.
-    assert [part["coords"] for part in parts] == [
-        [(0.0, 0.0), (1000.0, 0.0), (1900.0, 0.0), (3000.0, 0.0)],
-        [(4100.0, 0.0), (5000.0, 0.0)],
-    ]
 
 
 def _members_with_a_hole():
@@ -394,10 +339,10 @@ def _rides(edges, mode):
     return {(str(u), str(v)) for u, v in zip(ride["u"], ride["v"])}
 
 
-def test_overpass_ground_transport2edgenode_does_not_bridge_a_hole_in_the_relation():
+def test_ground_routes_tables_does_not_bridge_a_hole_in_the_relation():
     route = pd.Series({"tags": {"ref": "405A"}, "transport_type": "bus", "members": _members_with_a_hole()}, name=88)
 
-    edges, nodes = overpass_ground_transport2edgenode(route, LOCAL_CRS, {}, [])
+    edges, nodes = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
 
     assert _rides(edges, "bus") == {("501", "502"), ("503", "504")}
     assert {"501", "502", "503", "504"} <= set(nodes["node_id"].astype(str))
@@ -411,7 +356,7 @@ def test_overpass_subway2edgenode_does_not_bridge_a_hole_in_the_relation():
     assert _rides(edges, "subway") == {("501", "502"), ("503", "504")}
 
 
-def test_overpass_ground_transport2edgenode_follows_the_stop_order_when_ways_are_listed_backwards():
+def test_ground_routes_tables_follows_the_stop_order_when_ways_are_listed_backwards():
     """Stops, not ways, decide the direction: PTv2 lists them in travel order whichever way the ways run.
 
     A relation listing its ways from the far end came out backwards, and every one-way edge with it.
@@ -435,12 +380,12 @@ def test_overpass_ground_transport2edgenode_follows_the_stop_order_when_ways_are
     ]
     route = pd.Series({"tags": {"ref": "8"}, "transport_type": "bus", "members": members}, name=78)
 
-    edges, _ = overpass_ground_transport2edgenode(route, LOCAL_CRS, {}, [])
+    edges, _ = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
 
     assert _rides(edges, "bus") == {("601", "602"), ("602", "603")}
 
 
-def test_overpass_ground_transport2edgenode_keeps_the_ways_direction_against_too_few_stops():
+def test_ground_routes_tables_keeps_the_ways_direction_against_too_few_stops():
     """Two stops listed backwards do not reverse a route whose ways are in order.
 
     Stop lists are sometimes jumbled or hold a couple of platforms for a whole route; Delhi's 740Extra was
@@ -464,12 +409,12 @@ def test_overpass_ground_transport2edgenode_keeps_the_ways_direction_against_too
     ]
     route = pd.Series({"tags": {"ref": "9"}, "transport_type": "bus", "members": members}, name=79)
 
-    edges, _ = overpass_ground_transport2edgenode(route, LOCAL_CRS, {}, [])
+    edges, _ = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
 
     assert _rides(edges, "bus") == {("701", "702")}
 
 
-def test_overpass_ground_transport2edgenode_leaves_out_a_route_without_stops():
+def test_ground_routes_tables_leaves_out_a_route_without_stops():
     """A relation listing no stops or platforms has nowhere to board and yields nothing.
 
     Such routes used to get two synthetic stops at the ends of their path, counted as mapped stops.
@@ -484,7 +429,7 @@ def test_overpass_ground_transport2edgenode_leaves_out_a_route_without_stops():
     ]
     route = pd.Series({"tags": {"ref": "10"}, "transport_type": "bus", "members": members}, name=80)
 
-    edges, nodes = overpass_ground_transport2edgenode(route, LOCAL_CRS, {}, [])
+    edges, nodes = ground_routes_tables(pd.DataFrame([route]), LOCAL_CRS, {}, [])
 
     assert len(edges) == 0
     assert len(nodes) == 0
@@ -559,6 +504,27 @@ def test_only_members_missing_from_the_section_are_fetched(monkeypatch):
     parsers.patch_members_roles_inplace(_unroled_stop_area(), {("node", 2): _KNOWN[("node", 2)]})
 
     assert asked == [("way", 3)]
+
+
+def test_a_role_the_parser_does_not_read_is_taken_from_the_tags(monkeypatch):
+    """Mezhdunarodnaya lists its entrances as ``entrence``: read as no entrance, the station became a platform."""
+    from iduedu.overpass import parsers
+
+    monkeypatch.setattr(parsers, "fetch_member_tags", lambda missing: {})
+    members = [
+        {"type": "node", "ref": 5, "role": "station", "lat": 59.9, "lon": 30.3},
+        {"type": "node", "ref": 6, "role": "entrence", "lat": 59.9001, "lon": 30.3001},
+        {"type": "node", "ref": 7, "role": "entrence", "lat": 59.9002, "lon": 30.3002},
+    ]
+    stop_areas = pd.DataFrame([_stop_area_row(10, members)])
+    known = {
+        ("node", 6): {"tags": {"railway": "subway_entrance", "entrance": "entrance"}},
+        ("node", 7): {"tags": {"railway": "subway_entrance", "entrance": "exit"}},
+    }
+
+    parsers.patch_members_roles_inplace(stop_areas, known)
+
+    assert [m["role"] for m in stop_areas.iloc[0]["members"]] == ["station", "entrance", "exit_only"]
 
 
 def test_merge_on_ids_accepts_all_string_keys_against_integer_keys():

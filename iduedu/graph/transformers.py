@@ -112,6 +112,7 @@ def to_directed(
         adjacency_weight=graph.adjacency_weight,
         crs=graph.crs,
         graph_type=graph.type,
+        routes=graph.routes,
     )
 
 
@@ -137,6 +138,7 @@ def to_undirected(graph: UrbanGraph) -> UrbanGraph:
         adjacency_weight=graph.adjacency_weight,
         crs=graph.crs,
         graph_type=graph.type,
+        routes=graph.routes,
     )
 
 
@@ -180,6 +182,7 @@ def simplify_multiedges(
             is_multigraph=False,
             is_directed=graph.is_directed,
             edge_direction_column=graph.edge_direction_column,
+            routes=graph.routes,
         )
 
     edges = graph.edges_gdf.copy()
@@ -217,6 +220,7 @@ def simplify_multiedges(
         is_multigraph=False,
         is_directed=graph.is_directed,
         edge_direction_column=graph.edge_direction_column,
+        routes=graph.routes,
     )
 
 
@@ -347,6 +351,7 @@ def consolidate_intersections(
         adjacency_weight=graph.adjacency_weight,
         crs=graph.crs,
         graph_type=graph.type,
+        routes=graph.routes,
     )
     if multigraph and not graph.is_multigraph:
         result = simplify_multiedges(result, weight=graph.adjacency_weight)

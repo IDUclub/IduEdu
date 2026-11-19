@@ -33,8 +33,11 @@ msgstr "``{name: polygon}`` в EPSG:4326. Используйте полигон�
 msgid "Output directory, created if missing."
 msgstr "Папка для результатов, создаётся при отсутствии."
 
-msgid "Ways carrying at least one of these keys are selected spatially. ``None`` selects every way. Ways without them still enter a city file as members of selected relations."
-msgstr "Линии хотя бы с одним из этих ключей отбираются пространственно. ``None`` отбирает все линии. Линии без них всё равно попадают в файл города как участники выбранных отношений."
+# | msgid "Ways carrying at least one of these keys are selected spatially.
+# | ``None`` selects every way. Ways without them still enter a city file as
+# | members of selected relations."
+msgid "Ways carrying at least one of these keys are selected spatially. ``None`` selects every way, an empty sequence none: then a route enters a file by a node member (a stop or a platform) in its polygon, and the file holds the routes alone, with their members. Ways without the keys still enter a city file as members of selected relations."
+msgstr "Линии хотя бы с одним из этих ключей отбираются пространственно. ``None`` отбирает все линии, пустая последовательность — ни одной: тогда маршрут попадает в файл по узлу-участнику (остановке или платформе) внутри его полигона, и файл содержит только маршруты с их участниками. Линии без этих ключей всё равно попадают в файл города как участники выбранных отношений."
 
 msgid "OSM ``route`` values of the relations to keep; defaults to every mode of ``DEFAULT_REGISTRY_W_TRAIN`` (bus, trolleybus, tram/light_rail, subway, monorail, train, taxi/share_taxi)."
 msgstr "Значения OSM ``route`` сохраняемых отношений; по умолчанию все виды из ``DEFAULT_REGISTRY_W_TRAIN`` (bus, trolleybus, tram/light_rail, subway, monorail, train, taxi/share_taxi)."
