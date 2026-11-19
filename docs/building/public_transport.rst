@@ -122,7 +122,7 @@ improved the accuracy for every mode measured.
 Transport registry
 ~~~~~~~~~~~~~~~~~~
 
-A :class:`TransportRegistry` holds one :class:`TransportSpec` per mode:
+A :class:`TransportRegistry` holds a base :class:`TransportSpec` for each mode:
 
 .. list-table::
    :header-rows: 1
@@ -148,6 +148,11 @@ A :class:`TransportRegistry` holds one :class:`TransportSpec` per mode:
 
 ``DEFAULT_REGISTRY`` covers buses, trolleybuses, trams, subways, monorails and share taxis (``taxi``);
 ``DEFAULT_REGISTRY_W_TRAIN`` adds trains.
+
+The OSM builder uses a registered ``<mode>:<service>`` specification for travel on routes with the matching
+relation ``service`` tag and falls back to the base mode specification. ``DEFAULT_REGISTRY_W_TRAIN`` includes
+``train:high_speed`` for ``route=train`` relations with ``service=high_speed``, calibrated to Sapsan timetables.
+Request ``train`` in ``transport_types``. Edge types, route modes and boarding waits still use the base mode.
 
 .. list-table::
    :header-rows: 1

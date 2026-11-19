@@ -186,6 +186,35 @@ def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     assert changes.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
+def test_project_objects_preserves_node_ids_and_connector_order_across_groups():
+    graph = undirected_line_graph()
+    graph.is_directed = True  # Connector edges come in forward/reverse pairs.
+    objects = gpd.GeoDataFrame(
+        index=["first", "end", "second", "shared"],
+        geometry=[Point(15, 5), Point(0, 3), Point(25, 4), Point(15, 5)],
+        crs=CRS,
+    )
+
+    changes, mapping = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+
+    assert list(mapping.items()) == [("end", 4), ("first", 7), ("shared", 8), ("second", 9)]
+    assert changes.nodes_gdf.index.tolist() == [4, 5, 7, 8, 6, 9]
+    assert list(zip(changes.edges_gdf["u"], changes.edges_gdf["v"])) == [
+        (4, 0),
+        (0, 4),
+        (7, 5),
+        (5, 7),
+        (8, 5),
+        (5, 8),
+        (9, 6),
+        (6, 9),
+        (1, 5),
+        (5, 2),
+        (2, 6),
+        (6, 3),
+    ]
+
+
 @pytest.mark.parametrize("add_link_edge", [True, False])
 def test_project_objects_lying_on_edge_reuses_projection_node(add_link_edge):
     graph = undirected_line_graph()

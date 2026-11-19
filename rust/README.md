@@ -24,6 +24,8 @@ building IduEdu from source builds it.
   junction-to-junction edges of the builders, and the edges of a finished graph (`simplify_graph`). Edges are joined
   only when they carry equal tags, so bridges and tunnels stay separate; two-way edges drawn against the chain are
   turned, one-way edges join only head to tail and never with two-way ones, and nodes marked to keep stay.
+- `src/split.rs` splits edges at object projections. It returns flat piece coordinates, source edge positions,
+  and cut positions for resolving the endpoints in the graph layer.
 - `src/pt_routes.rs`: public-transport routes from their OSM relations (the ground modes and the subway), all in
   one call: the ways of each route stitched in member order into its path (pieces ordered by the shortest total
   join, cut at holes over 1 km), stops paired with platforms, a part turned round when its stops clearly run
@@ -36,11 +38,11 @@ building IduEdu from source builds it.
 - `src/pbf_write.rs`: writing `.pbf` files (zlib blocks, dense nodes, no metadata): per-territory extracts of a
   larger file in one pass (`split_by_polygons`) and small files from element lists.
 - `src/lib.rs`: PyO3 bindings (`CsrGraph`, `build_csr`, `reconstruct_paths`, `connected_components`,
-  `strongly_connected_components`, `PbfFile`, `write_pbf`, `merge_oriented_chains`, `parse_pt_routes`), abi3 for
+  `strongly_connected_components`, `PbfFile`, `write_pbf`, `merge_oriented_chains`, `split_edges`, `parse_pt_routes`), abi3 for
   CPython 3.11+. Every kernel releases the GIL; parallel kernels use rayon.
 
 The Python layer calls these only through `iduedu/graph/` (`adjacency.py`, `routing.py`, `components.py`,
-`within.py`, `centrality.py`, `simplify.py`), `iduedu/osm_pbf/` (`reader.py`, `extract.py`), the edge merging of
+`within.py`, `centrality.py`, `simplify.py`, `editors.py`), `iduedu/osm_pbf/` (`reader.py`, `extract.py`), the edge merging of
 `drive_walk_builders.py` and the route parser of `iduedu/overpass/parsers.py`.
 
 ## Development

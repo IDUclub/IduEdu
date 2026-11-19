@@ -168,11 +168,14 @@ def _graph_data_to_urban_graph(
     transport_registry: TransportRegistry,
     local_crs,
     routes: pd.DataFrame | None = None,
+    *,
+    route_services: pd.Series | None = None,
 ) -> UrbanGraph:
     """
     Build a directed public-transport UrbanGraph from parser node/edge tables.
 
     ``routes`` is the routes table; the graph keeps the rows its edges refer to.
+    ``route_services`` contains the relation service tags indexed by route key.
     """
     routes = empty_routes() if routes is None else routes
     if graph_nodes_gdf.empty:
@@ -367,6 +370,7 @@ def _graph_data_to_urban_graph(
     if "speed_m_min" not in graph_edges_gdf.columns:
         graph_edges_gdf["speed_m_min"] = np.nan
 
+    mode_specs = {mode: transport_registry.get(mode) for mode in transport_registry.list_modes()}
     boarding_mask = graph_edges_gdf["type"].astype(str).eq("boarding")
     if boarding_mask.any():
         alighting_edges = graph_edges_gdf.loc[boarding_mask].copy()
@@ -386,8 +390,7 @@ def _graph_data_to_urban_graph(
         # The mode is therefore read from the travel edges the node participates
         # in, which carry the mode by construction, and the node type is used only
         # when it is itself a known mode.
-        known_modes = set(transport_registry.list_types())
-        travel = graph_edges_gdf[graph_edges_gdf["type"].astype(str).isin(known_modes)]
+        travel = graph_edges_gdf[graph_edges_gdf["type"].astype(str).isin(mode_specs)]
         node_mode = pd.concat(
             [
                 pd.Series(travel["type"].to_numpy(), index=travel["u"].to_numpy()),
@@ -398,7 +401,7 @@ def _graph_data_to_urban_graph(
 
         boarding_modes = boarding_edges["v"].map(node_mode)
         by_type = boarding_edges["v"].map(nodes_gdf["type"])
-        boarding_modes = boarding_modes.fillna(by_type.where(by_type.isin(known_modes)))
+        boarding_modes = boarding_modes.fillna(by_type.where(by_type.isin(mode_specs)))
 
         unresolved = boarding_modes.isna()
         if unresolved.any():
@@ -408,15 +411,8 @@ def _graph_data_to_urban_graph(
                 f"{int(unresolved.sum())} boarding edges have no resolvable transport mode; "
                 f"using the default waiting time"
             )
-        default_wait = min(
-            (transport_registry.get(mode).avg_wait_time_min for mode in known_modes),
-            default=0.0,
-        )
-        boarding_edges["time_min"] = boarding_modes.map(
-            lambda mode: (
-                float(transport_registry.get(str(mode)).avg_wait_time_min) if isinstance(mode, str) else default_wait
-            )
-        )
+        mode_waits = {mode: float(spec.avg_wait_time_min) for mode, spec in mode_specs.items()}
+        boarding_edges["time_min"] = boarding_modes.map(mode_waits).fillna(min(mode_waits.values(), default=0.0))
         boarding_edges["oneway"] = True
 
         graph_edges_gdf = gpd.GeoDataFrame(
@@ -432,7 +428,7 @@ def _graph_data_to_urban_graph(
         graph_edges_gdf.loc[missing_oneway, "oneway"] = True
     graph_edges_gdf["oneway"] = graph_edges_gdf["oneway"].astype(bool)
 
-    def calc_len_time(geom, edge_type, speed_m_min):
+    def calc_len_time(geom, spec, speed_m_min):
         """Calculate edge length and travel time for a public-transport edge.
 
         Only travel edges carry a transport mode as their type. Station interiors
@@ -441,7 +437,6 @@ def _graph_data_to_urban_graph(
         aborted the whole graph.
         """
         length_m = float(round(geom.length, 3))
-        spec = transport_registry.try_get(str(edge_type))
         if spec is None:
             return length_m, float(round(length_m / DEFAULT_WALK_SPEED_M_PER_MIN, 3))
 
@@ -459,10 +454,18 @@ def _graph_data_to_urban_graph(
 
     missing = graph_edges_gdf.loc[mask_missing]
     if len(missing):
+        variant_specs = {}
+        if route_services is not None:
+            for route_key, service in route_services.dropna().items():
+                mode = routes.at[route_key, "mode"]
+                if mode in mode_specs and (spec := transport_registry.try_get(f"{mode}:{service}")) is not None:
+                    variant_specs[mode, route_key] = spec
         # A loop over plain values: a row-wise DataFrame.apply builds a Series per edge.
         vals = [
-            calc_len_time(geometry, edge_type, speed)
-            for geometry, edge_type, speed in zip(missing.geometry, missing["type"], missing["speed_m_min"])
+            calc_len_time(geometry, variant_specs.get((edge_type, route_key), mode_specs.get(edge_type)), speed)
+            for geometry, edge_type, route_key, speed in zip(
+                missing.geometry, missing["type"], missing["route_key"], missing["speed_m_min"]
+            )
         ]
         graph_edges_gdf.loc[mask_missing, ["length_meter", "time_min"]] = np.asarray(vals, dtype=float)
 
@@ -624,9 +627,13 @@ def _build_public_transport_graph(
     graph_edges_gdf = pd.concat(graph_edges_gdf, ignore_index=True) if graph_edges_gdf else gpd.GeoDataFrame()
     graph_nodes_gdf = pd.concat(graph_nodes_gdf, ignore_index=True) if graph_nodes_gdf else gpd.GeoDataFrame()
 
-    routes = osm_routes_table(overpass_data, transport_types)
+    route_tags = config.transport_route_attr
+    routes = osm_routes_table(overpass_data, transport_types, route_tags=route_tags | {"service"})
+    route_services = routes.get("service")
+    if route_services is not None and "service" not in route_tags:
+        routes = routes.drop(columns="service")
     urban_graph: UrbanGraph = _graph_data_to_urban_graph(
-        graph_nodes_gdf, graph_edges_gdf, transport_registry, local_crs, routes=routes
+        graph_nodes_gdf, graph_edges_gdf, transport_registry, local_crs, routes=routes, route_services=route_services
     )
 
     if clip_by_territory:
@@ -662,7 +669,7 @@ def get_public_transport_graph(
             Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given.
         transport_types:
             Transport mode(s) to include. Accepts:
-              - ``None``: include every type of ``transport_registry``;
+              - ``None``: include every mode of ``transport_registry``;
               - ``str``: a single OSM route type, e.g. ``"bus"``;
               - ``Sequence[str]``: multiple types, e.g. ``["tram", "bus", "trolleybus", "subway"]``.
 
@@ -693,19 +700,19 @@ def get_public_transport_graph(
         https://iduclub.github.io/IduEdu/examples/transport_registry.html
     """
     registry = transport_registry or DEFAULT_REGISTRY
-    registry_types = set(registry.list_types())
+    registry_modes = set(registry.list_modes())
 
     # normalize transport_types -> list[str]
     if transport_types is None:
-        types = list(registry_types)
+        types = list(registry_modes)
     elif isinstance(transport_types, str):
         types = [transport_types.strip().lower()]
     else:
         types = [str(t).strip().lower() for t in transport_types]
 
-    unknown = [t for t in types if t not in registry_types]
+    unknown = [t for t in types if t not in registry_modes]
     if unknown:
-        raise ValueError(f"Unknown transport type(s): {unknown}. Available: {sorted(registry_types)}")
+        raise ValueError(f"Unknown transport type(s): {unknown}. Available: {sorted(registry_modes)}")
 
     return _build_public_transport_graph(
         osm_id=osm_id,

@@ -266,6 +266,23 @@ def test_get_public_transport_graph_accepts_train_with_custom_registry(monkeypat
     assert graph.edges_gdf.empty
 
 
+def test_get_public_transport_graph_requests_only_plain_modes(monkeypatch):
+    requested = []
+
+    def get_routes(polygon, types):
+        requested.extend(types)
+        return []
+
+    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", get_routes)
+    get_public_transport_graph(territory=TERRITORY, transport_registry=DEFAULT_REGISTRY_W_TRAIN)
+    assert set(requested) == {"bus", "trolleybus", "tram", "subway", "monorail", "taxi", "train"}
+
+
+def test_get_public_transport_graph_rejects_a_service_variant_as_a_mode():
+    with pytest.raises(ValueError, match="Unknown transport type"):
+        get_public_transport_graph(transport_types=["train:high_speed"], transport_registry=DEFAULT_REGISTRY_W_TRAIN)
+
+
 LCC_RUSSIA = "+proj=lcc +lat_1=52 +lat_2=64 +lat_0=0 +lon_0=100 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
 
 
@@ -285,6 +302,66 @@ def _one_bus_route(territory):
             ],
         }
     ]
+
+
+@pytest.fixture
+def build_train_graph(monkeypatch):
+    territory = Polygon([(30, 59.90), (32, 59.90), (32, 59.92), (30, 59.92)])
+
+    def get_routes(polygon, types):
+        routes = []
+        for route_id, service in [(7, "high_speed"), (8, "regional")]:
+            route = _one_bus_route(polygon)[0]
+            route["id"] = route_id
+            route["tags"].update(route="train", ref=str(route_id), service=service)
+            routes.append(route)
+        return routes
+
+    monkeypatch.setattr(public_transport_builders, "get_routes_by_poly", get_routes)
+
+    def build(registry=DEFAULT_REGISTRY_W_TRAIN):
+        return get_public_transport_graph(transport_types="train", territory=territory, transport_registry=registry)
+
+    return build
+
+
+@pytest.mark.parametrize("keep_service", [True, False])
+def test_get_public_transport_graph_uses_train_service_for_travel(monkeypatch, build_train_graph, keep_service):
+    if not keep_service:
+        config = public_transport_builders.config
+        monkeypatch.setattr(config, "transport_route_attr", config.transport_route_attr - {"service"})
+
+    graph = build_train_graph()
+    assert set(graph.routes["mode"]) == {"train"}
+    if keep_service:
+        assert graph.routes["service"].to_dict() == {"osm:r7": "high_speed", "osm:r8": "regional"}
+    else:
+        assert "service" not in graph.routes.columns
+
+    assert set(graph.edges_gdf["type"]) == {"train", "boarding", "alighting"}
+    travel = graph.edges_gdf.query("type == 'train'").set_index("route_key")
+    assert travel.at["osm:r7", "length_meter"] == travel.at["osm:r8", "length_meter"]
+    assert travel.at["osm:r7", "time_min"] < travel.at["osm:r8", "time_min"] / 2
+    boarding = graph.edges_gdf.query("type == 'boarding'")
+    assert set(boarding["route_key"]) == {"osm:r7", "osm:r8"}
+    assert set(boarding["time_min"]) == {21.5}
+
+
+def test_get_public_transport_graph_uses_updated_variant_and_falls_back_after_removal(build_train_graph):
+    defaults = DEFAULT_REGISTRY_W_TRAIN
+    registry = TransportRegistry({key: defaults.get(key) for key in defaults.list_types()})
+    updated = registry.update("train:high_speed", dwell_min=10, avg_wait_time_min=1)
+    graph = build_train_graph(registry)
+    travel = graph.edges_gdf.query("type == 'train'").set_index("route_key")
+    length = travel.at["osm:r7", "length_meter"]
+    assert travel.at["osm:r7", "time_min"] == round(updated.travel_time_min(length), 3)
+    assert set(graph.edges_gdf.query("type == 'boarding'")["time_min"]) == {21.5}
+
+    registry.remove("train:high_speed")
+    graph = build_train_graph(registry)
+    travel = graph.edges_gdf.query("type == 'train'")
+    assert set(travel["route_key"]) == {"osm:r7", "osm:r8"}
+    assert set(travel["time_min"]) == {round(registry.get("train").travel_time_min(length), 3)}
 
 
 def test_get_public_transport_graph_builds_in_the_given_crs(monkeypatch):

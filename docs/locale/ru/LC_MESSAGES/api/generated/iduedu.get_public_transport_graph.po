@@ -35,14 +35,20 @@ msgstr "Идентификатор отношения или области OSM 
 msgid "Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given."
 msgstr "Геометрия границы в EPSG:4326 (или GeoDataFrame). Используется, если ``osm_id`` не задан."
 
-msgid "Transport mode(s) to include. Accepts:   - ``None``: include every type of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
-msgstr "Transport mode(s) to include. Accepts:   - ``None``: include every type of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+# | msgid "Transport mode(s) to include. Accepts:   - ``None``: include every
+# | type of ``transport_registry``;   - ``str``: a single OSM route type, e.g.
+# | ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\",
+# | \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with
+# | ``strip().lower()`` and validated against the registry."
+msgid "Transport mode(s) to include. Accepts:   - ``None``: include every mode of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+msgstr "Transport mode(s) to include. Accepts:   - ``None``: include every mode of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
 
 msgid "Transport mode(s) to include. Accepts:"
 msgstr "Включаемые виды транспорта. Принимает:"
 
-msgid "``None``: include every type of ``transport_registry``;"
-msgstr "``None``: все виды из ``transport_registry``;"
+# | msgid "``None``: include every type of ``transport_registry``;"
+msgid "``None``: include every mode of ``transport_registry``;"
+msgstr "``None``: все виды транспорта из ``transport_registry``;"
 
 msgid "``str``: a single OSM route type, e.g. ``\"bus\"``;"
 msgstr "``str``: один тип маршрута OSM, например ``\"bus\"``;"

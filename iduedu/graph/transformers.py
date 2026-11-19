@@ -12,9 +12,10 @@ from scipy.sparse import csgraph
 from scipy.spatial import cKDTree
 
 from iduedu.config import config
-from iduedu.graph.components import largest_component
-from iduedu.graph.editors import subgraph_by_nodes
+from iduedu.graph.components import _largest_strong_component_mask, largest_component
+from iduedu.graph.editors import _induced_tables, subgraph_by_nodes
 from iduedu.graph.graph_inputs import projected_crs
+from iduedu.graph.routes import used_routes
 from iduedu.graph.urban_graph import UrbanGraph
 
 logger = config.logger
@@ -60,18 +61,31 @@ def keep_largest_connected_component(
     if len(component) == len(graph.nodes_gdf):
         return graph.copy()
 
+    _log_component_removal(graph, mode, len(component))
+    return subgraph_by_nodes(graph, component)
+
+
+def _log_component_removal(graph, mode, retained):
     component_name = {
         "auto": "strongly connected" if graph.is_directed else "connected",
         "connected": "connected",
         "weak": "weakly connected",
         "strong": "strongly connected",
     }[mode]
-    removed = len(graph.nodes_gdf) - len(component)
+    removed = len(graph.nodes_gdf) - retained
     logger.info(
         f"Removing {removed} nodes outside the largest {component_name} component. "
-        f"Retaining {len(component)} of {len(graph.nodes_gdf)} nodes."
+        f"Retaining {retained} of {len(graph.nodes_gdf)} nodes."
     )
-    return subgraph_by_nodes(graph, component)
+
+
+def _restrict_to_largest_strong_component(graph: UrbanGraph) -> None:
+    """Restrict a freshly built directed graph with no cached adjacency."""
+    keep = _largest_strong_component_mask(graph)
+    if not keep.all():
+        _log_component_removal(graph, "strong", int(keep.sum()))
+        graph.nodes_gdf, graph.edges_gdf = _induced_tables(graph, keep)
+        graph.routes = used_routes(graph.routes, graph.edges_gdf)
 
 
 def to_directed(
@@ -93,19 +107,9 @@ def to_directed(
     if not isinstance(graph, UrbanGraph):
         raise TypeError(f"graph must be UrbanGraph, got {type(graph).__name__}")
 
-    edges = graph.edges_gdf.copy()
-    if not edges.empty:
-        if edge_direction_column not in edges.columns:
-            edges[edge_direction_column] = bool(default_direction_value)
-        else:
-            missing_direction = edges[edge_direction_column].isna()
-            if missing_direction.any():
-                edges.loc[missing_direction, edge_direction_column] = bool(default_direction_value)
-            edges[edge_direction_column] = edges[edge_direction_column].astype(bool)
-
     return UrbanGraph(
         nodes_gdf=graph.nodes_gdf.copy(),
-        edges_gdf=edges,
+        edges_gdf=_directed_edges(graph.edges_gdf, edge_direction_column, default_direction_value),
         is_multigraph=graph.is_multigraph,
         is_directed=True,
         edge_direction_column=edge_direction_column,
@@ -114,6 +118,19 @@ def to_directed(
         graph_type=graph.type,
         routes=graph.routes,
     )
+
+
+def _directed_edges(edges, column, default):
+    edges = edges.copy()
+    if not edges.empty:
+        if column not in edges.columns:
+            edges[column] = bool(default)
+        elif edges[column].dtype != bool:
+            missing_direction = edges[column].isna()
+            if missing_direction.any():
+                edges.loc[missing_direction, column] = bool(default)
+            edges[column] = edges[column].astype(bool)
+    return edges
 
 
 def to_undirected(graph: UrbanGraph) -> UrbanGraph:

@@ -17,8 +17,10 @@ msgstr ""
 msgid "iduedu.TransportSpec"
 msgstr "iduedu.TransportSpec"
 
-msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
-msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+# | msgid "Configuration of a single public-transport mode used to estimate
+# | travel time on graph edges."
+msgid "Configuration of a public-transport mode or service used to estimate travel time on graph edges."
+msgstr "Параметры вида общественного транспорта или варианта сообщения для оценки времени в пути на рёбрах графа."
 
 msgid "Each transport specification defines technical and operational characteristics of a mode (e.g. bus, tram, subway) that are used to compute per-edge travel time based on segment length, road speed limits, acceleration/braking behavior, and traffic conditions."
 msgstr "Каждая спецификация определяет технические и эксплуатационные характеристики вида транспорта (например, автобуса, трамвая, метро), по которым рассчитывается время в пути на ребре с учётом длины перегона, ограничений скорости на дороге, разгона и торможения и условий движения."
@@ -26,8 +28,8 @@ msgstr "Каждая спецификация определяет технич�
 msgid "Parameters"
 msgstr "Параметры"
 
-msgid "Transport type identifier, usually matching the OSM ``route=*`` value (e.g. ``\"bus\"``, ``\"tram\"``, ``\"subway\"``)."
-msgstr "Идентификатор вида транспорта, обычно совпадающий со значением OSM ``route=*`` (например, ``\"bus\"``, ``\"tram\"``, ``\"subway\"``)."
+msgid "Registry key, either a mode (e.g. ``\"train\"``) or ``\"<mode>:<service>\"`` for a variant matching the OSM route relation's ``service`` tag."
+msgstr "Ключ реестра: имя вида транспорта (например, ``\"train\"``) или ``\"<mode>:<service>\"`` для варианта, соответствующего тегу ``service`` отношения маршрута OSM."
 
 msgid "type"
 msgstr "тип"
@@ -71,8 +73,11 @@ msgstr ":py:class:`float | None`"
 msgid "Segment length at which the free speed is halfway from ``base_speed_kmh`` to ``long_speed_kmh``, in metres. Set together with ``long_speed_kmh``."
 msgstr "Длина перегона в метрах, при которой свободная скорость проходит половину пути от ``base_speed_kmh`` к ``long_speed_kmh``. Задаётся вместе с ``long_speed_kmh``."
 
-msgid "Average passenger waiting time in minutes. It is assigned to directed ``boarding`` edges built from OSM data."
-msgstr "Среднее время ожидания пассажира в минутах. Назначается ориентированным рёбрам ``boarding``, построенным по данным OSM."
+# | msgid "Average passenger waiting time in minutes. It is assigned to
+# directed
+# | ``boarding`` edges built from OSM data."
+msgid "Average passenger waiting time in minutes. It is assigned to directed ``boarding`` edges built from OSM data using the plain mode specification."
+msgstr "Среднее время ожидания пассажира в минутах. Для ориентированных рёбер ``boarding``, построенных по данным OSM, значение берётся из базовой спецификации вида транспорта."
 
 msgid "https://iduclub.github.io/IduEdu/examples/transport_registry.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/transport_registry.html"

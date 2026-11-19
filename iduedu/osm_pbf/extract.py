@@ -42,7 +42,7 @@ DEFAULT_WAY_KEYS = ("highway", "railway", "public_transport")
 
 def default_route_values() -> tuple[str, ...]:
     """OSM ``route`` values of every mode in ``DEFAULT_REGISTRY_W_TRAIN``, aliases included."""
-    return tuple(sorted({v for t in DEFAULT_REGISTRY_W_TRAIN.list_types() for v in osm_route_values(t)}))
+    return tuple(sorted({v for t in DEFAULT_REGISTRY_W_TRAIN.list_modes() for v in osm_route_values(t)}))
 
 
 class _City:  # pylint: disable=too-many-instance-attributes

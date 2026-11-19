@@ -307,6 +307,36 @@ def test_join_pt_walk_graph_collapses_sequence_attrs_with_different_lengths():
     assert row["route_names"] == "Alpha"
 
 
+def test_join_pt_walk_graph_combines_attributes_of_platforms_at_the_same_node():
+    walk_graph = _walk_line_graph((0.0, 30.0, 60.0))
+    pt_nodes = gpd.GeoDataFrame(
+        {
+            "type": ["platform"] * 4,
+            "name": ["Shared", "Shared", None, "Single"],
+            "mode": ["tram", "bus", "tram", "bus"],
+            "route_refs": [["B", None, "A"], ("C", "B"), float("nan"), ["D"]],
+            "shelter": ["yes", None, None, None],
+        },
+        geometry=[Point(0, 0), Point(0, 1), Point(0, 2), Point(60, 0)],
+        index=[203, 201, 202, 200],
+        crs=CRS,
+    )
+    pt_graph = UrbanGraph(pt_nodes, gpd.GeoDataFrame(), is_multigraph=True, is_directed=True, crs=CRS)
+
+    joined = join_pt_walk_graph(pt_graph, walk_graph, keep_largest_subgraph=False, add_link_edge=False)
+
+    shared = joined.nodes_gdf.loc[100]
+    assert shared["name"] == "Shared"
+    assert shared["mode"] == ["tram", "bus"]
+    assert shared["route_refs"] == ["B", "A", "C"]
+    assert shared["shelter"] == "yes"
+    single = joined.nodes_gdf.loc[102]
+    assert single["name"] == "Single"
+    assert single["mode"] == "bus"
+    assert single["route_refs"] == "D"
+    assert pd.isna(single["shelter"])
+
+
 def test_get_intermodal_graph_defaults_walk_keep_largest_subgraph_to_false(monkeypatch):
     calls = {}
 

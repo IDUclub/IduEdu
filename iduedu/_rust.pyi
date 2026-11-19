@@ -218,6 +218,18 @@ def merge_oriented_chains(
     two_way: npt.NDArray[np.bool_],
     keep: npt.NDArray[np.bool_],
 ) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.bool_], npt.NDArray[np.int64]]: ...
+def split_edges(
+    xy: npt.NDArray[np.float64],
+    coord_offsets: npt.NDArray[np.int64],
+    distances: npt.NDArray[np.float64],
+    cut_offsets: npt.NDArray[np.int64],
+) -> tuple[
+    npt.NDArray[np.float64],  # flat XY coordinates
+    npt.NDArray[np.int64],  # piece coordinate offsets
+    npt.NDArray[np.int64],  # source edge positions
+    npt.NDArray[np.int64],  # start cut positions (-1 for u)
+    npt.NDArray[np.int64],  # end cut positions (-2 for v)
+]: ...
 
 PtRoutes = tuple[
     npt.NDArray[np.int64],  # node route

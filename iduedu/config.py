@@ -108,7 +108,7 @@ class Config:
         self.transport_useful_edges_attr = frozenset({"name"})
         # Tags of a route relation that become columns of the routes table of a public-transport graph.
         self.transport_route_attr = frozenset(
-            {"ref", "name", "from", "to", "network", "operator", "colour", "interval"}
+            {"ref", "name", "from", "to", "network", "operator", "colour", "interval", "service"}
         )
 
         # --- Logging ---

@@ -118,14 +118,18 @@ msgstr "Учесть один раз то, что несколько объед�
 msgid ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
 msgstr ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
 
-msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
-msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+# | msgid "Configuration of a single public-transport mode used to estimate
+# | travel time on graph edges."
+msgid "Configuration of a public-transport mode or service used to estimate travel time on graph edges."
+msgstr "Параметры вида общественного транспорта или варианта сообщения для оценки времени в пути на рёбрах графа."
 
 msgid ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
 msgstr ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
 
-msgid "Registry of available public-transport modes and their specifications."
-msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+# | msgid "Registry of available public-transport modes and their
+# | specifications."
+msgid "Registry of public-transport specifications for modes and service variants."
+msgstr "Реестр спецификаций видов общественного транспорта и вариантов сообщения."
 
 msgid ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
 msgstr ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
