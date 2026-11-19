@@ -184,13 +184,14 @@ rust/                — Rust core, compiled into iduedu._rust (see rust/README.
   src/chains.rs      — one chain kernel (merge_oriented): street segments into junction-to-junction edges and the
                        edges of a finished graph (simplify_graph); only across equal tags, two-way edges turned,
                        one-way edges head to tail
+  src/split.rs       — split_edges(): pieces and endpoint cut positions for object projection in graph/editors.py
   src/pt_routes.rs   — public-transport routes (ground and subway), all at once: ways stitched into paths,
                        stops paired with platforms, stop/platform nodes, travel and boarding edges (geometry as
                        GEOS computes it)
   src/pbf.rs         — .pbf reading (osmpbf, parallel, block index): ways by tag filter, nodes, relations, header
   src/pbf_write.rs   — .pbf writing: per-territory extracts (osm_pbf/extract.py) and files from element lists
   src/lib.rs         — PyO3 bindings: CsrGraph, build_csr, reconstruct_paths, *_components, PbfFile, write_pbf,
-                       merge_oriented_chains, parse_pt_routes
+                       merge_oriented_chains, split_edges, parse_pt_routes
 ```
 
 ### Data flow
@@ -265,6 +266,8 @@ their outputs (`nb_execution_mode = "off"`).
 - NetworkX is an **optional** dependency — always soft-import it inside `try/except ModuleNotFoundError` and check
   `exc.name == "networkx"` before re-raising
 - Compiled kernels live in the Rust crate `rust/` (`csr.rs`, `dijkstra.rs`, `components.rs`, bindings in `lib.rs`)
-  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`, `within.py`, `centrality.py`, `simplify.py`), `osm_pbf/` (`reader.py`, `extract.py`), the edge merging of `drive_walk_builders.py` and the route parser of `overpass/parsers.py`, never directly
+  and are called only through the `graph/` layer (`adjacency.py`, `routing.py`, `components.py`, `within.py`,
+  `centrality.py`, `simplify.py`, `editors.py`), `osm_pbf/` (`reader.py`, `extract.py`), the edge merging of
+  `drive_walk_builders.py` and the route parser of `overpass/parsers.py`, never directly
   from builders or the public API. Keep `iduedu/_rust.pyi` in sync with the bindings. Kernels release the GIL and
   run parallel work on rayon; `max_workers` maps to the number of rayon threads

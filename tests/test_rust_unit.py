@@ -3,9 +3,12 @@ import pickle
 import numpy as np
 import pandas as pd
 import pytest
+import shapely
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components as scipy_components
 from scipy.sparse.csgraph import dijkstra as scipy_dijkstra
+from shapely.geometry import LineString
+from shapely.ops import substring
 
 from iduedu import UrbanGraph, _rust, single_source_dijkstra
 from iduedu.graph import routing
@@ -14,6 +17,49 @@ from tests.factories import CRS, _edges, _nodes
 pytestmark = [pytest.mark.unit, pytest.mark.rust]
 
 INF = np.float32(np.inf)
+
+
+def test_split_edges_matches_shapely_substring():
+    rng = np.random.default_rng(43)
+    lines = [
+        LineString([(0, 0), (3, 0), (3, 4), (3, 4), (6, 4)]),
+        LineString([(0, 0), (100, 0)]),
+        LineString([(7, 7), (7, 7)]),
+    ]
+    cuts = [
+        [0, 0.000005, 3, 7, 9.999995, 10],
+        [0, 25, 25.00009, 25.00018, 100],
+        [0],
+    ]
+    for size in range(2, 75):
+        # Include large offsets and small steps to exercise interpolation at ordinary map coordinates.
+        line = LineString([200000, 6700000] + np.cumsum(rng.normal(size=(size, 2)), axis=0))
+        lines.append(line)
+        cuts.append(np.sort(rng.uniform(0, line.length, size=size * 2)))
+
+    coord_offsets = np.r_[0, np.cumsum(shapely.get_num_coordinates(lines), dtype=np.int64)]
+    cut_offsets = np.r_[0, np.cumsum([len(edge_cuts) for edge_cuts in cuts], dtype=np.int64)]
+    coords, offsets, sources, starts, ends = _rust.split_edges(
+        shapely.get_coordinates(lines).ravel(), coord_offsets, np.concatenate(cuts), cut_offsets
+    )
+    pieces = shapely.linestrings(coords.reshape(-1, 2), indices=np.repeat(np.arange(len(sources)), np.diff(offsets)))
+
+    expected = []
+    for source, (line, edge_cuts) in enumerate(zip(lines, cuts)):
+        eps = line.length * 1e-6
+        cuts_kept = []
+        for i, distance in enumerate(edge_cuts):
+            if not cuts_kept or distance - cuts_kept[-1][0] > eps:
+                cuts_kept.append((distance, cut_offsets[source] + i))
+        boundaries = [(0, -1)]
+        boundaries.extend((distance, i) for distance, i in cuts_kept if eps < distance < line.length - eps)
+        boundaries.append((line.length, -2))
+        for (start, start_cut), (end, end_cut) in zip(boundaries, boundaries[1:]):
+            piece = substring(line, start, end)
+            if piece.length > 0:
+                expected.append((source, start_cut, end_cut, piece.wkb))
+
+    assert list(zip(sources, starts, ends, shapely.to_wkb(pieces))) == expected
 
 
 def _random_matrix(n=60, density=0.08, seed=0):

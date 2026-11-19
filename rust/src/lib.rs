@@ -16,6 +16,7 @@ pub mod pbf;
 pub mod pbf_write;
 pub mod penalty;
 pub mod pt_routes;
+mod split;
 pub mod yen;
 
 use std::collections::HashMap;
@@ -1518,6 +1519,59 @@ type PtRoutesPy<'py> = (
     Vec<(usize, String)>,
 );
 
+type SplitPiecesPy<'py> = (
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+);
+
+/// Split XY lines at sorted cut distances. Endpoints are cut positions, or -1/-2 for u/v.
+#[pyfunction]
+fn split_edges<'py>(
+    py: Python<'py>,
+    xy: PyReadonlyArray1<'py, f64>,
+    coord_offsets: PyReadonlyArray1<'py, i64>,
+    distances: PyReadonlyArray1<'py, f64>,
+    cut_offsets: PyReadonlyArray1<'py, i64>,
+) -> PyResult<SplitPiecesPy<'py>> {
+    let (xy, coords, cuts, offsets) = (
+        xy.as_slice()?,
+        coord_offsets.as_slice()?,
+        distances.as_slice()?,
+        cut_offsets.as_slice()?,
+    );
+    check_offsets(coords, xy.len() / 2, "coord_offsets")?;
+    check_offsets(offsets, cuts.len(), "cut_offsets")?;
+    if xy.len() % 2 != 0
+        || coords.len() != offsets.len()
+        || coords.windows(2).any(|w| w[1] - w[0] < 2)
+    {
+        return Err(PyValueError::new_err(
+            "Expected at least two XY coordinates per edge and one cut range per edge",
+        ));
+    }
+    if offsets.windows(2).any(|w| {
+        let edge_cuts = &cuts[w[0] as usize..w[1] as usize];
+        edge_cuts.iter().any(|cut| !cut.is_finite() || *cut < 0.0)
+            || edge_cuts.windows(2).any(|w| w[0] > w[1])
+    }) || xy.iter().any(|value| !value.is_finite())
+    {
+        return Err(PyValueError::new_err(
+            "Expected finite coordinates and sorted, finite, nonnegative cuts per edge",
+        ));
+    }
+    let pieces = py.detach(|| split::split_edges(xy, coords, cuts, offsets));
+    Ok((
+        pieces.coords.into_pyarray(py),
+        pieces.offsets.into_pyarray(py),
+        pieces.edges.into_pyarray(py),
+        pieces.starts.into_pyarray(py),
+        pieces.ends.into_pyarray(py),
+    ))
+}
+
 /// Check that `offsets` run from 0 to `len` without going back.
 fn check_offsets(offsets: &[i64], len: usize, name: &str) -> PyResult<()> {
     let ok = offsets.first() == Some(&0)
@@ -1726,6 +1780,7 @@ fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PbfFile>()?;
     m.add_function(wrap_pyfunction!(write_pbf, m)?)?;
     m.add_function(wrap_pyfunction!(merge_oriented_chains, m)?)?;
+    m.add_function(wrap_pyfunction!(split_edges, m)?)?;
     m.add_function(wrap_pyfunction!(parse_pt_routes, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())

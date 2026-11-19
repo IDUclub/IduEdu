@@ -91,10 +91,33 @@ def strongly_connected_components(graph: UrbanGraph) -> list[set[Any]]:
         return connected_components(graph)
 
     nodelist = graph.nodes_gdf.index.to_list()
+    return _components_from_labels(nodelist, _strong_component_labels(graph, nodelist))
+
+
+def _strong_component_labels(graph, nodelist):
     adjacency = build_boolean_adjacency_matrix(graph, nodelist=nodelist, weak=False)
     reverse = adjacency.T.tocsr()
-    labels = _rust.strongly_connected_components(*_pattern(adjacency), *_pattern(reverse))
-    return _components_from_labels(nodelist, labels)
+    return _rust.strongly_connected_components(*_pattern(adjacency), *_pattern(reverse))
+
+
+def _largest_strong_component_mask(graph):
+    """Choose the largest strong component with the same textual tie-break as the public API."""
+    nodes = graph.nodes_gdf.index.to_list()
+    labels = _strong_component_labels(graph, nodes)
+    if labels.size == 0:
+        return np.empty(0, dtype=bool)
+    sizes = np.bincount(labels)
+    largest = np.flatnonzero(sizes == sizes.max())
+    label = largest[0]
+    if len(largest) > 1:
+        tied = np.isin(labels, largest)
+        # Position breaks equal repr ties in the insertion order of the component sets.
+        first_positions = np.full(len(sizes), len(nodes), dtype=np.intp)
+        positions = np.flatnonzero(tied)
+        np.minimum.at(first_positions, labels[positions], positions)
+        best = min((repr(nodes[i]), first_positions[labels[i]], labels[i]) for i in positions)
+        label = best[2]
+    return labels == label
 
 
 def number_connected_components(graph: UrbanGraph) -> int:
