@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v3.3.1 (2026-11-19)
+
+### Bug Fixes
+
+- Public-transport nodes keep the names and ids of their stops; crs of the PT graph
+  ([#37](https://github.com/IDUclub/IduEdu/pull/37),
+  [`2948c00`](https://github.com/IDUclub/IduEdu/commit/2948c007acfad9f7d5982f168f174e94d5f33918))
+
+- OSM stop, platform, station and entrance nodes keep name, ref, local_ref and wheelchair of their
+  OSM object and osm_id (node/<id>, way/<id>, relation/<id>); a platform made up from its stop takes
+  the stop's tags but no osm_id. The route query also prints the tags of the member nodes of ground
+  routes (Overpass and PBF). - GTFS nodes keep name, stop_code, platform_code and
+  wheelchair_boarding; route stops the name of their stop. - get_public_transport_graph(crs=...): a
+  projected CRS for the graph, by default the UTM zone of the territory as before; one CRS for
+  graphs built in parts, or a conformal CRS of a large area for long routes. - nx_graph2urban_graph
+  keeps the node attributes as columns of the node table. - Docs: which edges have a length_meter
+  other than the length of their geometry.
+
+
 ## v3.3.0 (2026-11-19)
 
 ### Continuous Integration
