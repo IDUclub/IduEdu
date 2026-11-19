@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_661fff2b98f2e16e_transformers_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-19 11:01 +0000
+            created at 2026-11-19 15:53 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -507,7 +507,7 @@
     <p class="pln"><span class="n"><a id="t423" href="#t423">423</a></span><span class="t">        <span class="com"># Imported here: the builders import the graph package.</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t424" href="#t424">424</a></span><span class="t">        <span class="key">from</span> <span class="nam">iduedu</span><span class="op">.</span><span class="nam">graph_builders</span><span class="op">.</span><span class="nam">gtfs_builders</span> <span class="key">import</span> <span class="nam">GTFS_ROUTE_TYPES</span>  <span class="com"># pylint: disable=import-outside-toplevel</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t425" href="#t425">425</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t426" href="#t426">426</a></span><span class="t">        <span class="nam">known</span> <span class="op">=</span> <span class="nam">set</span><span class="op">(</span><span class="nam">DEFAULT_REGISTRY_W_TRAIN</span><span class="op">.</span><span class="nam">list_types</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|</span> <span class="nam">set</span><span class="op">(</span><span class="nam">GTFS_ROUTE_TYPES</span><span class="op">.</span><span class="nam">values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t426" href="#t426">426</a></span><span class="t">        <span class="nam">known</span> <span class="op">=</span> <span class="nam">set</span><span class="op">(</span><span class="nam">DEFAULT_REGISTRY_W_TRAIN</span><span class="op">.</span><span class="nam">list_modes</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">|</span> <span class="nam">set</span><span class="op">(</span><span class="nam">GTFS_ROUTE_TYPES</span><span class="op">.</span><span class="nam">values</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t427" href="#t427">427</a></span><span class="t">        <span class="nam">modes</span> <span class="op">=</span> <span class="op">[</span><span class="nam">mode</span> <span class="key">for</span> <span class="nam">mode</span> <span class="key">in</span> <span class="nam">edge_type</span><span class="op">.</span><span class="nam">dropna</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">unique</span><span class="op">(</span><span class="op">)</span> <span class="key">if</span> <span class="nam">mode</span> <span class="key">in</span> <span class="nam">known</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t428" href="#t428">428</a></span><span class="t">    <span class="nam">rows</span> <span class="op">=</span> <span class="op">{</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t429" href="#t429">429</a></span><span class="t">    <span class="key">for</span> <span class="nam">mode</span> <span class="key">in</span> <span class="nam">modes</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -680,7 +680,7 @@
             <a class="nav" href="z_661fff2b98f2e16e_transformers_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-19 11:01 +0000
+            created at 2026-11-19 15:53 +0000
         </p>
     </div>
 </footer>
