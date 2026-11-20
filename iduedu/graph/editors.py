@@ -510,24 +510,16 @@ def _projection_pieces(edges, distances, cut_offsets):
     return sources, starts, ends, pieces
 
 
-def _projection_edge_frame(u, v, geometries, speed, keys=None):
-    # Python's round rounds the binary float directly, including values around a decimal tie.
-    lengths = [round(length, 3) for length in shapely.length(geometries).tolist()]
+def _projection_edge_frame(u, v, geometries, lengths, times, keys=None):
     frame = pd.DataFrame(
-        {
-            "u": u.tolist(),
-            "v": v.tolist(),
-            "length_meter": lengths,
-            "time_min": [round(length / speed, 2) for length in lengths],
-            "geometry": geometries,
-        }
+        {"u": u.tolist(), "v": v.tolist(), "length_meter": lengths, "time_min": times, "geometry": geometries}
     )
     if keys is not None:
         frame["k"] = keys
     return frame
 
 
-def _split_projected_edges(projections, edges, key_cols, speed):
+def _split_projected_edges(projections, edges, key_cols):
     if projections.empty:
         return pd.DataFrame(), pd.DataFrame(columns=key_cols)
 
@@ -535,18 +527,21 @@ def _split_projected_edges(projections, edges, key_cols, speed):
     cut_counts = cuts.groupby("edge_index", sort=False).size()
     if not edges.index.is_unique:
         raise pd.errors.MergeError("Merge keys are not unique in right dataset; not a many-to-one merge")
-    edge_rows = edges.loc[cut_counts.index][key_cols + ["geometry"]]
+    edge_rows = edges.loc[cut_counts.index][key_cols + ["geometry", "length_meter", "time_min"]]
+    edge_geometries = edge_rows["geometry"].to_numpy()
     cut_offsets = np.r_[0, cut_counts.to_numpy(dtype=np.int64).cumsum()]
     cut_nodes = cuts["projection_node_id"].to_numpy(dtype=object)
-    sources, starts, ends, pieces = _projection_pieces(
-        edge_rows["geometry"].to_numpy(), cuts["project_dist"].to_numpy(), cut_offsets
-    )
+    sources, starts, ends, pieces = _projection_pieces(edge_geometries, cuts["project_dist"].to_numpy(), cut_offsets)
     u = np.where(starts < 0, edge_rows["u"].to_numpy(dtype=object)[sources], cut_nodes[np.maximum(starts, 0)])
     v = np.where(ends < 0, edge_rows["v"].to_numpy(dtype=object)[sources], cut_nodes[np.maximum(ends, 0)])
     keep = u != v
     sources = sources[keep]
+    pieces = pieces[keep]
+    fractions = shapely.length(pieces) / shapely.length(edge_geometries)[sources]
+    lengths = edge_rows["length_meter"].to_numpy(dtype=float, na_value=np.nan)[sources] * fractions
+    times = edge_rows["time_min"].to_numpy(dtype=float, na_value=np.nan)[sources] * fractions
     keys = edge_rows["k"].to_numpy()[sources].tolist() if "k" in key_cols else None
-    split = _projection_edge_frame(u[keep], v[keep], pieces[keep], speed, keys)
+    split = _projection_edge_frame(u[keep], v[keep], pieces, lengths, times, keys)
     split["edge_index"] = edge_rows.index.to_numpy()[sources]
     deleted = pd.DataFrame({key: edge_rows[key].tolist() for key in key_cols}).drop_duplicates()
     return split, deleted
@@ -571,10 +566,15 @@ def _projection_connectors(objects, targets, object_nodes, target_nodes, speed, 
         lines = np.asarray([LineString(pair) for pair in paired], dtype=object)
     else:
         lines = shapely.linestrings(shapely.get_coordinates(flat).reshape(-1, 2, 2))
-    keep = ~(shapely.length(lines) <= 0)
+    geometric_lengths = shapely.length(lines)
+    keep = ~(geometric_lengths <= 0)
     if not keep.any():
         return pd.DataFrame()
-    connectors = _projection_edge_frame(u[keep], v[keep], lines[keep], speed, 0 if topology["is_multigraph"] else None)
+    # Python's round rounds the binary float directly, including values around a decimal tie.
+    lengths = [round(length, 3) for length in geometric_lengths[keep].tolist()]
+    times = [round(length / speed, 2) for length in lengths]
+    keys = 0 if topology["is_multigraph"] else None
+    connectors = _projection_edge_frame(u[keep], v[keep], lines[keep], lengths, times, keys)
     if direction_column is not None:
         connectors.insert(0, direction_column, False)
     return connectors
@@ -695,6 +695,11 @@ def project_objects2urban_graph(
     for buildings, services and other polygon or point layers with a stable unique
     index.
 
+    Each split piece inherits the original edge's ``length_meter`` and ``time_min`` in proportion to its share
+    of the geometric length in the CRS used for splitting, without rounding. Missing costs remain missing.
+    Connector edges use their geometric length rounded to three decimal places and that rounded length
+    divided by ``speed_m_per_min``, with the time rounded to two decimal places.
+
     Args:
         graph_gdf: Source urban graph.
         objects_gdf: Objects to connect to the graph. The index should be a stable
@@ -776,7 +781,7 @@ def _project_objects(
     match_edges = gdf_edges
     if match_edges.crs != local_crs:
         if not match_edges.empty:
-            match_edges = match_edges[key_cols + ["geometry"]]
+            match_edges = match_edges[key_cols + ["geometry", "length_meter", "time_min"]]
         match_edges = match_edges.to_crs(local_crs)
     if gdf_nodes.crs != local_crs:
         gdf_nodes = gdf_nodes.to_crs(local_crs)
@@ -829,7 +834,7 @@ def _project_objects(
     nodes, connectors, mapping = _projection_attachments(
         endpoints, projections, attachments, speed_m_per_min, add_link_edge, next_id, direction_column, topology
     )
-    split, deleted = _split_projected_edges(projections, match_edges, key_cols, speed_m_per_min)
+    split, deleted = _split_projected_edges(projections, match_edges, key_cols)
     edges = _restore_split_attributes(gdf_edges, connectors, split, direction_column)
     new_edges = gpd.GeoDataFrame(edges, geometry="geometry", crs=local_crs) if not edges.empty else None
     new_nodes = nodes if not nodes.empty else None

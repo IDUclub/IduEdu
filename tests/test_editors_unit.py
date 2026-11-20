@@ -181,6 +181,66 @@ def test_project_objects_splits_nearest_edge_and_connects_object():
     assert new_graph.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
+@pytest.mark.parametrize("cut_x", [(17.123,), (17.123, 61.234)], ids=["one-cut", "two-cuts"])
+@pytest.mark.parametrize(
+    "edge_type, length, time, route_key",
+    [
+        pytest.param("drive", 100.0, 0.083, None, id="drive"),
+        pytest.param("subway", 150.0, 0.051, "subway:1", id="subway"),
+        pytest.param("boarding", 0.0, 4.5, "subway:1", id="boarding"),
+        pytest.param("walk", np.nan, np.nan, None, id="missing-costs"),
+    ],
+)
+def test_projection_preserves_split_edge_costs(cut_x, edge_type, length, time, route_key):
+    coords = {0: (0.0, 0.0), 1: (100.0, 0.0)}
+    attrs = {"type": edge_type, "route_key": route_key, "name": "example", "speed_kmh": 72, "custom": "value"}
+    edge = {"u": 0, "v": 1, "oneway": True, "length_meter": length, "time_min": time, **attrs}
+    graph = UrbanGraph(
+        _nodes(coords),
+        _edges(coords, [edge]),
+        is_multigraph=False,
+        is_directed=True,
+        edge_direction_column="oneway",
+        crs=CRS,
+    )
+    objects = gpd.GeoDataFrame(geometry=[Point(x, 7.1259) for x in cut_x], crs=CRS)
+
+    changes, mapping = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+    result = apply_urban_graph_changes(graph, changes)
+    assert changes.edges_to_delete[["u", "v"]].values.tolist() == [[0, 1]]
+    connectors = result.edges_gdf.loc[result.edges_gdf["u"].isin(mapping)]
+    pieces = result.edges_gdf.drop(index=connectors.index)
+    assert len(pieces) == len(cut_x) + 1
+    assert pieces["oneway"].tolist() == [True] * len(pieces)
+    assert pieces["u"].tolist() == [0, *pieces["v"].iloc[:-1]]
+    assert pieces["v"].iloc[-1] == 1
+    for name, value in attrs.items():
+        assert pieces[name].tolist() == [value] * len(pieces)
+
+    fractions = np.diff((0.0, *cut_x, 100.0)) / 100.0
+    for name, value in (("length_meter", length), ("time_min", time)):
+        if np.isnan(value):
+            assert pieces[name].isna().all()
+        else:
+            assert pieces[name].to_numpy() == pytest.approx(fractions * value, rel=1e-12, abs=0)
+            assert pieces[name].sum() == pytest.approx(value, rel=1e-12, abs=0)
+
+    assert connectors["oneway"].tolist() == [False] * len(cut_x)
+    assert connectors["length_meter"].tolist() == [7.126] * len(cut_x)
+    assert connectors["time_min"].tolist() == [0.07] * len(cut_x)
+
+
+def test_projection_does_not_split_zero_length_edge():
+    coords = {0: (0.0, 0.0), 1: (0.0, 0.0)}
+    graph = _two_node_graph(coords, [{"u": 0, "v": 1, "time_min": 2.0}])
+    objects = gpd.GeoDataFrame(geometry=[Point(0.0, 1.0)], crs=CRS)
+
+    changes, _ = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+
+    assert changes.edges_to_delete.empty
+    assert len(changes.edges_gdf) == 1  # Only the connector was added.
+
+
 def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     graph = undirected_line_graph()
     objects = gpd.GeoDataFrame(index=[1000], geometry=[Point(0.0, 3.0)], crs=CRS)

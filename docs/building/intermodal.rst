@@ -63,8 +63,9 @@ Method
    have a direction.
 3. Every platform-like node of the public-transport graph (``platform``, ``subway_entry_exit``,
    ``station_entry_exit``) is projected onto the nearest walking edge within ``max_dist`` with
-   :func:`project_objects2urban_graph`. The edge is split at the projection point, and with ``add_link_edge`` a
-   link edge at walking speed joins the platform to that point.
+   :func:`project_objects2urban_graph`. The pieces share the original walking edge's length and time in proportion
+   to their geometric lengths. With ``add_link_edge``, a link edge at walking speed joins the platform to the
+   projection point.
 4. Projected platforms take the ids of their walk nodes and keep their attributes; the other public-transport
    nodes get new ids after those of the walk graph. Public-transport edges are renumbered to match, and the two
    edge tables are joined.
