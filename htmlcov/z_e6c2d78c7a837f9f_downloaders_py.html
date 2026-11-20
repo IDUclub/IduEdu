@@ -56,10 +56,10 @@
         </aside>
         <h2>
             <span class="text">269 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">200<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">69<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">201<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">68<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">58<span class="text"> excluded</span></button>
-            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">12<span class="text"> partial</span></button>
+            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">10<span class="text"> partial</span></button>
         </h2>
         <p class="text">
             <a id="prevFileLink" class="nav" href="z_e6c2d78c7a837f9f_cache_py.html">&#xab; prev</a> &nbsp; &nbsp;
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_e6c2d78c7a837f9f_parsers_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-19 15:53 +0000
+            created at 2026-11-20 08:03 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -366,7 +366,7 @@
     <p class="run"><span class="n"><a id="t282" href="#t282">282</a></span><span class="t">        <span class="nam">geometries_inners</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t283" href="#t283">283</a></span><span class="t">        <span class="nam">geometries_outers</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t284" href="#t284">284</a></span><span class="t">        <span class="key">for</span> <span class="nam">member</span> <span class="key">in</span> <span class="nam">element</span><span class="op">[</span><span class="str">&quot;members&quot;</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t285" href="#t285">285</a></span><span class="t">            <span class="key">if</span> <span class="str">&quot;geometry&quot;</span> <span class="key">in</span> <span class="nam">member</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">285&#x202F;&#x219B;&#x202F;284</span><span class="annotate long">line 285 didn't jump to line 284 because the condition on line 285 was always true</span></span></p>
+    <p class="run"><span class="n"><a id="t285" href="#t285">285</a></span><span class="t">            <span class="key">if</span> <span class="str">&quot;geometry&quot;</span> <span class="key">in</span> <span class="nam">member</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t286" href="#t286">286</a></span><span class="t">                <span class="key">if</span> <span class="nam">member</span><span class="op">[</span><span class="str">&quot;role&quot;</span><span class="op">]</span> <span class="op">==</span> <span class="str">&quot;outer&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t287" href="#t287">287</a></span><span class="t">                    <span class="nam">geometries_outers</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t288" href="#t288">288</a></span><span class="t">                        <span class="nam">LineString</span><span class="op">(</span><span class="op">[</span><span class="op">(</span><span class="nam">coords</span><span class="op">[</span><span class="str">&quot;lon&quot;</span><span class="op">]</span><span class="op">,</span> <span class="nam">coords</span><span class="op">[</span><span class="str">&quot;lat&quot;</span><span class="op">]</span><span class="op">)</span> <span class="key">for</span> <span class="nam">coords</span> <span class="key">in</span> <span class="nam">member</span><span class="op">[</span><span class="str">&quot;geometry&quot;</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -600,8 +600,8 @@
     <p class="run"><span class="n"><a id="t516" href="#t516">516</a></span><span class="t">        <span class="nam">source</span> <span class="op">=</span> <span class="nam">_pbf_source</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t517" href="#t517">517</a></span><span class="t">        <span class="nam">tables</span> <span class="op">=</span> <span class="op">[</span><span class="nam">source</span><span class="op">.</span><span class="nam">ways_table</span><span class="op">(</span><span class="nam">polygon</span><span class="op">,</span> <span class="nam">one</span><span class="op">)</span> <span class="key">for</span> <span class="nam">one</span> <span class="key">in</span> <span class="nam">filters</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t518" href="#t518">518</a></span><span class="t">        <span class="nam">ways</span> <span class="op">=</span> <span class="nam">tables</span><span class="op">[</span><span class="num">0</span><span class="op">]</span> <span class="key">if</span> <span class="nam">len</span><span class="op">(</span><span class="nam">tables</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span> <span class="key">else</span> <span class="nam">pd</span><span class="op">.</span><span class="nam">concat</span><span class="op">(</span><span class="nam">tables</span><span class="op">,</span> <span class="nam">ignore_index</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t519" href="#t519">519</a></span><span class="t">        <span class="key">if</span> <span class="nam">len</span><span class="op">(</span><span class="nam">tables</span><span class="op">)</span> <span class="op">&gt;</span> <span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">519&#x202F;&#x219B;&#x202F;520</span><span class="annotate long">line 519 didn't jump to line 520 because the condition on line 519 was never true</span></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t520" href="#t520">520</a></span><span class="t">            <span class="nam">ways</span> <span class="op">=</span> <span class="nam">ways</span><span class="op">.</span><span class="nam">drop_duplicates</span><span class="op">(</span><span class="nam">subset</span><span class="op">=</span><span class="str">&quot;id&quot;</span><span class="op">,</span> <span class="nam">ignore_index</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t519" href="#t519">519</a></span><span class="t">        <span class="key">if</span> <span class="nam">len</span><span class="op">(</span><span class="nam">tables</span><span class="op">)</span> <span class="op">&gt;</span> <span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t520" href="#t520">520</a></span><span class="t">            <span class="nam">ways</span> <span class="op">=</span> <span class="nam">ways</span><span class="op">.</span><span class="nam">drop_duplicates</span><span class="op">(</span><span class="nam">subset</span><span class="op">=</span><span class="str">&quot;id&quot;</span><span class="op">,</span> <span class="nam">ignore_index</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t521" href="#t521">521</a></span><span class="t">        <span class="nam">logger</span><span class="op">.</span><span class="nam">info</span><span class="op">(</span><span class="str">&quot;Network successfully read!&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t522" href="#t522">522</a></span><span class="t">        <span class="key">return</span> <span class="nam">ways</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t523" href="#t523">523</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -692,7 +692,7 @@
             <a class="nav" href="z_e6c2d78c7a837f9f_parsers_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-19 15:53 +0000
+            created at 2026-11-20 08:03 +0000
         </p>
     </div>
 </footer>
