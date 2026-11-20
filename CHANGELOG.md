@@ -2,6 +2,40 @@
 
 <!-- version list -->
 
+## v3.3.3 (2026-11-20)
+
+### Bug Fixes
+
+- Split edges keep their cost; distance arrays without pandas; faster point placement
+  ([#41](https://github.com/IDUclub/IduEdu/pull/41),
+  [`0b744ed`](https://github.com/IDUclub/IduEdu/commit/0b744edd243ba1b0cc857a59f881857c161ee629))
+
+* perf: distance arrays without pandas; faster point placement
+
+Routing: od_matrix, iter_od_matrix, dijkstra_parallel, single_source_dijkstra and
+  multi_source_dijkstra take distance_format="frame" (default, unchanged), "dense" (NumPy array, inf
+  where unreachable) or "sparse" (SciPy CSR array of the reachable pairs, explicit zeros kept), with
+  output="distances" or "both". On St Petersburg (422k nodes, 3 sources to every node, cutoff 60
+  min) od_matrix takes 0.15 s instead of 4.1 s and dijkstra_parallel 0.03 s instead of 3.8 s; values
+  equal the pandas tables.
+
+Point placement (relabel, project_objects2urban_graph, apply_urban_graph_changes): 1.0 s -> 0.23 s
+  for 3 points on the same graph, identical results. - validate_graph checks geometry types
+  vectorised. - relabel_urban_graph, subgraph_by_nodes and apply_urban_graph_changes do not
+  re-validate tables derived from a valid graph; applied changes are checked where they touch the
+  graph. - project_objects2urban_graph works in the graph CRS when it is projected in metres (no UTM
+  estimate) and reuses the cached spatial index of the edge table.
+
+* fix: split edge pieces keep the cost of the original edge
+
+project_objects2urban_graph gave the pieces of a split edge the connector (walking) speed and their
+  geometric length, while the other attributes came from the original edge: a drive, subway or train
+  edge hit by a point became as slow as walking, a length_meter that differs from geometry
+  (escalators, transfers, boarding) was lost, and rounded piece times did not sum to the edge. Each
+  piece now gets the original length_meter and time_min times its share of the edge's geometric
+  length, without rounding; connectors keep the walking speed.
+
+
 ## v3.3.2 (2026-11-19)
 
 ### Bug Fixes
