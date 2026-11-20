@@ -1,0 +1,6 @@
+﻿iduedu.coordinate\_node\_ids
+============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: coordinate_node_ids

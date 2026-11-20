@@ -1,0 +1,6 @@
+﻿iduedu.simplify\_graph
+======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: simplify_graph

@@ -1,0 +1,6 @@
+﻿iduedu.unique\_segments
+=======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: unique_segments

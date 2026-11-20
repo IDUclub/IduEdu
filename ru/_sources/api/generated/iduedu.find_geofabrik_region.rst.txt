@@ -1,0 +1,6 @@
+﻿iduedu.find\_geofabrik\_region
+==============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: find_geofabrik_region

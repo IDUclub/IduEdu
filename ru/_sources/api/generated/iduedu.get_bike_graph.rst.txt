@@ -1,0 +1,6 @@
+﻿iduedu.get\_bike\_graph
+=======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_bike_graph

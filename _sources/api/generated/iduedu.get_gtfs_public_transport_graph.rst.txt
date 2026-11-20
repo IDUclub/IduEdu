@@ -1,0 +1,6 @@
+﻿iduedu.get\_gtfs\_public\_transport\_graph
+==========================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_gtfs_public_transport_graph

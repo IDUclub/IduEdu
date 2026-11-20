@@ -1,0 +1,6 @@
+﻿iduedu.gtfs.read\_gtfs\_feed
+============================
+
+.. currentmodule:: iduedu.gtfs
+
+.. autofunction:: read_gtfs_feed

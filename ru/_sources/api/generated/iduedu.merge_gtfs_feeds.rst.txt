@@ -1,0 +1,6 @@
+﻿iduedu.merge\_gtfs\_feeds
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: merge_gtfs_feeds

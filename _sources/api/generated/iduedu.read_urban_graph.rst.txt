@@ -1,0 +1,6 @@
+﻿iduedu.read\_urban\_graph
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: read_urban_graph

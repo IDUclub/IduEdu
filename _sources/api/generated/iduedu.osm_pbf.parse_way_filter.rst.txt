@@ -1,0 +1,6 @@
+﻿iduedu.osm\_pbf.parse\_way\_filter
+==================================
+
+.. currentmodule:: iduedu.osm_pbf
+
+.. autofunction:: parse_way_filter

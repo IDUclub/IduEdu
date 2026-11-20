@@ -1,0 +1,6 @@
+﻿iduedu.multi\_source\_dijkstra\_nearest\_source
+===============================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: multi_source_dijkstra_nearest_source

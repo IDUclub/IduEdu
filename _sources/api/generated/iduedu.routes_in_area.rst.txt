@@ -1,0 +1,6 @@
+﻿iduedu.routes\_in\_area
+=======================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: routes_in_area

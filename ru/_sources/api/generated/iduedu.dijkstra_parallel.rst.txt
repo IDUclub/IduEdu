@@ -1,0 +1,6 @@
+﻿iduedu.dijkstra\_parallel
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: dijkstra_parallel

@@ -1,0 +1,6 @@
+﻿iduedu.keep\_largest\_connected\_component
+==========================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: keep_largest_connected_component

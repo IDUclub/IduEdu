@@ -1,0 +1,6 @@
+﻿iduedu.mode\_graph
+==================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: mode_graph
