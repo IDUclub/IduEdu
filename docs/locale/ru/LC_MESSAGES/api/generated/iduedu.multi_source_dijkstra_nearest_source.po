@@ -20,6 +20,9 @@ msgstr "iduedu.multi\\_source\\_dijkstra\\_nearest\\_source"
 msgid "Return nearest source_node and dist columns for each reachable node."
 msgstr "Возвращает столбцы ближайшего source_node и dist для каждого достижимого узла."
 
+msgid "This pandas table includes both source identifiers and costs. Use :func:`multi_source_dijkstra` with ``output=\"distances\"`` and ``distance_format=\"dense\"`` for an array of nearest-source costs."
+msgstr "Таблица pandas содержит идентификаторы источников и стоимости. Чтобы получить массив стоимостей до ближайшего источника, вызовите :func:`multi_source_dijkstra` с ``output=\"distances\"`` и ``distance_format=\"dense\"``."
+
 msgid "Return type"
 msgstr "Тип результата"
 

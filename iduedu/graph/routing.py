@@ -8,14 +8,20 @@ from scipy import sparse
 
 from iduedu import _rust
 from iduedu.config import config
-from iduedu.graph.graph_inputs import resolve_graph_nodes_input
+from iduedu.graph.graph_inputs import _positions, _targets, resolve_graph_nodes_input
 from iduedu.graph.routing_result import (
+    DistanceFormat,
     ShortestPathResult,
+    _distance_csr,
+    _distance_series,
+    _distance_table,
+    _finish,
     _groups,
+    _lookup,
     _PathStore,
-    _PathTree,
     _RouteList,
-    _sparse_frame,
+    _store,
+    _validate_distance_format,
 )
 from iduedu.graph.urban_graph import UrbanGraph
 
@@ -23,7 +29,7 @@ Output = Literal["distances", "paths", "both"]
 PathStorage = Literal["eager", "lazy"]
 PairMethod = Literal["bidirectional", "astar", "alt", "dijkstra"]
 RoutingTable = pd.Series | pd.DataFrame
-RoutingOutput = RoutingTable | ShortestPathResult
+RoutingOutput = RoutingTable | ShortestPathResult | np.ndarray | sparse.csr_array
 
 
 def _validate_options(output, path_storage, max_workers=None, batch_size=None):
@@ -286,14 +292,6 @@ def _kernel_pairs(graph, sources, targets, *, cutoff, method, routes, max_worker
     return costs, flat.astype(np.int32, copy=False), bounds
 
 
-def _positions(graph, nodes):
-    nodes = list(nodes)
-    missing = [node for node in nodes if node not in graph.node_to_adjacency_pos]
-    if missing:
-        raise ValueError(f"Requested nodes are absent in graph: {missing[:10]}")
-    return np.array([graph.node_to_adjacency_pos[node] for node in nodes], dtype=np.int32)
-
-
 def _node_ids(graph):
     """Node ids in matrix order as an object array (cached with the matrix; treat it as read-only)."""
     cache = graph._csr_cache  # pylint: disable=protected-access
@@ -315,109 +313,6 @@ def _sources(graph, nodes, gdf, column):
         nodes_name="source_nodes",
         gdf_name="gdf_sources",
     )
-
-
-def _targets(graph, target_nodes):
-    if target_nodes is None:
-        return np.empty(0, dtype=np.int32), None
-    nodes = list(target_nodes)
-    if not nodes:
-        raise ValueError("target_nodes must not be empty; use None for all reachable nodes")
-    return _positions(graph, nodes), pd.Index(nodes, name="node")
-
-
-def _lookup(search, targets, *, field=1, fill=np.inf, dtype=np.float32):
-    result = np.full(len(targets), fill, dtype=dtype)
-    if len(search[0]):
-        offsets = np.searchsorted(search[0], targets)
-        valid = offsets < len(search[0])
-        matches = np.flatnonzero(valid)
-        matches = matches[search[0][offsets[matches]] == targets[matches]]
-        result[matches] = search[field][offsets[matches]]
-    return result
-
-
-def _distance_series(values, index, dtype, attrs, name="dist"):
-    result = pd.Series(
-        pd.arrays.SparseArray(np.asarray(values, dtype=dtype), fill_value=np.inf), index=index, name=name
-    )
-    result.attrs.update(attrs)
-    return result
-
-
-def _target_columns(searches, targets):
-    """Per search: (column positions, costs) of the settled requested targets."""
-    targets = np.asarray(targets, dtype=np.int64)
-    if len(targets) == 0 or len(np.unique(targets)) != len(targets):
-        for search in searches:
-            values = _lookup(search, targets)
-            reachable = np.flatnonzero(np.isfinite(values))
-            yield reachable, values[reachable]
-        return
-    # Unique targets: one gather per search instead of a binary search for every target.
-    column_of = np.full(int(targets.max()) + 1, -1, dtype=np.int64)
-    column_of[targets] = np.arange(len(targets))
-    for search in searches:
-        nodes = search[0].astype(np.int64, copy=False)
-        columns = np.full(len(nodes), -1, dtype=np.int64)
-        inside = nodes < len(column_of)
-        columns[inside] = column_of[nodes[inside]]
-        keep = np.flatnonzero(columns >= 0)
-        yield columns[keep], search[1][keep]
-
-
-def _distance_frame(searches, targets, inverse, index, columns, dtype, attrs, *, transposed=False):
-    # Explicit zero costs are stored; absent entries become infinity, not scipy's implicit zero.
-    data, column_indices, offsets = [], [], [0]
-    for found, values in _target_columns(searches, targets):
-        data.append(values.astype(dtype))
-        column_indices.append(found)
-        offsets.append(offsets[-1] + len(found))
-    matrix = sparse.csr_matrix(
-        (np.concatenate(data), np.concatenate(column_indices), np.array(offsets)),
-        shape=(len(searches), len(targets)),
-    )[inverse]
-    matrix = (matrix.T if transposed else matrix).tocoo()
-    result = _sparse_frame(matrix.row, matrix.col, matrix.data.astype(dtype), index, columns, dtype, np.inf)
-    result.attrs.update(attrs)
-    return result
-
-
-def _store(
-    searches,
-    graph,
-    tree_indices,
-    origins,
-    targets,
-    index,
-    columns,
-    *,
-    layout="matrix",
-    reverse=False,
-    transposed=False,
-    attrs=None,
-):
-    return _PathStore(
-        [_PathTree(search[0], search[2]) for search in searches],
-        _node_ids(graph),
-        tree_indices,
-        origins,
-        targets,
-        index.copy(),
-        None if columns is None else columns.copy(),
-        layout=layout,
-        reverse=reverse,
-        transposed=transposed,
-        attrs=attrs,
-    )
-
-
-def _finish(output, distances, store, path_storage, nearest_sources=None):
-    if output == "distances":
-        return distances
-    if output == "paths":
-        return store.materialize()
-    return ShortestPathResult(distances, store, path_storage=path_storage, nearest_sources=nearest_sources)
 
 
 def _kernel_search_many(graph, *args):
@@ -453,23 +348,46 @@ def _search_many(graph, sources, targets, cutoff, output, max_workers, batch_siz
 
 
 def _series_search(
-    graph, sources, *, target_nodes, weight, cutoff, reverse, output, path_storage, dtype, nearest=False
+    graph,
+    sources,
+    *,
+    target_nodes,
+    weight,
+    cutoff,
+    reverse,
+    output,
+    path_storage,
+    dtype,
+    distance_format,
+    nearest=False,
 ):
     matrix = _prepare_graph(graph, weight=weight, cutoff=cutoff, reverse=reverse)
     source_positions = np.unique(_positions(graph, sources.to_numpy()))
     target_positions, index = _targets(graph, target_nodes)
     search = matrix.search(source_positions, target_positions, _cutoff_float(cutoff), output != "distances")
-    if index is None:
-        target_positions = search[0]
-        index = pd.Index(_node_ids(graph)[target_positions], name="node")
+    distances = None
+    if index is None and distance_format == "dense":
+        distances = np.full(len(graph.nodes_gdf), np.inf, dtype=dtype)
+        distances[search[0]] = search[1]
+        if output == "distances":
+            return distances, None
+        target_positions = np.arange(len(graph.nodes_gdf), dtype=np.int32)
+        index = pd.Index(graph.nodes_gdf.index.to_numpy(), name="node")
+    else:
+        if index is None:
+            target_positions = search[0]
+            index = pd.Index(_node_ids(graph)[target_positions], name="node")
+        if output != "paths":
+            distances = _lookup(search, target_positions, dtype=dtype if distance_format == "dense" else np.float32)
     attrs = {"source_nodes": sources.copy()}
-    distances = None if output == "paths" else _distance_series(_lookup(search, target_positions), index, dtype, attrs)
+    if distances is not None and distance_format == "frame":
+        distances = _distance_series(distances, index, dtype, attrs)
     store = (
         None
         if output == "distances"
         else _store(
             [search],
-            graph,
+            _node_ids(graph),
             np.zeros(1, dtype=np.int32),
             source_positions,
             target_positions,
@@ -501,7 +419,8 @@ def single_source_dijkstra(
     output: Output = "both",
     path_storage: PathStorage = "eager",
     dtype: np.dtype = np.float32,
-) -> RoutingOutput:
+    distance_format: DistanceFormat = "frame",
+) -> pd.Series | ShortestPathResult | np.ndarray:
     """Search from one node; return distances, paths, or both from one traversal.
 
     Args:
@@ -517,12 +436,19 @@ def single_source_dijkstra(
         path_storage: eager creates paths immediately; lazy requires output=both
             and reconstructs routes through result.get_path(target).
         dtype: Returned distance dtype. Kernel arithmetic remains float32.
+        distance_format: ``"frame"`` (default) returns a pandas Series for distances.
+            With ``output="distances"`` or ``"both"``, ``"dense"`` uses a one-dimensional
+            NumPy array in target order with ``np.inf`` for unreachable or out-of-cutoff nodes.
+            With ``target_nodes=None``, it covers all nodes in ``nodes_gdf`` order.
+            With ``"both"``, the path Series follows the same order and keeps the node labels.
+            ``"sparse"`` is available only for matrix results.
 
     Returns:
-        A sparse Series indexed by target node ids, or ShortestPathResult with
-        matching distance and path Series. Missing costs/paths are inf/None.
+        A sparse Series, a one-dimensional distance array, or a ShortestPathResult.
+        Missing costs and paths are inf and None, respectively.
     """
     _validate_options(output, path_storage)
+    _validate_distance_format(distance_format, output, one_dimensional="single-source results")
     sources = _sources(urban_graph, [source_node], None, "graph_node_id")
     return _series_search(
         urban_graph,
@@ -534,6 +460,7 @@ def single_source_dijkstra(
         output=output,
         path_storage=path_storage,
         dtype=dtype,
+        distance_format=distance_format,
     )[0]
 
 
@@ -550,17 +477,25 @@ def multi_source_dijkstra(
     output: Output = "both",
     path_storage: PathStorage = "eager",
     dtype: np.dtype = np.float32,
-) -> RoutingOutput:
+    distance_format: DistanceFormat = "frame",
+) -> pd.Series | ShortestPathResult | np.ndarray:
     """Search from the nearest member of one combined source set.
 
     Options and Series results follow single_source_dijkstra. Supply either
     source_nodes or gdf_sources; geometries without graph_node_column are
     matched to nearest graph nodes. A combined result also exposes
-    nearest_sources, indexed like distances. Ties choose the source appearing
+    ``nearest_sources`` as a pandas Series in distance order, with target node
+    labels in every format and None for unreachable targets. Ties choose the source appearing
     first in graph node order. This differs from dijkstra_parallel, which
     runs an independent search for each source.
+
+    With ``output="distances"`` or ``"both"``, ``distance_format="dense"`` uses a
+    one-dimensional NumPy array with ``np.inf`` for unreachable or out-of-cutoff nodes. With
+    ``target_nodes=None``, it covers all nodes in ``nodes_gdf`` order. The default
+    ``"frame"`` returns a Series. ``"sparse"`` is available only for matrix results.
     """
     _validate_options(output, path_storage)
+    _validate_distance_format(distance_format, output, one_dimensional="multi-source results")
     sources = _sources(urban_graph, source_nodes, gdf_sources, graph_node_column)
     return _series_search(
         urban_graph,
@@ -572,7 +507,8 @@ def multi_source_dijkstra(
         output=output,
         path_storage=path_storage,
         dtype=dtype,
-        nearest=True,
+        distance_format=distance_format,
+        nearest=output == "both",
     )[0]
 
 
@@ -591,36 +527,56 @@ def dijkstra_parallel(
     dtype: np.dtype = np.float32,
     max_workers: int | None = None,
     batch_size: int | None = None,
+    distance_format: DistanceFormat = "frame",
 ) -> RoutingOutput:
     """Run independent searches, sharing work for sources mapped to the same node.
 
-    Returns sparse tables with one row per input source and columns for
+    Returns one row per input source. The default frame format uses columns for
     target_nodes, or the union of reachable nodes when target_nodes is None.
     Source object labels and repeated node ids are preserved. Other options
     follow single_source_dijkstra. max_workers caps the worker threads (default:
     one per CPU). batch_size limits searches in flight; retained
     results and lazy trees still consume memory across all batches.
+
+    With ``output="distances"`` or ``"both"``, ``distance_format="dense"`` uses a NumPy array
+    with ``np.inf`` for unreachable or out-of-cutoff pairs. ``"sparse"`` returns a
+    SciPy CSR array storing reachable pairs, including explicit zeros. An absent
+    entry means unreachable, so never call ``eliminate_zeros``. Use ``.tocoo()``
+    for triples.
+    The default ``"frame"`` returns a pandas table. Array formats preserve input
+    order and duplicates. With ``target_nodes=None``, column ``j`` corresponds to
+    ``nodes_gdf.index[j]`` in the distance array and its path table. Dense distances
+    allocate one row per source across all nodes. The eager path table also
+    spans all nodes, so prefer ``path_storage="lazy"`` for individual route lookups.
     """
     _validate_options(output, path_storage, max_workers, batch_size)
+    _validate_distance_format(distance_format, output)
     sources = _sources(urban_graph, source_nodes, gdf_sources, graph_node_column)
     matrix = _prepare_graph(urban_graph, weight=weight, cutoff=cutoff, reverse=reverse)
     source_positions = _positions(urban_graph, sources.to_numpy())
     unique_sources, inverse = np.unique(source_positions, return_inverse=True)
     target_positions, columns = _targets(urban_graph, target_nodes)
     searches = _search_many(matrix, unique_sources, target_positions, cutoff, output, max_workers, batch_size)
+    all_nodes = columns is None and distance_format != "frame"
     if columns is None:
-        target_positions = np.unique(np.concatenate([search[0] for search in searches]))
-        columns = pd.Index(_node_ids(urban_graph)[target_positions], name="node")
+        if all_nodes:
+            columns = pd.Index(urban_graph.nodes_gdf.index.to_numpy(), name="node")
+            if output == "both":
+                target_positions = np.arange(len(columns), dtype=np.int32)
+        else:
+            target_positions = np.unique(np.concatenate([search[0] for search in searches]))
+            columns = pd.Index(_node_ids(urban_graph)[target_positions], name="node")
     attrs = {"source_nodes": sources.copy()}
     distances = None
     if output != "paths":
-        distances = _distance_frame(searches, target_positions, inverse, sources.index, columns, dtype, attrs)
+        costs = _distance_csr(searches, None if all_nodes else target_positions, inverse, node_count=len(columns))
+        distances = _distance_table(costs, sources.index, columns, dtype, attrs, distance_format)
     store = (
         None
         if output == "distances"
         else _store(
             searches,
-            urban_graph,
+            _node_ids(urban_graph),
             inverse,
             source_positions,
             target_positions,
@@ -668,7 +624,9 @@ def _check_od_method(mode, method):
         )
 
 
-def _od_pairs(graph, origins, destinations, *, weight, dtype, cutoff, max_workers, output, path_storage, method):
+def _od_pairs(
+    graph, origins, destinations, *, weight, dtype, cutoff, max_workers, output, path_storage, method, distance_format
+):
     """Pairwise OD table from point-to-point searches, one per pair."""
     _prepare_graph(graph, weight=weight, cutoff=cutoff, reverse=False)
     origin_positions = _positions(graph, origins.to_numpy())
@@ -682,9 +640,13 @@ def _od_pairs(graph, origins, destinations, *, weight, dtype, cutoff, max_worker
         routes=output != "distances",
         max_workers=max_workers,
     )
+    distances = costs.astype(dtype, copy=False) if distance_format == "dense" else None
+    if distances is not None and output == "distances":
+        return distances
     attrs = {"origin_nodes": origins.copy(), "destination_nodes": destinations.copy()}
     index = pd.MultiIndex.from_arrays([origins.index, destinations.index], names=["origin", "destination"])
-    distances = None if output == "paths" else _distance_series(costs, index, dtype, attrs).to_frame()
+    if output != "paths" and distance_format == "frame":
+        distances = _distance_series(costs, index, dtype, attrs).to_frame()
     store = None
     if output != "distances":
         store = _PathStore(
@@ -714,6 +676,7 @@ def _od_resolved(
     output,
     path_storage,
     mode,
+    distance_format,
     method="auto",
 ):
     if mode not in {"all_to_all", "pairwise"}:
@@ -735,6 +698,7 @@ def _od_resolved(
             output=output,
             path_storage=path_storage,
             method=method,
+            distance_format=distance_format,
         )
     transposed = mode == "all_to_all" and destinations.nunique() < origins.nunique()
     matrix = _prepare_graph(graph, weight=weight, cutoff=cutoff, reverse=transposed)
@@ -754,29 +718,35 @@ def _od_resolved(
         searches = _search_many(
             matrix, unique_sources, np.unique(calc_targets), cutoff, output, max_workers, batch_size
         )
-    attrs = {"origin_nodes": origins.copy(), "destination_nodes": destinations.copy()}
-    index = origins.index
-    columns = destinations.index
-    distances = None
-    if mode == "pairwise":
-        index = pd.MultiIndex.from_arrays([origins.index, destinations.index], names=["origin", "destination"])
-        columns = pd.Index(["path"])
-        if output != "paths":
-            values = np.full(len(index), np.inf, dtype=np.float32)
+    values, costs, distances = None, None, None
+    if output != "paths":
+        if mode == "pairwise":
+            values = np.full(len(origins), np.inf, dtype=np.float32)
             for tree_index, search in enumerate(searches):
                 rows = order[offsets[tree_index] : offsets[tree_index + 1]]
                 values[rows] = _lookup(search, destination_positions[rows])
+            if distance_format == "dense":
+                distances = values.astype(dtype, copy=False)
+                if output == "distances":
+                    return distances
+        else:
+            costs = _distance_csr(searches, calc_targets, inverse, transposed=transposed)
+
+    attrs = {"origin_nodes": origins.copy(), "destination_nodes": destinations.copy()}
+    index, columns = origins.index, destinations.index
+    if mode == "pairwise":
+        index = pd.MultiIndex.from_arrays([origins.index, destinations.index], names=["origin", "destination"])
+        columns = pd.Index(["path"])
+        if values is not None and distance_format == "frame":
             distances = _distance_series(values, index, dtype, attrs).to_frame()
-    elif output != "paths":
-        distances = _distance_frame(
-            searches, calc_targets, inverse, index, columns, dtype, attrs, transposed=transposed
-        )
+    elif costs is not None:
+        distances = _distance_table(costs, index, columns, dtype, attrs, distance_format)
     store = (
         None
         if output == "distances"
         else _store(
             searches,
-            graph,
+            _node_ids(graph),
             inverse,
             origin_positions,
             destination_positions,
@@ -809,6 +779,7 @@ def od_matrix(
     mode: Literal["all_to_all", "pairwise"] = "all_to_all",
     batch_size: int | None = None,
     method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
+    distance_format: DistanceFormat = "frame",
 ) -> RoutingOutput:
     """Compute OD distances, node routes, or both with one search per unique source.
 
@@ -838,14 +809,23 @@ def od_matrix(
             ``alt`` run one point-to-point search per pair (see :func:`shortest_path`).
             ``auto`` (default) picks ``bidirectional`` when most origins occur once
             and ``dijkstra`` otherwise. All-to-all tables always use ``dijkstra``.
+        distance_format: ``"frame"`` (default) uses a pandas table. With
+            ``output="distances"`` or ``"both"``, ``"dense"`` uses a NumPy array with
+            ``np.inf`` for unreachable or out-of-cutoff pairs. ``"sparse"`` uses a SciPy
+            CSR array for all-to-all mode. An absent entry means unreachable.
+            Explicit zero costs are stored, so never call ``eliminate_zeros``.
+            Use ``.tocoo()`` to get the ``row``, ``col`` and ``data`` arrays.
 
     Returns:
-        Sparse DataFrame or ShortestPathResult. Labels and duplicate node inputs
-        are preserved. Unreachable and out-of-cutoff pairs contain inf/None.
+        A sparse DataFrame, ShortestPathResult or distance array. Array axes follow
+        input order and preserve duplicate inputs. Pairwise dense output has one
+        dimension with one value per input pair. With ``output="both"``, the paths
+        remain a pandas table with the same labels and positions.
         Searches use the smaller unique input side when possible, stop once
         requested targets settle, and restore original directed route order.
     """
     _validate_options(output, path_storage, max_workers, batch_size)
+    _validate_distance_format(distance_format, output, one_dimensional="pairwise mode" if mode == "pairwise" else None)
     cutoff = _resolve_cutoff(cutoff, threshold)
     _check_od_method(mode, method)
     origins, destinations = _resolve_od(
@@ -864,6 +844,7 @@ def od_matrix(
         path_storage=path_storage,
         mode=mode,
         method=method,
+        distance_format=distance_format,
     )
 
 
@@ -885,6 +866,7 @@ def iter_od_matrix(
     mode: Literal["all_to_all", "pairwise"] = "all_to_all",
     batch_size: int = 256,
     method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
+    distance_format: DistanceFormat = "frame",
 ) -> Iterator[RoutingOutput]:
     """Yield OD results in origin-row blocks, using the same options as od_matrix.
 
@@ -893,8 +875,13 @@ def iter_od_matrix(
     matching is done once. Consume and release blocks to bound retained memory;
     collecting them all retains all tables/trees. Do not edit the graph while
     consuming an iterator. Validation occurs when iteration starts.
+
+    Each block uses the selected ``distance_format``. With ``output="both"``, blocks
+    are ShortestPathResult objects with distances in that format and pandas paths.
+    Pairwise mode supports ``"frame"`` and ``"dense"``.
     """
     _validate_options(output, path_storage, max_workers, batch_size)
+    _validate_distance_format(distance_format, output, one_dimensional="pairwise mode" if mode == "pairwise" else None)
     if batch_size is None:
         raise ValueError("iter_od_matrix requires a positive batch_size")
     cutoff = _resolve_cutoff(cutoff, threshold)
@@ -922,6 +909,7 @@ def iter_od_matrix(
             path_storage=path_storage,
             mode=mode,
             method=method,
+            distance_format=distance_format,
         )
 
 
@@ -981,7 +969,12 @@ def multi_source_dijkstra_nearest_source(
     reverse: bool = False,
     dtype: np.dtype = np.float32,
 ) -> pd.DataFrame:
-    """Return nearest source_node and dist columns for each reachable node."""
+    """Return nearest source_node and dist columns for each reachable node.
+
+    This pandas table includes both source identifiers and costs. Use
+    :func:`multi_source_dijkstra` with ``output="distances"`` and
+    ``distance_format="dense"`` for an array of nearest-source costs.
+    """
     sources = _sources(urban_graph, source_nodes, gdf_sources, graph_node_column)
     distances, owners = _series_search(
         urban_graph,
@@ -993,6 +986,7 @@ def multi_source_dijkstra_nearest_source(
         output="distances",
         path_storage="eager",
         dtype=dtype,
+        distance_format="frame",
         nearest=True,
     )
     result = pd.concat([owners, distances], axis=1)

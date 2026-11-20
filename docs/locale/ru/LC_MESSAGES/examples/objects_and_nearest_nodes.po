@@ -35,8 +35,8 @@ msgstr "`nearest_nodes` сопоставляет каждую геометрию
 msgid "Project objects with link edges"
 msgstr "Проецирование объектов с соединительными рёбрами"
 
-msgid "`project_objects2urban_graph` splits nearest edges when needed and prepares changes that can be applied later. With `add_link_edge=True`, every object receives its own object node and a connector edge to the projected point on the graph."
-msgstr "`project_objects2urban_graph` при необходимости разбивает ближайшие рёбра и готовит изменения, которые можно применить позже. С `add_link_edge=True` каждый объект получает собственный узел и соединительное ребро до точки проекции на графе."
+msgid "`project_objects2urban_graph` splits nearest edges when needed and prepares changes that can be applied later. Each piece gets a share of the original edge's length and travel time proportional to its geometric length. With `add_link_edge=True`, an object off the graph can receive its own node and a connector edge whose cost uses its geometric length and the specified speed."
+msgstr "`project_objects2urban_graph` при необходимости разбивает ближайшие рёбра и готовит изменения, которые можно применить позже. Длина и время прохождения исходного ребра распределяются между фрагментами пропорционально их геометрической длине. С `add_link_edge=True` объект вне графа может получить собственный узел и соединительное ребро. Стоимость прохождения этого ребра рассчитывается по его геометрической длине и заданной скорости."
 
 msgid "Project objects without link edges"
 msgstr "Проецирование объектов без соединительных рёбер"

@@ -23,11 +23,14 @@ msgstr "Выдаёт результаты OD блоками строк по то
 msgid "batch_size is the number of input origin rows per yielded block. In pairwise mode the corresponding destination rows are sliced too. Object-to-node matching is done once. Consume and release blocks to bound retained memory; collecting them all retains all tables/trees. Do not edit the graph while consuming an iterator. Validation occurs when iteration starts."
 msgstr "batch_size — число входных строк точек отправления в каждом выдаваемом блоке. В попарном режиме соответствующие строки назначений тоже нарезаются. Сопоставление объектов с узлами выполняется один раз. Обрабатывайте и освобождайте блоки, чтобы ограничить занятую память; если собрать их все, сохранятся все таблицы и деревья. Не меняйте граф, пока перебираете итератор. Проверка входных данных выполняется в начале перебора."
 
+msgid "Each block uses the selected ``distance_format``. With ``output=\"both\"``, blocks are ShortestPathResult objects with distances in that format and pandas paths. Pairwise mode supports ``\"frame\"`` and ``\"dense\"``."
+msgstr "Каждый блок использует выбранный формат ``distance_format``. При ``output=\"both\"`` блоки представляют собой объекты ShortestPathResult с расстояниями в выбранном формате и путями в таблицах pandas. Попарный режим поддерживает ``\"frame\"`` и ``\"dense\"``."
+
 msgid "Return type"
 msgstr "Тип результата"
 
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\`\\]`"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\`\\]`"
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\` \\| \\:py\\:class\\:\\`\\~scipy.sparse.\\_csr.csr\\_array\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~typing.Iterator\\`\\\\ \\\\\\[\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\` \\| \\:py\\:class\\:\\`\\~scipy.sparse.\\_csr.csr\\_array\\`\\]`"
 
 msgid "Parameters"
 msgstr "Параметры"
