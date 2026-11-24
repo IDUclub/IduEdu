@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v3.4.0 (2026-11-24)
+
+### Features
+
+- Assign_flows, flow assignment along shortest-path forests in Rust
+  ([#42](https://github.com/IDUclub/IduEdu/pull/42),
+  [`7e4ad18`](https://github.com/IDUclub/IduEdu/commit/7e4ad18b5e659fd9d624278f8d1880151aad4f4a))
+
+
 ## v3.3.3 (2026-11-20)
 
 ### Bug Fixes
