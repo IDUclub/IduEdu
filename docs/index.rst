@@ -33,6 +33,7 @@
     analysis/statistics
     analysis/objects
     analysis/centrality
+    analysis/flows
     analysis/elevation
 
 .. toctree::
@@ -136,6 +137,9 @@ the method, the parameters and outputs with their units, figures and the limitat
    * - :doc:`analysis/centrality`
      - Reach, closeness, gravity and betweenness of nodes and edges
      - :func:`~iduedu.centrality`, :func:`~iduedu.edge_betweenness`
+   * - :doc:`analysis/flows`
+     - Trips from sources spread over destinations and summed on the edges along shortest paths
+     - :func:`~iduedu.assign_flows`
    * - :doc:`analysis/elevation`
      - Heights of nodes, grades of edges, travel times that depend on the grade
      - :func:`~iduedu.add_elevation`, :func:`~iduedu.apply_grade_speed`

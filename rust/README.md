@@ -24,6 +24,10 @@ building IduEdu from source builds it.
   junction-to-junction edges of the builders, and the edges of a finished graph (`simplify_graph`). Edges are joined
   only when they carry equal tags, so bridges and tunnels stay separate; two-way edges drawn against the chain are
   turned, one-way edges join only head to tail and never with two-way ones, and nodes marked to keep stay.
+- `src/flows.rs`: flow assignment along shortest-path forests. Every cluster of sources runs one multi-source
+  search of `dijkstra.rs` (costs summed in float32); destinations weighted by attraction and
+  a decay (gaussian, exponential, flat) share the cluster's flow, which is carried back along the tree onto
+  the arcs. Clusters run in parallel.
 - `src/split.rs` splits edges at object projections. It returns flat piece coordinates, source edge positions,
   and cut positions for resolving the endpoints in the graph layer.
 - `src/pt_routes.rs`: public-transport routes from their OSM relations (the ground modes and the subway), all in
@@ -42,7 +46,7 @@ building IduEdu from source builds it.
   CPython 3.11+. Every kernel releases the GIL; parallel kernels use rayon.
 
 The Python layer calls these only through `iduedu/graph/` (`adjacency.py`, `routing.py`, `components.py`,
-`within.py`, `centrality.py`, `simplify.py`, `editors.py`), `iduedu/osm_pbf/` (`reader.py`, `extract.py`), the edge merging of
+`within.py`, `centrality.py`, `flows.py`, `simplify.py`, `editors.py`), `iduedu/osm_pbf/` (`reader.py`, `extract.py`), the edge merging of
 `drive_walk_builders.py` and the route parser of `iduedu/overpass/parsers.py`.
 
 ## Development

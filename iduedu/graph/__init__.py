@@ -53,6 +53,7 @@ from .simplify import simplify_graph
 from .routes import route_edges, route_stops, routes_in_area
 from .elevation import add_elevation, apply_grade_speed
 from .centrality import centrality, edge_betweenness
+from .flows import assign_flows
 from .aggregations import aggregate_objects, diversity, nearest_objects
 from .stats import edge_stats, graph_stats, local_stats, route_directness, streets_per_node, transport_stats
 from .io import read_urban_graph, write_urban_graph

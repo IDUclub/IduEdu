@@ -434,8 +434,10 @@ msgstr "Вернуть до k кратчайших путей без цикло�
 msgid "Network analysis"
 msgstr "Анализ сети"
 
-msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`"
-msgstr ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`"
+# | msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`,
+# | :doc:`analysis/centrality`, :doc:`analysis/elevation`"
+msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/flows`, :doc:`analysis/elevation`"
+msgstr ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/flows`, :doc:`analysis/elevation`"
 
 msgid ":py:obj:`graph_stats <iduedu.graph_stats>`"
 msgstr ":py:obj:`graph_stats <iduedu.graph_stats>`"
@@ -502,6 +504,13 @@ msgstr ":py:obj:`edge_betweenness <iduedu.edge_betweenness>`"
 
 msgid "Betweenness of the edges of a graph: how many shortest paths within a threshold run along each edge."
 msgstr "Промежуточность рёбер графа: сколько кратчайших путей в пределах порога проходит по каждому ребру."
+
+# | msgid ":py:obj:`use_pbf <iduedu.use_pbf>`"
+msgid ":py:obj:`assign_flows <iduedu.assign_flows>`"
+msgstr ":py:obj:`assign_flows <iduedu.assign_flows>`"
+
+msgid "Assign flows from sources to attractive nodes along shortest paths and sum them on the edges."
+msgstr "Распределяет потоки от источников по привлекательным узлам вдоль кратчайших путей и суммирует их на рёбрах."
 
 msgid ":py:obj:`add_elevation <iduedu.add_elevation>`"
 msgstr ":py:obj:`add_elevation <iduedu.add_elevation>`"

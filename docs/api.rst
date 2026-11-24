@@ -100,7 +100,7 @@ Routing
 Network analysis
 ----------------
 
-:doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`
+:doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/flows`, :doc:`analysis/elevation`
 
 .. autosummary::
     :nosignatures:
@@ -116,6 +116,7 @@ Network analysis
     diversity
     centrality
     edge_betweenness
+    assign_flows
     add_elevation
     apply_grade_speed
 

@@ -9,6 +9,7 @@ from .graph import (
     aggregate_objects,
     apply_grade_speed,
     apply_urban_graph_changes,
+    assign_flows,
     centrality,
     clip_urban_graph,
     connected_components,
