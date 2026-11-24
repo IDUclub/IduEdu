@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">17 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">17<span class="text"> run</span></button>
+            <span class="text">18 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">18<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_661fff2b98f2e16e_adapters_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-20 08:03 +0000
+            created at 2026-11-24 11:53 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -137,10 +137,11 @@
     <p class="run"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">routes</span> <span class="key">import</span> <span class="nam">route_edges</span><span class="op">,</span> <span class="nam">route_stops</span><span class="op">,</span> <span class="nam">routes_in_area</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">elevation</span> <span class="key">import</span> <span class="nam">add_elevation</span><span class="op">,</span> <span class="nam">apply_grade_speed</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">centrality</span> <span class="key">import</span> <span class="nam">centrality</span><span class="op">,</span> <span class="nam">edge_betweenness</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">aggregations</span> <span class="key">import</span> <span class="nam">aggregate_objects</span><span class="op">,</span> <span class="nam">diversity</span><span class="op">,</span> <span class="nam">nearest_objects</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">stats</span> <span class="key">import</span> <span class="nam">edge_stats</span><span class="op">,</span> <span class="nam">graph_stats</span><span class="op">,</span> <span class="nam">local_stats</span><span class="op">,</span> <span class="nam">route_directness</span><span class="op">,</span> <span class="nam">streets_per_node</span><span class="op">,</span> <span class="nam">transport_stats</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">io</span> <span class="key">import</span> <span class="nam">read_urban_graph</span><span class="op">,</span> <span class="nam">write_urban_graph</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">validation</span> <span class="key">import</span> <span class="nam">validate_graph</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">flows</span> <span class="key">import</span> <span class="nam">assign_flows</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">aggregations</span> <span class="key">import</span> <span class="nam">aggregate_objects</span><span class="op">,</span> <span class="nam">diversity</span><span class="op">,</span> <span class="nam">nearest_objects</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">stats</span> <span class="key">import</span> <span class="nam">edge_stats</span><span class="op">,</span> <span class="nam">graph_stats</span><span class="op">,</span> <span class="nam">local_stats</span><span class="op">,</span> <span class="nam">route_directness</span><span class="op">,</span> <span class="nam">streets_per_node</span><span class="op">,</span> <span class="nam">transport_stats</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">io</span> <span class="key">import</span> <span class="nam">read_urban_graph</span><span class="op">,</span> <span class="nam">write_urban_graph</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">validation</span> <span class="key">import</span> <span class="nam">validate_graph</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -150,7 +151,7 @@
             <a class="nav" href="z_661fff2b98f2e16e_adapters_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-20 08:03 +0000
+            created at 2026-11-24 11:53 +0000
         </p>
     </div>
 </footer>
