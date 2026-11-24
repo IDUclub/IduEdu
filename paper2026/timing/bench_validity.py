@@ -59,9 +59,9 @@ def check_od_correctness(graph) -> dict:
 
     nx_mat = np.full_like(iduedu_mat, np.inf)
     for i, sp in enumerate(src_ids):
-        dist = nx.single_source_dijkstra_path_length(nx_graph, int(sp), weight="weight")
+        dist = nx.single_source_dijkstra_path_length(nx_graph, sp, weight="weight")
         for j, dp in enumerate(dst_ids):
-            nx_mat[i, j] = dist.get(int(dp), np.inf)
+            nx_mat[i, j] = dist.get(dp, np.inf)
 
     both_finite = np.isfinite(iduedu_mat) & np.isfinite(nx_mat)
     finite_mismatch = int((np.isfinite(iduedu_mat) != np.isfinite(nx_mat)).sum())

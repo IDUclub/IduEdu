@@ -1,4 +1,4 @@
-# Timing rerun on IduEdu 3.2.0: instructions for the agent
+# Timing rerun on IduEdu 3.4.0: instructions for the agent
 
 This branch carries what the timing benchmarks of the IduEdu paper need on the
 benchmark machine. You run them; the author takes the results back to their own
@@ -13,7 +13,7 @@ The paper's timings were measured in September 2026 on IduEdu 2.0. A rerun on
 2.3.0 was prepared at the end of October and never ran. Since then, IduEdu 3.0
 replaced the Numba kernels with a compiled Rust core and pyosmium with its own
 Rust reader of `.osm.pbf` files, and 3.0 to 3.2 rewrote how street segments are
-merged into edges. The whole bench is therefore rerun on the released 3.2.0:
+merged into edges. The whole bench is therefore rerun on the released 3.4.0:
 ratios between libraries are only read within one run. Every library moves to its
 newest release on Python 3.14, except pyrosm (see below).
 
@@ -32,9 +32,9 @@ Carried over unchanged from the 2.3.0 preparation:
   cache before each measured read. Otherwise pyrosm runs with its defaults: it
   reads the file out of core, on several threads.
 
-New for 3.2.0:
+Changes introduced for the 3.2.0 preparation:
 
-- IduEdu is installed as the released wheel `iduedu[io]==3.2.0` from PyPI, not
+- IduEdu is installed as the released wheel `iduedu[io]==3.4.0` from PyPI, not
   from this checkout. The wheel carries the compiled core, so no Rust toolchain is
   needed, and the run measures the binary that users install. A build from the
   checkout (`pip install -e ..`) would need Rust 1.82+ and maturin and would
@@ -61,6 +61,17 @@ New for 3.2.0:
 
 `README.md` in this folder lists the scripts; where it disagrees with this file,
 this file is current.
+
+### New since 3.2.0
+
+IduEdu added the routes table, `route_key` on public transport edges, and stop
+metadata. OSM route parsing now uses a Rust kernel, with string stop IDs and
+tuple platform IDs during parsing. IduEdu also added a CRS option for OSM public
+transport graphs, sped up the walk and public transport join and point placement,
+corrected split-edge costs, added high-speed train profiles, and introduced
+`assign_flows`. The harness preserves graph node IDs until the competitors need
+integer positions. The accessibility map and route removal continue to use
+`type` for the mode and `route` for the label.
 
 ## Inputs that are not in git
 
@@ -92,44 +103,45 @@ into `cityseer_cache/`. Never copy these caches in from elsewhere.
 ## Environments
 
 Two interpreters. Below, `<bench python>` is the interpreter of
-`paper2026/.venv-bench-3.2` and `<peartree python>` that of the peartree
+`paper2026/.venv-bench-3.4` and `<peartree python>` that of the peartree
 environment (`Scripts/python.exe` on Windows, `bin/python` on Linux); commands
 in this section run from `paper2026/` unless they say otherwise.
 
 **Bench environment: a new one.** Leave any earlier environment
 (`.venv-bench`, `.venv-bench-latest` from the 2.3.0 preparation) as it is and
-create `.venv-bench-3.2` on Python 3.14, the newest Python that IduEdu 3.2.0
+create `.venv-bench-3.4` on Python 3.14, the newest Python that IduEdu 3.4.0
 supports. With uv, which fetches Python 3.14 if the machine lacks it (`--seed`
 puts pip into the environment):
 
-    uv venv --python 3.14 --seed .venv-bench-3.2
+    uv venv --python 3.14 --seed .venv-bench-3.4
 
-Without uv, run `python -m venv .venv-bench-3.2` with a Python 3.14
+Without uv, run `python -m venv .venv-bench-3.4` with a Python 3.14
 interpreter. Then install everything in one command, with versions only for
 IduEdu and pyrosm, so that pip chooses the newest releases of the rest that fit
 together:
 
-    <bench python> -m pip install "iduedu[io]==3.2.0" "pyrosm==0.26.0" osmnx cityseer networkx networkit igraph rustworkx objectnat numpy pandas geopandas shapely scipy pyarrow psutil
+    <bench python> -m pip install "iduedu[io]==3.4.0" "pyrosm==0.26.0" osmnx cityseer networkx networkit igraph rustworkx objectnat numpy pandas geopandas shapely scipy pyarrow psutil
     <bench python> -m pip check
 
 Do not install or upgrade any package with a second command afterwards: pip
 would move a pinned package or lift a bound of IduEdu with no more than a
-warning. On 18 November 2026 the command resolved to iduedu 3.2.0,
-pyrosm 0.26.0, osmnx 2.1.2, cityseer 5.8.0, networkx 3.7, networkit 11.3,
-igraph 1.0.0, rustworkx 0.18.1, objectnat 3.0.1, numpy 2.5.5, pandas 3.1.1,
-geopandas 1.2.0, shapely 2.2.0, scipy 1.18.1 and pyarrow 25.0.1 on Python 3.14.7,
-without numba; a release newer than these on the day of the run is fine, except
-for IduEdu and pyrosm. Then check, from `paper2026/timing/`:
+warning. On 24 November 2026 the command resolved to iduedu 3.4.0,
+pyrosm 0.26.0, osmnx 2.2.0, cityseer 5.8.0, networkx 3.7, networkit 11.3,
+igraph 1.0.0, rustworkx 0.18.1, objectnat 3.1.0, numpy 2.5.5, pandas 3.1.1,
+geopandas 1.2.0, shapely 2.2.0, scipy 1.18.1, pyarrow 25.0.1, and psutil 7.2.2
+on Python 3.14.7 without numba. A newer release on the day of the run is fine,
+except for IduEdu and pyrosm. Then check, from `paper2026/timing/`:
 
     <bench python> -c "import importlib.metadata as m, iduedu; print(m.version('iduedu'), iduedu.__version__, m.distribution('iduedu').read_text('direct_url.json'))"
     <bench python> -c "import osmnx, pyrosm, cityseer, networkx, networkit, igraph, rustworkx, objectnat"
     <bench python> -c "import bench_build as b, pyrosm.data as d; f = d.get_data('test_pbf'); b.clear_pyrosm_cache(f); print([b.build_pyrosm(f, n)[:2] for n in ('walk', 'drive')]); b.clear_iduedu_pbf_cache(); print([b.build_iduedu_pbf(f, b.bbox_from_pbf(f).polygon_4326, n, False)[:2] for n in ('walk', 'drive')])"
 
-The first command must print `3.2.0 3.2.0 None`: `None` means the package came
-from the index, not from this checkout. The last runs the pyrosm arm and the
-`iduedu_pbf` arm on the small test file that ships with pyrosm, because the smoke
-run does not reach pyrosm. It prints `[(781, 1650), (647, 1237)]` and
-`[(781, 825), (647, 682)]`: the vertex counts of the two libraries must agree.
+The first command must print `3.4.0 3.4.0 None`. `None` indicates an index install.
+The second command must exit successfully without import errors. The last runs
+the pyrosm arm and the `iduedu_pbf` arm on the small test file that ships with
+pyrosm, because the smoke run does not reach pyrosm. The expected walk and drive
+counts are `[(781, 1650), (647, 1237)]` for pyrosm and
+`[(781, 825), (647, 682)]` for IduEdu. The vertex counts must agree.
 If pyrosm prints more walking vertices, a newer pyrosm got in; stop and ask.
 
 **peartree environment.** peartree 0.6.4 (2021) is its newest release. It runs
@@ -191,9 +203,9 @@ From `paper2026/timing/`:
 ## Checks after the run
 
 - `../results/logs/run_all_<timestamp>.summary` lists every stage as `ok`;
-- `library_provenance.json` says `iduedu_version` 3.2.0 and `install.kind`
+- `library_provenance.json` says `iduedu_version` 3.4.0 and `install.kind`
   `index wheel`, and every `env_*.json` but `env_gtfs_peartree.json` records
-  Python 3.14, `iduedu` 3.2.0, `pyrosm` 0.26.0 and the versions in
+  Python 3.14, `iduedu` 3.4.0, `pyrosm` 0.26.0, and the versions in
   `pip_freeze_bench.txt`;
 - `build_benchmark.csv` has `iduedu_pbf` and `pyrosm` rows for all six cities,
   and `pbf_snapshots.json` a date for each extract;
@@ -203,6 +215,8 @@ From `paper2026/timing/`:
   tenth to a half as many nodes;
 - `validity_report.json` shows `reachability_mismatches` 0 and
   `max_abs_diff_min` below 0.001 under `od_correctness`;
+- `accessibility/map_pt_edges.parquet` has `type` for the public transport mode
+  and `route` for the route label, which the manuscript uses to count routes by mode;
 - in `gtfs_benchmark.csv` peartree is `ok` for four cities and
   `failed: NotImplementedError` for New York (it cannot merge nine feeds), with
   no `unavailable` rows.

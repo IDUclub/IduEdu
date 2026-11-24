@@ -383,8 +383,8 @@ def urban_to_networkx(urban_graph, weight: str = "time_min"):
     directions, exactly as the UrbanGraph adjacency does
     (``iduedu.graph.adjacency``): every edge of an undirected graph is two-way; in a
     directed graph with a direction column an edge is one-way where that column is
-    true; a directed graph without one keeps the stored direction only. Node
-    ``x``/``y`` are kept so competitors can build their own spatial index.
+    true; a directed graph without one keeps the stored direction only. Node IDs
+    are preserved, and ``x``/``y`` let competitors build their own spatial index.
 
     The rule used to read the ``oneway`` column alone and take an edge without it as
     one-way. IduEdu 3 builds walk graphs undirected and without that column, so the
@@ -396,13 +396,12 @@ def urban_to_networkx(urban_graph, weight: str = "time_min"):
     edges = urban_graph.edges_gdf
 
     graph = nx.MultiDiGraph()
-    node_ids = nodes.index.to_numpy()
     xs = nodes.geometry.x.to_numpy()
     ys = nodes.geometry.y.to_numpy()
-    graph.add_nodes_from((int(nid), {"x": float(x), "y": float(y)}) for nid, x, y in zip(node_ids, xs, ys))
+    graph.add_nodes_from((nid, {"x": float(x), "y": float(y)}) for nid, x, y in zip(nodes.index, xs, ys))
 
-    u = edges["u"].to_numpy()
-    v = edges["v"].to_numpy()
+    u = edges["u"].to_list()
+    v = edges["v"].to_list()
     w = edges[weight].to_numpy()
     direction_column = getattr(urban_graph, "edge_direction_column", None)
     if not getattr(urban_graph, "is_directed", True):
@@ -415,10 +414,10 @@ def urban_to_networkx(urban_graph, weight: str = "time_min"):
         oneway = np.ones(len(edges), dtype=bool)
 
     ebunch = []
-    for i in range(len(u)):
-        ui, vi, wi = int(u[i]), int(v[i]), float(w[i])
+    for ui, vi, wi, is_oneway in zip(u, v, w, oneway):
+        wi = float(wi)
         ebunch.append((ui, vi, {"weight": wi}))
-        if not oneway[i]:
+        if not is_oneway:
             ebunch.append((vi, ui, {"weight": wi}))
     graph.add_edges_from(ebunch)
     return graph
@@ -489,7 +488,7 @@ def nx_to_rustworkx(nx_graph, weight: str = "weight"):
 
 def node_coords(nx_graph):
     """Node id array + Nx2 coordinate array from a competitor NetworkX graph."""
-    ids = np.fromiter((int(n) for n in nx_graph.nodes()), dtype=np.int64, count=nx_graph.number_of_nodes())
+    ids = np.fromiter(nx_graph.nodes(), dtype=object, count=nx_graph.number_of_nodes())
     xy = np.array([(nx_graph.nodes[n]["x"], nx_graph.nodes[n]["y"]) for n in ids], dtype=float)
     return ids, xy
 
@@ -534,6 +533,8 @@ def dump_environment(tag: str) -> None:
         "shapely",
         "scipy",
         "objectnat",
+        "pyarrow",
+        "psutil",
     ):
         try:
             packages[name] = md.version(name)

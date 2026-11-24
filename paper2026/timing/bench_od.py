@@ -122,8 +122,8 @@ def load_or_build_graph(smoke: bool):
     print("[graph] building intermodal graph (one-off, cached to disk afterwards)")
     graph = get_intermodal_graph(territory=polygon, keep_largest_subgraph=True)
 
-    # Keep only routing-relevant columns: intermodal node attributes may hold list
-    # values (merged PT `route` lists) that the parquet graph I/O cannot serialize.
+    # Keep the cached OD graph limited to routing columns. The accessibility and
+    # scenario stages use the full intermodal graph with its route attributes.
     from iduedu import UrbanGraph
 
     node_cols = [graph.nodes_gdf.geometry.name]
@@ -288,15 +288,15 @@ def main() -> None:
         _, warm_ids = snap_points(node_xy, node_ids, warm_xy)
         if "networkit" in libraries:
             g_nk, pos_nk = nx_to_networkit(nx_graph)
-            wp = [pos_nk[int(x)] for x in warm_ids]
+            wp = [pos_nk[x] for x in warm_ids]
             od_networkit(g_nk, wp, wp)
         if "igraph" in libraries:
             g_ig, pos_ig = nx_to_igraph(nx_graph)
-            wp = [pos_ig[int(x)] for x in warm_ids]
+            wp = [pos_ig[x] for x in warm_ids]
             od_igraph(g_ig, wp, wp)
         if "rustworkx" in libraries:
             g_rx, pos_rx = nx_to_rustworkx(nx_graph)
-            wp = [pos_rx[int(x)] for x in warm_ids]
+            wp = [pos_rx[x] for x in warm_ids]
             od_rustworkx(g_rx, wp, wp)
 
     rng = np.random.default_rng(SEED)
@@ -372,24 +372,24 @@ def main() -> None:
                     m_conv = measure(nx_to_networkit, nx_graph)
                     g_nk, pos = m_conv.result
                     t_convert = m_conv.time_sec
-                    src = [pos[int(x)] for x in from_nx]
-                    dst = [pos[int(x)] for x in to_nx]
+                    src = [pos[x] for x in from_nx]
+                    dst = [pos[x] for x in to_nx]
                     m_od = measure(od_networkit, g_nk, src, dst)
                     force_cleanup(g_nk, m_conv)
                 elif lib_name == "rustworkx":
                     m_conv = measure(nx_to_rustworkx, nx_graph)
                     g_rx, pos = m_conv.result
                     t_convert = m_conv.time_sec
-                    src = [pos[int(x)] for x in from_nx]
-                    dst = [pos[int(x)] for x in to_nx]
+                    src = [pos[x] for x in from_nx]
+                    dst = [pos[x] for x in to_nx]
                     m_od = measure(od_rustworkx, g_rx, src, dst)
                     force_cleanup(g_rx, m_conv)
                 else:  # igraph
                     m_conv = measure(nx_to_igraph, nx_graph)
                     g_ig, pos = m_conv.result
                     t_convert = m_conv.time_sec
-                    src = [pos[int(x)] for x in from_nx]
-                    dst = [pos[int(x)] for x in to_nx]
+                    src = [pos[x] for x in from_nx]
+                    dst = [pos[x] for x in to_nx]
                     m_od = measure(od_igraph, g_ig, src, dst)
                     force_cleanup(g_ig, m_conv)
 

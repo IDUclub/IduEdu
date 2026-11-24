@@ -346,7 +346,7 @@ def build_pyrosm(pbf_path: str, network: str):
     ``simplify=False`` is passed explicitly: up to 0.18 it was the default of
     ``to_graph``, and from 0.19 on pyrosm simplifies unless told otherwise.
 
-    The rerun on IduEdu 3.2 holds pyrosm at 0.26.0 (``AGENT_RUN.md``). From 0.27 its
+    The rerun on IduEdu 3.4 holds pyrosm at 0.26.0 (``AGENT_RUN.md``). From 0.27 its
     walking network also takes ways built for cycling that the country lets
     pedestrians use (``get_network(shared_paths="local")``) and changes other walking
     rules; on pyrosm's test file the unsimplified walking graph grows from 781
