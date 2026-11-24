@@ -218,6 +218,21 @@ def edge_betweenness(  # pylint: disable=too-many-locals
     bands = cost_bands(cutoffs)
     weights = _node_weights(urban_graph, node_weights)
     _, arcs_sum = _betweenness(urban_graph, bands, weight, weights, sample, seed, True, max_workers)
+    forward, backward = arcs_to_edges(urban_graph, weight, arcs_sum)
+    values = forward + backward
+    edges = urban_graph.edges_gdf
+    return pd.DataFrame(values, index=edges.index, columns=[f"betweenness_{band_label(band)}" for band in bands])
+
+
+def arcs_to_edges(urban_graph: UrbanGraph, weight: str, arc_values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Values of the arcs of the routing matrix on the edges: ``(along u→v, along v→u)``, one row per edge.
+
+    ``arc_values`` holds one value (or row of values) per arc of ``urban_graph.adjacency_matrix`` in CSR order,
+    as the kernels return them after :func:`_prepare_graph` with the same ``weight``. An arc is realised by the
+    cheapest edges between its nodes; equally cheap ones share its value. The reverse direction counts only for
+    edges that can be travelled both ways.
+    """
+    arc_values = np.asarray(arc_values, dtype=float)
     matrix = urban_graph.adjacency_matrix
     edges = urban_graph.edges_gdf
     index = pd.Index(urban_graph.adjacency_nodelist)
@@ -232,8 +247,7 @@ def edge_betweenness(  # pylint: disable=too-many-locals
     else:
         both = np.zeros(len(edges), dtype=bool)
 
-    # Position of the arc of each node pair in the matrix (-1 where the matrix has no such arc). An arc is
-    # realised by the cheapest edges between its nodes; equally cheap ones share its paths.
+    # Position of the arc of each node pair in the matrix (-1 where the matrix has no such arc).
     arc_of = sparse.csr_matrix((np.arange(1, matrix.nnz + 1), matrix.indices, matrix.indptr), shape=matrix.shape)
     arc_cost = matrix.data.astype(np.float32)
 
@@ -246,10 +260,14 @@ def edge_betweenness(  # pylint: disable=too-many-locals
     sharing = np.bincount(forward[forward_ok], minlength=matrix.nnz) + np.bincount(
         backward[backward_ok], minlength=matrix.nnz
     )
-    values = np.zeros((len(edges), len(bands)))
+    shape = (len(edges),) + arc_values.shape[1:]
+    result = []
     for arc, ok in ((forward, forward_ok), (backward, backward_ok)):
-        values[ok] += arcs_sum[arc[ok]] / sharing[arc[ok], None]
-    return pd.DataFrame(values, index=edges.index, columns=[f"betweenness_{band_label(band)}" for band in bands])
+        values = np.zeros(shape)
+        share = sharing[arc[ok]].reshape((-1,) + (1,) * (arc_values.ndim - 1))
+        values[ok] = arc_values[arc[ok]] / share
+        result.append(values)
+    return result[0], result[1]
 
 
 __all__ = ["MEASURES", "centrality", "edge_betweenness"]

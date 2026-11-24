@@ -106,6 +106,10 @@ class Config:
         self.walk_useful_edges_attr = frozenset({"highway", "name"})
         self.bike_useful_edges_attr = frozenset({"highway", "name", "lanes", "maxspeed", "surface"})
         self.transport_useful_edges_attr = frozenset({"name"})
+        # Tags of a route relation that become columns of the routes table of a public-transport graph.
+        self.transport_route_attr = frozenset(
+            {"ref", "name", "from", "to", "network", "operator", "colour", "interval", "service"}
+        )
 
         # --- Logging ---
         self.logger = logger
@@ -423,6 +427,10 @@ class Config:
         """Set OSM edge tags retained by public-transport graph builders."""
         self.transport_useful_edges_attr = frozenset(attr)
 
+    def set_transport_route_attr(self, attr: Iterable[str]):
+        """Set the tags of OSM route relations kept in the ``routes`` table of public-transport graphs."""
+        self.transport_route_attr = frozenset(attr)
+
     def set_rate_limit(
         self, *, min_interval: float | None = None, max_retries: int | None = None, backoff_base: float | None = None
     ):
@@ -461,6 +469,7 @@ class Config:
             "walk_useful_edges_attr": sorted(self.walk_useful_edges_attr),
             "bike_useful_edges_attr": sorted(self.bike_useful_edges_attr),
             "transport_useful_edges_attr": sorted(self.transport_useful_edges_attr),
+            "transport_route_attr": sorted(self.transport_route_attr),
             "overpass_min_interval": self.overpass_min_interval,
             "overpass_max_retries": self.overpass_max_retries,
             "overpass_retry_statuses": self.overpass_retry_statuses,

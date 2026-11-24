@@ -205,6 +205,21 @@ def test_default_registry_has_mode_specific_wait_times():
     assert DEFAULT_REGISTRY_W_TRAIN.get("train").avg_wait_time_min == 21.5
 
 
+def test_high_speed_train_spec_matches_sapsan_travel_times():
+    key = "train:high_speed"
+    registry = DEFAULT_REGISTRY_W_TRAIN
+    assert DEFAULT_REGISTRY.try_get(key) is None
+    assert key in registry.list_types()
+    assert key not in registry.list_modes()
+
+    spec = registry.get(key)
+    assert spec.vmax_tech_kmh == 250
+    assert spec.avg_wait_time_min == registry.get("train").avg_wait_time_min
+    assert 220 <= spec.travel_time_min(645_000) <= 225
+    segments_km = (160, 130, 120, 135, 100)
+    assert 240 <= sum(spec.travel_time_min(length * 1000) for length in segments_km) <= 250
+
+
 def test_default_registry_grows_free_speed_only_where_it_validates():
     """Cross-validated by city: a growing free speed for tram and train only."""
     assert DEFAULT_REGISTRY.get("tram").long_speed_kmh is not None

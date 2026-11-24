@@ -63,6 +63,16 @@ Edges
 Without ``is_multigraph`` every ``(u, v)`` pair must be unique. Any other column (OSM tags, ``type``, ``route``,
 ``grade``) can be added and used as a weight if it holds non-negative numbers.
 
+Routes
+~~~~~~
+
+Public-transport graphs have a third table, ``routes``: one row per route, indexed by ``route_key``, with its
+attributes (:doc:`../building/public_transport`). Edges refer to it by their ``route_key`` column. Every operation
+that makes a new graph carries the table and keeps the routes some edge still refers to: :func:`clip_urban_graph`
+and :func:`subgraph_by_nodes` drop the routes they cut away, :func:`join_urban_graphs` unites the tables of both
+graphs, and ``.urbangraph`` files store it (files written before it existed read without it). Street graphs have
+none: ``graph.routes`` is ``None``. Conversion to NetworkX leaves it out.
+
 Direction
 ~~~~~~~~~
 

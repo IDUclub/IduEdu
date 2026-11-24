@@ -64,6 +64,27 @@ msgstr ":py:obj:`get_public_transport_graph <iduedu.get_public_transport_graph>`
 msgid "Build a directed public-transport graph for one or multiple transport modes within a territory."
 msgstr "Строит ориентированный граф общественного транспорта для одного или нескольких видов транспорта в пределах территории."
 
+# | msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgid ":py:obj:`route_edges <iduedu.route_edges>`"
+msgstr ":py:obj:`route_edges <iduedu.route_edges>`"
+
+msgid "Travel edges of one route in the order of travel."
+msgstr "Рёбра движения одного маршрута в порядке следования."
+
+# | msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgid ":py:obj:`route_stops <iduedu.route_stops>`"
+msgstr ":py:obj:`route_stops <iduedu.route_stops>`"
+
+msgid "Stop nodes of one route in the order the route calls at them."
+msgstr "Узлы остановок одного маршрута в том порядке, в каком маршрут их проходит."
+
+# | msgid ":py:obj:`route_directness <iduedu.route_directness>`"
+msgid ":py:obj:`routes_in_area <iduedu.routes_in_area>`"
+msgstr ":py:obj:`routes_in_area <iduedu.routes_in_area>`"
+
+msgid "Routes of the graph with a travel edge or a stop in an area."
+msgstr "Маршруты графа, у которых есть ребро движения или остановка в области."
+
 msgid ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
 msgstr ":py:obj:`get_gtfs_public_transport_graph <iduedu.get_gtfs_public_transport_graph>`"
 
@@ -97,14 +118,18 @@ msgstr "Учесть один раз то, что несколько объед�
 msgid ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
 msgstr ":py:obj:`TransportSpec <iduedu.TransportSpec>`"
 
-msgid "Configuration of a single public-transport mode used to estimate travel time on graph edges."
-msgstr "Параметры одного вида общественного транспорта для оценки времени в пути на рёбрах графа."
+# | msgid "Configuration of a single public-transport mode used to estimate
+# | travel time on graph edges."
+msgid "Configuration of a public-transport mode or service used to estimate travel time on graph edges."
+msgstr "Параметры вида общественного транспорта или варианта сообщения для оценки времени в пути на рёбрах графа."
 
 msgid ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
 msgstr ":py:obj:`TransportRegistry <iduedu.TransportRegistry>`"
 
-msgid "Registry of available public-transport modes and their specifications."
-msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+# | msgid "Registry of available public-transport modes and their
+# | specifications."
+msgid "Registry of public-transport specifications for modes and service variants."
+msgstr "Реестр спецификаций видов общественного транспорта и вариантов сообщения."
 
 msgid ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
 msgstr ":py:obj:`get_4326_boundary <iduedu.get_4326_boundary>`"
@@ -409,8 +434,10 @@ msgstr "Вернуть до k кратчайших путей без цикло�
 msgid "Network analysis"
 msgstr "Анализ сети"
 
-msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`"
-msgstr ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`"
+# | msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`,
+# | :doc:`analysis/centrality`, :doc:`analysis/elevation`"
+msgid ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/flows`, :doc:`analysis/elevation`"
+msgstr ":doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/flows`, :doc:`analysis/elevation`"
 
 msgid ":py:obj:`graph_stats <iduedu.graph_stats>`"
 msgstr ":py:obj:`graph_stats <iduedu.graph_stats>`"
@@ -477,6 +504,13 @@ msgstr ":py:obj:`edge_betweenness <iduedu.edge_betweenness>`"
 
 msgid "Betweenness of the edges of a graph: how many shortest paths within a threshold run along each edge."
 msgstr "Промежуточность рёбер графа: сколько кратчайших путей в пределах порога проходит по каждому ребру."
+
+# | msgid ":py:obj:`use_pbf <iduedu.use_pbf>`"
+msgid ":py:obj:`assign_flows <iduedu.assign_flows>`"
+msgstr ":py:obj:`assign_flows <iduedu.assign_flows>`"
+
+msgid "Assign flows from sources to attractive nodes along shortest paths and sum them on the edges."
+msgstr "Распределяет потоки от источников по привлекательным узлам вдоль кратчайших путей и суммирует их на рёбрах."
 
 msgid ":py:obj:`add_elevation <iduedu.add_elevation>`"
 msgstr ":py:obj:`add_elevation <iduedu.add_elevation>`"

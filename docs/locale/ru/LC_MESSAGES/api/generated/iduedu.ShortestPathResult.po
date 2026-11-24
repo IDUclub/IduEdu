@@ -20,8 +20,8 @@ msgstr "iduedu.ShortestPathResult"
 msgid "Distances and paths from the same Dijkstra searches."
 msgstr "Расстояния и пути из одних и тех же поисков Дейкстры."
 
-msgid "``distances`` is a sparse Series or DataFrame. Accessing ``paths`` creates and caches the matching path table. With ``path_storage=\"lazy\"``, use ``get_path`` to reconstruct individual routes without materializing that table or rerunning Dijkstra. Results retain a snapshot of node ids and predecessors, so later graph edits do not change the saved routes."
-msgstr "``distances`` — разреженная Series или DataFrame. Обращение к ``paths`` создаёт и кеширует соответствующую таблицу путей. С ``path_storage=\"lazy\"`` используйте ``get_path``, чтобы восстанавливать отдельные маршруты, не строя всю таблицу и не запуская Дейкстру заново. Результаты хранят снимок идентификаторов узлов и предшественников, поэтому последующие правки графа не меняют сохранённые маршруты."
+msgid "``distances`` is a sparse pandas Series or DataFrame, a NumPy array, or a SciPy CSR array, depending on ``distance_format``. Array positions match the pandas path table, with one distance per row for one-dimensional arrays. Accessing ``paths`` creates and caches the path table. With ``path_storage=\"lazy\"``, use ``get_path`` to reconstruct individual routes without materializing that table or rerunning Dijkstra. Results retain a snapshot of node ids and predecessors, so later graph edits do not change the saved routes."
+msgstr "В зависимости от ``distance_format`` атрибут ``distances`` содержит разреженную Series или DataFrame из pandas, массив NumPy или массив SciPy в формате CSR. Позиции массива соответствуют таблице путей pandas. В одномерном массиве на строку приходится одно расстояние. Обращение к ``paths`` создаёт и сохраняет таблицу путей. При ``path_storage=\"lazy\"`` метод ``get_path`` восстанавливает отдельные маршруты, не создавая всю таблицу и без повторного запуска алгоритма Дейкстры. Результаты сохраняют копию идентификаторов узлов и их предшественников, поэтому последующие изменения графа не влияют на сохранённые маршруты."
 
 msgid "For single-source and nearest-source results, call ``get_path(target)``. For matrices and pairwise results, call ``get_path(origin, destination)`` using the result labels (object labels when object tables were supplied). Duplicate labels require positional access through ``get_path_at``."
 msgstr "Для результатов от одного источника и от ближайшего источника вызывайте ``get_path(target)``. Для матриц и попарных результатов — ``get_path(origin, destination)`` с метками результата (метками объектов, если переданы таблицы объектов). Повторяющиеся метки требуют доступа по позиции через ``get_path_at``."
@@ -32,8 +32,8 @@ msgstr "Параметры"
 msgid "Shortest costs in the selected weight units."
 msgstr "Кратчайшие стоимости в единицах выбранного веса."
 
-msgid "Winning graph node ids for a nearest-source search; otherwise None. Unreachable requested targets have a None owner."
-msgstr "Идентификаторы узлов-победителей при поиске от ближайшего источника; иначе None. У недостижимых запрошенных целей владелец None."
+msgid "A pandas Series of winning graph node ids for a nearest-source search, in distance order for every format. Unreachable targets have a None owner. Other searches set this to None."
+msgstr "При поиске ближайшего источника содержит pandas Series с идентификаторами узлов-победителей в порядке расстояний для всех форматов. Для недостижимых целей указан None. Для других видов поиска атрибут имеет значение None."
 
 msgid "Methods"
 msgstr "Методы"

@@ -119,8 +119,44 @@ msgstr ":func:`deduplicate_across_feeds` применяет те же прави
 msgid "Outputs"
 msgstr "Результаты"
 
-msgid "A directed :class:`UrbanGraph` with the node and edge types of the OSM public-transport graph (:doc:`public_transport`): platforms, route stops, travel edges by mode, ``boarding`` and ``alighting`` edges, and for stations with pathways ``pathway`` and ``station_link`` edges. To walk to the stops, build the walk graph first and give its CRS to the GTFS builder:"
-msgstr "Ориентированный :class:`UrbanGraph` с теми же типами узлов и рёбер, что у графа общественного транспорта OSM (:doc:`public_transport`): платформы, остановки маршрутов, рёбра движения по видам транспорта, рёбра ``boarding`` и ``alighting``, а у станций с переходами — рёбра ``pathway`` и ``station_link``. Чтобы дойти до остановок пешком, сначала постройте пешеходный граф и передайте его систему координат построителю GTFS:"
+# | msgid "A directed :class:`UrbanGraph` with the node and edge types of the
+# | OSM public-transport graph (:doc:`public_transport`): platforms, route
+# | stops, travel edges by mode, ``boarding`` and ``alighting`` edges, and for
+# | stations with pathways ``pathway`` and ``station_link`` edges. To walk to
+# | the stops, build the walk graph first and give its CRS to the GTFS
+# builder:"
+# | stations with pathways ``pathway`` and ``station_link`` edges."
+msgid "A directed :class:`UrbanGraph` with the node and edge types of the OSM public-transport graph (:doc:`public_transport`): platforms, route stops, travel edges by mode, ``boarding`` and ``alighting`` edges, and for stations with pathways ``pathway`` and ``station_link`` edges. Nodes made from ``stops.txt`` keep ``gtfs_stop_id``, ``name`` (the ``stop_name``, also kept as ``stop_name``), ``stop_code``, ``platform_code`` and ``wheelchair_boarding`` when the feed gives them; route stops have the ``gtfs_stop_id`` and ``name`` of their stop."
+msgstr "Ориентированный :class:`UrbanGraph` с теми же типами узлов и рёбер, что у графа общественного транспорта OSM (:doc:`public_transport`): платформы, остановки маршрутов, рёбра движения по видам транспорта, рёбра ``boarding`` и ``alighting``, а у станций с переходами — рёбра ``pathway`` и ``station_link``. Узлы, построенные из ``stops.txt``, хранят ``gtfs_stop_id``, ``name`` (``stop_name``, который также остаётся в ``stop_name``), ``stop_code``, ``platform_code`` и ``wheelchair_boarding``, если они есть в фиде; у остановок маршрутов — ``gtfs_stop_id`` и ``name`` их остановки."
+
+# | msgid "A route of the graph is a *pattern*: the trips of a GTFS route in
+# one
+# | direction that call at the same stops with the same pickup and drop-off
+# | rules and follow the same shape. Its key is
+# | ``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``, the hash taken over
+# the
+# | shape and the stop sequence, so it stays the same while the feed does.
+# | ``feed_id`` defaults to the file or directory name of the feed without
+# | ``.zip``; give each feed a stable name of its own when keys of several
+# feeds
+# | are stored together. Route stops and their edges carry the ``route_key``
+# of
+# | their pattern, platforms the keys of the patterns calling there, and
+# | ``graph.routes`` has one row per pattern: ``ref`` and ``name``
+# | (``route_short_name`` and ``route_long_name``), ``from`` and ``to`` (the
+# | first and last stops), ``operator`` (the agency), ``colour``, the GTFS
+# route
+# | as ``line_key`` and ``line_name``, ``gtfs_route_id``, ``direction_id``,
+# | ``shape_id``, ``stops`` and ``interval_min``, the mean time between
+# | departures at the first stop (twice its boarding wait).
+# :func:`route_edges`,
+# | :func:`route_stops` and :func:`routes_in_area` work as on the OSM graph
+# | (:doc:`public_transport`)."
+msgid "A route of the graph is a *pattern*: the trips of a GTFS route in one direction that call at the same stops with the same pickup and drop-off rules and follow the same shape. Its key is ``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``, the hash taken over the shape and the stop sequence, so it stays the same while the feed does. ``feed_id`` defaults to the file or directory name of the feed without ``.zip``; give each feed a stable name of its own when keys of several feeds are stored together. A merged feed has keys of its own: its ``feed_id`` joins the source names with ``+``, its route and stop ids carry the prefix of their source, and stops of different sources may have been merged, so a route has another key there than in a graph of its source alone, for example ``gtfs:si+subway:si:S66:1:<hash>``. Route stops and their edges carry the ``route_key`` of their pattern, platforms the keys of the patterns calling there, and ``graph.routes`` has one row per pattern: ``ref`` and ``name`` (``route_short_name`` and ``route_long_name``), ``from`` and ``to`` (the first and last stops), ``operator`` (the agency), ``colour``, the GTFS route as ``line_key`` and ``line_name``, ``gtfs_route_id``, ``direction_id``, ``shape_id``, ``stops`` and ``interval_min``, the mean time between departures at the first stop (twice its boarding wait). :func:`route_edges`, :func:`route_stops` and :func:`routes_in_area` work as on the OSM graph (:doc:`public_transport`)."
+msgstr "Маршрут графа — это *паттерн*: рейсы маршрута GTFS в одном направлении, которые останавливаются на одних и тех же остановках с одинаковыми правилами посадки и высадки и идут по одной форме (shape). Его ключ — ``gtfs:<feed_id>:<route_id>:<direction_id>:<hash>``, где хеш берётся по форме и последовательности остановок, поэтому ключ не меняется, пока не меняется фид. ``feed_id`` по умолчанию — имя файла или каталога фида без ``.zip``; дайте каждому фиду своё постоянное имя, если ключи нескольких фидов хранятся вместе. У объединённого фида свои ключи: его ``feed_id`` соединяет имена источников через ``+``, идентификаторы маршрутов и остановок несут префикс своего источника, а остановки разных источников могли быть склеены, поэтому ключ маршрута там другой, чем в графе одного его источника, например ``gtfs:si+subway:si:S66:1:<hash>``. Остановки маршрута и их рёбра несут ``route_key`` своего паттерна, платформы — ключи паттернов, которые на них останавливаются, а в ``graph.routes`` по строке на паттерн: ``ref`` и ``name`` (``route_short_name`` и ``route_long_name``), ``from`` и ``to`` (первая и последняя остановки), ``operator`` (перевозчик), ``colour``, маршрут GTFS в виде ``line_key`` и ``line_name``, ``gtfs_route_id``, ``direction_id``, ``shape_id``, ``stops`` и ``interval_min`` — средний интервал между отправлениями с первой остановки (удвоенное ожидание посадки). :func:`route_edges`, :func:`route_stops` и :func:`routes_in_area` работают так же, как на графе OSM (:doc:`public_transport`)."
+
+msgid "To walk to the stops, build the walk graph first and give its CRS to the GTFS builder:"
+msgstr "Чтобы дойти до остановок пешком, сначала постройте пешеходный граф и передайте его систему координат построителю GTFS:"
 
 msgid "Functions"
 msgstr "Функции"

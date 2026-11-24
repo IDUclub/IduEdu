@@ -33,7 +33,8 @@ def nx_graph2urban_graph(
     This helper is intended for compatibility with libraries that still produce
     NetworkX graphs. Nodes must contain ``x`` and ``y`` coordinates, the graph must
     expose a ``crs`` attribute, and edges are expected to carry ``geometry``,
-    ``length_meter`` and ``time_min`` attributes.
+    ``length_meter`` and ``time_min`` attributes. The other node attributes become
+    columns of the node table.
 
     Args:
         nx_graph: NetworkX graph, directed graph, multigraph or multidigraph.
@@ -84,7 +85,12 @@ def nx_graph2urban_graph(
     except KeyError as exc:
         raise ValueError(f"NetworkX nodes must have required {exc.args[0]!r} attribute") from exc
 
-    nodes_gdf = gpd.GeoDataFrame(index=node_index, crs=crs, geometry=node_geoms)
+    # Every node attribute but the coordinates becomes a column; a node without it gets a missing value.
+    node_attrs = pd.DataFrame.from_records(
+        [{key: value for key, value in data.items() if key not in ("x", "y", "geometry")} for data in node_data],
+        index=pd.Index(node_index),
+    )
+    nodes_gdf = gpd.GeoDataFrame(node_attrs, crs=crs, geometry=node_geoms)
 
     if nx_graph.is_multigraph():
         edges_df = pd.DataFrame(list(nx_graph.edges(data=True, keys=True)), columns=["u", "v", "k", "data"])
@@ -133,8 +139,9 @@ def nx_graph2urban_graph(
     starts = coords[first_idx]
     ends = coords[last_idx]
 
-    u_xy = edge_node_xy[["u_node_x", "u_node_y"]].to_numpy(dtype=float)
-    v_xy = edge_node_xy[["v_node_x", "v_node_y"]].to_numpy(dtype=float)
+    # Copies: with copy-on-write pandas hands out read-only views, and the endpoints are swapped in place below.
+    u_xy = edge_node_xy[["u_node_x", "u_node_y"]].to_numpy(dtype=float, copy=True)
+    v_xy = edge_node_xy[["v_node_x", "v_node_y"]].to_numpy(dtype=float, copy=True)
     endpoint_tolerance = np.maximum(1e-6, 1e-9 * np.maximum(edges_gdf.geometry.length.to_numpy(), 1.0))
 
     start_matches_u = np.isclose(starts, u_xy, rtol=0, atol=endpoint_tolerance[:, None]).all(axis=1)
@@ -176,10 +183,20 @@ def urban_graph2nx_graph(urban_graph: UrbanGraph) -> Any:
     Args:
         urban_graph: Tabular urban graph to convert.
 
+    A directed graph with an edge direction column (``oneway``) becomes an undirected NetworkX graph whose
+    edges keep that column and their geometry drawn from ``u`` to ``v``, as :func:`nx_graph2urban_graph` reads
+    them back. An undirected ``MultiGraph`` keys the edges of a pair of nodes, not of a direction, so an edge
+    whose key the opposite edge already holds (boarding and alighting, two one-way carriageways) gets the next
+    free key.
+
     Returns:
         ``networkx.Graph``, ``networkx.DiGraph``, ``networkx.MultiGraph`` or
         ``networkx.MultiDiGraph`` with node and edge attributes copied from the
         UrbanGraph tables.
+
+    Raises:
+        ValueError: If a graph without parallel edges would become an undirected ``networkx.Graph`` while two of
+            its edges join the same nodes (``u`` to ``v`` and ``v`` to ``u``): such a graph holds one of them only.
     """
 
     nx = _require_networkx()
@@ -202,6 +219,16 @@ def urban_graph2nx_graph(urban_graph: UrbanGraph) -> Any:
     )
     nx_graph.graph.update(graph_attrs)
 
+    if not is_multi and not directed:
+        pairs = pd.Series([frozenset(pair) for pair in zip(edges_gdf["u"], edges_gdf["v"])], dtype=object)
+        repeated = pairs.duplicated(keep=False).to_numpy()
+        if repeated.any():
+            preview = edges_gdf.loc[repeated, ["u", "v"]].head(6).to_dict("records")
+            raise ValueError(
+                "edges in both directions between the same nodes do not fit an undirected networkx.Graph, "
+                f"which holds one edge per pair of nodes: {preview}; convert a multigraph instead"
+            )
+
     nodes_gdf["x"] = nodes_gdf.geometry.x
     nodes_gdf["y"] = nodes_gdf.geometry.y
     df_nodes = nodes_gdf.drop(columns=nodes_gdf.active_geometry_name)
@@ -213,6 +240,8 @@ def urban_graph2nx_graph(urban_graph: UrbanGraph) -> Any:
         for (u, v, k), attr_vals in zip(edges_gdf.index, edges_gdf.to_numpy(), strict=True):
             data_all = zip(attr_names, attr_vals, strict=True)
             data = {name: val for name, val in data_all if isinstance(val, list) or pd.notna(val)}
+            if not directed and nx_graph.has_edge(u, v, key=k):
+                k = nx_graph.new_edge_key(u, v)
             nx_graph.add_edge(u, v, key=k, **data)
 
     else:

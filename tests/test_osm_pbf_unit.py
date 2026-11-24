@@ -161,6 +161,8 @@ class OsmData:
         out = []
         ways = sorted({ref for r in ground for t, ref, _ in self.rels[r][0] if t == "w"})
         out += [self.ov_tags("w", w) for w in ways]
+        nodes = sorted({ref for r in ground for t, ref, _ in self.rels[r][0] if t == "n"})
+        out += [self.ov_tags("n", n) for n in nodes]
         out += [self.ov_rel_geom(r) for r in ground]
         out += [self.ov_rel_geom(r) for r in stop_area_like]
         out += [self.ov_rel_body(g) for g in groups]
@@ -176,6 +178,21 @@ class OsmData:
 
 COLS = [30.302, 30.306, 30.310, 30.314, 30.318]
 ROWS = [59.932, 59.934, 59.936, 59.938]
+
+
+def _routes(source, polygon, types):
+    """``routes_by_poly`` with way geometry as Overpass prints it.
+
+    The reader hands the ways of ground routes out as shared read-only lon/lat arrays, not as point dicts.
+    """
+    elements = source.routes_by_poly(polygon, types)
+    for element in elements:
+        for member in element.get("members", ()):
+            geometry = member.get("geometry")
+            if isinstance(geometry, np.ndarray):
+                assert not geometry.flags.writeable
+                member["geometry"] = [{"lat": lat, "lon": lon} for lon, lat in geometry.tolist()]
+    return elements
 
 
 def _grid_node(row, col):
@@ -529,20 +546,25 @@ def test_poly_semantics_for_ways(tmp_path):
 
 
 def test_routes_by_poly_reproduces_the_overpass_statements(city, city_pbf):
-    got = PbfSource(city_pbf).routes_by_poly(POLY, PT_TYPES)
+    got = _routes(PbfSource(city_pbf), POLY, PT_TYPES)
     assert got == city.ov_routes(GROUND_ROUTES, STOP_AREA_LIKE, GROUPS)
 
 
 def test_routes_by_poly_ground_only_has_no_member_section(city, city_pbf):
-    got = PbfSource(city_pbf).routes_by_poly(POLY, ["bus"])
+    got = _routes(PbfSource(city_pbf), POLY, ["bus"])
     expected_routes = [1001, 1002]
     ways = sorted({ref for r in expected_routes for t, ref, _ in city.rels[r][0] if t == "w"})
-    assert got == [city.ov_tags("w", w) for w in ways] + [city.ov_rel_geom(r) for r in expected_routes]
+    nodes = sorted({ref for r in expected_routes for t, ref, _ in city.rels[r][0] if t == "n"})
+    assert got == (
+        [city.ov_tags("w", w) for w in ways]
+        + [city.ov_tags("n", n) for n in nodes]
+        + [city.ov_rel_geom(r) for r in expected_routes]
+    )
     assert not any(e["type"] == "section" for e in got)
 
 
 def test_route_leaving_the_polygon_keeps_its_full_geometry(city_pbf):
-    route = next(e for e in PbfSource(city_pbf).routes_by_poly(POLY, ["bus"]) if e.get("id") == 1002)
+    route = next(e for e in _routes(PbfSource(city_pbf), POLY, ["bus"]) if e.get("id") == 1002)
     far = next(m for m in route["members"] if m["ref"] == 131)
     assert far["geometry"] == [{"lat": 59.936, "lon": 30.33}, {"lat": 59.936, "lon": 30.34}]
     terminus = next(m for m in route["members"] if m["ref"] == 83)
@@ -552,9 +574,9 @@ def test_route_leaving_the_polygon_keeps_its_full_geometry(city_pbf):
 
 def test_routes_by_poly_alias_and_empty_types(city_pbf):
     src = PbfSource(city_pbf)
-    tram = [e for e in src.routes_by_poly(POLY, ["tram"]) if e["type"] == "relation"]
+    tram = [e for e in _routes(src, POLY, ["tram"]) if e["type"] == "relation"]
     assert [e["id"] for e in tram] == [1003]
-    assert src.routes_by_poly(POLY, []) == []
+    assert _routes(src, POLY, []) == []
 
 
 def test_member_tags_match_fetch_member_tags_shapes(city, city_pbf):
@@ -585,8 +607,8 @@ def test_pbf_source_missing_or_foreign_file(tmp_path):
 
 def test_repeated_queries_use_the_block_index(city, city_pbf):
     src = PbfSource(city_pbf)
-    first = src.routes_by_poly(POLY, PT_TYPES)
-    assert src.routes_by_poly(POLY, PT_TYPES) == first == city.ov_routes(GROUND_ROUTES, STOP_AREA_LIKE, GROUPS)
+    first = _routes(src, POLY, PT_TYPES)
+    assert _routes(src, POLY, PT_TYPES) == first == city.ov_routes(GROUND_ROUTES, STOP_AREA_LIKE, GROUPS)
     assert src.ways_by_filter(POLY, Network.WALK.filter) == [city.ov_way_geom(w) for w in WALK_WAYS]
 
 
@@ -722,7 +744,7 @@ def test_split_city_file_answers_like_the_region(split_city, region_pbf, no_over
         _assert_same_graph(from_region[kind], from_city[kind])
     assert from_city["boundary"].equals(from_region["boundary"])
     region, small = PbfSource(region_pbf), PbfSource(split_city)
-    assert small.routes_by_poly(POLY, PT_TYPES) == region.routes_by_poly(POLY, PT_TYPES)
+    assert _routes(small, POLY, PT_TYPES) == _routes(region, POLY, PT_TYPES)
     assert small.ways_by_filter(POLY, Network.WALK.filter) == region.ways_by_filter(POLY, Network.WALK.filter)
 
 

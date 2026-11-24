@@ -5,7 +5,7 @@ from math import sqrt
 @dataclass(frozen=True, slots=True)
 class TransportSpec:  # pylint: disable=too-many-instance-attributes
     """
-    Configuration of a single public-transport mode used to estimate travel time on graph edges.
+    Configuration of a public-transport mode or service used to estimate travel time on graph edges.
 
     Each transport specification defines technical and operational characteristics of a mode
     (e.g. bus, tram, subway) that are used to compute per-edge travel time based on segment length,
@@ -13,8 +13,8 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
 
     Attributes:
         name (str):
-            Transport type identifier, usually matching the OSM ``route=*`` value
-            (e.g. ``"bus"``, ``"tram"``, ``"subway"``).
+            Registry key, either a mode (e.g. ``"train"``) or ``"<mode>:<service>"``
+            for a variant matching the OSM route relation's ``service`` tag.
         vmax_tech_kmh (float):
             Technical maximum speed of the vehicle in kilometers per hour.
         accel_dist_m (float):
@@ -56,7 +56,7 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
             ``long_speed_kmh``, in metres. Set together with ``long_speed_kmh``.
         avg_wait_time_min (float):
             Average passenger waiting time in minutes. It is assigned to directed
-            ``boarding`` edges built from OSM data.
+            ``boarding`` edges built from OSM data using the plain mode specification.
 
     See also:
         https://iduclub.github.io/IduEdu/examples/transport_registry.html
@@ -196,11 +196,11 @@ class TransportSpec:  # pylint: disable=too-many-instance-attributes
 
 class TransportRegistry:
     """
-    Registry of available public-transport modes and their specifications.
+    Registry of public-transport specifications for modes and service variants.
 
-    The registry stores ``TransportSpec`` objects indexed by normalized transport type names
-    (lowercase). It provides utilities for validating transport types, updating parameters,
-    and ensuring that unknown types encountered during parsing are assigned reasonable defaults.
+    The registry stores ``TransportSpec`` objects under lowercase mode names and optional
+    ``"<mode>:<service>"`` keys. ``list_types()`` returns both kinds of keys, and ``list_modes()``
+    returns the names that can be requested when building an OSM graph.
 
     The registry is used throughout graph construction to compute per-edge travel times
     consistently across different transport modes.
@@ -224,7 +224,7 @@ class TransportRegistry:
         """Return a transport specification by name.
 
         Args:
-            name: Transport type name. Matching is case-insensitive and ignores
+            name: Mode or service variant key. Matching is case-insensitive and ignores
                 surrounding whitespace.
 
         Raises:
@@ -261,7 +261,7 @@ class TransportRegistry:
         """Update fields of an existing transport specification.
 
         Args:
-            transport_type: Existing transport type name.
+            transport_type: Existing mode or service variant key.
             **fields: Dataclass fields to update.
 
         Returns:
@@ -294,7 +294,7 @@ class TransportRegistry:
         """Return an existing spec or create one from defaults.
 
         Args:
-            name: Transport type name.
+            name: Mode or service variant key.
             defaults: Optional specification used when the name is missing.
 
         Returns:
@@ -316,9 +316,13 @@ class TransportRegistry:
         self.add(defaults, overwrite=False)
         return self._specs[key]
 
-    def list_types(self):
-        """Return registered transport type names."""
+    def list_types(self) -> list[str]:
+        """Return registered mode and service variant keys."""
         return list(self._specs.keys())
+
+    def list_modes(self) -> list[str]:
+        """Return registered mode names that can be requested as OSM route types."""
+        return [name for name in self._specs if ":" not in name]
 
 
 # Speed parameters are fitted against observed GTFS run times: segments are matched to OSM
@@ -425,5 +429,21 @@ _TRAIN_SPEC = TransportSpec(
     dwell_min=0.365,
 )
 
+# Published Sapsan timetables for Saint Petersburg to Moscow (645 km): 3 h 40 min nonstop
+# and about 4 h with stops. Targets: 220-225 min on one segment, 240-250 min on five.
+_HIGH_SPEED_TRAIN_SPEC = TransportSpec(
+    "train:high_speed",
+    vmax_tech_kmh=250,
+    accel_dist_m=6000.0,
+    brake_dist_m=3500.0,
+    avg_wait_time_min=_TRAIN_SPEC.avg_wait_time_min,
+    base_speed_kmh=130.0,
+    long_speed_kmh=180.0,
+    speed_half_length_m=20000.0,
+    dwell_min=1.5,
+)
+
 DEFAULT_REGISTRY = TransportRegistry(_DEFAULT_TRANSPORT_SPECS)
-DEFAULT_REGISTRY_W_TRAIN = TransportRegistry({**_DEFAULT_TRANSPORT_SPECS, "train": _TRAIN_SPEC})
+DEFAULT_REGISTRY_W_TRAIN = TransportRegistry(
+    {**_DEFAULT_TRANSPORT_SPECS, "train": _TRAIN_SPEC, "train:high_speed": _HIGH_SPEED_TRAIN_SPEC}
+)

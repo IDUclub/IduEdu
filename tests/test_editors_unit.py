@@ -6,6 +6,7 @@ from shapely.geometry import LineString, Point, box
 
 from iduedu.graph.editors import (
     UrbanGraphChanges,
+    _nearest_projection_rows,
     apply_urban_graph_changes,
     clip_urban_graph,
     join_urban_graphs,
@@ -14,7 +15,7 @@ from iduedu.graph.editors import (
     subgraph_by_nodes,
 )
 from iduedu.graph.urban_graph import UrbanGraph
-from tests.factories import CRS, _edges, _nodes, disconnected_graph, undirected_line_graph
+from tests.factories import CRS, _edges, _nodes, directed_oneway_graph, disconnected_graph, undirected_line_graph
 
 pytestmark = pytest.mark.unit
 
@@ -48,6 +49,17 @@ def test_relabel_urban_graph_remaps_sparse_node_ids_to_range_index():
     assert (3, 4) in edge_pairs  # old (10, 11) edge
     # Source graph is left untouched.
     assert graph.nodes_gdf.index.tolist() == [0, 1, 2, 10, 11]
+
+
+def test_relabel_urban_graph_reassigns_parallel_keys_in_row_order():
+    coords = {10: (0, 0), 20: (10, 0), 30: (20, 0)}
+    edges = _edges(coords, [{"u": 10, "v": 20, "k": 9}, {"u": 20, "v": 30, "k": 5}, {"u": 10, "v": 20, "k": 2}])
+    graph = UrbanGraph(_nodes(coords), edges, is_multigraph=True, is_directed=False)
+
+    result = relabel_urban_graph(graph)
+
+    assert result.edges_gdf[["u", "v", "k"]].values.tolist() == [[0, 1, 0], [1, 2, 0], [0, 1, 1]]
+    assert graph.edges_gdf["k"].tolist() == [9, 5, 2]
 
 
 def test_subgraph_by_nodes_keeps_only_internal_edges():
@@ -169,6 +181,66 @@ def test_project_objects_splits_nearest_edge_and_connects_object():
     assert new_graph.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
 
 
+@pytest.mark.parametrize("cut_x", [(17.123,), (17.123, 61.234)], ids=["one-cut", "two-cuts"])
+@pytest.mark.parametrize(
+    "edge_type, length, time, route_key",
+    [
+        pytest.param("drive", 100.0, 0.083, None, id="drive"),
+        pytest.param("subway", 150.0, 0.051, "subway:1", id="subway"),
+        pytest.param("boarding", 0.0, 4.5, "subway:1", id="boarding"),
+        pytest.param("walk", np.nan, np.nan, None, id="missing-costs"),
+    ],
+)
+def test_projection_preserves_split_edge_costs(cut_x, edge_type, length, time, route_key):
+    coords = {0: (0.0, 0.0), 1: (100.0, 0.0)}
+    attrs = {"type": edge_type, "route_key": route_key, "name": "example", "speed_kmh": 72, "custom": "value"}
+    edge = {"u": 0, "v": 1, "oneway": True, "length_meter": length, "time_min": time, **attrs}
+    graph = UrbanGraph(
+        _nodes(coords),
+        _edges(coords, [edge]),
+        is_multigraph=False,
+        is_directed=True,
+        edge_direction_column="oneway",
+        crs=CRS,
+    )
+    objects = gpd.GeoDataFrame(geometry=[Point(x, 7.1259) for x in cut_x], crs=CRS)
+
+    changes, mapping = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+    result = apply_urban_graph_changes(graph, changes)
+    assert changes.edges_to_delete[["u", "v"]].values.tolist() == [[0, 1]]
+    connectors = result.edges_gdf.loc[result.edges_gdf["u"].isin(mapping)]
+    pieces = result.edges_gdf.drop(index=connectors.index)
+    assert len(pieces) == len(cut_x) + 1
+    assert pieces["oneway"].tolist() == [True] * len(pieces)
+    assert pieces["u"].tolist() == [0, *pieces["v"].iloc[:-1]]
+    assert pieces["v"].iloc[-1] == 1
+    for name, value in attrs.items():
+        assert pieces[name].tolist() == [value] * len(pieces)
+
+    fractions = np.diff((0.0, *cut_x, 100.0)) / 100.0
+    for name, value in (("length_meter", length), ("time_min", time)):
+        if np.isnan(value):
+            assert pieces[name].isna().all()
+        else:
+            assert pieces[name].to_numpy() == pytest.approx(fractions * value, rel=1e-12, abs=0)
+            assert pieces[name].sum() == pytest.approx(value, rel=1e-12, abs=0)
+
+    assert connectors["oneway"].tolist() == [False] * len(cut_x)
+    assert connectors["length_meter"].tolist() == [7.126] * len(cut_x)
+    assert connectors["time_min"].tolist() == [0.07] * len(cut_x)
+
+
+def test_projection_does_not_split_zero_length_edge():
+    coords = {0: (0.0, 0.0), 1: (0.0, 0.0)}
+    graph = _two_node_graph(coords, [{"u": 0, "v": 1, "time_min": 2.0}])
+    objects = gpd.GeoDataFrame(geometry=[Point(0.0, 1.0)], crs=CRS)
+
+    changes, _ = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+
+    assert changes.edges_to_delete.empty
+    assert len(changes.edges_gdf) == 1  # Only the connector was added.
+
+
 def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     graph = undirected_line_graph()
     objects = gpd.GeoDataFrame(index=[1000], geometry=[Point(0.0, 3.0)], crs=CRS)
@@ -184,6 +256,35 @@ def test_project_objects_snaps_to_existing_endpoint_without_splitting():
     assert _degree(new_graph, object_node) > 0  # the connector edge is part of the changes
     # The endpoint id comes from the nearest-edge join; it stays an integer.
     assert changes.edges_gdf[["u", "v"]].dtypes.tolist() == [np.int64, np.int64]
+
+
+def test_project_objects_preserves_node_ids_and_connector_order_across_groups():
+    graph = undirected_line_graph()
+    graph.is_directed = True  # Connector edges come in forward/reverse pairs.
+    objects = gpd.GeoDataFrame(
+        index=["first", "end", "second", "shared"],
+        geometry=[Point(15, 5), Point(0, 3), Point(25, 4), Point(15, 5)],
+        crs=CRS,
+    )
+
+    changes, mapping = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+
+    assert list(mapping.items()) == [("end", 4), ("first", 7), ("shared", 8), ("second", 9)]
+    assert changes.nodes_gdf.index.tolist() == [4, 5, 7, 8, 6, 9]
+    assert list(zip(changes.edges_gdf["u"], changes.edges_gdf["v"])) == [
+        (4, 0),
+        (0, 4),
+        (7, 5),
+        (5, 7),
+        (8, 5),
+        (5, 8),
+        (9, 6),
+        (6, 9),
+        (1, 5),
+        (5, 2),
+        (2, 6),
+        (6, 3),
+    ]
 
 
 @pytest.mark.parametrize("add_link_edge", [True, False])
@@ -279,6 +380,45 @@ def test_project_objects_rejects_non_positive_speed(speed):
         project_objects2urban_graph(graph, objects, speed)
 
 
+def test_nearest_projection_keeps_join_order_and_distance_boundary():
+    coords = {0: (0, 0), 1: (10, 0), 2: (0, 4), 3: (10, 4)}
+    edges = _edges(coords, [{"u": 2, "v": 3}, {"u": 0, "v": 1}])
+    edges.index = [9, 5]
+    objects = gpd.GeoDataFrame(
+        geometry=[Point(5, -2), Point(5, 2), Point(5, 6.01), Point()], index=[4, 1, 3, 2], crs=CRS
+    )
+    expected = (
+        objects.reset_index(names="object_index")
+        .sjoin_nearest(edges.assign(edge_geometry=edges.geometry), how="inner", max_distance=2)
+        .rename_geometry("object_geometry")
+        .rename(columns={"index_right": "edge_index"})
+        .reset_index(drop=True)
+    )
+
+    actual = _nearest_projection_rows(objects, edges, ["u", "v"], max_dist=2)
+
+    assert expected["object_index"].tolist() == [4, 1, 1]
+    pd.testing.assert_frame_equal(actual, expected[actual.columns])
+
+
+def test_projection_uses_the_cached_index_in_a_projected_metre_crs(monkeypatch):
+    graph = undirected_line_graph()
+    objects = gpd.GeoDataFrame(geometry=[Point(3, 4)], crs=CRS)
+
+    def unexpected_estimate(*args, **kwargs):  # pylint: disable=unused-argument
+        pytest.fail("a projected metre CRS does not need a UTM estimate")
+
+    monkeypatch.setattr(gpd.GeoDataFrame, "estimate_utm_crs", unexpected_estimate)
+    changes, first = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+    assert graph.edges_gdf.has_sindex
+    index = graph.edges_gdf.sindex
+    _, second = project_objects2urban_graph(graph, objects, WALK_SPEED_M_PER_MIN)
+
+    assert graph.edges_gdf.sindex is index
+    assert changes.edges_gdf["length_meter"].tolist() == [4.0, 3.0, 7.0]
+    pd.testing.assert_series_equal(first, second)
+
+
 def test_apply_changes_rejects_multigraph_flag_mismatch():
     graph = undirected_line_graph()  # is_multigraph=False
     changes = UrbanGraphChanges(is_multigraph=True, is_directed=False)
@@ -306,6 +446,43 @@ def test_apply_changes_rejects_node_id_collision():
 
     with pytest.raises(ValueError, match="collision"):
         apply_urban_graph_changes(graph, changes)
+
+
+def test_apply_changes_rejects_unknown_new_edge_endpoint():
+    graph = undirected_line_graph()
+    edges = graph.edges_gdf.iloc[[0]].assign(v=99)
+    changes = UrbanGraphChanges(edges_gdf=edges)
+
+    with pytest.raises(ValueError, match=r"Some edge endpoints are missing in nodes_gdf.index: \[99\]"):
+        apply_urban_graph_changes(graph, changes)
+
+
+def test_apply_changes_allows_replacing_an_edge_but_rejects_a_duplicate_key():
+    graph = undirected_line_graph()
+    edge = graph.edges_gdf.iloc[[0]].assign(time_min=8.0)
+
+    with pytest.raises(ValueError, match=r"edges_gdf must have unique \['u','v'\]"):
+        apply_urban_graph_changes(graph, UrbanGraphChanges(edges_gdf=edge))
+
+    result = apply_urban_graph_changes(graph, UrbanGraphChanges(edges_gdf=edge, edges_to_delete=edge[["u", "v"]]))
+    pd.testing.assert_frame_equal(result.edges_gdf, pd.concat([graph.edges_gdf.iloc[1:], edge], ignore_index=True))
+    result.validate()
+
+
+def test_apply_changes_rejects_missing_direction_on_new_edge():
+    graph = directed_oneway_graph()
+    edge = graph.edges_gdf.iloc[[0]].drop(columns="oneway").assign(v=2)
+
+    with pytest.raises(ValueError, match=r"edges_gdf\['oneway'\] contains NaN"):
+        apply_urban_graph_changes(graph, UrbanGraphChanges(edges_gdf=edge, is_directed=True))
+
+
+def test_apply_changes_rejects_nonboolean_updated_direction():
+    graph = directed_oneway_graph()
+    update = pd.DataFrame({"u": [0], "v": [1], "oneway": [2]})
+
+    with pytest.raises(ValueError, match="must contain only boolean values"):
+        apply_urban_graph_changes(graph, UrbanGraphChanges(edges_to_update=update, is_directed=True))
 
 
 # ---------------------------------------------------------------------------

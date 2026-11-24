@@ -12,9 +12,12 @@ pub mod chains;
 pub mod components;
 pub mod csr;
 pub mod dijkstra;
+pub mod flows;
 pub mod pbf;
 pub mod pbf_write;
 pub mod penalty;
+pub mod pt_routes;
+mod split;
 pub mod yen;
 
 use std::collections::HashMap;
@@ -22,7 +25,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use numpy::ndarray::{Array2, Array3};
-use numpy::{IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyArray3, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -1030,6 +1033,86 @@ impl CsrGraph {
         };
         Ok((nodes_arr.into_pyarray(py), arcs_arr))
     }
+
+    /// Flows assigned along the shortest-path forest of every cluster of ``sources`` (one value per arc
+    /// in CSR order). ``cluster_offsets`` slice ``sources`` and ``source_flows``; ``node_weights`` holds one
+    /// attraction per node. A destination weighs ``node_weights[node] * decay(cost)`` with ``decay`` one of
+    /// ``"gaussian"`` (``mean``, ``std``), ``"exp"`` (``beta``) or ``"flat"``. An arc keeps the flow of a
+    /// cluster when it exceeds ``min_flow`` or when the arc leaves a source and the flow is positive.
+    #[pyo3(signature = (sources, source_flows, cluster_offsets, node_weights, decay="gaussian", mean=None, std=None, beta=None, cutoff=None, min_flow=0.0, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn assign_flows<'py>(
+        &self,
+        py: Python<'py>,
+        sources: PyReadonlyArray1<'py, i32>,
+        source_flows: PyReadonlyArray1<'py, f64>,
+        cluster_offsets: PyReadonlyArray1<'py, i64>,
+        node_weights: PyReadonlyArray1<'py, f64>,
+        decay: &str,
+        mean: Option<f64>,
+        std: Option<f64>,
+        beta: Option<f64>,
+        cutoff: Option<f32>,
+        min_flow: f64,
+        n_threads: Option<usize>,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let g = self.view();
+        let s = sources.as_slice()?;
+        check_nodes(s, g.n(), "sources")?;
+        let flows = source_flows.as_slice()?;
+        if flows.len() != s.len() || flows.iter().any(|f| !f.is_finite() || *f < 0.0) {
+            return Err(PyValueError::new_err(
+                "source_flows must hold one finite non-negative value per source",
+            ));
+        }
+        let offsets = cluster_offsets.as_slice()?;
+        check_offsets(offsets, s.len(), "cluster_offsets")?;
+        let w = node_weights.as_slice()?;
+        if w.len() != g.n() || w.iter().any(|x| !x.is_finite() || *x < 0.0) {
+            return Err(PyValueError::new_err(
+                "node_weights must hold one finite non-negative value per node",
+            ));
+        }
+        let decay = match (decay, mean, std, beta) {
+            ("flat", _, _, _) => flows::FlowDecay::Flat,
+            ("exp", _, _, Some(beta)) if beta.is_finite() && beta >= 0.0 => {
+                flows::FlowDecay::Exp { beta }
+            }
+            ("gaussian", Some(mean), Some(std), _)
+                if mean.is_finite() && std.is_finite() && std > 0.0 =>
+            {
+                flows::FlowDecay::Gaussian { mean, std }
+            }
+            ("exp", ..) => {
+                return Err(PyValueError::new_err(
+                    "decay='exp' needs a finite non-negative beta",
+                ))
+            }
+            ("gaussian", ..) => {
+                return Err(PyValueError::new_err(
+                    "decay='gaussian' needs a finite mean and a finite positive std",
+                ))
+            }
+            (other, ..) => {
+                return Err(PyValueError::new_err(format!(
+                    "decay must be 'gaussian', 'exp' or 'flat', got {other:?}"
+                )))
+            }
+        };
+        let cutoff = cutoff.unwrap_or(f32::INFINITY);
+        if cutoff.is_nan() || cutoff < 0.0 {
+            return Err(PyValueError::new_err("cutoff must be non-negative"));
+        }
+        if !min_flow.is_finite() {
+            return Err(PyValueError::new_err("min_flow must be finite"));
+        }
+        let out = py.detach(|| {
+            in_pool(n_threads, || {
+                flows::assign_flows(g, s, flows, offsets, w, decay, cutoff, min_flow)
+            })
+        })?;
+        Ok(out.into_pyarray(py))
+    }
 }
 
 /// Routes to ``targets`` from one compact search tree: a flat node array and ``len(targets) + 1``
@@ -1500,6 +1583,273 @@ fn merge_oriented_chains<'py>(
     ))
 }
 
+/// Nodes and edges of public-transport routes: node route, id, xy, is platform; edge route, u, v, is
+/// boarding, point offsets, points, speed; and the routes left out, with why.
+type PtRoutesPy<'py> = (
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray2<f64>>,
+    Bound<'py, PyArray1<bool>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<bool>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray2<f64>>,
+    Bound<'py, PyArray1<f64>>,
+    Vec<(usize, String)>,
+);
+
+type SplitPiecesPy<'py> = (
+    Bound<'py, PyArray1<f64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+    Bound<'py, PyArray1<i64>>,
+);
+
+/// Split XY lines at sorted cut distances. Endpoints are cut positions, or -1/-2 for u/v.
+#[pyfunction]
+fn split_edges<'py>(
+    py: Python<'py>,
+    xy: PyReadonlyArray1<'py, f64>,
+    coord_offsets: PyReadonlyArray1<'py, i64>,
+    distances: PyReadonlyArray1<'py, f64>,
+    cut_offsets: PyReadonlyArray1<'py, i64>,
+) -> PyResult<SplitPiecesPy<'py>> {
+    let (xy, coords, cuts, offsets) = (
+        xy.as_slice()?,
+        coord_offsets.as_slice()?,
+        distances.as_slice()?,
+        cut_offsets.as_slice()?,
+    );
+    check_offsets(coords, xy.len() / 2, "coord_offsets")?;
+    check_offsets(offsets, cuts.len(), "cut_offsets")?;
+    if xy.len() % 2 != 0
+        || coords.len() != offsets.len()
+        || coords.windows(2).any(|w| w[1] - w[0] < 2)
+    {
+        return Err(PyValueError::new_err(
+            "Expected at least two XY coordinates per edge and one cut range per edge",
+        ));
+    }
+    if offsets.windows(2).any(|w| {
+        let edge_cuts = &cuts[w[0] as usize..w[1] as usize];
+        edge_cuts.iter().any(|cut| !cut.is_finite() || *cut < 0.0)
+            || edge_cuts.windows(2).any(|w| w[0] > w[1])
+    }) || xy.iter().any(|value| !value.is_finite())
+    {
+        return Err(PyValueError::new_err(
+            "Expected finite coordinates and sorted, finite, nonnegative cuts per edge",
+        ));
+    }
+    let pieces = py.detach(|| split::split_edges(xy, coords, cuts, offsets));
+    Ok((
+        pieces.coords.into_pyarray(py),
+        pieces.offsets.into_pyarray(py),
+        pieces.edges.into_pyarray(py),
+        pieces.starts.into_pyarray(py),
+        pieces.ends.into_pyarray(py),
+    ))
+}
+
+/// Check that `offsets` run from 0 to `len` without going back.
+fn check_offsets(offsets: &[i64], len: usize, name: &str) -> PyResult<()> {
+    let ok = offsets.first() == Some(&0)
+        && offsets.last().is_some_and(|&last| last as usize == len)
+        && offsets.windows(2).all(|w| w[0] <= w[1]);
+    if ok {
+        Ok(())
+    } else {
+        Err(PyValueError::new_err(format!(
+            "{name} must rise from 0 to {len}"
+        )))
+    }
+}
+
+/// An ``(n, 2)`` float64 array as points.
+fn xy_points(xy: &PyReadonlyArray2<'_, f64>, name: &str) -> PyResult<Vec<pt_routes::Xy>> {
+    if xy.as_array().ncols() != 2 {
+        return Err(PyValueError::new_err(format!(
+            "{name} must have the shape (n, 2)"
+        )));
+    }
+    Ok(xy
+        .as_slice()?
+        .chunks_exact(2)
+        .map(|c| [c[0], c[1]])
+        .collect())
+}
+
+/// Public-transport routes, all at once (see `pt_routes`). Points are projected, in metres: ``xy`` holds
+/// them all. Route ``r`` has the ways ``way_offsets[r]..way_offsets[r + 1]`` (way ``w`` with the points
+/// ``way_points[w]..way_points[w + 1]`` and the speed ``way_speeds[w]``) and the members
+/// ``member_offsets[r]..member_offsets[r + 1]``: stops and platforms in relation order, member ``m`` with the
+/// points ``member_points[m]..member_points[m + 1]`` (one for a node, a way's for a way, which stands at its
+/// centroid), the reference index ``member_refs[m]``, the rank ``member_ranks[m]`` (negative: unknown),
+/// ``member_platform[m]``, and for a stop the reference index of a platform known from elsewhere
+/// (``member_stand_ins[m]``, negative: none) at ``member_stand_in_xy[m]`` (NaN: beside the path). Node ids
+/// are ``2 * reference``, or ``2 * reference + 1`` for a node made up from a member; ``kinds_apart`` keeps a
+/// stop and a platform with one id as two nodes. A route that cannot be parsed gives nothing and is listed
+/// with the reason.
+#[pyfunction]
+#[pyo3(signature = (xy, way_offsets, way_points, way_speeds, member_offsets, member_points, member_refs, member_ranks, member_platform, member_stand_ins, member_stand_in_xy, kinds_apart=false, n_threads=None))]
+#[allow(clippy::too_many_arguments)]
+fn parse_pt_routes<'py>(
+    py: Python<'py>,
+    xy: PyReadonlyArray2<'py, f64>,
+    way_offsets: PyReadonlyArray1<'py, i64>,
+    way_points: PyReadonlyArray1<'py, i64>,
+    way_speeds: PyReadonlyArray1<'py, f64>,
+    member_offsets: PyReadonlyArray1<'py, i64>,
+    member_points: PyReadonlyArray1<'py, i64>,
+    member_refs: PyReadonlyArray1<'py, i64>,
+    member_ranks: PyReadonlyArray1<'py, i64>,
+    member_platform: PyReadonlyArray1<'py, bool>,
+    member_stand_ins: PyReadonlyArray1<'py, i64>,
+    member_stand_in_xy: PyReadonlyArray2<'py, f64>,
+    kinds_apart: bool,
+    n_threads: Option<usize>,
+) -> PyResult<PtRoutesPy<'py>> {
+    let points = xy_points(&xy, "xy")?;
+    let stand_in_xy = xy_points(&member_stand_in_xy, "member_stand_in_xy")?;
+    let (wo, wp, ws) = (
+        way_offsets.as_slice()?,
+        way_points.as_slice()?,
+        way_speeds.as_slice()?,
+    );
+    let (mo, mp) = (member_offsets.as_slice()?, member_points.as_slice()?);
+    let (mr, mk, mf) = (
+        member_refs.as_slice()?,
+        member_ranks.as_slice()?,
+        member_platform.as_slice()?,
+    );
+    let ms = member_stand_ins.as_slice()?;
+    if mo.len() != wo.len() || wo.is_empty() {
+        return Err(PyValueError::new_err(
+            "way_offsets and member_offsets must have one entry per route and one more",
+        ));
+    }
+    if wp.len() != ws.len() + 1
+        || mp.len() != mr.len() + 1
+        || [mk.len(), mf.len(), ms.len(), stand_in_xy.len()]
+            .iter()
+            .any(|&n| n != mr.len())
+    {
+        return Err(PyValueError::new_err(
+            "way_points, way_speeds and the member arrays disagree in length",
+        ));
+    }
+    check_offsets(wo, ws.len(), "way_offsets")?;
+    check_offsets(mo, mr.len(), "member_offsets")?;
+    if wp
+        .iter()
+        .chain(mp)
+        .any(|&p| p < 0 || p as usize > points.len())
+        || wp.windows(2).chain(mp.windows(2)).any(|w| w[0] > w[1])
+    {
+        return Err(PyValueError::new_err(
+            "way_points and member_points must rise within xy",
+        ));
+    }
+    if mr.iter().any(|&r| r < 0) {
+        return Err(PyValueError::new_err("member_refs must not be negative"));
+    }
+
+    let parsed = py.detach(|| {
+        let routes: Vec<pt_routes::Route> = (0..wo.len() - 1)
+            .map(|r| {
+                let ways = (wo[r] as usize..wo[r + 1] as usize)
+                    .map(|w| pt_routes::Way {
+                        coords: &points[wp[w] as usize..wp[w + 1] as usize],
+                        speed: ws[w],
+                    })
+                    .collect();
+                let (mut stops, mut platforms) = (Vec::new(), Vec::new());
+                for m in mo[r] as usize..mo[r + 1] as usize {
+                    let Some(at) = pt_routes::centroid(&points[mp[m] as usize..mp[m + 1] as usize])
+                    else {
+                        continue;
+                    };
+                    let member = pt_routes::Member {
+                        xy: at,
+                        reference: mr[m],
+                        rank: mk[m],
+                        stand_in: ms[m],
+                        stand_in_xy: stand_in_xy[m],
+                    };
+                    if mf[m] {
+                        platforms.push(member);
+                    } else {
+                        stops.push(member);
+                    }
+                }
+                pt_routes::Route {
+                    ways,
+                    stops,
+                    platforms,
+                    kinds_apart,
+                }
+            })
+            .collect();
+        in_pool(n_threads, || pt_routes::parse_routes(&routes))
+    })?;
+
+    let (mut node_route, mut node_id, mut node_xy, mut node_platform) =
+        (vec![], vec![], vec![], vec![]);
+    let (mut edge_route, mut edge_u, mut edge_v, mut edge_boarding) =
+        (vec![], vec![], vec![], vec![]);
+    let (mut edge_offsets, mut edge_xy, mut edge_speed) = (vec![0i64], vec![], vec![]);
+    let mut failed = Vec::new();
+    for (r, result) in parsed.into_iter().enumerate() {
+        let route = match result {
+            Ok(route) => route,
+            Err(message) => {
+                failed.push((r, message));
+                continue;
+            }
+        };
+        for node in route.nodes {
+            node_route.push(r as i64);
+            node_id.push(node.id);
+            node_xy.extend_from_slice(&node.xy);
+            node_platform.push(node.platform);
+        }
+        for edge in route.edges {
+            edge_route.push(r as i64);
+            edge_u.push(edge.u);
+            edge_v.push(edge.v);
+            edge_boarding.push(edge.boarding);
+            for p in &edge.coords {
+                edge_xy.extend_from_slice(p);
+            }
+            edge_offsets.push((edge_xy.len() / 2) as i64);
+            edge_speed.push(edge.speed);
+        }
+    }
+    let n_nodes = node_id.len();
+    let n_points = edge_xy.len() / 2;
+    let to_err = |e: numpy::ndarray::ShapeError| PyValueError::new_err(e.to_string());
+    Ok((
+        node_route.into_pyarray(py),
+        node_id.into_pyarray(py),
+        Array2::from_shape_vec((n_nodes, 2), node_xy)
+            .map_err(to_err)?
+            .into_pyarray(py),
+        node_platform.into_pyarray(py),
+        edge_route.into_pyarray(py),
+        edge_u.into_pyarray(py),
+        edge_v.into_pyarray(py),
+        edge_boarding.into_pyarray(py),
+        edge_offsets.into_pyarray(py),
+        Array2::from_shape_vec((n_points, 2), edge_xy)
+            .map_err(to_err)?
+            .into_pyarray(py),
+        edge_speed.into_pyarray(py),
+        failed,
+    ))
+}
+
 #[pymodule(name = "_rust")]
 fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CsrGraph>()?;
@@ -1511,6 +1861,8 @@ fn iduedu_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PbfFile>()?;
     m.add_function(wrap_pyfunction!(write_pbf, m)?)?;
     m.add_function(wrap_pyfunction!(merge_oriented_chains, m)?)?;
+    m.add_function(wrap_pyfunction!(split_edges, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_pt_routes, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

@@ -423,7 +423,7 @@ def transport_stats(urban_graph: UrbanGraph, *, modes: Iterable[str] | None = No
         # Imported here: the builders import the graph package.
         from iduedu.graph_builders.gtfs_builders import GTFS_ROUTE_TYPES  # pylint: disable=import-outside-toplevel
 
-        known = set(DEFAULT_REGISTRY_W_TRAIN.list_types()) | set(GTFS_ROUTE_TYPES.values())
+        known = set(DEFAULT_REGISTRY_W_TRAIN.list_modes()) | set(GTFS_ROUTE_TYPES.values())
         modes = [mode for mode in edge_type.dropna().unique() if mode in known]
     rows = {}
     for mode in modes:

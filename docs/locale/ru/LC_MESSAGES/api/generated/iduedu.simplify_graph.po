@@ -32,8 +32,8 @@ msgstr "Любой граф."
 msgid "Edge columns that must be equal along a chain. By default all columns except ``u``, ``v``, ``k``, the geometry and ``sum_columns``; in a directed graph the direction column is among them."
 msgstr "Столбцы рёбер, которые должны быть равны вдоль цепочки. По умолчанию все столбцы, кроме ``u``, ``v``, ``k``, геометрии и ``sum_columns``; в ориентированном графе среди них есть столбец направления."
 
-msgid "Nodes that stay, for example nodes that objects or another table refer to."
-msgstr "Узлы, которые остаются, например узлы, на которые ссылаются объекты или другая таблица."
+msgid "Nodes that stay, for example nodes that objects or another table refer to. The nodes a walk graph joins public transport at (``type`` platform or a subway entrance or exit) always stay."
+msgstr "Узлы, которые остаются, например узлы, на которые ссылаются объекты или другая таблица. Узлы, в которых пешеходный граф присоединяется к общественному транспорту (``type`` — платформа, вход или выход метро), остаются всегда."
 
 msgid "Columns summed along a chain. By default ``length_meter``, ``time_min`` and every ``time_<name>_min`` column. The other columns take the values of the first edge."
 msgstr "Столбцы, суммируемые вдоль цепочки. По умолчанию ``length_meter``, ``time_min`` и все столбцы ``time_<name>_min``. Остальные столбцы берут значения первого ребра."

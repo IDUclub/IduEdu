@@ -17,11 +17,13 @@ msgstr ""
 msgid "iduedu.TransportRegistry"
 msgstr "iduedu.TransportRegistry"
 
-msgid "Registry of available public-transport modes and their specifications."
-msgstr "Реестр доступных видов общественного транспорта и их спецификаций."
+# | msgid "Registry of available public-transport modes and their
+# | specifications."
+msgid "Registry of public-transport specifications for modes and service variants."
+msgstr "Реестр спецификаций видов общественного транспорта и вариантов сообщения."
 
-msgid "The registry stores ``TransportSpec`` objects indexed by normalized transport type names (lowercase). It provides utilities for validating transport types, updating parameters, and ensuring that unknown types encountered during parsing are assigned reasonable defaults."
-msgstr "Реестр хранит объекты ``TransportSpec`` по нормализованным именам видов транспорта (в нижнем регистре). Он позволяет проверять виды транспорта, обновлять параметры и назначать разумные значения по умолчанию неизвестным видам, встреченным при разборе."
+msgid "The registry stores ``TransportSpec`` objects under lowercase mode names and optional ``\"<mode>:<service>\"`` keys. ``list_types()`` returns both kinds of keys, and ``list_modes()`` returns the names that can be requested when building an OSM graph."
+msgstr "Реестр хранит объекты ``TransportSpec`` под именами видов транспорта в нижнем регистре и под необязательными ключами ``\"<mode>:<service>\"``. Метод ``list_types()`` возвращает все ключи, а ``list_modes()`` — имена видов транспорта, которые можно указать при построении графа по данным OSM."
 
 msgid "The registry is used throughout graph construction to compute per-edge travel times consistently across different transport modes."
 msgstr "Реестр используется при построении графа, чтобы единообразно рассчитывать время в пути на рёбрах для разных видов транспорта."
@@ -50,11 +52,19 @@ msgstr ":py:obj:`get <iduedu.TransportRegistry.get>`"
 msgid "Return a transport specification by name."
 msgstr "Возвращает спецификацию вида транспорта по имени."
 
+# | msgid ":py:obj:`list_types <iduedu.TransportRegistry.list_types>`"
+msgid ":py:obj:`list_modes <iduedu.TransportRegistry.list_modes>`"
+msgstr ":py:obj:`list_modes <iduedu.TransportRegistry.list_modes>`"
+
+msgid "Return registered mode names that can be requested as OSM route types."
+msgstr "Возвращает имена зарегистрированных видов транспорта, которые можно указать как типы маршрутов OSM."
+
 msgid ":py:obj:`list_types <iduedu.TransportRegistry.list_types>`"
 msgstr ":py:obj:`list_types <iduedu.TransportRegistry.list_types>`"
 
-msgid "Return registered transport type names."
-msgstr "Возвращает имена зарегистрированных видов транспорта."
+# | msgid "Return registered transport type names."
+msgid "Return registered mode and service variant keys."
+msgstr "Возвращает зарегистрированные ключи видов транспорта и вариантов сообщения."
 
 msgid ":py:obj:`remove <iduedu.TransportRegistry.remove>`"
 msgstr ":py:obj:`remove <iduedu.TransportRegistry.remove>`"
@@ -77,8 +87,10 @@ msgstr "Обновляет поля существующей специфика�
 msgid "Parameters"
 msgstr "Параметры"
 
-msgid "Transport type name. Matching is case-insensitive and ignores surrounding whitespace."
-msgstr "Имя вида транспорта. Сравнение без учёта регистра и пробелов по краям."
+# | msgid "Transport type name. Matching is case-insensitive and ignores
+# | surrounding whitespace."
+msgid "Mode or service variant key. Matching is case-insensitive and ignores surrounding whitespace."
+msgstr "Ключ вида транспорта или варианта сообщения. Сравнение выполняется без учёта регистра и пробелов по краям."
 
 msgid "Raises"
 msgstr "Исключения"
@@ -107,8 +119,8 @@ msgstr "Если ``spec`` некорректна или уже существу�
 msgid ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
 msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
 
-msgid "Existing transport type name."
-msgstr "Имя существующего вида транспорта."
+msgid "Existing mode or service variant key."
+msgstr "Ключ существующего вида транспорта или варианта сообщения."
 
 msgid "Dataclass fields to update."
 msgstr "Обновляемые поля dataclass."
@@ -125,12 +137,16 @@ msgstr "Если ``transport_type`` неизвестен."
 msgid "If updated fields are invalid or rename conflicts."
 msgstr "Если обновлённые поля некорректны или переименование конфликтует."
 
-msgid "Transport type name."
-msgstr "Имя вида транспорта."
+msgid "Mode or service variant key."
+msgstr "Ключ вида транспорта или варианта сообщения."
 
 msgid "Optional specification used when the name is missing."
 msgstr "Необязательная спецификация, используемая, если имени нет в реестре."
 
 msgid "Existing or newly registered transport specification."
 msgstr "Существующая или только что зарегистрированная спецификация вида транспорта."
+
+# | msgid ":sphinx_autodoc_typehints_type:`\\:py\\:obj\\:\\`None\\``"
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`str\\`\\]`"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`list\\`\\\\ \\\\\\[\\:py\\:class\\:\\`str\\`\\]`"
 

@@ -21,6 +21,9 @@ Building graphs
     get_street_graph
     mode_graph
     get_public_transport_graph
+    route_edges
+    route_stops
+    routes_in_area
     get_gtfs_public_transport_graph
     get_intermodal_graph
     join_pt_walk_graph
@@ -97,7 +100,7 @@ Routing
 Network analysis
 ----------------
 
-:doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/elevation`
+:doc:`analysis/statistics`, :doc:`analysis/objects`, :doc:`analysis/centrality`, :doc:`analysis/flows`, :doc:`analysis/elevation`
 
 .. autosummary::
     :nosignatures:
@@ -113,6 +116,7 @@ Network analysis
     diversity
     centrality
     edge_betweenness
+    assign_flows
     add_elevation
     apply_grade_speed
 

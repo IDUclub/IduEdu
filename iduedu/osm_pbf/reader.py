@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import datetime as dt
 import os
-from itertools import chain
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -105,23 +104,24 @@ def coords_intersect(poly, coord_lists: list) -> np.ndarray:
     lengths = np.fromiter((len(c) for c in coord_lists), dtype=np.int64, count=n)
     multi = np.flatnonzero(lengths >= 2)
     if multi.size:
-        flat = np.asarray(list(chain.from_iterable(coord_lists[i] for i in multi)), dtype="f8").reshape(-1, 2)
+        flat = np.concatenate([np.asarray(coord_lists[i], dtype="f8").reshape(-1, 2) for i in multi])
         indices = np.repeat(np.arange(multi.size), lengths[multi])
         lines = shapely.linestrings(flat, indices=indices)
         result[multi] = shapely.intersects(poly, lines)
     single = np.flatnonzero(lengths == 1)
     if single.size:
-        xy = np.asarray([coord_lists[i][0] for i in single], dtype="f8")
+        xy = np.asarray([coord_lists[i][0] for i in single], dtype="f8").reshape(-1, 2)
         result[single] = shapely.intersects_xy(poly, xy[:, 0], xy[:, 1])
     return result
 
 
 def _bounds(coords) -> dict | None:
-    if not coords:
+    """Bounding box of ``(k, 2)`` lon/lat coordinates."""
+    xy = np.asarray(coords, dtype="f8").reshape(-1, 2)
+    if xy.size == 0:
         return None
-    lons = [c[0] for c in coords]
-    lats = [c[1] for c in coords]
-    return {"minlat": min(lats), "minlon": min(lons), "maxlat": max(lats), "maxlon": max(lons)}
+    (minlon, minlat), (maxlon, maxlat) = xy.min(axis=0).tolist(), xy.max(axis=0).tolist()
+    return {"minlat": minlat, "minlon": minlon, "maxlat": maxlat, "maxlon": maxlon}
 
 
 def _center(coords) -> dict | None:
@@ -135,7 +135,7 @@ def _center(coords) -> dict | None:
 
 
 def _geometry(coords) -> list[dict]:
-    return [{"lat": lat, "lon": lon} for lon, lat in coords]
+    return [{"lat": lat, "lon": lon} for lon, lat in np.asarray(coords, dtype="f8").reshape(-1, 2).tolist()]
 
 
 def _with_tags(element: dict, tags: dict) -> dict:
@@ -151,7 +151,8 @@ def _sort_key(item):
 
 class _Store:
     """Objects read from the file: ``nodes[id] = (lonlat | None, tags)``,
-    ``ways[id] = (node_refs, coords, tags)``, ``rels[id] = (members, tags)``."""
+    ``ways[id] = (node_refs, coords, tags)`` with ``coords`` a read-only ``(k, 2)`` lon/lat array,
+    ``rels[id] = (members, tags)``."""
 
     def __init__(self):
         self.nodes: dict[int, tuple] = {}
@@ -164,14 +165,15 @@ class _Store:
     def tags(self, kind: str, eid: int) -> dict:
         return {"n": self.nodes, "w": self.ways, "r": self.rels}[kind][eid][-1]
 
-    def member_coords(self, members) -> list:
-        coords = []
+    def member_coords(self, members) -> np.ndarray:
+        """Lon/lat of the node members and of the nodes of the way members, as one ``(k, 2)`` array."""
+        parts = []
         for kind, ref, _ in members:
             if kind == "n" and ref in self.nodes and self.nodes[ref][0] is not None:
-                coords.append(self.nodes[ref][0])
+                parts.append(np.asarray([self.nodes[ref][0]], dtype="f8"))
             elif kind == "w" and ref in self.ways:
-                coords.extend(self.ways[ref][1])
-        return coords
+                parts.append(self.ways[ref][1])
+        return np.concatenate(parts) if parts else np.empty((0, 2))
 
     # ----- Overpass element shapes -----
     def tags_element(self, kind: str, eid: int) -> dict:
@@ -220,8 +222,12 @@ class _Store:
         element["geometry"] = _geometry(coords)
         return _with_tags(element, tags)
 
-    def geom_relation(self, rid: int) -> dict:
-        """``out geom`` of a relation: node members carry lat/lon, way members their full geometry."""
+    def geom_relation(self, rid: int, arrays: bool = False) -> dict:
+        """``out geom`` of a relation: node members carry lat/lon, way members their full geometry.
+
+        With ``arrays`` a way member's ``geometry`` is its read-only ``(k, 2)`` lon/lat array, shared by every
+        relation the way belongs to, instead of a list of ``{"lat", "lon"}`` dicts made for each of them.
+        """
         members, tags = self.rels[rid]
         out_members = []
         for kind, ref, role in members:
@@ -230,7 +236,8 @@ class _Store:
                 lon, lat = self.nodes[ref][0]
                 member["lat"], member["lon"] = lat, lon
             elif kind == "w" and ref in self.ways:
-                member["geometry"] = _geometry(self.ways[ref][1])
+                coords = self.ways[ref][1]
+                member["geometry"] = coords if arrays else _geometry(coords)
             out_members.append(member)
         element = {"type": "relation", "id": rid}
         box = _bounds(self.member_coords(members))
@@ -297,7 +304,8 @@ class PbfSource:
         way_ids = {int(i) for i in way_ids} - store.ways.keys()
         if way_ids:
             wids, ref_offsets, refs, coord_offsets, lon, lat, tags = self._file.ways(ids=self._id_array(way_ids))
-            refs, xy = refs.tolist(), list(zip(lon.tolist(), lat.tolist()))
+            refs, xy = refs.tolist(), np.column_stack([lon, lat])
+            xy.flags.writeable = False  # the ways keep views of it, and route members may share them
             ref_offsets, coord_offsets = ref_offsets.tolist(), coord_offsets.tolist()
             for i, wid in enumerate(wids.tolist()):
                 store.ways[wid] = (
@@ -326,7 +334,7 @@ class PbfSource:
         node_refs = sorted({ref for rid in relation_ids for k, ref, _ in store.rels[rid][0] if k == "n"})
         way_refs = sorted({ref for rid in relation_ids for k, ref, _ in store.rels[rid][0] if k == "w"})
         node_refs = [n for n in node_refs if n in store.nodes and store.nodes[n][0] is not None]
-        way_refs = [w for w in way_refs if w in store.ways and store.ways[w][1]]
+        way_refs = [w for w in way_refs if w in store.ways and len(store.ways[w][1])]
         inside_nodes = {
             n for n, hit in zip(node_refs, coords_intersect(poly, [[store.nodes[n][0]] for n in node_refs])) if hit
         }
@@ -391,7 +399,7 @@ class PbfSource:
         store = _Store()
         out = []
         for wid, refs, coords, tags in zip(*self._read_ways(polygon, way_filter)):
-            store.ways[wid] = (refs, [tuple(c) for c in coords.tolist()], tags)
+            store.ways[wid] = (refs, coords, tags)
             out.append(store.geom_way(wid))
         logger.debug(f"Read {len(out)} ways matching <{way_filter}> from {self.path.name}")
         return out
@@ -418,11 +426,16 @@ class PbfSource:
         """Public-transport route elements in a polygon, shaped as ``get_routes_by_poly`` returns them.
 
         Reproduces, statement by statement and in the same order, the Overpass query of
-        :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways of ground routes
-        (``out tags``), the ground route relations (``out geom``) and, for ``subway``, the relations
-        sharing a node with a subway route (``out geom``), their stop-area groups (``out body``), the
-        stations among their members (``out tags``), the ``stop_area_members`` section marker and all
-        their members (``out center``).
+        :func:`iduedu.overpass.downloaders.get_routes_by_poly`: tags of the member ways and then of the member
+        nodes of ground routes (``out tags``), the ground route relations (``out geom``) and their ``route_master`` relations
+        (``out body``) and, for ``subway``, the relations sharing a node with a subway route
+        (``out geom``), their stop-area groups (``out body``), the stations among their members
+        (``out tags``), the route masters of the subway routes (``out body``), the ``stop_area_members``
+        section marker and all their members (``out center``).
+
+        One difference in shape: a way member of a ground route relation carries its ``geometry`` as a
+        read-only ``(k, 2)`` lon/lat array, shared by all the routes along the way, not as a list of
+        ``{"lat", "lon"}`` dicts; the route parser reads both.
         """
         types = sorted(set(public_transport_types))
         if not types:
@@ -445,7 +458,10 @@ class PbfSource:
         if simple_route_types:
             member_ways = sorted({ref for r in routes_basic for k, ref, _ in store.rels[r][0] if k == "w"})
             out.extend(store.tags_element("w", w) for w in member_ways if w in store.ways)
-            out.extend(store.geom_relation(r) for r in routes_basic)
+            member_nodes = sorted({ref for r in routes_basic for k, ref, _ in store.rels[r][0] if k == "n"})
+            out.extend(store.tags_element("n", n) for n in member_nodes if n in store.nodes)
+            out.extend(store.geom_relation(r, arrays=True) for r in routes_basic)
+            out.extend(self._route_masters(routes_basic))
 
         if has_subway:
             if config.overpass_date is not None:
@@ -454,6 +470,19 @@ class PbfSource:
 
         logger.info(f"Read routes with types {types} from {self.path.name}.")
         return out
+
+    def _route_masters(self, routes: list[int]) -> list[dict]:
+        """``rel(br.routes)["type"="route_master"]; out body;``: the lines of the routes, by id."""
+        if not routes:
+            return []
+        wanted = set(routes)
+        masters = _Store()
+        found = self._read_relations(masters, tag_pairs=[("type", "route_master")])
+        return [
+            masters.body_relation(rid)
+            for rid in sorted(found)
+            if any(k == "r" and ref in wanted for k, ref, _ in masters.rels[rid][0])
+        ]
 
     def _subway_details(self, store: _Store, subway_routes: list[int]) -> list[dict]:
         route_nodes = sorted(
@@ -489,6 +518,7 @@ class PbfSource:
             for k, ref in existing_members
             if store.tags(k, ref).get("public_transport") == "station"
         )
+        out.extend(self._route_masters(subway_routes))
         out.append({"type": "section", "id": 1, "tags": {"name": STOP_AREA_MEMBERS_SECTION}})
         out.extend(store.center_element(k, ref) for k, ref in existing_members)
         return out

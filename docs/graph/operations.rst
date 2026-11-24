@@ -78,7 +78,8 @@ it changes routing, because turns and one-way links inside a junction disappear.
 are merged at a node when they are the only edges there, the values of ``keys`` (by default every column except the
 costs and the geometry) are equal, and their directions agree: two-way edges always, one-way edges only head to
 tail. An edge drawn against the chain is turned, so the merged geometry runs from ``u`` to ``v``; ``length_meter``
-and the ``time_*`` columns are summed. ``keep_nodes`` keeps the nodes other tables refer to. The merging runs in the
+and the ``time_*`` columns are summed. ``keep_nodes`` keeps the nodes other tables refer to; the nodes a walk graph
+joins public transport at (platforms, subway entrances and exits) always stay. The merging runs in the
 Rust core, about one second for a million edges.
 
 :func:`unique_segments` returns the straight pieces of the edge geometries with every physical segment once, also
@@ -99,6 +100,11 @@ object and a link edge at ``speed_m_per_min`` join it to that point. The functio
 an :class:`UrbanGraphChanges` with the nodes and edges to add and the edges to delete, and the node of every
 object. :func:`apply_urban_graph_changes` applies them; :meth:`UrbanGraph.project_objects` does both in one call.
 Keeping the changes apart lets a service store them in its own tables.
+
+Each piece gets a share of the original edge's ``length_meter`` and ``time_min`` proportional to its geometric length
+in the CRS used for splitting. The pieces preserve the original totals up to floating-point error. A link edge uses
+its geometric length rounded to three decimal places and that length divided by ``speed_m_per_min``, with the time
+rounded to two decimal places.
 
 Scenario edits
 --------------

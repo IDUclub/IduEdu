@@ -1,0 +1,142 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-24 13:24+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Flow assignment"
+msgstr "Распределение потоков"
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid ":func:`assign_flows` loads a network with trips: every group of sources sends its flow to the nodes it reaches, in proportion to their attraction and to a decay of the travel cost, and the trips run along the shortest paths. The result is the flow on every edge."
+msgstr ":func:`assign_flows` нагружает сеть поездками: каждая группа источников отправляет свой поток в достижимые узлы пропорционально их привлекательности и затуханию по стоимости пути, а поездки идут по кратчайшим путям. Результат — поток на каждом ребре."
+
+msgid "Inputs"
+msgstr "Входные данные"
+
+msgid "``source_nodes`` and ``source_flows``: the sources as graph node ids and the flow each of them sends."
+msgstr "``source_nodes`` и ``source_flows``: источники как id узлов графа и поток, который отправляет каждый из них."
+
+msgid "``cluster_offsets``: groups of sources that share one search, such as the entrances of one building. By default every source is a group of its own."
+msgstr "``cluster_offsets``: группы источников с общим поиском, например входы одного здания. По умолчанию каждый источник — отдельная группа."
+
+msgid "``node_weights``: attraction of every node (a ``nodes_gdf`` column, a Series by node id or an array)."
+msgstr "``node_weights``: привлекательность каждого узла (столбец ``nodes_gdf``, Series по id узла или массив)."
+
+msgid "``decay`` with its parameters, ``cutoff`` and ``weight`` (``time_min`` by default): how the attraction fades with the travel cost and the largest cost of a trip."
+msgstr "``decay`` с параметрами, ``cutoff`` и ``weight`` (по умолчанию ``time_min``): как привлекательность убывает со стоимостью пути и наибольшая стоимость поездки."
+
+msgid "``min_flow``: the flow of one group below which an arc is ignored."
+msgstr "``min_flow``: поток одной группы, ниже которого дуга не учитывается."
+
+msgid "Method"
+msgstr "Метод"
+
+# | msgid "Every group runs one search from all of its sources at once, cut
+# off
+# | at ``cutoff``. A node joins its nearest source; when two sources are
+# equally
+# | near, the one listed first wins. Every reached node other than a source is
+# a
+# | destination with the weight ``node_weights[node] · decay(cost)``:"
+msgid "Every group runs one search from all of its sources at once, cut off at ``cutoff``. A node joins its nearest source; when two sources are equally near, the one that comes first in ``nodes_gdf`` wins. Every reached node other than a source is a destination with the weight ``node_weights[node] · decay(cost)``:"
+msgstr "Каждая группа выполняет один поиск сразу от всех своих источников с отсечкой ``cutoff``. Узел относится к ближайшему источнику; при равном расстоянии побеждает источник, который стоит раньше в ``nodes_gdf``. Каждый достигнутый узел, кроме источников, становится пунктом назначения с весом ``node_weights[node] · decay(cost)``:"
+
+msgid "``decay``"
+msgstr "``decay``"
+
+msgid "Weight"
+msgstr "Вес"
+
+msgid "Meaning"
+msgstr "Смысл"
+
+msgid "``\"gaussian\"``"
+msgstr "``\"gaussian\"``"
+
+msgid "``exp(-0.5 · ((cost - mean) / std)²)``"
+msgstr "``exp(-0.5 · ((cost - mean) / std)²)``"
+
+msgid "Trips of a typical cost ``mean`` with the spread ``std``"
+msgstr "Поездки типичной стоимости ``mean`` с разбросом ``std``"
+
+msgid "``\"exp\"``"
+msgstr "``\"exp\"``"
+
+msgid "``exp(-beta · cost)``"
+msgstr "``exp(-beta · cost)``"
+
+msgid "Nearer destinations are more attractive"
+msgstr "Более близкие пункты назначения привлекательнее"
+
+msgid "``\"flat\"``"
+msgstr "``\"flat\"``"
+
+msgid "1"
+msgstr "1"
+
+msgid "Every destination within ``cutoff`` counts by its attraction only"
+msgstr "Каждый пункт назначения в пределах ``cutoff`` учитывается только по своей привлекательности"
+
+msgid "The summed flow of the group's sources is split between its destinations in proportion to these weights, which is the distribution step of a gravity model (Ortúzar and Willumsen, 2011). The flow of every destination then runs back along the search tree to its source, from the farthest nodes to the nearest, so every arc carries the trips that pass it: an all-or-nothing assignment. An arc keeps the flow of a group only when it exceeds ``min_flow``, or when the arc leaves a source and the flow is positive, so the far tails of small groups do not add noise. The kept flows of all groups are summed. Groups run in parallel. Costs are summed in float32 and flows in float64."
+msgstr "Суммарный поток источников группы делится между её пунктами назначения пропорционально этим весам: это шаг распределения гравитационной модели (Ortúzar and Willumsen, 2011). Затем поток каждого пункта назначения идёт обратно по дереву поиска к своему источнику, от дальних узлов к ближним, так что каждая дуга несёт проходящие по ней поездки: это назначение «всё или ничего». Дуга сохраняет поток группы, только если он больше ``min_flow`` или если дуга выходит из источника и поток положителен, чтобы дальние хвосты небольших групп не добавляли шум. Сохранённые потоки всех групп суммируются. Группы считаются параллельно. Стоимости суммируются во float32, потоки — во float64."
+
+msgid "Congestion is not part of one call. Equilibrium methods repeat the assignment with edge times updated from the flows, for example by the BPR function and the method of successive averages (Sheffi, 1985)."
+msgstr "Загрузка сети в один вызов не входит. Равновесные методы повторяют назначение, обновляя время на рёбрах по потокам, например функцией BPR и методом последовательных усреднений (Sheffi, 1985)."
+
+msgid "Outputs"
+msgstr "Результаты"
+
+msgid "A table indexed like ``edges_gdf`` with ``flow_uv`` (along the edge from ``u`` to ``v``), ``flow_vu`` (against it, for edges travelled both ways) and their sum ``flow``. Among parallel edges between two nodes only the cheapest one carries flow, and equally cheap ones share it. ``per=\"arcs\"`` returns the flows of the arcs of ``adjacency_matrix`` instead, one value per entry of its ``data``."
+msgstr "Таблица с индексом как у ``edges_gdf`` и столбцами ``flow_uv`` (вдоль ребра от ``u`` к ``v``), ``flow_vu`` (против него, для рёбер с движением в обе стороны) и их суммой ``flow``. Из параллельных рёбер между двумя узлами поток несёт только самое дешёвое, а одинаково дешёвые делят его. ``per=\"arcs\"`` вместо этого возвращает потоки дуг ``adjacency_matrix``, по одному значению на элемент её ``data``."
+
+# | msgid "On the intermodal graph of St Petersburg (422 000 nodes, 1.1
+# million
+# | arcs) on 16 threads, 4 000 sources in 800 groups with ``cutoff=45``
+# minutes
+# | take 6.5 s."
+msgid "On the intermodal graph of St Petersburg (422 000 nodes, 1.1 million arcs) on 16 threads, 4 000 sources in 800 groups with ``cutoff=45`` minutes take 3.8 s."
+msgstr "На интермодальном графе Санкт-Петербурга (422 000 узлов, 1,1 млн дуг) в 16 потоков 4 000 источников в 800 группах с ``cutoff=45`` минут считаются за 3,8 с."
+
+msgid "Functions"
+msgstr "Функции"
+
+msgid ":py:obj:`assign_flows <iduedu.assign_flows>`"
+msgstr ":py:obj:`assign_flows <iduedu.assign_flows>`"
+
+msgid "Assign flows from sources to attractive nodes along shortest paths and sum them on the edges."
+msgstr "Распределяет потоки от источников по привлекательным узлам вдоль кратчайших путей и суммирует их на рёбрах."
+
+msgid "Limitations"
+msgstr "Ограничения"
+
+msgid "One call is an all-or-nothing assignment: every trip takes one shortest path, and the edge costs do not depend on the flow."
+msgstr "Один вызов — назначение «всё или ничего»: каждая поездка идёт по одному кратчайшему пути, и стоимости рёбер не зависят от потока."
+
+msgid "Within a group the destinations compete only through their weights: the flows do not depend on how many other groups reach the same destination (no balancing of destinations)."
+msgstr "Внутри группы пункты назначения конкурируют только через свои веса: потоки не зависят от того, сколько других групп достигают того же пункта (балансировки по пунктам назначения нет)."
+
+msgid "A node reached from no source of a group receives nothing from it, also when it lies just beyond ``cutoff``."
+msgstr "Узел, не достигнутый ни одним источником группы, ничего от неё не получает, даже если он лежит сразу за ``cutoff``."
+
+msgid "References"
+msgstr "Литература"
+
+msgid "Ortúzar, J. de D. and Willumsen, L. G. (2011). *Modelling Transport*, 4th edition. Wiley."
+msgstr "Ortúzar, J. de D. and Willumsen, L. G. (2011). *Modelling Transport*, 4th edition. Wiley."
+
+msgid "Sheffi, Y. (1985). *Urban Transportation Networks: Equilibrium Analysis with Mathematical Programming Methods*. Prentice-Hall."
+msgstr "Sheffi, Y. (1985). *Urban Transportation Networks: Equilibrium Analysis with Mathematical Programming Methods*. Prentice-Hall."
+

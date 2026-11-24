@@ -445,6 +445,8 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
             """
             way(r.routes_basic);
             out tags qt;
+            node(r.routes_basic);
+            out tags qt;
             """.strip()
         )
 
@@ -462,8 +464,10 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
             """.strip()
         )
 
+    # The route_master relations of the routes: the line each route variant belongs to.
     if simple_route_types:
         query_parts.append(".routes_basic out geom qt;")
+        query_parts.append('rel(br.routes_basic)["type"="route_master"];\nout body qt;')
 
     if enable_subway_details:
         query_parts.append(
@@ -471,6 +475,8 @@ def get_routes_by_poly(polygon: Polygon, public_transport_types: list[str]) -> l
             .stop_areas out geom qt;
             .groups     out body qt;
             .stations   out tags qt;
+            rel(br.routes)["type"="route_master"];
+            out body qt;
             make section name="{STOP_AREA_MEMBERS_SECTION}";
             out;
             .stop_area_members out center qt;

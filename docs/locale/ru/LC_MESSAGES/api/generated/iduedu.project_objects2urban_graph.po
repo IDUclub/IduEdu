@@ -26,6 +26,9 @@ msgstr "Функция не меняет исходный граф. Она ра�
 msgid "Objects are projected by their ``representative_point()``, so the function works for buildings, services and other polygon or point layers with a stable unique index."
 msgstr "Объекты проецируются по ``representative_point()``, поэтому функция работает для зданий, сервисов и других полигональных или точечных слоёв со стабильным уникальным индексом."
 
+msgid "Each split piece inherits the original edge's ``length_meter`` and ``time_min`` in proportion to its share of the geometric length in the CRS used for splitting, without rounding. Missing costs remain missing. Connector edges use their geometric length rounded to three decimal places and that rounded length divided by ``speed_m_per_min``, with the time rounded to two decimal places."
+msgstr "Каждый фрагмент получает долю исходных ``length_meter`` и ``time_min``, пропорциональную его геометрической длине в системе координат, в которой разрезается ребро. Эти значения не округляются. Пропущенные значения сохраняются. Геометрическая длина соединительного ребра округляется до трёх знаков после запятой. Время получают делением округлённой длины на ``speed_m_per_min`` и округляют до двух знаков после запятой."
+
 msgid "Parameters"
 msgstr "Параметры"
 

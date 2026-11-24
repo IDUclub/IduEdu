@@ -18,6 +18,7 @@ import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterable
 
 import geopandas as gpd
 import requests
@@ -26,7 +27,7 @@ from shapely import MultiPolygon, Polygon
 from tqdm.auto import tqdm
 
 from iduedu import config
-from iduedu.osm_pbf.extract import split_by_polygons
+from iduedu.osm_pbf.extract import DEFAULT_WAY_KEYS, split_by_polygons
 from iduedu.osm_pbf.reader import PbfSource
 from iduedu.overpass.downloaders import _boundary_from_elements, get_4326_boundary, get_boundary_by_osm_id
 
@@ -227,6 +228,7 @@ def download_osm_pbf(
     out_dir: str | os.PathLike | None = None,
     update: bool = False,
     overwrite: bool = False,
+    way_keys: Iterable[str] | None = DEFAULT_WAY_KEYS,
 ) -> Path:
     """OSM file for a territory, cut out of a Geofabrik extract: a drop-in replacement for Overpass downloads.
 
@@ -247,6 +249,9 @@ def download_osm_pbf(
             ``territories/`` subdirectory.
         update: Refresh a cached regional extract when Geofabrik has a newer one and cut again.
         overwrite: Cut again even if the territory file exists.
+        way_keys: Keys of the ways cut out with the territory, as in :func:`~iduedu.osm_pbf.split_by_polygons`;
+            an empty sequence gives a file of the public-transport routes touching the territory alone (default
+            name ``..._routes``), for :func:`~iduedu.get_public_transport_graph` over a large area.
 
     Returns:
         Path of ``<name>.osm.pbf``.
@@ -259,6 +264,11 @@ def download_osm_pbf(
     polygon = get_4326_boundary(territory=territory) if territory is not None else None
     if name is None:
         name = f"osm_{osm_id}" if polygon is None else "territory_" + hashlib.sha1(polygon.wkb).hexdigest()[:12]
+        if way_keys is not None and not list(way_keys):
+            name += "_routes"
+        elif way_keys is None or tuple(way_keys) != DEFAULT_WAY_KEYS:
+            keys = "*" if way_keys is None else ",".join(sorted(way_keys))
+            name += "_keys_" + hashlib.sha1(keys.encode()).hexdigest()[:8]
     target_dir = _cache_root(out_dir) / "territories"
     target = target_dir / f"{name}.osm.pbf"
     if target.exists() and not (overwrite or update):
@@ -280,6 +290,7 @@ def download_osm_pbf(
         region_pbf,
         {name: polygon},
         target_dir,
+        way_keys=way_keys,
         keep_relations=keep,
         overwrite=True,
     )

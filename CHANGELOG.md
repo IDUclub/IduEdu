@@ -2,6 +2,150 @@
 
 <!-- version list -->
 
+## v3.4.0 (2026-11-24)
+
+### Features
+
+- Assign_flows, flow assignment along shortest-path forests in Rust
+  ([#42](https://github.com/IDUclub/IduEdu/pull/42),
+  [`7e4ad18`](https://github.com/IDUclub/IduEdu/commit/7e4ad18b5e659fd9d624278f8d1880151aad4f4a))
+
+
+## v3.3.3 (2026-11-20)
+
+### Bug Fixes
+
+- Split edges keep their cost; distance arrays without pandas; faster point placement
+  ([#41](https://github.com/IDUclub/IduEdu/pull/41),
+  [`0b744ed`](https://github.com/IDUclub/IduEdu/commit/0b744edd243ba1b0cc857a59f881857c161ee629))
+
+* perf: distance arrays without pandas; faster point placement
+
+Routing: od_matrix, iter_od_matrix, dijkstra_parallel, single_source_dijkstra and
+  multi_source_dijkstra take distance_format="frame" (default, unchanged), "dense" (NumPy array, inf
+  where unreachable) or "sparse" (SciPy CSR array of the reachable pairs, explicit zeros kept), with
+  output="distances" or "both". On St Petersburg (422k nodes, 3 sources to every node, cutoff 60
+  min) od_matrix takes 0.15 s instead of 4.1 s and dijkstra_parallel 0.03 s instead of 3.8 s; values
+  equal the pandas tables.
+
+Point placement (relabel, project_objects2urban_graph, apply_urban_graph_changes): 1.0 s -> 0.23 s
+  for 3 points on the same graph, identical results. - validate_graph checks geometry types
+  vectorised. - relabel_urban_graph, subgraph_by_nodes and apply_urban_graph_changes do not
+  re-validate tables derived from a valid graph; applied changes are checked where they touch the
+  graph. - project_objects2urban_graph works in the graph CRS when it is projected in metres (no UTM
+  estimate) and reuses the cached spatial index of the edge table.
+
+* fix: split edge pieces keep the cost of the original edge
+
+project_objects2urban_graph gave the pieces of a split edge the connector (walking) speed and their
+  geometric length, while the other attributes came from the original edge: a drive, subway or train
+  edge hit by a point became as slow as walking, a length_meter that differs from geometry
+  (escalators, transfers, boarding) was lost, and rounded piece times did not sum to the edge. Each
+  piece now gets the original length_meter and time_min times its share of the edge's geometric
+  length, without rounding; connectors keep the walking speed.
+
+
+## v3.3.2 (2026-11-19)
+
+### Bug Fixes
+
+- High-speed train speeds; join_pt_walk_graph six times faster
+  ([#40](https://github.com/IDUclub/IduEdu/pull/40),
+  [`4efc757`](https://github.com/IDUclub/IduEdu/commit/4efc757bb4e4589c8e87d5b25fbd3f04b27f3e3a))
+
+* fix(transport): high-speed trains get their own speed model
+
+Train routes tagged service=high_speed in OSM (Sapsan, Nevsky Express) used the commuter-fitted
+  train spec and took twice their scheduled time. A registry key "<mode>:<service>" now overrides
+  the mode spec for travel edges of routes with that service tag; DEFAULT_REGISTRY_W_TRAIN gets
+  train:high_speed, calibrated to Sapsan timetables (645 km: 221 min non-stop, 247 min over five
+  segments). Edge types, route modes and boarding waits stay with the plain mode.
+  TransportRegistry.list_modes() lists the requestable modes; the routes table keeps the service tag
+  by default.
+
+Closes #38
+
+* perf: join_pt_walk_graph six times faster, edges split at projections in Rust
+
+On St Petersburg (639k walk edges, 6.5k platforms) the join took 12 s; now 2 s with the same nodes,
+  edges, attributes and geometry. - Platform attributes collapse onto walk nodes without a Python
+  call per node. - project_objects2urban_graph splits edges in a new Rust kernel (split_edges, same
+  pieces as shapely.ops.substring) and builds nodes and connectors vectorised. - The join builds no
+  intermediate graphs and validates the result once.
+
+Closes #39
+
+
+## v3.3.1 (2026-11-19)
+
+### Bug Fixes
+
+- Public-transport nodes keep the names and ids of their stops; crs of the PT graph
+  ([#37](https://github.com/IDUclub/IduEdu/pull/37),
+  [`2948c00`](https://github.com/IDUclub/IduEdu/commit/2948c007acfad9f7d5982f168f174e94d5f33918))
+
+- OSM stop, platform, station and entrance nodes keep name, ref, local_ref and wheelchair of their
+  OSM object and osm_id (node/<id>, way/<id>, relation/<id>); a platform made up from its stop takes
+  the stop's tags but no osm_id. The route query also prints the tags of the member nodes of ground
+  routes (Overpass and PBF). - GTFS nodes keep name, stop_code, platform_code and
+  wheelchair_boarding; route stops the name of their stop. - get_public_transport_graph(crs=...): a
+  projected CRS for the graph, by default the UTM zone of the territory as before; one CRS for
+  graphs built in parts, or a conformal CRS of a large area for long routes. - nx_graph2urban_graph
+  keeps the node attributes as columns of the node table. - Docs: which edges have a length_meter
+  other than the length of their geometry.
+
+
+## v3.3.0 (2026-11-19)
+
+### Continuous Integration
+
+- **release**: Manual run that publishes an existing release tag
+  ([#35](https://github.com/IDUclub/IduEdu/pull/35),
+  [`e9e0507`](https://github.com/IDUclub/IduEdu/commit/e9e0507533801fefb2d06575b3dd656670a57f38))
+
+### Features
+
+- Routes table of public-transport graphs, one Rust kernel for OSM routes
+  ([#36](https://github.com/IDUclub/IduEdu/pull/36),
+  [`93dc7c5`](https://github.com/IDUclub/IduEdu/commit/93dc7c5e91222987a6db760e7fa7b84ea16cf8c1))
+
+* feat: routes table of public-transport graphs, one Rust kernel for OSM routes
+
+- Edges and stop nodes carry route_key; UrbanGraph.routes holds one row per route variant (OSM
+  osm:r<id>, GTFS gtfs:<feed>:<route_id>:<direction>:<hash>) with its line (route_master or GTFS
+  route_id). route_edges, route_stops and routes_in_area query it; editors, simplify, joins and
+  .urbangraph keep it. - OSM route relations of every mode, the subway included, are parsed by one
+  Rust kernel (pt_routes.rs) in parallel. Its geometry repeats GEOS operation for operation, so the
+  graphs equal the Python ones. A route that cannot be drawn is left out with a warning instead of
+  failing the build. - The PBF reader keeps way coordinates as arrays and hands the ways of ground
+  routes over as shared read-only lon/lat arrays instead of per-point dicts. - The subway stitches
+  its ways in member order like the ground modes; the Python stitching, pairing and line cutting
+  helpers are removed. - Route masters are read from Overpass and PBF; download_osm_pbf and
+  split_by_polygons can cut routes-only files (way_keys=()).
+
+* fix: findings of the graph-api test of 3.3
+
+- Subway stop areas: a member role the parser does not read is taken from the tags of the member
+  (Mezhdunarodnaya, Devyatkino are stations with entrances again, none left typed platform) -
+  simplify_graph keeps the nodes a walk graph joins public transport at (platforms, subway entrances
+  and exits) - OSM routes with a single stop in the territory are left out: they have boarding edges
+  only - .urbangraph: object columns read back with None instead of NaN - nx_graph2urban_graph:
+  endpoints swapped in a copy, not in a read-only array of copy-on-write pandas -
+  urban_graph2nx_graph: opposite edges of a directed multigraph get their own key in the undirected
+  MultiGraph instead of overwriting each other; a simple graph with such edges raises a clear error
+  - No inplace drop/set_index in the subway parser and nx_utils - Docs and Russian catalogues:
+  merged-feed route keys, single-stop routes, simplify_graph access nodes
+
+* fix: public-transport edges end on their merged nodes
+
+Nodes in one metre cell are merged into the first of them, while the edges of the others kept their
+  own ends: 0.5% of the edges of the north-west cut ended up to 0.82 m from their node (median 7
+  mm), and nx_graph2urban_graph rejected the graph on its endpoint check. The first and last points
+  of every edge are now moved onto its nodes, and an edge between stops merged into one node (a stop
+  listed twice in a row, a terminus passed on the way in and out; 65 in the cut) is left out. The
+  merge rule stays as it was.
+
+
 ## v3.2.0 (2026-11-17)
 
 ### Features

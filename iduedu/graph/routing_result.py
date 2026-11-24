@@ -10,6 +10,17 @@ from scipy import sparse
 
 from iduedu import _rust
 
+DistanceFormat = Literal["frame", "dense", "sparse"]
+
+
+def _validate_distance_format(distance_format, output, *, one_dimensional=None):
+    if distance_format not in ("frame", "dense", "sparse"):
+        raise ValueError("distance_format must be 'frame', 'dense' or 'sparse'")
+    if distance_format != "frame" and output == "paths":
+        raise ValueError("Array distance formats require output='distances' or output='both'")
+    if distance_format == "sparse" and one_dimensional is not None:
+        raise ValueError(f"distance_format='sparse' is unavailable for {one_dimensional}; use 'dense' or 'frame'")
+
 
 def _sparse_array(values, positions, length, dtype, fill_value, sparse_dtype=None):
     """Wrap stored values at sorted unique positions without a dense round trip."""
@@ -56,6 +67,78 @@ def _sparse_frame(rows, cols, values, index, columns, dtype, fill_value):
         for start, end in zip(bounds[:-1], bounds[1:])
     ]
     return _frame(arrays, index, columns)
+
+
+def _lookup(search, targets, *, field=1, fill=np.inf, dtype=np.float32):
+    result = np.full(len(targets), fill, dtype=dtype)
+    if len(search[0]):
+        offsets = np.searchsorted(search[0], targets)
+        valid = offsets < len(search[0])
+        matches = np.flatnonzero(valid)
+        matches = matches[search[0][offsets[matches]] == targets[matches]]
+        result[matches] = search[field][offsets[matches]]
+    return result
+
+
+def _distance_series(values, index, dtype, attrs, name="dist"):
+    result = pd.Series(
+        pd.arrays.SparseArray(np.asarray(values, dtype=dtype), fill_value=np.inf), index=index, name=name
+    )
+    result.attrs.update(attrs)
+    return result
+
+
+def _target_columns(searches, targets):
+    """Per search: (column positions, costs) of the settled requested targets."""
+    if targets is None:
+        for nodes, costs, *_ in searches:
+            yield nodes, costs
+        return
+    targets = np.asarray(targets, dtype=np.int64)
+    if len(targets) == 0 or len(np.unique(targets)) != len(targets):
+        for search in searches:
+            values = _lookup(search, targets)
+            reachable = np.flatnonzero(np.isfinite(values))
+            yield reachable, values[reachable]
+        return
+    # Unique targets: one gather per search instead of a binary search for every target.
+    column_of = np.full(int(targets.max()) + 1, -1, dtype=np.int64)
+    column_of[targets] = np.arange(len(targets))
+    for search in searches:
+        nodes = search[0].astype(np.int64, copy=False)
+        columns = np.full(len(nodes), -1, dtype=np.int64)
+        inside = nodes < len(column_of)
+        columns[inside] = column_of[nodes[inside]]
+        keep = np.flatnonzero(columns >= 0)
+        yield columns[keep], search[1][keep]
+
+
+def _distance_csr(searches, targets, inverse, *, transposed=False, node_count=None):
+    """Assemble settled costs in public row and column order, including explicit zeros."""
+    data, column_indices, offsets = [], [], [0]
+    for found, values in _target_columns(searches, targets):
+        data.append(values)
+        column_indices.append(found)
+        offsets.append(offsets[-1] + len(found))
+    matrix = sparse.csr_matrix(
+        (np.concatenate(data), np.concatenate(column_indices), np.array(offsets)),
+        shape=(len(searches), node_count if targets is None else len(targets)),
+    )[inverse]
+    return matrix.T.tocsr() if transposed else matrix
+
+
+def _distance_table(matrix, index, columns, dtype, attrs, distance_format):
+    """Format settled costs, keeping explicit zeros and treating missing entries as unreachable."""
+    if distance_format == "sparse":
+        return sparse.csr_array(matrix, dtype=dtype)
+    entries = matrix.tocoo()
+    if distance_format == "dense":
+        result = np.full(matrix.shape, np.inf, dtype=dtype)
+        result[entries.row, entries.col] = entries.data
+        return result
+    result = _sparse_frame(entries.row, entries.col, entries.data.astype(dtype), index, columns, dtype, np.inf)
+    result.attrs.update(attrs)
+    return result
 
 
 def _groups(labels, count):
@@ -192,9 +275,11 @@ class _PathStore:
 class ShortestPathResult:
     """Distances and paths from the same Dijkstra searches.
 
-    ``distances`` is a sparse Series or DataFrame. Accessing ``paths`` creates
-    and caches the matching path table. With ``path_storage="lazy"``, use
-    ``get_path`` to reconstruct individual routes without materializing that
+    ``distances`` is a sparse pandas Series or DataFrame, a NumPy array, or a
+    SciPy CSR array, depending on ``distance_format``. Array positions match
+    the pandas path table, with one distance per row for one-dimensional
+    arrays. Accessing ``paths`` creates and caches the path table. With
+    ``path_storage="lazy"``, use ``get_path`` to reconstruct individual routes without materializing that
     table or rerunning Dijkstra. Results retain a snapshot of node ids and
     predecessors, so later graph edits do not change the saved routes.
 
@@ -205,8 +290,9 @@ class ShortestPathResult:
 
     Attributes:
         distances: Shortest costs in the selected weight units.
-        nearest_sources: Winning graph node ids for a nearest-source search;
-            otherwise None. Unreachable requested targets have a None owner.
+        nearest_sources: A pandas Series of winning graph node ids for a
+            nearest-source search, in distance order for every format.
+            Unreachable targets have a None owner. Other searches set this to None.
     """
 
     def __init__(self, distances, path_store: _PathStore, *, path_storage="eager", nearest_sources=None):
@@ -264,3 +350,40 @@ class ShortestPathResult:
             return self._store.path_at(row, column)
         path = self._paths.iloc[row] if self._layout == "series" else self._paths.iloc[row, column]
         return list(path) if isinstance(path, list) else None
+
+
+def _store(
+    searches,
+    node_ids,
+    tree_indices,
+    origins,
+    targets,
+    index,
+    columns,
+    *,
+    layout="matrix",
+    reverse=False,
+    transposed=False,
+    attrs=None,
+):
+    return _PathStore(
+        [_PathTree(search[0], search[2]) for search in searches],
+        node_ids,
+        tree_indices,
+        origins,
+        targets,
+        index.copy(),
+        None if columns is None else columns.copy(),
+        layout=layout,
+        reverse=reverse,
+        transposed=transposed,
+        attrs=attrs,
+    )
+
+
+def _finish(output, distances, store, path_storage, nearest_sources=None):
+    if output == "distances":
+        return distances
+    if output == "paths":
+        return store.materialize()
+    return ShortestPathResult(distances, store, path_storage=path_storage, nearest_sources=nearest_sources)

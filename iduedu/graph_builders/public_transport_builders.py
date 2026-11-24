@@ -1,14 +1,15 @@
-import multiprocessing
+from typing import Any
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import shapely
+from pyproj import CRS
 from shapely import MultiPolygon, Polygon
-from tqdm.auto import tqdm
-from tqdm.contrib.concurrent import process_map
 
 from iduedu import config
 from iduedu.constants.transport_specs import DEFAULT_REGISTRY, TransportRegistry
+from iduedu.graph.routes import empty_routes, normalize_routes, route_keys_of
 from iduedu.graph.transformers import estimate_crs_for_bounds
 from iduedu.graph.urban_graph import UrbanGraph
 from iduedu.overpass.downloaders import (
@@ -19,9 +20,10 @@ from iduedu.overpass.downloaders import (
     split_stop_area_members,
 )
 from iduedu.overpass.parsers import (
-    overpass_ground_transport2edgenode,
+    ground_routes_tables,
     overpass_routes_to_df,
     overpass_subway2edgenode,
+    route_member_tags,
 )
 
 logger = config.logger
@@ -33,10 +35,10 @@ def _aggregate_nodes(nodes: pd.DataFrame, keys: list[str], *, dropna: bool, with
     """``nodes.groupby(keys, as_index=False).agg(...)`` of the node merge, without a Python call per group.
 
     One row per group in sorted key order: the keys, the first geometry, the tuple of non-missing node ids
-    (and of all routes, with ``with_routes``) in row order, and the extra-data dicts merged with later keys
-    winning.
+    (and of all route labels and route keys, with ``with_routes``) in row order, and the extra-data dicts
+    merged with later keys winning.
     """
-    columns = keys + ["geometry", "node_id"] + (["route"] if with_routes else []) + ["extra_data"]
+    columns = keys + ["geometry", "node_id"] + (["route", "route_key"] if with_routes else []) + ["extra_data"]
     codes = nodes.groupby(keys, sort=True, dropna=dropna).ngroup().to_numpy()
     kept = np.flatnonzero(codes >= 0)  # rows with a missing key are dropped when dropna
     if len(kept) == 0:
@@ -54,6 +56,7 @@ def _aggregate_nodes(nodes: pd.DataFrame, keys: list[str], *, dropna: bool, with
     result["node_id"] = [tuple(v for v in chunk if not _is_missing(v)) for chunk in chunks("node_id")]
     if with_routes:
         result["route"] = [tuple(chunk) for chunk in chunks("route")]
+        result["route_key"] = [tuple(chunk) for chunk in chunks("route_key")]
     merged = []
     for chunk in chunks("extra_data"):
         out = {}
@@ -63,6 +66,25 @@ def _aggregate_nodes(nodes: pd.DataFrame, keys: list[str], *, dropna: bool, with
         merged.append(out)
     result["extra_data"] = merged
     return result[columns]
+
+
+def _snap_edge_ends(geometry: np.ndarray, node_points: np.ndarray, u: pd.Series, v: pd.Series) -> np.ndarray:
+    """Edge lines that start at the node ``u`` and end at the node ``v``.
+
+    Nodes in one metre cell are merged into the first of them, while the edges of the others keep their own ends,
+    up to a metre away; their first and last points are moved onto the node.
+    """
+    geometry = np.asarray(geometry, dtype=object).copy()
+    lines = ~shapely.is_missing(geometry) & (shapely.get_num_coordinates(geometry) >= 2)
+    if not lines.any():
+        return geometry
+    coords = shapely.get_coordinates(geometry[lines])
+    lasts = np.cumsum(shapely.get_num_coordinates(geometry[lines])) - 1
+    firsts = np.r_[0, lasts[:-1] + 1]
+    coords[firsts] = shapely.get_coordinates(node_points[u.to_numpy()[lines]])
+    coords[lasts] = shapely.get_coordinates(node_points[v.to_numpy()[lines]])
+    geometry[lines] = shapely.set_coordinates(geometry[lines].copy(), coords)
+    return geometry
 
 
 def _is_missing(value) -> bool:
@@ -86,7 +108,58 @@ def _empty_public_transport_graph(crs) -> UrbanGraph:
         is_directed=True,
         edge_direction_column="oneway",
         graph_type="public_transport",
+        routes=empty_routes(),
     )
+
+
+def _text_tag(tags: dict, key: str):
+    value = tags.get(key)
+    return None if value is None else str(value)
+
+
+def osm_routes_table(elements: pd.DataFrame, transport_types, route_tags=None) -> pd.DataFrame:
+    """Routes table of OSM route relations: one row per relation of ``transport_types``.
+
+    The line of a route is the ``route_master`` relation that lists it: ``line_key`` is
+    ``osm:r<master id>`` and ``line_name`` its ``ref`` (or ``name``). ``route_tags`` (by default
+    ``config.transport_route_attr``) are copied from the relation; ``osm_id`` and ``osm_route`` (the raw
+    ``route`` value, e.g. ``light_rail`` for a tram) are added.
+    """
+    route_tags = sorted(config.transport_route_attr if route_tags is None else set(route_tags))
+    if elements is None or elements.empty or "type" not in elements.columns:
+        return empty_routes()
+    relations = elements[elements["type"].eq("relation")]
+    tags = relations["tags"].map(lambda value: value if isinstance(value, dict) else {})
+    masters: dict[int, tuple[str, str | None]] = {}
+    for rid, members, master_tags in zip(relations["id"], relations.get("members", pd.Series(dtype=object)), tags):
+        if master_tags.get("type") != "route_master" or not isinstance(members, list):
+            continue
+        line = (f"osm:r{int(rid)}", _text_tag(master_tags, "ref") or _text_tag(master_tags, "name"))
+        for member in members:
+            if isinstance(member, dict) and member.get("type") == "relation":
+                masters.setdefault(int(member["ref"]), line)
+    wanted = set(transport_types)
+    rows = []
+    for rid, route_tags_of, mode in zip(relations["id"], tags, relations.get("transport_type")):
+        if not route_tags_of.get("route") or mode not in wanted:
+            continue
+        line_key, line_name = masters.get(int(rid), (None, None))
+        row = {
+            "route_key": f"osm:r{int(rid)}",
+            "source": "osm",
+            "mode": mode,
+            "line_key": line_key,
+            "line_name": line_name,
+            "osm_id": int(rid),
+            "osm_route": str(route_tags_of["route"]),
+        }
+        for key in route_tags:
+            row[key] = _text_tag(route_tags_of, key)
+        rows.append(row)
+    if not rows:
+        return empty_routes()
+    table = pd.DataFrame(rows).drop_duplicates("route_key").set_index("route_key")
+    return normalize_routes(table)
 
 
 def _graph_data_to_urban_graph(
@@ -94,10 +167,17 @@ def _graph_data_to_urban_graph(
     graph_edges_gdf: gpd.GeoDataFrame,
     transport_registry: TransportRegistry,
     local_crs,
+    routes: pd.DataFrame | None = None,
+    *,
+    route_services: pd.Series | None = None,
 ) -> UrbanGraph:
     """
     Build a directed public-transport UrbanGraph from parser node/edge tables.
+
+    ``routes`` is the routes table; the graph keeps the rows its edges refer to.
+    ``route_services`` contains the relation service tags indexed by route key.
     """
+    routes = empty_routes() if routes is None else routes
     if graph_nodes_gdf.empty:
         return _empty_public_transport_graph(local_crs)
 
@@ -111,28 +191,36 @@ def _graph_data_to_urban_graph(
     graph_nodes_gdf["_x_group"] = graph_nodes_gdf.geometry.x.round()
     graph_nodes_gdf["_y_group"] = graph_nodes_gdf.geometry.y.round()
 
-    for column in ["node_id", "type", "route"]:
+    for column in ["node_id", "type", "route", "route_key"]:
         if column not in graph_nodes_gdf.columns:
             graph_nodes_gdf[column] = np.nan
 
+    # The route a node belongs to: its route key, or its label for parser tables made without keys.
+    graph_nodes_gdf["_route_id"] = graph_nodes_gdf["route_key"].where(
+        graph_nodes_gdf["route_key"].notna(), graph_nodes_gdf["route"]
+    )
     graph_nodes_gdf["_source_node_id"] = graph_nodes_gdf["node_id"]
     graph_nodes_gdf["_geometry_key"] = graph_nodes_gdf.geometry.to_wkb()
     duplicate_nodes = graph_nodes_gdf.duplicated(
-        subset=["_source_node_id", "_geometry_key", "route", "type"], keep="first"
+        subset=["_source_node_id", "_geometry_key", "_route_id", "type"], keep="first"
     )
     if duplicate_nodes.any():
         graph_nodes_gdf = graph_nodes_gdf.loc[~duplicate_nodes].copy()
 
-    node_lookup = graph_nodes_gdf[["_source_node_id", "route"]].copy()
+    # A stop node belongs to one route variant: nodes and edges are matched by the source node and the route key.
+    node_lookup = graph_nodes_gdf[["_source_node_id", "_route_id"]].copy()
     node_lookup["node_id"] = np.arange(len(graph_nodes_gdf), dtype=np.int64)
     graph_nodes_gdf["node_id"] = node_lookup["node_id"].to_numpy()
 
     if not graph_edges_gdf.empty:
-        for column in ["u", "v", "route"]:
+        for column in ["u", "v", "route", "route_key"]:
             if column not in graph_edges_gdf.columns:
                 graph_edges_gdf[column] = np.nan
 
-        route_lookup = node_lookup.drop_duplicates(subset=["_source_node_id", "route"], keep="first")
+        graph_edges_gdf["_route_id"] = graph_edges_gdf["route_key"].where(
+            graph_edges_gdf["route_key"].notna(), graph_edges_gdf["route"]
+        )
+        route_lookup = node_lookup.drop_duplicates(subset=["_source_node_id", "_route_id"], keep="first")
         source_counts = node_lookup.groupby("_source_node_id", dropna=False)["node_id"].nunique()
         unique_source_ids = source_counts[source_counts == 1].index
         source_lookup = (
@@ -151,7 +239,7 @@ def _graph_data_to_urban_graph(
             mapped_column = f"_{endpoint}_mapped"
             graph_edges_gdf = graph_edges_gdf.merge(
                 route_lookup.rename(columns={"_source_node_id": endpoint, "node_id": mapped_column}),
-                on=[endpoint, "route"],
+                on=[endpoint, "_route_id"],
                 how="left",
             )
             graph_edges_gdf[mapped_column] = graph_edges_gdf[mapped_column].fillna(
@@ -161,7 +249,7 @@ def _graph_data_to_urban_graph(
             # share, such as a cross-platform interchange, joins every node made from it.
             shared = (
                 graph_edges_gdf[mapped_column].isna()
-                & graph_edges_gdf["route"].isna()
+                & graph_edges_gdf["_route_id"].isna()
                 & graph_edges_gdf[endpoint].isin(shared_lookup.index)
             )
             if shared.any():
@@ -182,7 +270,10 @@ def _graph_data_to_urban_graph(
 
     not_platforms = graph_nodes_gdf[graph_nodes_gdf["type"] != "platform"]
     not_platforms = _aggregate_nodes(
-        not_platforms, ["_x_group", "_y_group", "route", "type"], dropna=False, with_routes=False
+        not_platforms,
+        ["_x_group", "_y_group", "_route_id", "route_key", "route", "type"],
+        dropna=False,
+        with_routes=False,
     )
 
     all_nodes = gpd.GeoDataFrame(
@@ -203,10 +294,17 @@ def _graph_data_to_urban_graph(
     node_routes.loc[single_route] = node_routes.loc[single_route].map(lambda route: route[0])
     node_routes.loc[~route_is_sequence & node_routes.map(_is_missing)] = None
 
+    # A platform lists the keys of every route calling there; a stop node has the key of its own route.
+    node_route_keys = all_nodes["route_key"].map(
+        lambda keys: (
+            route_keys_of(keys) if isinstance(keys, (tuple, list)) else (keys if isinstance(keys, str) else None)
+        )
+    )
     nodes_df = pd.DataFrame(
         {
             "type": all_nodes["type"],
             "route": node_routes,
+            "route_key": node_route_keys,
         },
         index=all_nodes.index,
     )
@@ -231,9 +329,10 @@ def _graph_data_to_urban_graph(
             edge_direction_column="oneway",
             crs=local_crs,
             graph_type="public_transport",
+            routes=routes,
         )
 
-    for column in ["u", "v", "type", "route", "geometry", "extra_data", "oneway"]:
+    for column in ["u", "v", "type", "route", "route_key", "geometry", "extra_data", "oneway"]:
         if column not in graph_edges_gdf.columns:
             graph_edges_gdf[column] = np.nan
 
@@ -243,6 +342,9 @@ def _graph_data_to_urban_graph(
     if missing_endpoints.any():
         logger.warning(f"Dropping {int(missing_endpoints.sum())} PT edges with missing endpoint nodes")
         graph_edges_gdf = graph_edges_gdf.loc[~missing_endpoints].copy()
+    # Stops of one route in one metre cell are one node, so an edge between them (a stop listed twice in a row, a
+    # terminus passed on the way in and out) leads nowhere.
+    graph_edges_gdf = graph_edges_gdf.loc[graph_edges_gdf["u"].to_numpy() != graph_edges_gdf["v"].to_numpy()]
 
     if graph_edges_gdf.empty:
         return UrbanGraph(
@@ -253,9 +355,13 @@ def _graph_data_to_urban_graph(
             edge_direction_column="oneway",
             crs=local_crs,
             graph_type="public_transport",
+            routes=routes,
         )
 
     graph_edges_gdf[["u", "v"]] = graph_edges_gdf[["u", "v"]].astype(int)
+    graph_edges_gdf["geometry"] = _snap_edge_ends(
+        graph_edges_gdf.geometry.to_numpy(), nodes_gdf.geometry.to_numpy(), graph_edges_gdf["u"], graph_edges_gdf["v"]
+    )
 
     if "length_meter" not in graph_edges_gdf.columns:
         graph_edges_gdf["length_meter"] = np.nan
@@ -264,6 +370,7 @@ def _graph_data_to_urban_graph(
     if "speed_m_min" not in graph_edges_gdf.columns:
         graph_edges_gdf["speed_m_min"] = np.nan
 
+    mode_specs = {mode: transport_registry.get(mode) for mode in transport_registry.list_modes()}
     boarding_mask = graph_edges_gdf["type"].astype(str).eq("boarding")
     if boarding_mask.any():
         alighting_edges = graph_edges_gdf.loc[boarding_mask].copy()
@@ -283,8 +390,7 @@ def _graph_data_to_urban_graph(
         # The mode is therefore read from the travel edges the node participates
         # in, which carry the mode by construction, and the node type is used only
         # when it is itself a known mode.
-        known_modes = set(transport_registry.list_types())
-        travel = graph_edges_gdf[graph_edges_gdf["type"].astype(str).isin(known_modes)]
+        travel = graph_edges_gdf[graph_edges_gdf["type"].astype(str).isin(mode_specs)]
         node_mode = pd.concat(
             [
                 pd.Series(travel["type"].to_numpy(), index=travel["u"].to_numpy()),
@@ -295,7 +401,7 @@ def _graph_data_to_urban_graph(
 
         boarding_modes = boarding_edges["v"].map(node_mode)
         by_type = boarding_edges["v"].map(nodes_gdf["type"])
-        boarding_modes = boarding_modes.fillna(by_type.where(by_type.isin(known_modes)))
+        boarding_modes = boarding_modes.fillna(by_type.where(by_type.isin(mode_specs)))
 
         unresolved = boarding_modes.isna()
         if unresolved.any():
@@ -305,15 +411,8 @@ def _graph_data_to_urban_graph(
                 f"{int(unresolved.sum())} boarding edges have no resolvable transport mode; "
                 f"using the default waiting time"
             )
-        default_wait = min(
-            (transport_registry.get(mode).avg_wait_time_min for mode in known_modes),
-            default=0.0,
-        )
-        boarding_edges["time_min"] = boarding_modes.map(
-            lambda mode: (
-                float(transport_registry.get(str(mode)).avg_wait_time_min) if isinstance(mode, str) else default_wait
-            )
-        )
+        mode_waits = {mode: float(spec.avg_wait_time_min) for mode, spec in mode_specs.items()}
+        boarding_edges["time_min"] = boarding_modes.map(mode_waits).fillna(min(mode_waits.values(), default=0.0))
         boarding_edges["oneway"] = True
 
         graph_edges_gdf = gpd.GeoDataFrame(
@@ -329,7 +428,7 @@ def _graph_data_to_urban_graph(
         graph_edges_gdf.loc[missing_oneway, "oneway"] = True
     graph_edges_gdf["oneway"] = graph_edges_gdf["oneway"].astype(bool)
 
-    def calc_len_time(row):
+    def calc_len_time(geom, spec, speed_m_min):
         """Calculate edge length and travel time for a public-transport edge.
 
         Only travel edges carry a transport mode as their type. Station interiors
@@ -337,15 +436,13 @@ def _graph_data_to_urban_graph(
         ridden, and asking the registry about them raised a ``KeyError`` that
         aborted the whole graph.
         """
-        geom = row.geometry
         length_m = float(round(geom.length, 3))
-        spec = transport_registry.try_get(str(row.type))
         if spec is None:
             return length_m, float(round(length_m / DEFAULT_WALK_SPEED_M_PER_MIN, 3))
 
         time_min = spec.travel_time_min(
             length_m,
-            speed_limit_mpm=row.speed_m_min,
+            speed_limit_mpm=speed_m_min,
         )
         return length_m, float(round(time_min, 3))
 
@@ -355,12 +452,24 @@ def _graph_data_to_urban_graph(
 
     mask_missing = graph_edges_gdf["length_meter"].isna() | graph_edges_gdf["time_min"].isna()
 
-    vals = graph_edges_gdf.loc[mask_missing].apply(calc_len_time, axis=1, result_type="expand")
-    if not vals.empty:
-        vals.columns = ["length_meter", "time_min"]
-        graph_edges_gdf.loc[mask_missing, ["length_meter", "time_min"]] = vals
+    missing = graph_edges_gdf.loc[mask_missing]
+    if len(missing):
+        variant_specs = {}
+        if route_services is not None:
+            for route_key, service in route_services.dropna().items():
+                mode = routes.at[route_key, "mode"]
+                if mode in mode_specs and (spec := transport_registry.try_get(f"{mode}:{service}")) is not None:
+                    variant_specs[mode, route_key] = spec
+        # A loop over plain values: a row-wise DataFrame.apply builds a Series per edge.
+        vals = [
+            calc_len_time(geometry, variant_specs.get((edge_type, route_key), mode_specs.get(edge_type)), speed)
+            for geometry, edge_type, route_key, speed in zip(
+                missing.geometry, missing["type"], missing["route_key"], missing["speed_m_min"]
+            )
+        ]
+        graph_edges_gdf.loc[mask_missing, ["length_meter", "time_min"]] = np.asarray(vals, dtype=float)
 
-    edge_columns = ["u", "v", "geometry", "route", "type", "length_meter", "time_min", "oneway"]
+    edge_columns = ["u", "v", "geometry", "route", "route_key", "type", "length_meter", "time_min", "oneway"]
     edges_df = graph_edges_gdf[edge_columns].copy()
     edges_df[["u", "v"]] = edges_df[["u", "v"]].astype(int)
     edges_df["oneway"] = edges_df["oneway"].astype(bool)
@@ -388,12 +497,8 @@ def _graph_data_to_urban_graph(
         edge_direction_column="oneway",
         crs=local_crs,
         graph_type="public_transport",
+        routes=routes,
     )
-
-
-def _multi_ground_to_edgenode(args):
-    # args: (row, local_crs, ref2speed, needed_tags)
-    return overpass_ground_transport2edgenode(*args)
 
 
 def _build_public_transport_graph(
@@ -403,6 +508,7 @@ def _build_public_transport_graph(
     osm_edge_tags: list[str] | None,
     transport_registry: TransportRegistry,
     clip_by_territory: bool = False,
+    crs: Any | None = None,
 ) -> UrbanGraph:
     """
     Build a directed public-transport graph for one or multiple OSM public-transport modes inside a territory.
@@ -412,7 +518,7 @@ def _build_public_transport_graph(
       2) Download PT routes via Overpass (or read them from the local OSM file in pbf mode) for the requested
          ``transport_types``.
       3) Optionally (subway) parse station/stop-area context (entrances, exits, transfers).
-      4) Parse each route into node/edge tables (parallelized for large inputs).
+      4) Parse each route into node/edge tables (the ground routes by one parallel Rust kernel call).
       5) Assemble a single ``UrbanGraph`` and compute missing edge ``length_meter`` and ``time_min`` using
          ``transport_registry.rst``.
       6) Optionally clip the graph by the territory boundary (in the projected CRS).
@@ -431,12 +537,20 @@ def _build_public_transport_graph(
             distances, traffic coefficient). Also used for transport-type validation in public APIs.
         clip_by_territory:
             If True, clip the final graph to the (projected) boundary.
+        crs:
+            Projected CRS of the graph; by default the local UTM zone of the territory.
     Returns:
         ``UrbanGraph``: Directed public-transport graph with ``oneway`` edge direction column.
     """
 
+    if crs is not None:
+        local_crs = CRS.from_user_input(crs)
+        if not local_crs.is_projected:
+            raise ValueError(f"crs must be projected in metres, got {local_crs.to_string()}")
+        local_crs = local_crs.to_epsg() or local_crs
     polygon = get_4326_boundary(osm_id=osm_id, territory=territory)
-    local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
+    if crs is None:
+        local_crs = estimate_crs_for_bounds(*polygon.bounds).to_epsg()
 
     # Subway parsing expects station information in the response.
     expect_subway = False
@@ -478,35 +592,22 @@ def _build_public_transport_graph(
     # registry knew about was silently discarded here after being downloaded: taxi
     # and monorail routes arrived from Overpass and never reached a graph.
     ground_types = set(transport_types) - {"subway"}
+    # Stop and platform nodes come with the routes for their tags; they are not routes themselves.
+    is_node = overpass_data["type"].eq("node") if "type" in overpass_data else pd.Series(False, overpass_data.index)
     ground_pt_data = overpass_data[
-        (overpass_data["transport_type"].isin(ground_types)) & (~overpass_data["is_way_data"])
+        (overpass_data["transport_type"].isin(ground_types)) & (~overpass_data["is_way_data"]) & ~is_node
     ].copy()
 
     if len(ground_pt_data) > 0:
-        if not config.enable_tqdm_bar:
-            logger.debug("Parsing ground public transport routes")
-
-        use_processes = len(ground_pt_data) > 500 and multiprocessing.get_start_method(allow_none=False) == "fork"
-        if use_processes:
-            results = process_map(
-                _multi_ground_to_edgenode,
-                [(row, local_crs, ref2speed, needed_tags) for _, row in ground_pt_data.iterrows()],
-                desc="Parsing ground PT routes",
-                chunksize=1,
-                disable=not config.enable_tqdm_bar,
-            )
-        else:
-            tqdm.pandas(desc="Parsing ground PT routes", disable=not config.enable_tqdm_bar)
-            results = ground_pt_data.progress_apply(
-                lambda row: overpass_ground_transport2edgenode(row, local_crs, ref2speed, needed_tags),
-                axis=1,
-            ).tolist()
-
-        for edges_gdf, nodes_gdf in results:
-            if len(edges_gdf) > 0:
-                graph_edges_gdf.append(edges_gdf.dropna(axis=1, how="all"))
-            if len(nodes_gdf) > 0:
-                graph_nodes_gdf.append(nodes_gdf.dropna(axis=1, how="all"))
+        logger.debug(f"Parsing {len(ground_pt_data)} ground public transport routes")
+        # One Rust kernel call for all routes, in parallel; one table each for their edges and nodes.
+        ground_edges, ground_nodes = ground_routes_tables(
+            ground_pt_data, local_crs, ref2speed, needed_tags, member_tags=route_member_tags(overpass_data)
+        )
+        if len(ground_edges):
+            graph_edges_gdf.append(ground_edges)
+        if len(ground_nodes):
+            graph_nodes_gdf.append(ground_nodes)
 
     if expect_subway:
         subway_data = overpass_data[overpass_data["transport_type"] == "subway"].copy()
@@ -526,8 +627,13 @@ def _build_public_transport_graph(
     graph_edges_gdf = pd.concat(graph_edges_gdf, ignore_index=True) if graph_edges_gdf else gpd.GeoDataFrame()
     graph_nodes_gdf = pd.concat(graph_nodes_gdf, ignore_index=True) if graph_nodes_gdf else gpd.GeoDataFrame()
 
+    route_tags = config.transport_route_attr
+    routes = osm_routes_table(overpass_data, transport_types, route_tags=route_tags | {"service"})
+    route_services = routes.get("service")
+    if route_services is not None and "service" not in route_tags:
+        routes = routes.drop(columns="service")
     urban_graph: UrbanGraph = _graph_data_to_urban_graph(
-        graph_nodes_gdf, graph_edges_gdf, transport_registry, local_crs
+        graph_nodes_gdf, graph_edges_gdf, transport_registry, local_crs, routes=routes, route_services=route_services
     )
 
     if clip_by_territory:
@@ -544,6 +650,7 @@ def get_public_transport_graph(
     clip_by_territory: bool = False,
     osm_edge_tags: list[str] | None = None,
     transport_registry: TransportRegistry | None = None,
+    crs: Any | None = None,
 ) -> UrbanGraph:
     """
     Build a directed public-transport graph for one or multiple transport modes within a territory.
@@ -562,7 +669,7 @@ def get_public_transport_graph(
             Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given.
         transport_types:
             Transport mode(s) to include. Accepts:
-              - ``None``: include every type of ``transport_registry``;
+              - ``None``: include every mode of ``transport_registry``;
               - ``str``: a single OSM route type, e.g. ``"bus"``;
               - ``Sequence[str]``: multiple types, e.g. ``["tram", "bus", "trolleybus", "subway"]``.
 
@@ -576,28 +683,36 @@ def get_public_transport_graph(
             parameters such as free speed, acceleration and braking distances, dwell time and average waiting
             time for boarding edges).
             If None, ``DEFAULT_REGISTRY`` is used.
+        crs:
+            Projected CRS in metres for the graph (anything ``pyproj.CRS.from_user_input`` accepts). If None, the
+            UTM zone of the territory is estimated. Give one CRS to graphs built in parts to share coordinates,
+            or a conformal CRS of a large area (such as a Lambert conic) when routes reach far beyond one UTM zone.
 
     Returns:
-        Directed PT ``UrbanGraph`` with ``crs`` and ``type="public_transport"``.
+        Directed PT ``UrbanGraph`` with ``crs`` and ``type="public_transport"``. Route stops and the edges of a
+        route carry its ``route_key`` (``osm:r<relation id>``), platforms the list of keys of the routes calling
+        there, and ``graph.routes`` is the table of the routes: ``mode``, the relation tags of
+        ``config.transport_route_attr``, ``osm_id``, ``osm_route`` and the ``route_master`` line as ``line_key``
+        and ``line_name``. With ``clip_by_territory`` it keeps the routes with an edge inside.
 
     See also:
         https://iduclub.github.io/IduEdu/examples/get_any_graph.html
         https://iduclub.github.io/IduEdu/examples/transport_registry.html
     """
     registry = transport_registry or DEFAULT_REGISTRY
-    registry_types = set(registry.list_types())
+    registry_modes = set(registry.list_modes())
 
     # normalize transport_types -> list[str]
     if transport_types is None:
-        types = list(registry_types)
+        types = list(registry_modes)
     elif isinstance(transport_types, str):
         types = [transport_types.strip().lower()]
     else:
         types = [str(t).strip().lower() for t in transport_types]
 
-    unknown = [t for t in types if t not in registry_types]
+    unknown = [t for t in types if t not in registry_modes]
     if unknown:
-        raise ValueError(f"Unknown transport type(s): {unknown}. Available: {sorted(registry_types)}")
+        raise ValueError(f"Unknown transport type(s): {unknown}. Available: {sorted(registry_modes)}")
 
     return _build_public_transport_graph(
         osm_id=osm_id,
@@ -606,4 +721,5 @@ def get_public_transport_graph(
         osm_edge_tags=osm_edge_tags,
         transport_registry=registry,
         clip_by_territory=clip_by_territory,
+        crs=crs,
     )

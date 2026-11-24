@@ -71,15 +71,18 @@ msgstr "Максимальное число поисков в пакете. Ог
 msgid "Search of pairwise tables. ``dijkstra`` runs one search per unique origin that stops at its destinations; ``bidirectional``, ``astar`` and ``alt`` run one point-to-point search per pair (see :func:`shortest_path`). ``auto`` (default) picks ``bidirectional`` when most origins occur once and ``dijkstra`` otherwise. All-to-all tables always use ``dijkstra``."
 msgstr "Поиск для попарных таблиц. ``dijkstra`` запускает один поиск на каждую уникальную точку отправления и останавливает его на её точках назначения; ``bidirectional``, ``astar`` и ``alt`` запускают отдельный поиск между двумя точками для каждой пары (см. :func:`shortest_path`). ``auto`` (по умолчанию) выбирает ``bidirectional``, если большинство точек отправления встречается один раз, и ``dijkstra`` иначе. Таблицы «все со всеми» всегда считаются через ``dijkstra``."
 
+msgid "``\"frame\"`` (default) uses a pandas table. With ``output=\"distances\"`` or ``\"both\"``, ``\"dense\"`` uses a NumPy array with ``np.inf`` for unreachable or out-of-cutoff pairs. ``\"sparse\"`` uses a SciPy CSR array for all-to-all mode. An absent entry means unreachable. Explicit zero costs are stored, so never call ``eliminate_zeros``. Use ``.tocoo()`` to get the ``row``, ``col`` and ``data`` arrays."
+msgstr "Формат ``\"frame\"`` по умолчанию использует таблицу pandas. При ``output=\"distances\"`` или ``\"both\"`` формат ``\"dense\"`` использует массив NumPy со значением ``np.inf`` для недостижимых пар и пар за пределами порога. Формат ``\"sparse\"`` использует массив SciPy в формате CSR для режима «все ко всем». Отсутствие элемента означает, что пара недостижима. Нулевые стоимости хранятся явно, поэтому не вызывайте ``eliminate_zeros``. Метод ``.tocoo()`` даёт доступ к массивам ``row``, ``col`` и ``data``."
+
 msgid "Return type"
 msgstr "Тип результата"
 
-msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
-msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\``"
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\` \\| \\:py\\:class\\:\\`\\~scipy.sparse.\\_csr.csr\\_array\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.Series\\` \\| \\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~iduedu.graph.routing\\_result.ShortestPathResult\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\` \\| \\:py\\:class\\:\\`\\~scipy.sparse.\\_csr.csr\\_array\\``"
 
 msgid "Returns"
 msgstr "Результат"
 
-msgid "Sparse DataFrame or ShortestPathResult. Labels and duplicate node inputs are preserved. Unreachable and out-of-cutoff pairs contain inf/None. Searches use the smaller unique input side when possible, stop once requested targets settle, and restore original directed route order."
-msgstr "Разреженный DataFrame или ShortestPathResult. Метки и повторяющиеся входные узлы сохраняются. Недостижимые пары и пары за порогом содержат inf/None. Поиски по возможности идут со стороны меньшего множества уникальных входных точек, останавливаются, когда обработаны запрошенные цели, и восстанавливают исходный порядок ориентированного маршрута."
+msgid "A sparse DataFrame, ShortestPathResult or distance array. Array axes follow input order and preserve duplicate inputs. Pairwise dense output has one dimension with one value per input pair. With ``output=\"both\"``, the paths remain a pandas table with the same labels and positions. Searches use the smaller unique input side when possible, stop once requested targets settle, and restore original directed route order."
+msgstr "Разреженный DataFrame, ShortestPathResult или массив расстояний. Оси массива следуют порядку входных данных и сохраняют повторы. Попарный плотный результат одномерен и содержит одно значение на входную пару. При ``output=\"both\"`` пути по-прежнему хранятся в таблице pandas с теми же метками и позициями. По возможности поиск ведётся с той стороны, где меньше уникальных узлов. Он останавливается, когда достигнуты запрошенные цели, и восстанавливает исходное направление маршрутов."
 

@@ -9,7 +9,8 @@ from scipy import sparse
 from shapely.geometry.base import BaseGeometry
 
 from iduedu.graph.adjacency import build_adjacency_matrix
-from iduedu.graph.routing_result import ShortestPathResult
+from iduedu.graph.routes import normalize_routes, used_routes
+from iduedu.graph.routing_result import DistanceFormat, ShortestPathResult
 from iduedu.graph.validation import sync_graph_crs, validate_graph
 
 
@@ -40,6 +41,11 @@ class UrbanGraph:
             when possible.
         graph_type: Optional semantic graph type such as ``"drive"``,
             ``"walk"`` or ``"intermodal"``.
+        routes: Optional table of public-transport routes, one row per route
+            variant, indexed by ``route_key`` (see :mod:`iduedu.graph.routes`).
+            Edges refer to it by their ``route_key`` column; rows no edge refers
+            to are dropped, so clipping or cutting a graph drops the routes it
+            loses. Street graphs have none (``None``).
 
     Raises:
         TypeError: If node or edge tables use unsupported types.
@@ -61,8 +67,23 @@ class UrbanGraph:
         "adjacency_nodelist",
         "node_to_adjacency_pos",
         "adjacency_weight",
+        "routes",
         "_csr_cache",
     )
+
+    nodes_gdf: gpd.GeoDataFrame | pd.DataFrame
+    edges_gdf: gpd.GeoDataFrame | pd.DataFrame
+    crs: Any | None
+    type: str | None
+    is_multigraph: bool
+    is_directed: bool
+    edge_direction_column: str | None
+    adjacency_matrix: sparse.csr_matrix | None
+    adjacency_nodelist: list
+    node_to_adjacency_pos: dict
+    adjacency_weight: str
+    routes: pd.DataFrame | None
+    _csr_cache: Any
 
     def __init__(
         self,
@@ -75,9 +96,35 @@ class UrbanGraph:
         adjacency_weight: str = "time_min",
         crs: Any | None = None,
         graph_type: str | None = None,
+        routes: pd.DataFrame | None = None,
     ):
         """Initialize graph tables, topology flags and adjacency cache state."""
 
+        self._init_tables(
+            nodes_gdf,
+            edges_gdf,
+            is_multigraph,
+            is_directed,
+            edge_direction_column,
+            adjacency_weight,
+            crs,
+            graph_type,
+            routes,
+        )
+        self.validate()
+
+    def _init_tables(
+        self,
+        nodes_gdf,
+        edges_gdf,
+        is_multigraph,
+        is_directed,
+        edge_direction_column,
+        adjacency_weight,
+        crs,
+        graph_type,
+        routes,
+    ):
         self.nodes_gdf = nodes_gdf
         self.edges_gdf = edges_gdf
         self.crs = crs
@@ -90,14 +137,32 @@ class UrbanGraph:
         self.node_to_adjacency_pos = {}
         self.adjacency_weight = adjacency_weight
         self._csr_cache = None
+        self.routes = used_routes(normalize_routes(routes), edges_gdf)
 
-        self.validate()
+    def _with_validated_tables(self, nodes_gdf, edges_gdf) -> "UrbanGraph":
+        """Create a fresh graph from derived tables with known-valid schema and topology."""
+        graph = UrbanGraph.__new__(UrbanGraph)
+        UrbanGraph._init_tables(
+            graph,
+            nodes_gdf,
+            edges_gdf,
+            self.is_multigraph,
+            self.is_directed,
+            self.edge_direction_column,
+            self.adjacency_weight,
+            self.crs,
+            self.type,
+            self.routes,
+        )
+        sync_graph_crs(graph)
+        return graph
 
     def __getstate__(self):
         # The Rust view of the adjacency matrix is rebuilt on demand and is not pickled.
         return {name: getattr(self, name) for name in self.__slots__ if name != "_csr_cache"}
 
     def __setstate__(self, state):
+        self.routes = None  # graphs pickled before the routes table existed
         for name, value in state.items():
             setattr(self, name, value)
         self._csr_cache = None
@@ -112,7 +177,8 @@ class UrbanGraph:
         return (
             f"UrbanGraph(nodes={len(self.nodes_gdf)}, edges={len(self.edges_gdf)}, "
             f"is_multigraph={self.is_multigraph}, is_directed={self.is_directed}, "
-            f"edge_direction_column={self.edge_direction_column!r}, crs={crs_str!r}, type={self.type!r})"
+            f"edge_direction_column={self.edge_direction_column!r}, crs={crs_str!r}, type={self.type!r}"
+            + (f", routes={len(self.routes)})" if self.routes is not None else ")")
         )
 
     @classmethod
@@ -125,6 +191,7 @@ class UrbanGraph:
         edge_direction_column: str | None = None,
         adjacency_weight: str = "time_min",
         graph_type: str | None = None,
+        routes: pd.DataFrame | None = None,
     ) -> "UrbanGraph":
         """Create an empty graph with the requested topology metadata."""
         nodes_gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=crs), crs=crs)
@@ -145,6 +212,7 @@ class UrbanGraph:
             adjacency_weight=adjacency_weight,
             crs=crs,
             graph_type=graph_type,
+            routes=routes,
         )
 
     def _sync_crs(self) -> None:
@@ -172,6 +240,7 @@ class UrbanGraph:
             adjacency_weight=self.adjacency_weight,
             crs=self.crs,
             graph_type=self.type,
+            routes=None if self.routes is None else self.routes.copy(),
         )
 
         if self.adjacency_matrix is not None:
@@ -228,6 +297,7 @@ class UrbanGraph:
         self.edge_direction_column = other.edge_direction_column
         self.crs = other.crs
         self.type = other.type
+        self.routes = other.routes
         self.validate()
         self._sync_crs()
         self.adjacency_matrix = None
@@ -365,6 +435,27 @@ class UrbanGraph:
 
         return subgraph_by_nodes(self, nodes)
 
+    def route_edges(self, route_key: str) -> gpd.GeoDataFrame:
+        """Travel edges of one route in the order of travel. See :func:`iduedu.route_edges`."""
+
+        from iduedu.graph.routes import route_edges
+
+        return route_edges(self, route_key)
+
+    def route_stops(self, route_key: str) -> gpd.GeoDataFrame:
+        """Stop nodes of one route in calling order. See :func:`iduedu.route_stops`."""
+
+        from iduedu.graph.routes import route_stops
+
+        return route_stops(self, route_key)
+
+    def routes_in_area(self, area) -> pd.DataFrame:
+        """Routes with an edge or a stop in an area. See :func:`iduedu.routes_in_area`."""
+
+        from iduedu.graph.routes import routes_in_area
+
+        return routes_in_area(self, area)
+
     def keep_largest_connected_component(
         self,
         *,
@@ -398,7 +489,8 @@ class UrbanGraph:
         output: Literal["distances", "paths", "both"] = "both",
         path_storage: Literal["eager", "lazy"] = "eager",
         dtype: np.dtype = np.float32,
-    ) -> pd.Series | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.Series | ShortestPathResult | np.ndarray:
         """Search once for distances and/or routes. See :func:`iduedu.single_source_dijkstra`."""
         from iduedu.graph.routing import single_source_dijkstra
 
@@ -412,6 +504,7 @@ class UrbanGraph:
             output=output,
             path_storage=path_storage,
             dtype=dtype,
+            distance_format=distance_format,
         )
 
     def multi_source_dijkstra(
@@ -427,7 +520,8 @@ class UrbanGraph:
         output: Literal["distances", "paths", "both"] = "both",
         path_storage: Literal["eager", "lazy"] = "eager",
         dtype: np.dtype = np.float32,
-    ) -> pd.Series | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.Series | ShortestPathResult | np.ndarray:
         """Search from the nearest source. See :func:`iduedu.multi_source_dijkstra`."""
         from iduedu.graph.routing import multi_source_dijkstra
 
@@ -443,6 +537,7 @@ class UrbanGraph:
             output=output,
             path_storage=path_storage,
             dtype=dtype,
+            distance_format=distance_format,
         )
 
     def dijkstra_parallel(
@@ -460,7 +555,8 @@ class UrbanGraph:
         dtype: np.dtype = np.float32,
         max_workers: int | None = None,
         batch_size: int | None = None,
-    ) -> pd.DataFrame | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.DataFrame | ShortestPathResult | np.ndarray | sparse.csr_array:
         """Run independent source searches. See :func:`iduedu.dijkstra_parallel`."""
         from iduedu.graph.routing import dijkstra_parallel
 
@@ -478,6 +574,7 @@ class UrbanGraph:
             dtype=dtype,
             max_workers=max_workers,
             batch_size=batch_size,
+            distance_format=distance_format,
         )
 
     def single_source_dijkstra_path(
@@ -611,7 +708,8 @@ class UrbanGraph:
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         batch_size: int | None = None,
         method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
-    ) -> pd.DataFrame | ShortestPathResult:
+        distance_format: DistanceFormat = "frame",
+    ) -> pd.DataFrame | ShortestPathResult | np.ndarray | sparse.csr_array:
         """Calculate an OD matrix of shortest paths on this graph.
 
         See also:
@@ -637,6 +735,7 @@ class UrbanGraph:
             mode=mode,
             batch_size=batch_size,
             method=method,
+            distance_format=distance_format,
         )
 
     def iter_od_matrix(
@@ -657,7 +756,8 @@ class UrbanGraph:
         mode: Literal["all_to_all", "pairwise"] = "all_to_all",
         batch_size: int = 256,
         method: Literal["auto", "bidirectional", "astar", "dijkstra"] = "auto",
-    ) -> Iterator[pd.DataFrame | ShortestPathResult]:
+        distance_format: DistanceFormat = "frame",
+    ) -> Iterator[pd.DataFrame | ShortestPathResult | np.ndarray | sparse.csr_array]:
         """Yield OD origin-row blocks. See :func:`iduedu.iter_od_matrix`."""
         from iduedu.graph.routing import iter_od_matrix
 
@@ -678,6 +778,7 @@ class UrbanGraph:
             mode=mode,
             batch_size=batch_size,
             method=method,
+            distance_format=distance_format,
         )
 
     def path_to_edges(

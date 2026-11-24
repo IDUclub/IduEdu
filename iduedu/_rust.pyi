@@ -145,6 +145,20 @@ class CsrGraph:
         edges: bool = False,
         n_threads: int | None = None,
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64] | None]: ...
+    def assign_flows(
+        self,
+        sources: npt.NDArray[np.int32],
+        source_flows: npt.NDArray[np.float64],
+        cluster_offsets: npt.NDArray[np.int64],
+        node_weights: npt.NDArray[np.float64],
+        decay: str = "gaussian",
+        mean: float | None = None,
+        std: float | None = None,
+        beta: float | None = None,
+        cutoff: float | None = None,
+        min_flow: float = 0.0,
+        n_threads: int | None = None,
+    ) -> npt.NDArray[np.float64]: ...
 
 def reconstruct_paths(
     nodes: npt.NDArray[np.int32], parents: npt.NDArray[np.int32], targets: npt.NDArray[np.int32], reverse: bool
@@ -218,3 +232,46 @@ def merge_oriented_chains(
     two_way: npt.NDArray[np.bool_],
     keep: npt.NDArray[np.bool_],
 ) -> tuple[npt.NDArray[np.uint32], npt.NDArray[np.bool_], npt.NDArray[np.int64]]: ...
+def split_edges(
+    xy: npt.NDArray[np.float64],
+    coord_offsets: npt.NDArray[np.int64],
+    distances: npt.NDArray[np.float64],
+    cut_offsets: npt.NDArray[np.int64],
+) -> tuple[
+    npt.NDArray[np.float64],  # flat XY coordinates
+    npt.NDArray[np.int64],  # piece coordinate offsets
+    npt.NDArray[np.int64],  # source edge positions
+    npt.NDArray[np.int64],  # start cut positions (-1 for u)
+    npt.NDArray[np.int64],  # end cut positions (-2 for v)
+]: ...
+
+PtRoutes = tuple[
+    npt.NDArray[np.int64],  # node route
+    npt.NDArray[np.int64],  # node id: 2 * reference, + 1 for a made-up node
+    npt.NDArray[np.float64],  # node xy, (n, 2)
+    npt.NDArray[np.bool_],  # node is a platform
+    npt.NDArray[np.int64],  # edge route
+    npt.NDArray[np.int64],  # edge u
+    npt.NDArray[np.int64],  # edge v
+    npt.NDArray[np.bool_],  # edge is a boarding edge
+    npt.NDArray[np.int64],  # edge point offsets, n_edges + 1
+    npt.NDArray[np.float64],  # edge points, (m, 2)
+    npt.NDArray[np.float64],  # edge speed, NaN for boarding edges
+    list[tuple[int, str]],  # routes left out, with why
+]
+
+def parse_pt_routes(
+    xy: npt.NDArray[np.float64],
+    way_offsets: npt.NDArray[np.int64],
+    way_points: npt.NDArray[np.int64],
+    way_speeds: npt.NDArray[np.float64],
+    member_offsets: npt.NDArray[np.int64],
+    member_points: npt.NDArray[np.int64],
+    member_refs: npt.NDArray[np.int64],
+    member_ranks: npt.NDArray[np.int64],
+    member_platform: npt.NDArray[np.bool_],
+    member_stand_ins: npt.NDArray[np.int64],
+    member_stand_in_xy: npt.NDArray[np.float64],
+    kinds_apart: bool = False,
+    n_threads: int | None = None,
+) -> PtRoutes: ...

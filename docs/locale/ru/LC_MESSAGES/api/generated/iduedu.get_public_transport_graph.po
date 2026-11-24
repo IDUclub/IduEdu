@@ -35,14 +35,20 @@ msgstr "Идентификатор отношения или области OSM 
 msgid "Boundary geometry in EPSG:4326 (or a GeoDataFrame). Used when ``osm_id`` is not given."
 msgstr "Геометрия границы в EPSG:4326 (или GeoDataFrame). Используется, если ``osm_id`` не задан."
 
-msgid "Transport mode(s) to include. Accepts:   - ``None``: include every type of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
-msgstr "Transport mode(s) to include. Accepts:   - ``None``: include every type of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+# | msgid "Transport mode(s) to include. Accepts:   - ``None``: include every
+# | type of ``transport_registry``;   - ``str``: a single OSM route type, e.g.
+# | ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\",
+# | \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with
+# | ``strip().lower()`` and validated against the registry."
+msgid "Transport mode(s) to include. Accepts:   - ``None``: include every mode of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
+msgstr "Transport mode(s) to include. Accepts:   - ``None``: include every mode of ``transport_registry``;   - ``str``: a single OSM route type, e.g. ``\"bus\"``;   - ``Sequence[str]``: multiple types, e.g. ``[\"tram\", \"bus\", \"trolleybus\", \"subway\"]``.  Values are normalized with ``strip().lower()`` and validated against the registry."
 
 msgid "Transport mode(s) to include. Accepts:"
 msgstr "Включаемые виды транспорта. Принимает:"
 
-msgid "``None``: include every type of ``transport_registry``;"
-msgstr "``None``: все виды из ``transport_registry``;"
+# | msgid "``None``: include every type of ``transport_registry``;"
+msgid "``None``: include every mode of ``transport_registry``;"
+msgstr "``None``: все виды транспорта из ``transport_registry``;"
 
 msgid "``str``: a single OSM route type, e.g. ``\"bus\"``;"
 msgstr "``str``: один тип маршрута OSM, например ``\"bus\"``;"
@@ -62,6 +68,9 @@ msgstr "Набор тегов OSM, сохраняемых на рёбрах и �
 msgid "Transport registry used to validate transport types and to compute per-edge travel times (via each mode's parameters such as free speed, acceleration and braking distances, dwell time and average waiting time for boarding edges). If None, ``DEFAULT_REGISTRY`` is used."
 msgstr "Реестр транспорта для проверки видов транспорта и расчёта времени в пути по рёбрам (по параметрам каждого вида, таким как свободная скорость, расстояния разгона и торможения, время стоянки и среднее время ожидания на рёбрах посадки). Если None, используется ``DEFAULT_REGISTRY``."
 
+msgid "Projected CRS in metres for the graph (anything ``pyproj.CRS.from_user_input`` accepts). If None, the UTM zone of the territory is estimated. Give one CRS to graphs built in parts to share coordinates, or a conformal CRS of a large area (such as a Lambert conic) when routes reach far beyond one UTM zone."
+msgstr "Проекционная CRS графа в метрах (всё, что принимает ``pyproj.CRS.from_user_input``). Если None, определяется зона UTM территории. Передайте одну CRS графам, собираемым по частям, чтобы у них были общие координаты, или конформную CRS большой области (например, коническую Ламберта), если маршруты уходят далеко за пределы одной зоны UTM."
+
 msgid "Return type"
 msgstr "Тип результата"
 
@@ -71,8 +80,8 @@ msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~iduedu.graph.urban
 msgid "Returns"
 msgstr "Результат"
 
-msgid "Directed PT ``UrbanGraph`` with ``crs`` and ``type=\"public_transport\"``."
-msgstr "Ориентированный ``UrbanGraph`` общественного транспорта с ``crs`` и ``type=\"public_transport\"``."
+msgid "Directed PT ``UrbanGraph`` with ``crs`` and ``type=\"public_transport\"``. Route stops and the edges of a route carry its ``route_key`` (``osm:r<relation id>``), platforms the list of keys of the routes calling there, and ``graph.routes`` is the table of the routes: ``mode``, the relation tags of ``config.transport_route_attr``, ``osm_id``, ``osm_route`` and the ``route_master`` line as ``line_key`` and ``line_name``. With ``clip_by_territory`` it keeps the routes with an edge inside."
+msgstr "Ориентированный ``UrbanGraph`` общественного транспорта с ``crs`` и ``type=\"public_transport\"``. Остановки и рёбра маршрута несут его ``route_key`` (``osm:r<id отношения>``), платформы — список ключей маршрутов, которые на них останавливаются, а ``graph.routes`` — таблица маршрутов: ``mode``, теги отношения из ``config.transport_route_attr``, ``osm_id``, ``osm_route`` и линия ``route_master`` в виде ``line_key`` и ``line_name``. С ``clip_by_territory`` в ней остаются маршруты, у которых есть ребро внутри."
 
 msgid "https://iduclub.github.io/IduEdu/examples/get_any_graph.html https://iduclub.github.io/IduEdu/examples/transport_registry.html"
 msgstr "https://iduclub.github.io/IduEdu/examples/get_any_graph.html https://iduclub.github.io/IduEdu/examples/transport_registry.html"

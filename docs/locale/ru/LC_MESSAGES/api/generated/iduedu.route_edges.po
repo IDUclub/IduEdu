@@ -1,0 +1,52 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-18 16:03+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.route\\_edges"
+msgstr "iduedu.route\\_edges"
+
+msgid "Travel edges of one route in the order of travel."
+msgstr "Рёбра движения одного маршрута в порядке следования."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph with a ``routes`` table."
+msgstr "Граф с таблицей ``routes``."
+
+msgid "Key of the route."
+msgstr "Ключ маршрута."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~geopandas.geodataframe.GeoDataFrame\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "Its edges between stops (no boarding or alighting edges), with a ``position`` column (0, 1, ... along the route) and a ``part`` column (0 unless the route is broken into several pieces, by a gap in its data or by clipping)."
+msgstr "Его рёбра между остановками (без рёбер посадки и высадки) со столбцом ``position`` (0, 1, ... вдоль маршрута) и столбцом ``part`` (0, если маршрут не разбит на несколько кусков пропуском в данных или обрезкой)."
+
+msgid "Raises"
+msgstr "Исключения"
+
+msgid "If the graph has no routes table or its edges no ``route_key`` column."
+msgstr "Если у графа нет таблицы маршрутов или у его рёбер нет столбца ``route_key``."
+
+msgid "If the route is not in the table."
+msgstr "Если маршрута нет в таблице."
+
