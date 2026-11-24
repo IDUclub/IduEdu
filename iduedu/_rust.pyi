@@ -145,6 +145,20 @@ class CsrGraph:
         edges: bool = False,
         n_threads: int | None = None,
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64] | None]: ...
+    def assign_flows(
+        self,
+        sources: npt.NDArray[np.int32],
+        source_flows: npt.NDArray[np.float64],
+        cluster_offsets: npt.NDArray[np.int64],
+        node_weights: npt.NDArray[np.float64],
+        decay: str = "gaussian",
+        mean: float | None = None,
+        std: float | None = None,
+        beta: float | None = None,
+        cutoff: float | None = None,
+        min_flow: float = 0.0,
+        n_threads: int | None = None,
+    ) -> npt.NDArray[np.float64]: ...
 
 def reconstruct_paths(
     nodes: npt.NDArray[np.int32], parents: npt.NDArray[np.int32], targets: npt.NDArray[np.int32], reverse: bool

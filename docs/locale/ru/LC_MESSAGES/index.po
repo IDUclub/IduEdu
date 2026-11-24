@@ -182,6 +182,16 @@ msgstr "Охват, близость, гравитационная доступ�
 msgid ":func:`~iduedu.centrality`, :func:`~iduedu.edge_betweenness`"
 msgstr ":func:`~iduedu.centrality`, :func:`~iduedu.edge_betweenness`"
 
+# | msgid ":doc:`analysis/objects`"
+msgid ":doc:`analysis/flows`"
+msgstr ":doc:`analysis/flows`"
+
+msgid "Trips from sources spread over destinations and summed on the edges along shortest paths"
+msgstr "Поездки от источников, распределённые по пунктам назначения и просуммированные на рёбрах вдоль кратчайших путей"
+
+msgid ":func:`~iduedu.assign_flows`"
+msgstr ":func:`~iduedu.assign_flows`"
+
 msgid ":doc:`analysis/elevation`"
 msgstr ":doc:`analysis/elevation`"
 

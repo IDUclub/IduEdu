@@ -258,6 +258,18 @@ impl Scratch {
         self.run(g, &[source], &[], cutoff, false);
     }
 
+    /// Multi-source search to `cutoff` with predecessors whose state stays in the buffers:
+    /// [`Scratch::settled_order`], [`Scratch::cost`] and [`Scratch::parent`] read it, [`Scratch::clear`]
+    /// must follow.
+    pub(crate) fn run_tree(&mut self, g: Csr, sources: &[i32], cutoff: f32) {
+        self.run(g, sources, &[], cutoff, true);
+    }
+
+    /// Parent of a node settled by the last [`Scratch::run_tree`], `-1` for a source.
+    pub(crate) fn parent(&self, node: usize) -> i32 {
+        self.parents[node]
+    }
+
     /// Nodes settled by the last search, in order of cost.
     pub(crate) fn settled_order(&self) -> &[u32] {
         &self.settled_list

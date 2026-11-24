@@ -12,6 +12,7 @@ pub mod chains;
 pub mod components;
 pub mod csr;
 pub mod dijkstra;
+pub mod flows;
 pub mod pbf;
 pub mod pbf_write;
 pub mod penalty;
@@ -1031,6 +1032,86 @@ impl CsrGraph {
             None
         };
         Ok((nodes_arr.into_pyarray(py), arcs_arr))
+    }
+
+    /// Flows assigned along the shortest-path forest of every cluster of ``sources`` (one value per arc
+    /// in CSR order). ``cluster_offsets`` slice ``sources`` and ``source_flows``; ``node_weights`` holds one
+    /// attraction per node. A destination weighs ``node_weights[node] * decay(cost)`` with ``decay`` one of
+    /// ``"gaussian"`` (``mean``, ``std``), ``"exp"`` (``beta``) or ``"flat"``. An arc keeps the flow of a
+    /// cluster when it exceeds ``min_flow`` or when the arc leaves a source and the flow is positive.
+    #[pyo3(signature = (sources, source_flows, cluster_offsets, node_weights, decay="gaussian", mean=None, std=None, beta=None, cutoff=None, min_flow=0.0, n_threads=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn assign_flows<'py>(
+        &self,
+        py: Python<'py>,
+        sources: PyReadonlyArray1<'py, i32>,
+        source_flows: PyReadonlyArray1<'py, f64>,
+        cluster_offsets: PyReadonlyArray1<'py, i64>,
+        node_weights: PyReadonlyArray1<'py, f64>,
+        decay: &str,
+        mean: Option<f64>,
+        std: Option<f64>,
+        beta: Option<f64>,
+        cutoff: Option<f32>,
+        min_flow: f64,
+        n_threads: Option<usize>,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let g = self.view();
+        let s = sources.as_slice()?;
+        check_nodes(s, g.n(), "sources")?;
+        let flows = source_flows.as_slice()?;
+        if flows.len() != s.len() || flows.iter().any(|f| !f.is_finite() || *f < 0.0) {
+            return Err(PyValueError::new_err(
+                "source_flows must hold one finite non-negative value per source",
+            ));
+        }
+        let offsets = cluster_offsets.as_slice()?;
+        check_offsets(offsets, s.len(), "cluster_offsets")?;
+        let w = node_weights.as_slice()?;
+        if w.len() != g.n() || w.iter().any(|x| !x.is_finite() || *x < 0.0) {
+            return Err(PyValueError::new_err(
+                "node_weights must hold one finite non-negative value per node",
+            ));
+        }
+        let decay = match (decay, mean, std, beta) {
+            ("flat", _, _, _) => flows::FlowDecay::Flat,
+            ("exp", _, _, Some(beta)) if beta.is_finite() && beta >= 0.0 => {
+                flows::FlowDecay::Exp { beta }
+            }
+            ("gaussian", Some(mean), Some(std), _)
+                if mean.is_finite() && std.is_finite() && std > 0.0 =>
+            {
+                flows::FlowDecay::Gaussian { mean, std }
+            }
+            ("exp", ..) => {
+                return Err(PyValueError::new_err(
+                    "decay='exp' needs a finite non-negative beta",
+                ))
+            }
+            ("gaussian", ..) => {
+                return Err(PyValueError::new_err(
+                    "decay='gaussian' needs a finite mean and a finite positive std",
+                ))
+            }
+            (other, ..) => {
+                return Err(PyValueError::new_err(format!(
+                    "decay must be 'gaussian', 'exp' or 'flat', got {other:?}"
+                )))
+            }
+        };
+        let cutoff = cutoff.unwrap_or(f32::INFINITY);
+        if cutoff.is_nan() || cutoff < 0.0 {
+            return Err(PyValueError::new_err("cutoff must be non-negative"));
+        }
+        if !min_flow.is_finite() {
+            return Err(PyValueError::new_err("min_flow must be finite"));
+        }
+        let out = py.detach(|| {
+            in_pool(n_threads, || {
+                flows::assign_flows(g, s, flows, offsets, w, decay, cutoff, min_flow)
+            })
+        })?;
+        Ok(out.into_pyarray(py))
     }
 }
 

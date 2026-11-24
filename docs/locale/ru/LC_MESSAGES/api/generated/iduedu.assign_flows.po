@@ -1,0 +1,103 @@
+# ru translation of the IduEdu documentation, see docs/i18n.py
+msgid ""
+msgstr ""
+"Project-Id-Version: IduEdu VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/IDUclub/IduEdu/issues\n"
+"POT-Creation-Date: 2026-11-24 13:24+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "iduedu.assign\\_flows"
+msgstr "iduedu.assign\\_flows"
+
+msgid "Assign flows from sources to attractive nodes along shortest paths and sum them on the edges."
+msgstr "Распределяет потоки от источников по привлекательным узлам вдоль кратчайших путей и суммирует их на рёбрах."
+
+# | msgid "Sources are grouped into clusters by ``cluster_offsets`` (cluster
+# | ``c`` holds the sources ``cluster_offsets[c]:cluster_offsets[c + 1]``; by
+# | default every source is a cluster of its own). Each cluster runs one
+# search
+# | from all of its sources at once, every node joining its nearest source
+# | (equal costs go to the source listed first). Every reached node other than
+# a
+# | source is a destination with the weight ``node_weights[node] *
+# | decay(cost)``:"
+msgid "Sources are grouped into clusters by ``cluster_offsets`` (cluster ``c`` holds the sources ``cluster_offsets[c]:cluster_offsets[c + 1]``; by default every source is a cluster of its own). Each cluster runs one search from all of its sources at once, every node joining its nearest source (equal costs go to the source that comes first in ``nodes_gdf``). Every reached node other than a source is a destination with the weight ``node_weights[node] * decay(cost)``:"
+msgstr "Источники объединяются в кластеры по ``cluster_offsets`` (кластер ``c`` содержит источники ``cluster_offsets[c]:cluster_offsets[c + 1]``; по умолчанию каждый источник — отдельный кластер). Каждый кластер выполняет один поиск сразу от всех своих источников, и каждый узел относится к ближайшему источнику (при равной стоимости — к тому, который стоит раньше в ``nodes_gdf``). Каждый достигнутый узел, кроме источников, становится пунктом назначения с весом ``node_weights[node] * decay(cost)``:"
+
+msgid "``\"gaussian\"``: ``exp(-0.5 * ((cost - mean) / std) ** 2)``, trips of a typical length ``mean``;"
+msgstr "``\"gaussian\"``: ``exp(-0.5 * ((cost - mean) / std) ** 2)``, поездки типичной длины ``mean``;"
+
+msgid "``\"exp\"``: ``exp(-beta * cost)``;"
+msgstr "``\"exp\"``: ``exp(-beta * cost)``;"
+
+msgid "``\"flat\"``: 1."
+msgstr "``\"flat\"``: 1."
+
+msgid "The summed flow of the cluster's sources is split between its destinations in proportion to these weights and carried back along the search tree. An arc keeps the flow of one cluster only when it exceeds ``min_flow`` or when the arc leaves a source and the flow is positive; the kept flows of all clusters are summed."
+msgstr "Суммарный поток источников кластера делится между его пунктами назначения пропорционально этим весам и переносится обратно по дереву поиска. Дуга сохраняет поток одного кластера, только если он больше ``min_flow`` или если дуга выходит из источника и поток положителен; сохранённые потоки всех кластеров суммируются."
+
+msgid "Parameters"
+msgstr "Параметры"
+
+msgid "Graph to load."
+msgstr "Граф, на который назначаются потоки."
+
+msgid "Graph node ids of the sources, grouped by cluster."
+msgstr "id узлов графа для источников, сгруппированные по кластерам."
+
+msgid "Flow sent from every source (trips, vehicles), finite and non-negative."
+msgstr "Поток от каждого источника (поездки, транспортные средства), конечный и неотрицательный."
+
+msgid "Attraction of every node: a ``nodes_gdf`` column name, a Series indexed by node id or an array in ``nodes_gdf`` order. Missing values count as 0."
+msgstr "Привлекательность каждого узла: имя столбца ``nodes_gdf``, Series с индексом по id узла или массив в порядке ``nodes_gdf``. Пропуски считаются нулём."
+
+msgid "``n_clusters + 1`` ascending positions into ``source_nodes`` starting at 0 and ending at ``len(source_nodes)``; ``None`` makes every source a cluster."
+msgstr "``n_clusters + 1`` возрастающих позиций в ``source_nodes``, от 0 до ``len(source_nodes)``; ``None`` делает каждый источник отдельным кластером."
+
+msgid "Decay of the destination weight with the travel cost."
+msgstr "Затухание веса пункта назначения со стоимостью пути."
+
+msgid "Typical trip cost for ``\"gaussian\"``, in the units of ``weight``."
+msgstr "Типичная стоимость поездки для ``\"gaussian\"`` в единицах ``weight``."
+
+msgid "Spread of trip costs for ``\"gaussian\"``, positive."
+msgstr "Разброс стоимости поездок для ``\"gaussian\"``, положительный."
+
+msgid "Rate of ``\"exp\"``, per unit of ``weight``."
+msgstr "Коэффициент ``\"exp\"`` на единицу ``weight``."
+
+msgid "Largest travel cost of a trip, inclusive; ``None`` for no limit."
+msgstr "Наибольшая стоимость поездки включительно; ``None`` — без ограничения."
+
+msgid "Flow of one cluster below which an arc that does not leave a source is ignored."
+msgstr "Поток одного кластера, ниже которого дуга, не выходящая из источника, не учитывается."
+
+msgid "Edge cost column: ``time_min`` (minutes, the default) or ``length_meter`` (metres)."
+msgstr "Столбец стоимости ребра: ``time_min`` (минуты, по умолчанию) или ``length_meter`` (метры)."
+
+msgid "``\"edges\"`` (default) for a table of the edges; ``\"arcs\"`` for one value per arc of ``urban_graph.adjacency_matrix`` (aligned with its ``data``, after the call), where parallel edges are one arc."
+msgstr "``\"edges\"`` (по умолчанию) — таблица рёбер; ``\"arcs\"`` — по одному значению на дугу ``urban_graph.adjacency_matrix`` (в порядке её ``data`` после вызова), где параллельные рёбра — одна дуга."
+
+msgid "Number of threads; ``None`` uses all cores."
+msgstr "Число потоков; ``None`` использует все ядра."
+
+msgid "Return type"
+msgstr "Тип результата"
+
+msgid ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\``"
+msgstr ":sphinx_autodoc_typehints_type:`\\:py\\:class\\:\\`\\~pandas.DataFrame\\` \\| \\:py\\:class\\:\\`\\~numpy.ndarray\\``"
+
+msgid "Returns"
+msgstr "Результат"
+
+msgid "With ``per=\"arcs\"``, a float64 array of the arc flows. Otherwise a DataFrame indexed like ``edges_gdf`` with ``flow_uv`` (along the edge from ``u`` to ``v``), ``flow_vu`` (against it, for edges travelled both ways) and their sum ``flow``. Among parallel edges only the cheapest one carries flow; equally cheap ones share it."
+msgstr "При ``per=\"arcs\"`` — массив float64 с потоками дуг. Иначе DataFrame с индексом как у ``edges_gdf`` и столбцами ``flow_uv`` (вдоль ребра от ``u`` к ``v``), ``flow_vu`` (против него, для рёбер с движением в обе стороны) и их суммой ``flow``. Из параллельных рёбер поток несёт только самое дешёвое; одинаково дешёвые делят его."
+
