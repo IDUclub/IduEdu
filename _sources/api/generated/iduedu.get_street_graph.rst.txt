@@ -1,0 +1,6 @@
+﻿iduedu.get\_street\_graph
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_street_graph

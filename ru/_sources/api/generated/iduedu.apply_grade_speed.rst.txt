@@ -1,0 +1,6 @@
+﻿iduedu.apply\_grade\_speed
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: apply_grade_speed

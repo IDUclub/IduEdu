@@ -1,0 +1,6 @@
+﻿iduedu.simplify\_multiedges
+===========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: simplify_multiedges

@@ -1,0 +1,6 @@
+﻿iduedu.snapshot\_time
+=====================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: snapshot_time

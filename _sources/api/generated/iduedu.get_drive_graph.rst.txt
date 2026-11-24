@@ -1,0 +1,6 @@
+﻿iduedu.get\_drive\_graph
+========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: get_drive_graph

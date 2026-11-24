@@ -1,0 +1,6 @@
+﻿iduedu.write\_gml
+=================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: write_gml

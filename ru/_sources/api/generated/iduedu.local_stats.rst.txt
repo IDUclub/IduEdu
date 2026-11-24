@@ -1,0 +1,6 @@
+﻿iduedu.local\_stats
+===================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: local_stats

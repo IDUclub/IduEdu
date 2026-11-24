@@ -1,0 +1,6 @@
+﻿iduedu.relabel\_urban\_graph
+============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: relabel_urban_graph

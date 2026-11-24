@@ -1,0 +1,6 @@
+﻿iduedu.split\_by\_polygons
+==========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: split_by_polygons

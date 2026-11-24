@@ -1,0 +1,6 @@
+﻿iduedu.urban\_graph2nx\_graph
+=============================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: urban_graph2nx_graph

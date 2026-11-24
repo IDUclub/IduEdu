@@ -1,0 +1,12 @@
+﻿iduedu.GraphEdits
+=================
+
+.. currentmodule:: iduedu
+
+.. autoclass:: GraphEdits
+   :members:
+
+   
+   
+   
+   

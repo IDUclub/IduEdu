@@ -1,0 +1,6 @@
+﻿iduedu.download\_geofabrik\_region
+==================================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: download_geofabrik_region

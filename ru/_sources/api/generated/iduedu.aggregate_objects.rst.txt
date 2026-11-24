@@ -1,0 +1,6 @@
+﻿iduedu.aggregate\_objects
+=========================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: aggregate_objects

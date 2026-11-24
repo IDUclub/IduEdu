@@ -1,0 +1,6 @@
+﻿iduedu.assign\_flows
+====================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: assign_flows

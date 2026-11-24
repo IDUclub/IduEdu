@@ -1,0 +1,6 @@
+﻿iduedu.route\_stops
+===================
+
+.. currentmodule:: iduedu
+
+.. autofunction:: route_stops
